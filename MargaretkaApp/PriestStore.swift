@@ -41,15 +41,18 @@ class PriestStore: ObservableObject {
         } else {
             priests.append(priest)
         }
+        save()
     }
 
     func delete(at offsets: IndexSet) {
         priests.remove(atOffsets: offsets)
+        save()
     }
 
     func deletePriest(_ priest: Priest) {
         if let index = priests.firstIndex(of: priest) {
             priests.remove(at: index)
+            save()
         }
     }
 }

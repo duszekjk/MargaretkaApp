@@ -64,7 +64,21 @@ enum TimeTypes: String, Codable, CaseIterable, Identifiable, Hashable, Equatable
     case minutes, hours, days, weeks, months
     var id: String { rawValue }
 
-    
+    var localizedName: String {
+        switch self {
+        case .minutes:
+            return String(localized: "time.unit.minutes", defaultValue: "minuty", comment: "Time unit: minutes")
+        case .hours:
+            return String(localized: "time.unit.hours", defaultValue: "godziny", comment: "Time unit: hours")
+        case .days:
+            return String(localized: "time.unit.days", defaultValue: "dni", comment: "Time unit: days")
+        case .weeks:
+            return String(localized: "time.unit.weeks", defaultValue: "tygodnie", comment: "Time unit: weeks")
+        case .months:
+            return String(localized: "time.unit.months", defaultValue: "miesiące", comment: "Time unit: months")
+        }
+    }
+
     var component: Calendar.Component {
         switch self {
         case .minutes: return .minute
@@ -88,41 +102,34 @@ enum TimeTypes: String, Codable, CaseIterable, Identifiable, Hashable, Equatable
     }
 
     
-    func before(_ n:Int) -> String {
-        if n == 1 {
-            switch self {
-            case .minutes: return "minute before"
-            case .hours:   return "hour before"
-            case .days:    return "day before"
-            case .weeks:   return "week before"
-            case .months:  return "month before"
-            }
-        }
+
+    func before(_ n: Int) -> String {
         switch self {
-        case .minutes: return "\(n) minutes before"
-        case .hours:   return "\(n) hours before"
-        case .days:    return "\(n) days before"
-        case .weeks:   return "\(n) weeks before"
-        case .months:  return "\(n) months before"
+        case .minutes:
+            return String(localized: "time.before.minutes \(n)", table: "Localizable", comment: "n minutes before an event")
+        case .hours:
+            return String(localized: "time.before.hours \(n)", table: "Localizable", comment: "n hours before an event")
+        case .days:
+            return String(localized: "time.before.days \(n)", table: "Localizable", comment: "n days before an event")
+        case .weeks:
+            return String(localized: "time.before.weeks \(n)", table: "Localizable", comment: "n weeks before an event")
+        case .months:
+            return String(localized: "time.before.months \(n)", table: "Localizable", comment: "n months before an event")
         }
     }
 
-    func text(_ n:Int) -> String {
-        if n == 1 {
-            switch self {
-            case .minutes: return "in one minute"
-            case .hours:   return "in one hour"
-            case .days:    return "tomorrow"
-            case .weeks:   return "next week"
-            case .months:  return "next month"
-            }
-        }
+    func text(_ n: Int) -> String {
         switch self {
-        case .minutes: return "in \(n) minutes"
-        case .hours:   return "in \(n) hours"
-        case .days:    return "in \(n) days"
-        case .weeks:   return "in \(n) weeks"
-        case .months:  return "in \(n) months"
+        case .minutes:
+            return String(localized: "time.in.minutes \(n)", table: "Localizable", comment: "in n minutes")
+        case .hours:
+            return String(localized: "time.in.hours \(n)", table: "Localizable", comment: "in n hours")
+        case .days:
+            return String(localized: "time.in.days \(n)", table: "Localizable", comment: "in n days")
+        case .weeks:
+            return String(localized: "time.in.weeks \(n)", table: "Localizable", comment: "in n weeks")
+        case .months:
+            return String(localized: "time.in.months \(n)", table: "Localizable", comment: "in n months")
         }
     }
 }
@@ -153,7 +160,7 @@ struct NotificationBeforeEditor: View {
         HStack {
             Picker("Unit", selection: $model.timeType) {
                 ForEach(TimeTypes.allCases, id: \.self) { unit in
-                    Text(unit.rawValue.capitalized).tag(unit)
+                    Text(unit.localizedName.capitalized).tag(unit)
                 }
             }
             .pickerStyle(.menu)

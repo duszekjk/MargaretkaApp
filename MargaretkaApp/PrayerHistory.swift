@@ -57,18 +57,26 @@ class PrayerStore: ObservableObject {
 struct HomeView: View {
     @StateObject var priestStore = PriestStore()
     @StateObject var prayerStore = PrayerStore()
-
+    
+    
+    @State var showSettings: Bool = false
+    @State var showEditor: Bool = false
+    @State var showOsoby: Bool = false
+    @State var showCzymJest: Bool = false
+    @State var showJakSie: Bool = false
 
     var body: some View {
-        PrayerFlowView()
+        PrayerFlowView(showSettings: $showSettings, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie)
             .toolbar {
-                NavigationLink(destination: SettingsMenuView(priestStore: priestStore, availablePrayers: $prayerStore.prayers)) {
+                NavigationLink(destination: SettingsMenuView(priestStore: priestStore, availablePrayers: $prayerStore.prayers, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie),
+                               isActive: $showSettings) {
                     Image(systemName: "gear")
                 }
             }
             .onAppear()
         {
             var priestss = Priest.load()
+            priestStore.priests = Priest.load()
             if(prayerStore.prayers.isEmpty)
             {
                 prayerStore.prayers = Array(prayersTemplate.values)

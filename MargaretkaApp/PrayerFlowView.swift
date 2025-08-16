@@ -15,6 +15,12 @@ struct PrayerFlowView: View {
     @State var priestLast: Priest?
     @StateObject var scheduleData = ScheduleData<Priest>(saveKey: "priest_sch")
     @State private var activeIndex: Int = 0
+    
+    @Binding var showSettings: Bool
+    @Binding var showEditor: Bool
+    @Binding var showOsoby: Bool
+    @Binding var showCzymJest: Bool
+    @Binding var showJakSie: Bool
 
     @Namespace private var namespace
     var priestsAndPrayers: [Priest]
@@ -37,21 +43,30 @@ struct PrayerFlowView: View {
     var flattenedPrayerSymbols: [String] {
         guard let priest = selectedPriest else { return [] }
 
-        let groups = priest.assignedPrayerGroups
-        var result: [String] = []
+        func extractSymbols(from group: AssignedPrayerGroup) -> [String] {
+            var symbols: [String] = []
 
-        for group in groups {
             for _ in 0..<group.repeatCount {
-                for id in group.prayerIds {
-                    if let symbol = allPrayers[id]?.symbol {
-                        result.append(symbol)
+                for item in group.items {
+                    switch item {
+                    case .prayer(let id):
+                        if let symbol = allPrayers[id]?.symbol {
+                            symbols.append(symbol)
+                        }
+                    case .subgroup(let index):
+                        if index < group.subgroups.count {
+                            symbols += extractSymbols(from: group.subgroups[index])
+                        }
                     }
                 }
             }
+
+            return symbols
         }
 
-        return result
+        return priest.assignedPrayerGroups.flatMap { extractSymbols(from: $0) }
     }
+
 
     var arrangedInS: [[String]] {
         var flat = flattenedPrayerSymbols
@@ -97,8 +112,8 @@ struct PrayerFlowView: View {
                             .padding(3)
                             .glassEffect()
 //                    }
+                    Spacer()
                 }
-                Spacer()
                 HStack(spacing: 14) {
                     
                     GlassEffectContainer(spacing: 0) {
@@ -128,7 +143,7 @@ struct PrayerFlowView: View {
                             Image(
                                 systemName: "list.star"
                             )
-                            .padding(12)
+                            .padding((selectedPriest != nil) ? 12 : 14)
                             .cornerRadius(16)
                         }
                         .cornerRadius(16)
@@ -189,7 +204,8 @@ struct PrayerFlowView: View {
                     }
                 }
                 .padding(.horizontal, 16.0)
-                .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 50)
+                .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
+                .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
                 .frame(width: UIScreen.main.bounds.width)
 
 
@@ -277,6 +293,10 @@ struct PrayerFlowView: View {
                         activeIndex: $activeIndex
                     )
                     .padding(.bottom, 60.0)
+                }
+                else
+                {
+                    StartView(showSettings: $showSettings, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie)
                 }
             }
             .padding(.vertical, 35)

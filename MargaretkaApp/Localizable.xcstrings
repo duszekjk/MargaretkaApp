@@ -1,0 +1,872 @@
+{
+  "sourceLanguage" : "pl",
+  "strings" : {
+    "" : {
+
+    },
+    "%@ %@" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%@ %@ %@" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@ %3$@"
+          }
+        }
+      }
+    },
+    "%lld" : {
+
+    },
+    "%lld/%lld" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "© 2025\nDUSZEKJK Jacek Kałużny\nSoftware Development.\nAll rights reserved." : {
+
+    },
+    "© 2025 DUSZEKJK Jacek Kałużny" : {
+
+    },
+    "▶️ Odtwórz audio" : {
+
+    },
+    "🔊 Nagranie zostanie wygenerowane na żywo z tekstu modlitwy podczas odtwarzania." : {
+
+    },
+    "7 osób = 7 dni tygodnia. Każda osoba modli się w swoim dniu." : {
+
+    },
+    "Aby otoczyć kapłana wierną, codzienną modlitwą i wsparciem – szczególnie w wierności powołaniu, świętości życia i gorliwości duszpasterskiej." : {
+
+    },
+    "Active period" : {
+
+    },
+    "Add time" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodaj  godzinę"
+          }
+        }
+      }
+    },
+    "At times" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O godzinie"
+          }
+        }
+      }
+    },
+    "Audio" : {
+
+    },
+    "Brak" : {
+
+    },
+    "Cancel" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anuluj"
+          }
+        }
+      }
+    },
+    "Codzienna propozycja (minimum)" : {
+
+    },
+    "Czym jest „Margaretka”?" : {
+
+    },
+    "Czym jest Margaretka?" : {
+
+    },
+    "daily" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "codziennie"
+          }
+        }
+      }
+    },
+    "Dane osobowe" : {
+
+    },
+    "Days of month" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dni miesiąca"
+          }
+        }
+      }
+    },
+    "Days of week" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dni tygodnia"
+          }
+        }
+      }
+    },
+    "Deselect" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odznacz"
+          }
+        }
+      }
+    },
+    "Diagram Margaretki: siedem płatków – dni tygodnia – wokół kapłana." : {
+
+    },
+    "Dodaj modlitwę" : {
+
+    },
+    "Dodaj nową grupę" : {
+
+    },
+    "Dodaj nową modlitwę" : {
+
+    },
+    "Dodaj nową podgrupę" : {
+
+    },
+    "Edit" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edytuj"
+          }
+        }
+      }
+    },
+    "Edytuj kolejność modlitw" : {
+
+    },
+    "Edytuj modlitwę" : {
+
+    },
+    "end date" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "data zakończenia"
+          }
+        }
+      }
+    },
+    "every %lld %@" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "co %1$lld %2$@"
+          }
+        }
+      }
+    },
+    "Extra notifications:" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodatkowe powiadomienia"
+          }
+        }
+      }
+    },
+    "Forma modlitwy: np. dziesiątka różańca, krótka modlitwa własnymi słowami; można dołączyć Komunię św., post, dobre uczynki." : {
+
+    },
+    "frequency_label" : {
+
+    },
+    "Ikona" : {
+
+    },
+    "Imię" : {
+
+    },
+    "Intencja: **konkretny kapłan** (imię i nazwisko)." : {
+
+    },
+    "Jak się modlić w Margaretce?" : {
+
+    },
+    "Jak się modlić?" : {
+
+    },
+    "Jak to działa (w skrócie)" : {
+
+    },
+    "Kapłan" : {
+
+    },
+    "Kopiuj" : {
+
+    },
+    "Kroki startowe" : {
+
+    },
+    "Ksiądz %@" : {
+
+    },
+    "Modlitwa Margaretka" : {
+
+    },
+    "Modlitwy" : {
+
+    },
+    "monthly" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "co miesiąc"
+          }
+        }
+      }
+    },
+    "Można dołączyć (opcjonalnie)" : {
+
+    },
+    "Nazwa" : {
+
+    },
+    "Nazwisko" : {
+
+    },
+    "Nieznana modlitwa" : {
+
+    },
+    "Nieznana podgrupa" : {
+
+    },
+    "Nowa modlitwa" : {
+
+    },
+    "Osoby" : {
+
+    },
+    "Po co?" : {
+
+    },
+    "Podstawowe informacje" : {
+
+    },
+    "Powtórz %lldx" : {
+
+    },
+    "Praktyczne wskazówki" : {
+
+    },
+    "Praktyka może się nieco różnić w poszczególnych wspólnotach/parafiach – dostosuj do lokalnych zwyczajów. Istota pozostaje ta sama: **stała modlitwa za kapłana**." : {
+
+    },
+    "Remove last" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usuń ostatnie"
+          }
+        }
+      }
+    },
+    "Rozpocznij nagrywanie" : {
+
+    },
+    "Save" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapisz"
+          }
+        }
+      }
+    },
+    "Saving..." : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapisywanie…"
+          }
+        }
+      }
+    },
+    "Schedule" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plan"
+          }
+        }
+      }
+    },
+    "Skopiowano" : {
+
+    },
+    "start date" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "data początkowa"
+          }
+        }
+      }
+    },
+    "Statystyki modlitw" : {
+
+    },
+    "Tekst modlitwy" : {
+
+    },
+    "Time:" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Czas:"
+          }
+        }
+      }
+    },
+    "time.before.days %lld" : {
+      "comment" : "n days before an event",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld dni przed"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld dni przed"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld dzień przed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld dni przed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.before.hours %lld" : {
+      "comment" : "n hours before an event",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld godziny przed"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld godzin przed"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld godzinę przed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld godzin przed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.before.minutes %lld" : {
+      "comment" : "n minutes before an event",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld minuty przed"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld minut przed"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld minutę przed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld minut przed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.before.months %lld" : {
+      "comment" : "n months before an event",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld miesiące przed"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld miesięcy przed"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld miesiąc przed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld miesięcy przed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.before.weeks %lld" : {
+      "comment" : "n weeks before an event",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld tygodnie przed"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld tygodni przed"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld tydzień przed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld tygodni przed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.in.days %lld" : {
+      "comment" : "in n days",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld dni"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld dni"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld dzień"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld dni"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.in.hours %lld" : {
+      "comment" : "in n hours",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld godziny"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld godzin"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld godzinę"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld godzin"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.in.minutes %lld" : {
+      "comment" : "in n minutes",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld minuty"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld minut"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld minutę"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld minut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.in.months %lld" : {
+      "comment" : "in n months",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld miesiące"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld miesięcy"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld miesiąc"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld miesięcy"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.in.weeks %lld" : {
+      "comment" : "in n weeks",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld tygodnie"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld tygodni"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld tydzień"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld tygodni"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.unit.days" : {
+      "comment" : "Time unit: days",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "dni"
+          }
+        }
+      }
+    },
+    "time.unit.hours" : {
+      "comment" : "Time unit: hours",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "godziny"
+          }
+        }
+      }
+    },
+    "time.unit.minutes" : {
+      "comment" : "Time unit: minutes",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "minuty"
+          }
+        }
+      }
+    },
+    "time.unit.months" : {
+      "comment" : "Time unit: months",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "miesiące"
+          }
+        }
+      }
+    },
+    "time.unit.weeks" : {
+      "comment" : "Time unit: weeks",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "tygodnie"
+          }
+        }
+      }
+    },
+    "To modlitwa siedmiu osób za **jednego konkretnego kapłana** – każda osoba obejmuje go modlitwą w wybrany dzień tygodnia. Razem tworzą „stokrotkę” (7 płatków) z kapłanem w środku. Zobowiązanie ma charakter **stały** (długoterminowy)." : {
+
+    },
+    "Tytuł" : {
+
+    },
+    "Udostępnij" : {
+
+    },
+    "Unit" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jednostka"
+          }
+        }
+      }
+    },
+    "Ustalcie formę modlitwy (minimum poniżej)." : {
+
+    },
+    "Ustawienia" : {
+
+    },
+    "Uwaga" : {
+
+    },
+    "Value" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wartość"
+          }
+        }
+      }
+    },
+    "W razie lokalnych zwyczajów/parafialnych wytycznych – dostosuj formę, zachowując sens: **stała modlitwa za kapłana**." : {
+
+    },
+    "weekly" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "cotygodniowo"
+          }
+        }
+      }
+    },
+    "Wspieraj duchowo kapłanów\nprzez codzienną modlitwę." : {
+
+    },
+    "Wybierz kapłana (imię i nazwisko)." : {
+
+    },
+    "Wybierz plik audio" : {
+
+    },
+    "Wybierz zdjęcie" : {
+
+    },
+    "Wybrano: %@" : {
+
+    },
+    "Zapisano jako: %@" : {
+
+    },
+    "Zapisz" : {
+
+    },
+    "Zapisz imiona, dzień i datę rozpoczęcia." : {
+
+    },
+    "Zastępstwo: jeśli nie możesz w danym dniu, postaraj się znaleźć zastępstwo lub odmów modlitwę wcześniej/później." : {
+
+    },
+    "Zatrzymaj nagrywanie" : {
+
+    },
+    "Zbierz 7 osób i przydziel dni tygodnia." : {
+
+    },
+    "Zdjęcie" : {
+
+    },
+    "Źródło audio" : {
+
+    }
+  },
+  "version" : "1.1"
+}

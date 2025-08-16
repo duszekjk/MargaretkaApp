@@ -14,6 +14,7 @@ struct MargaretkaAppApp: App {
         WindowGroup {
             NavigationStack {
                 HomeView()
+                    .background(Color(.systemGroupedBackground))
                     .onAppear {
                         scheduleData.refresh()
                         
@@ -23,3 +24,4 @@ struct MargaretkaAppApp: App {
     }
 
 }
+

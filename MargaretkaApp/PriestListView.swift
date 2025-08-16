@@ -9,12 +9,12 @@ import SwiftUI
 struct PriestListView: View {
     @ObservedObject var store: PriestStore
     @Binding var availablePrayers: [Prayer]
-    @State private var showEditor = false
-    @State private var selectedPriest: Priest?
-
+    @Binding var showEditor: Bool
+    @State var selectedPriest: Priest?
+    var księża_tytuł : String = "Księża"
     var body: some View {
 
-        ScheduleList<Priest>(title: "Priests", saveKey: "priest_sch", forceFrequency: .weekly, forever: true, itemSummary: {
+        ScheduleList<Priest>(title: księża_tytuł, saveKey: "priest_sch", forceFrequency: .weekly, forever: true, itemSummary: {
                 return "\($0.title) \($0.firstName) \($0.lastName)"
                 
             }, formBuilder: {existing in
@@ -38,30 +38,6 @@ struct PriestListView: View {
                     store.addOrUpdate(newPriest)
             }, showingForm: $showEditor
             )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     }

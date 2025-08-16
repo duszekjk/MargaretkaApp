@@ -24,6 +24,7 @@ var prayersTemplate : [String:Prayer] = [
            I nie wódź nas na pokuszenie,
            ale nas zbaw od złego.
            Amen.
+           
            """, symbol: "heart", audioFilename: nil, audioSource: nil, timestampedLines: nil),
      "Zdrowaś Mario":
         Prayer(name: "Zdrowaś Mario", text: """
