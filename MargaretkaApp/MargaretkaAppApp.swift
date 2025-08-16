@@ -9,9 +9,17 @@ import SwiftUI
 
 @main
 struct MargaretkaAppApp: App {
+    @StateObject var scheduleData = ScheduleData<Priest>(saveKey: "priest_sch")
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            NavigationStack {
+                HomeView()
+                    .onAppear {
+                        scheduleData.refresh()
+                        
+                    }
+            }
         }
     }
+
 }
