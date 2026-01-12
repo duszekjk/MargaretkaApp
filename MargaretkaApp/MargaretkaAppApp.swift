@@ -10,18 +10,25 @@ import SwiftUI
 @main
 struct MargaretkaAppApp: App {
     @StateObject var scheduleData = ScheduleData<Priest>(saveKey: "priest_sch")
+    @State private var didScheduleNotificationRefresh = false
     var body: some Scene {
         WindowGroup {
             NavigationStack {
                 HomeView()
                     .background(Color(.systemGroupedBackground))
                     .onAppear {
-                        scheduleData.refresh()
-                        
+                        scheduleNotificationRefresh()
                     }
             }
         }
     }
 
-}
+    private func scheduleNotificationRefresh() {
+        guard !didScheduleNotificationRefresh else { return }
+        didScheduleNotificationRefresh = true
 
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 5.0) {
+            scheduleData.refresh()
+        }
+    }
+}
