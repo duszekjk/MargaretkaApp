@@ -504,22 +504,6 @@ class ScheduleData<T: Schedulable>: ObservableObject {
 
         upcomingNotifications.sort { $0.notificationDate < $1.notificationDate }
 
-        let pendingCount: Int = {
-            let semaphore = DispatchSemaphore(value: 0)
-            var count = 0
-            notificationCenter.getPendingNotificationRequests { requests in
-                count = requests.count
-                semaphore.signal()
-            }
-            semaphore.wait()
-            return count
-        }()
-
-        let availableSlots = max(0, maxNotificationsToSchedule - pendingCount)
-        if availableSlots == 0 {
-            return scheduledIDs
-        }
-
         let completeAction = UNNotificationAction(
             identifier: "MARK_AS_DONE",
             title: "Mark as Done",
@@ -536,9 +520,8 @@ class ScheduleData<T: Schedulable>: ObservableObject {
         )
         UNUserNotificationCenter.current().setNotificationCategories([category])
 
-        var scheduledCount = 0
         for (eventDate, id, date) in upcomingNotifications {
-            if scheduledCount >= availableSlots { break }
+            if scheduledIDs.count >= maxNotificationsToSchedule { break }
             if let end = item.schedule.endDate, date > end { continue }
             if date < now { continue }
 
@@ -593,7 +576,6 @@ class ScheduleData<T: Schedulable>: ObservableObject {
             let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
 
             scheduledIDs.append(id)
-            scheduledCount += 1
 
             let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
             notificationCenter.add(request){ error in
