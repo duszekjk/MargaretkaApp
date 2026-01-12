@@ -8,8 +8,7 @@
 import SwiftUI
 
 struct PrayerFlowView: View {
-    @State var priestStore = PriestStore()
-    @State var prayerStore = PrayerStore()
+    @StateObject var prayerStore = PrayerStore()
     @State var selectedPriest: Priest?
     @State var finished: Bool = false
     @State var priestLast: Priest?
@@ -23,17 +22,15 @@ struct PrayerFlowView: View {
     @Binding var showJakSie: Bool
 
     @Namespace private var namespace
-    var priestsAndPrayers: [Priest]
-    {
-        return Priest.load()
+    var priestsAndPrayers: [Priest] {
+        scheduleData.items
     }
     var today: Weekday {
-        let weekdayIndex = Calendar.current.component(.weekday, from: Date()) - 2
-        return Weekday.allCases[weekdayIndex]
+        Weekday.today
     }
 
     var todayPriest: Priest? {
-        priestStore.priests.first(where: { $0.schedule.daysOfWeek.contains(today) }) ?? priestStore.priests.first
+        scheduleData.items.first(where: { $0.schedule.daysOfWeek.contains(today) }) ?? scheduleData.items.first
     }
 
     var allPrayers: [UUID: Prayer] {
@@ -291,8 +288,7 @@ struct PrayerFlowView: View {
         .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         .onAppear()
         {
-            priestStore = PriestStore()
-            prayerStore = PrayerStore()
+            scheduleData.load()
             selectedPriest = todayPriest
             requestNotificationPermissions()
         }
