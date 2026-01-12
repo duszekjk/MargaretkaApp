@@ -37,31 +37,33 @@ struct PrayerFlowView: View {
         Dictionary(uniqueKeysWithValues: prayerStore.prayers.map { ($0.id, $0) })
     }
 
-    var flattenedPrayerSymbols: [String] {
+    var flattenedPrayerIds: [UUID] {
         guard let priest = selectedPriest else { return [] }
 
-        func extractSymbols(from group: AssignedPrayerGroup) -> [String] {
-            var symbols: [String] = []
+        func extractPrayerIds(from group: AssignedPrayerGroup) -> [UUID] {
+            var ids: [UUID] = []
 
             for _ in 0..<group.repeatCount {
                 for item in group.items {
                     switch item {
                     case .prayer(let id):
-                        if let symbol = allPrayers[id]?.symbol {
-                            symbols.append(symbol)
-                        }
+                        ids.append(id)
                     case .subgroup(let index):
                         if index < group.subgroups.count {
-                            symbols += extractSymbols(from: group.subgroups[index])
+                            ids += extractPrayerIds(from: group.subgroups[index])
                         }
                     }
                 }
             }
 
-            return symbols
+            return ids
         }
 
-        return priest.assignedPrayerGroups.flatMap { extractSymbols(from: $0) }
+        return priest.assignedPrayerGroups.flatMap { extractPrayerIds(from: $0) }
+    }
+
+    var flattenedPrayerSymbols: [String] {
+        flattenedPrayerIds.map { allPrayers[$0]?.symbol ?? "questionmark" }
     }
 
 
@@ -219,7 +221,7 @@ struct PrayerFlowView: View {
                                 ScrollView
                                 {
                                     Text(activeIndex < flattenedPrayerSymbols.count
-                                         ? ((allPrayers.first { $0.value.symbol == flattenedPrayerSymbols[activeIndex] }?.value.text ?? "Modlitwa") + "\n\n\((allPrayers.first { $0.value.symbol == flattenedPrayerSymbols[activeIndex] }?.value.name ?? "Modlitwa"))")
+                                         ? ((allPrayers[flattenedPrayerIds[activeIndex]]?.text ?? "Modlitwa") + "\n\n\((allPrayers[flattenedPrayerIds[activeIndex]]?.name ?? "Modlitwa"))")
                                          : "Koniec 🙏")
                                     .lineLimit(30)
                                     .font(.headline)
