@@ -21,16 +21,18 @@ struct PhotoAdjustmentView: View {
 
     var body: some View {
         GeometryReader { geo in
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .scaleEffect(clampedScale(scale * gestureScale))
-                .offset(x: offset.width + gestureOffset.width, y: offset.height + gestureOffset.height)
-                .frame(width: geo.size.width, height: geo.size.height)
-                .clipped()
-                .contentShape(Rectangle())
-                .simultaneousGesture(dragGesture)
-                .simultaneousGesture(magnificationGesture)
+            AdjustableBackgroundImage(
+                image: image,
+                scale: clampedScale(scale * gestureScale),
+                offset: CGSize(
+                    width: offset.width + gestureOffset.width,
+                    height: offset.height + gestureOffset.height
+                ),
+                size: geo.size
+            )
+            .contentShape(Rectangle())
+            .simultaneousGesture(dragGesture)
+            .simultaneousGesture(magnificationGesture)
         }
     }
 
