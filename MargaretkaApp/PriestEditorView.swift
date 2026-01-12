@@ -152,10 +152,10 @@ struct PriestEditorView: View {
             Task {
                 if let data = try? await newItem?.loadTransferable(type: Data.self),
                    let uiImage = UIImage(data: data) {
-                    photo = uiImage
-                    
                     let resized = uiImage.resized(maxDimension: 1500)
-                    var photoData = resized.jpegData(compressionQuality: 0.85)
+                    photo = resized
+
+                    let photoData = resized.jpegData(compressionQuality: 0.85)
                     priest.photoData = photoData
                     photoScale = 1.0
                     photoOffset = .zero
