@@ -19,6 +19,8 @@ struct PriestEditorView: View {
     @State private var assignedPrayerGroups: [AssignedPrayerGroup] = []
     @State private var photo: UIImage?
     @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var photoScale: Double = 1.0
+    @State private var photoOffset: CGSize = .zero
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -33,7 +35,34 @@ struct PriestEditorView: View {
                         if(priest.photoData != nil)
                         {
                             photo = UIImage(data: priest.photoData!)
+                            photoScale = priest.photoScale
+                            photoOffset = CGSize(width: priest.photoOffsetX, height: priest.photoOffsetY)
                         }
+                    }
+                }
+                if let photo {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Podgląd")
+                            .font(.headline)
+                        PhotoAdjustmentView(image: photo, scale: $photoScale, offset: $photoOffset)
+                            .frame(height: 220)
+                            .clipShape(RoundedRectangle(cornerRadius: 18))
+                        Slider(value: $photoScale, in: 1.0...3.0, step: 0.05) {
+                            Text("Powiększenie")
+                        }
+                        Button("Wycentruj zdjęcie") {
+                            photoScale = 1.0
+                            photoOffset = .zero
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    .padding(.horizontal)
+                    .onChange(of: photoScale) {
+                        priest.photoScale = photoScale
+                    }
+                    .onChange(of: photoOffset) {
+                        priest.photoOffsetX = photoOffset.width
+                        priest.photoOffsetY = photoOffset.height
                     }
                 }
             }
@@ -81,6 +110,11 @@ struct PriestEditorView: View {
                     let resized = uiImage.resized(maxDimension: 1500)
                     var photoData = resized.jpegData(compressionQuality: 0.85)
                     priest.photoData = photoData
+                    photoScale = 1.0
+                    photoOffset = .zero
+                    priest.photoScale = 1.0
+                    priest.photoOffsetX = 0.0
+                    priest.photoOffsetY = 0.0
                 }
             }
         }
