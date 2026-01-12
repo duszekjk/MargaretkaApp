@@ -252,33 +252,41 @@ class ScheduleData<T: Schedulable>: ObservableObject {
     }
 
     func add(_ item: T) {
-        var newItem = item
-        newItem.notificationIds = scheduleNotifications(
-            for: newItem,
-            title: newItem.notificationTitle,
-            message: newItem.notificationMessage,
-            sound: newItem.notificationSound
-        )
-        items.append(newItem)
-        save()
-    }
-
-    func update(_ item: T) {
-        if let index = items.firstIndex(where: { $0.id == item.id }) {
-            let oldItem = items[index]
-            removeScheduledNotifications(for: oldItem.notificationIds)
-
+        DispatchQueue.global(qos: .userInitiated).async {
             var newItem = item
-            newItem.notificationIds = []
-            
-            newItem.notificationIds = scheduleNotifications(
+            newItem.notificationIds = self.scheduleNotifications(
                 for: newItem,
                 title: newItem.notificationTitle,
                 message: newItem.notificationMessage,
                 sound: newItem.notificationSound
             )
-            items[index] = newItem
-            save()
+            DispatchQueue.main.async {
+                self.items.append(newItem)
+                self.save()
+            }
+        }
+    }
+
+    func update(_ item: T) {
+        if let index = items.firstIndex(where: { $0.id == item.id }) {
+            let oldIds = items[index].notificationIds
+            DispatchQueue.global(qos: .userInitiated).async {
+                self.removeScheduledNotifications(for: oldIds)
+
+                var newItem = item
+                newItem.notificationIds = []
+
+                newItem.notificationIds = self.scheduleNotifications(
+                    for: newItem,
+                    title: newItem.notificationTitle,
+                    message: newItem.notificationMessage,
+                    sound: newItem.notificationSound
+                )
+                DispatchQueue.main.async {
+                    self.items[index] = newItem
+                    self.save()
+                }
+            }
         }
     }
     public func refresh()
@@ -368,6 +376,10 @@ class ScheduleData<T: Schedulable>: ObservableObject {
             case .daily:
                 let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
                 var cursor = max(todayAtTime ?? now, item.schedule.startDate)
+                while cursor < now {
+                    guard let next = calendar.date(byAdding: .day, value: item.schedule.everyN, to: cursor) else { break }
+                    cursor = next
+                }
                 var emitted = 0
 
                 while cursor <= end && emitted < maxOccurrencesPerTime {
@@ -423,6 +435,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                         if let candidate = calendar.date(from: comps) {
                             
                             if candidate >= firstCandidateAtTime && candidate <= end {
+                                if candidate < now { continue }
                                 
                                 upcomingNotifications.append((candidate, makeID(with: title, eventTime: candidate, notificationTime: candidate), candidate))
 
@@ -480,6 +493,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                         
                         if let candidate = calendar.date(from: comps) {
                             if candidate >= firstAtTime && candidate <= end {
+                                if candidate < now { continue }
                                 
                                 upcomingNotifications.append((candidate, makeID(with: title, eventTime: candidate, notificationTime: candidate), candidate))
 
