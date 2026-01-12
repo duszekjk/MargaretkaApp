@@ -19,6 +19,7 @@ import UserNotifications
 
 final class LocalDatabase {
     static let shared = LocalDatabase()
+    static let notificationsLock = NSLock()
 
     private let fileManager = FileManager.default
 
@@ -38,50 +39,41 @@ final class LocalDatabase {
         do {
             let data = try Data(contentsOf: url)
             print("loaded local \(filename)")
-            var decoded = try JSONDecoder().decode([T].self, from: data)
+            let decoded = try JSONDecoder().decode([T].self, from: data)
 
-            
             if T.self is any Schedulable.Type {
-                var repaired: [T] = []
-
-                let center = UNUserNotificationCenter.current()
-                var pendingIDs: Set<String> = []
-
-                let group = DispatchGroup()
-                group.enter()
-                center.getPendingNotificationRequests { requests in
-                    pendingIDs = Set(requests.map { $0.identifier })
-                    group.leave()
-                }
-                group.wait()
-
-                for var item in decoded {
-                    guard var schedulable = item as? Schedulable else {
-                        repaired.append(item)
-                        continue
-                    }
-
-                    let missing = schedulable.notificationIds.filter { !pendingIDs.contains($0) }
-                    if !missing.isEmpty {
-                        center.removePendingNotificationRequests(withIdentifiers: schedulable.notificationIds)
-                        schedulable.notificationIds = scheduleNotificationsFor(schedulable)
-
-                    }
-
-                    if let repairedItem = schedulable as? T {
-                        repaired.append(repairedItem)
-                    } else {
-                        repaired.append(item) 
-                    }
-                }
-
-                return repaired
+                repairNotificationsAsync(for: decoded, filename: filename)
             }
 
             return decoded
         } catch {
             print("❌ Failed to load \(filename): \(error)")
             return []
+        }
+    }
+
+    private func repairNotificationsAsync<T>(for decoded: [T], filename: String) {
+        DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 5.0) {
+            guard LocalDatabase.notificationsLock.try() else { return }
+            defer { LocalDatabase.notificationsLock.unlock() }
+
+            guard decoded is [Schedulable] else { return }
+
+            let center = UNUserNotificationCenter.current()
+            center.getPendingNotificationRequests { requests in
+                let pendingIDs = Set(requests.map { $0.identifier })
+
+                for item in decoded {
+                    guard var schedulable = item as? Schedulable else { continue }
+                    let missing = schedulable.notificationIds.filter { !pendingIDs.contains($0) }
+                    if !missing.isEmpty {
+                        center.removePendingNotificationRequests(withIdentifiers: schedulable.notificationIds)
+                        schedulable.notificationIds = scheduleNotificationsFor(schedulable)
+                    }
+                }
+
+                print("Repaired notifications for \(filename)")
+            }
         }
     }
 
