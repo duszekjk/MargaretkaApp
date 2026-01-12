@@ -42,11 +42,26 @@ struct PriestEditorView: View {
                 }
                 if let photo {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Podgląd")
+                        Text("Podgląd w aplikacji")
                             .font(.headline)
-                        PhotoAdjustmentView(image: photo, scale: $photoScale, offset: $photoOffset)
-                            .frame(height: 220)
+                        GeometryReader { geo in
+                            let screen = UIScreen.main.bounds
+                            let scale = min(
+                                geo.size.width / screen.width,
+                                geo.size.height / screen.height
+                            )
+                            PhotoAdjustmentView(
+                                image: photo,
+                                scale: $photoScale,
+                                offset: $photoOffset,
+                                gestureScaleFactor: scale
+                            )
+                            .frame(width: screen.width, height: screen.height)
+                            .scaleEffect(scale, anchor: .topLeading)
+                            .frame(width: screen.width * scale, height: screen.height * scale)
                             .clipShape(RoundedRectangle(cornerRadius: 18))
+                        }
+                        .aspectRatio(UIScreen.main.bounds.size, contentMode: .fit)
                         Slider(value: $photoScale, in: 1.0...3.0, step: 0.05) {
                             Text("Powiększenie")
                         }
