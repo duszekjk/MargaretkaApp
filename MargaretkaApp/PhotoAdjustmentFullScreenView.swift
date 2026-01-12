@@ -36,31 +36,28 @@ struct PhotoAdjustmentFullScreenView: View {
                 .simultaneousGesture(magnificationGesture)
 
                 previewOverlay(in: geo.size)
-
-                VStack {
-                    HStack {
-                        Button("Anuluj") {
-                            dismiss()
-                        }
-                        .padding(.leading, 16)
-                        Spacer()
-                        Button("Wycentruj") {
-                            scale = 1.0
-                            offset = .zero
-                        }
-                        Spacer()
-                        Button("Gotowe") {
-                            dismiss()
-                        }
-                        .padding(.trailing, 16)
-                    }
-                    .padding(.top, 12)
-                    .foregroundStyle(.white)
-                    .background(Color.black.opacity(0.25))
-                    Spacer()
-                }
             }
             .ignoresSafeArea()
+            .safeAreaInset(edge: .top) {
+                HStack {
+                    Button("Anuluj") {
+                        dismiss()
+                    }
+                    Spacer()
+                    Button("Wycentruj") {
+                        scale = 1.0
+                        offset = .zero
+                    }
+                    Spacer()
+                    Button("Gotowe") {
+                        dismiss()
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .foregroundStyle(.white)
+                .background(Color.black.opacity(0.35))
+            }
         }
     }
 
