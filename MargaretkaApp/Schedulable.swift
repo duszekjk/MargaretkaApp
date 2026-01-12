@@ -428,7 +428,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                     for wd in selectedWeekdays {
                         
                         var comps = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: weekCursor)
-                        comps.weekday = wd.toInt
+                        comps.weekday = wd.calendarWeekday
                         comps.hour = hour
                         comps.minute = minute
 
@@ -1085,5 +1085,10 @@ enum Weekday: String, CaseIterable, Identifiable, Codable {
     
     var toInt: Int {
         return Weekday.allCases.firstIndex(of: self)! + 1
+    }
+
+    var calendarWeekday: Int {
+        let weekday = toInt
+        return weekday == 7 ? 1 : weekday + 1
     }
 }
