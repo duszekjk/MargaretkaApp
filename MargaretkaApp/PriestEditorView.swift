@@ -50,12 +50,32 @@ struct PriestEditorView: View {
                                 geo.size.width / screen.width,
                                 geo.size.height / screen.height
                             )
-                            PhotoAdjustmentView(
-                                image: photo,
-                                scale: $photoScale,
-                                offset: $photoOffset,
-                                gestureScaleFactor: scale
-                            )
+                            ZStack {
+                                PhotoAdjustmentView(
+                                    image: photo,
+                                    scale: $photoScale,
+                                    offset: $photoOffset,
+                                    gestureScaleFactor: scale
+                                )
+                                .frame(width: screen.width, height: screen.height)
+
+                                VStack {
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(Color.white.opacity(0.18))
+                                        .frame(height: 34)
+                                        .padding(.top, 18)
+                                        .padding(.horizontal, 26)
+
+                                    Spacer()
+
+                                    RoundedRectangle(cornerRadius: 18)
+                                        .fill(Color.white.opacity(0.18))
+                                        .frame(height: 360)
+                                        .padding(.horizontal, 16)
+                                        .padding(.bottom, 72)
+                                }
+                                .allowsHitTesting(false)
+                            }
                             .frame(width: screen.width, height: screen.height)
                             .scaleEffect(scale, anchor: .topLeading)
                             .frame(width: screen.width * scale, height: screen.height * scale)
