@@ -31,6 +31,44 @@ struct Priest: Identifiable, Hashable, Codable {
     var notificationTypeId: String = "Priest"
     
     static let storageKey = "priest_sch"
+
+    init(
+        id: UUID,
+        firstName: String,
+        lastName: String,
+        title: String,
+        photoData: Data? = nil,
+        photoScale: Double = 1.0,
+        photoOffsetX: Double = 0.0,
+        photoOffsetY: Double = 0.0,
+        assignedPrayerGroups: [AssignedPrayerGroup],
+        schedule: SchedulePlan,
+        lastModified: Date,
+        notificationIds: [String] = [],
+        notificationIdsFinished: [String] = [],
+        notificationTitle: String,
+        notificationMessage: String,
+        notificationSound: String? = nil,
+        notificationTypeId: String = "Priest"
+    ) {
+        self.id = id
+        self.firstName = firstName
+        self.lastName = lastName
+        self.title = title
+        self.photoData = photoData
+        self.photoScale = photoScale
+        self.photoOffsetX = photoOffsetX
+        self.photoOffsetY = photoOffsetY
+        self.assignedPrayerGroups = assignedPrayerGroups
+        self.schedule = schedule
+        self.lastModified = lastModified
+        self.notificationIds = notificationIds
+        self.notificationIdsFinished = notificationIdsFinished
+        self.notificationTitle = notificationTitle
+        self.notificationMessage = notificationMessage
+        self.notificationSound = notificationSound
+        self.notificationTypeId = notificationTypeId
+    }
     
     func save() {
         var existing: [Priest] = LocalDatabase.shared.load(from: Self.storageKey)
