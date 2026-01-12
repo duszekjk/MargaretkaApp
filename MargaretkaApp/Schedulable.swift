@@ -15,7 +15,7 @@ import Foundation
 internal import Combine
 
 let schedulingHorizon: DateComponents = DateComponents(month: 12) 
-let maxOccurrencesPerTime = 4 
+let maxOccurrencesPerTime = 30 
 let maxNotificationsToSchedule = 60
 
 
@@ -184,7 +184,7 @@ struct SchedulePlan: Codable, Hashable {
 
     var daysOfWeek: [Weekday] = []       
     var daysOfMonth: [Int] = []         
-    var times: [NotificationTimes] = []    
+    var times: [NotificationTimes] = [NotificationTimes(event: DateComponents(hour: 11, minute: 0))]    
 
     var startDate: Date = Calendar.current.date(byAdding: .day, value: -7, to: .now) ?? .now
     var endDate: Date? =  Calendar.current.date(byAdding: .year, value: 1, to: .now)
@@ -200,18 +200,20 @@ extension SchedulePlan {
         let now = Date()
         let calendar = Calendar.current
         return times
-            .compactMap { calendar.date(bySettingHour: $0.event.hour ?? 8, minute: $0.event.minute ?? 0, second: 0, of: now) }
+            .compactMap { calendar.date(bySettingHour: $0.event.hour ?? 11, minute: $0.event.minute ?? 0, second: 0, of: now) }
             .sorted { abs($0.timeIntervalSinceNow) < abs($1.timeIntervalSinceNow) }
             .first ?? now
     }
 }
-func makeID(with title: String, eventTime: Date, notificationTime:Date) -> String {
-    
-    let cleanTitle = title
+func makeTitleToken(_ title: String) -> String {
+    title
         .trimmingCharacters(in: .whitespacesAndNewlines)
         .replacingOccurrences(of: "\\s+", with: "-", options: .regularExpression)
+}
+
+func makeID(with title: String, eventTime: Date, notificationTime:Date) -> String {
     
-    
+    let cleanTitle = makeTitleToken(title)
     let formatter = DateFormatter()
     formatter.dateFormat = "dd.MM.yyyy-HH:mm"
     let dateStringEvent = formatter.string(from: eventTime)
@@ -221,10 +223,7 @@ func makeID(with title: String, eventTime: Date, notificationTime:Date) -> Strin
 }
 func makeIDShort(with title: String, eventTime: Date) -> String {
     
-    let cleanTitle = title
-        .trimmingCharacters(in: .whitespacesAndNewlines)
-        .replacingOccurrences(of: "\\s+", with: "-", options: .regularExpression)
-    
+    let cleanTitle = makeTitleToken(title)
     
     let formatter = DateFormatter()
     formatter.dateFormat = "dd.MM.yyyy-HH:mm"
@@ -289,6 +288,40 @@ class ScheduleData<T: Schedulable>: ObservableObject {
         }
     }
 
+    @MainActor
+    func markDayDone(itemID: T.ID, on date: Date = Date()) {
+        guard let index = items.firstIndex(where: { $0.id == itemID }) else { return }
+        let titleToken = makeTitleToken(items[index].notificationTitle)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd.MM.yyyy"
+        let dateString = formatter.string(from: date)
+        let prefix = "\(titleToken)-\(dateString)"
+
+        let idsToRemove = items[index].notificationIds.filter { $0.contains(prefix) }
+        guard !idsToRemove.isEmpty else { return }
+
+        removeScheduledNotifications(for: idsToRemove)
+        items[index].notificationIds.removeAll { idsToRemove.contains($0) }
+        for id in idsToRemove where !items[index].notificationIdsFinished.contains(id) {
+            items[index].notificationIdsFinished.append(id)
+        }
+
+        update(items[index])
+    }
+
+    @MainActor
+    func unmarkDayDone(itemID: T.ID, on date: Date = Date()) {
+        guard let index = items.firstIndex(where: { $0.id == itemID }) else { return }
+        let titleToken = makeTitleToken(items[index].notificationTitle)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd.MM.yyyy"
+        let dateString = formatter.string(from: date)
+        let prefix = "\(titleToken)-\(dateString)"
+
+        items[index].notificationIdsFinished.removeAll { $0.contains(prefix) }
+        update(items[index])
+    }
+
     func delete(at offsets: IndexSet) {
         for index in offsets {
             let item = items[index]
@@ -317,22 +350,16 @@ class ScheduleData<T: Schedulable>: ObservableObject {
     func scheduleNotifications(for item: some Schedulable, title: String, message: String, sound: String?) -> [String] {
         let notificationCenter = UNUserNotificationCenter.current()
         var scheduledIDs: [String] = []
+        let now = Date()
+        let calendar = Calendar.current
+        var upcomingNotifications: [(eventDate: Date, id: String, notificationDate: Date)] = []
 
         for time in item.schedule.times {
-            let calendar = Calendar.current
-
-            guard let baseDate = calendar.date(from: time.event) else { continue }
-            if scheduledIDs.count >= maxNotificationsToSchedule {
+            guard calendar.date(from: time.event) != nil else { continue }
+            if upcomingNotifications.count >= maxNotificationsToSchedule {
                 break
             }
-
-
-
-            var upcomingNotifications: [(Date, String, Date)] = []
-
-            let now = Date()
-            let components = calendar.dateComponents([.year, .month, .day], from: now)
-            let todayAtTime = calendar.date(bySettingHour: time.event.hour ?? 8, minute: time.event.minute ?? 0, second: 0, of: now)
+            let todayAtTime = calendar.date(bySettingHour: time.event.hour ?? 11, minute: time.event.minute ?? 0, second: 0, of: now)
 
             switch item.schedule.frequencyUnit {
             case .daily:
@@ -371,7 +398,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                 }()
 
                 let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
-                let hour = time.event.hour ?? 8
+                let hour = time.event.hour ?? 11
                 let minute = time.event.minute ?? 0
                 var emitted = 0
 
@@ -426,7 +453,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                 }()
 
                 let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
-                let hour = time.event.hour ?? 8
+                let hour = time.event.hour ?? 11
                 let minute = time.event.minute ?? 0
                 var emitted = 0
 
@@ -473,95 +500,108 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                 }
 
             }
+        }
 
-            let completeAction = UNNotificationAction(
-                identifier: "MARK_AS_DONE",
-                title: "Mark as Done",
-                options: []
-            )
+        upcomingNotifications.sort { $0.notificationDate < $1.notificationDate }
 
-            let categoryIdentifier = "SCHEDULABLE_TASK"
-
-            let category = UNNotificationCategory(
-                identifier: categoryIdentifier,
-                actions: [completeAction],
-                intentIdentifiers: [],
-                options: []
-            )
-            UNUserNotificationCenter.current().setNotificationCategories([category])
-            for (eventDate, id, date) in upcomingNotifications {
-                if let end = item.schedule.endDate, date > end { continue }
-                if date < now { continue }
-                var toBreak = false
-                UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
-                    print("Pending notifications count: \(requests.count) adding \(eventDate)")
-                    if requests.count > maxNotificationsToSchedule { toBreak = true }
-                }
-                if(toBreak)
-                {
-                    break
-                }
-                
-                if item.notificationIds.contains(id) { continue }
-                if item.notificationIdsFinished.contains(id) { continue }
-                let eventIdPrefix = makeIDShort(with: title, eventTime: eventDate)
-                var idsToRemove : [String] = []
-                for notificationId in item.notificationIds {
-                    if(notificationId.contains(eventIdPrefix))
-                    {
-                        idsToRemove.append(notificationId)
-                    }
-                }
-                var itemNow = item
-                itemNow.notificationIdsFinished = idsToRemove
-                
-                guard let encoded = try? JSONEncoder().encode(itemNow),
-                      let json = try? JSONSerialization.jsonObject(with: encoded) as? [String: Any] else {
-                    continue
-                }
-
-                let content = UNMutableNotificationContent()
-                content.title = title
-                content.body = message
-                if(sound ==  nil)
-                {
-                    content.sound = .default
-                }
-                else
-                {
-                    if let _ = Bundle.main.url(forResource: sound!, withExtension: "wav") {
-                        content.sound = UNNotificationSound(named: UNNotificationSoundName("\(sound!).wav"))
-                    } else {
-                        if let _ = Bundle.main.url(forResource: "default", withExtension: "wav") {
-                            content.sound = UNNotificationSound(named: UNNotificationSoundName("default.wav"))
-                        } else {
-                            content.sound = .default
-                        }
-                    }
-                }
-                content.categoryIdentifier = categoryIdentifier
-
-
-                content.userInfo = [
-                    "type": (item as? Schedulable)?.notificationTypeId ?? "",
-                    "itemId": String(describing: item.id),
-                    "eventTime": eventDate.timeIntervalSince1970,
-                    "payload": json
-                ]
-
-                let triggerDate = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
-                let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
-
-                scheduledIDs.append(id)
-
-                let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
-                notificationCenter.add(request){ error in
-                    if let error = error {
-                        print("Error scheduling notification: \(error.localizedDescription)")
-                    }
-                }
-
+        let pendingCount: Int = {
+            let semaphore = DispatchSemaphore(value: 0)
+            var count = 0
+            notificationCenter.getPendingNotificationRequests { requests in
+                count = requests.count
+                semaphore.signal()
             }
+            semaphore.wait()
+            return count
+        }()
+
+        let availableSlots = max(0, maxNotificationsToSchedule - pendingCount)
+        if availableSlots == 0 {
+            return scheduledIDs
+        }
+
+        let completeAction = UNNotificationAction(
+            identifier: "MARK_AS_DONE",
+            title: "Mark as Done",
+            options: []
+        )
+
+        let categoryIdentifier = "SCHEDULABLE_TASK"
+
+        let category = UNNotificationCategory(
+            identifier: categoryIdentifier,
+            actions: [completeAction],
+            intentIdentifiers: [],
+            options: []
+        )
+        UNUserNotificationCenter.current().setNotificationCategories([category])
+
+        var scheduledCount = 0
+        for (eventDate, id, date) in upcomingNotifications {
+            if scheduledCount >= availableSlots { break }
+            if let end = item.schedule.endDate, date > end { continue }
+            if date < now { continue }
+
+            if item.notificationIds.contains(id) { continue }
+            if item.notificationIdsFinished.contains(id) { continue }
+            let eventIdPrefix = makeIDShort(with: title, eventTime: eventDate)
+            var idsToRemove : [String] = []
+            for notificationId in item.notificationIds {
+                if(notificationId.contains(eventIdPrefix))
+                {
+                    idsToRemove.append(notificationId)
+                }
+            }
+            var itemNow = item
+            itemNow.notificationIdsFinished = idsToRemove
+
+            guard let encoded = try? JSONEncoder().encode(itemNow),
+                  let json = try? JSONSerialization.jsonObject(with: encoded) as? [String: Any] else {
+                continue
+            }
+
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = message
+            if(sound ==  nil)
+            {
+                content.sound = .default
+            }
+            else
+            {
+                if let _ = Bundle.main.url(forResource: sound!, withExtension: "wav") {
+                    content.sound = UNNotificationSound(named: UNNotificationSoundName("\(sound!).wav"))
+                } else {
+                    if let _ = Bundle.main.url(forResource: "default", withExtension: "wav") {
+                        content.sound = UNNotificationSound(named: UNNotificationSoundName("default.wav"))
+                    } else {
+                        content.sound = .default
+                    }
+                }
+            }
+            content.categoryIdentifier = categoryIdentifier
+
+
+            content.userInfo = [
+                "type": (item as? Schedulable)?.notificationTypeId ?? "",
+                "itemId": String(describing: item.id),
+                "eventTime": eventDate.timeIntervalSince1970,
+                "payload": json
+            ]
+
+            let triggerDate = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+
+            scheduledIDs.append(id)
+            scheduledCount += 1
+
+            let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+            notificationCenter.add(request){ error in
+                if let error = error {
+                    print("Error scheduling notification: \(error.localizedDescription)")
+                }
+            }
+
         }
 
         return scheduledIDs
@@ -906,7 +946,7 @@ struct SchedulingView: View {
                     
                     HStack {
                         Button("Add time") {
-                            schedule.times.append(NotificationTimes(event: DateComponents(hour: 20, minute: 0)))
+                            schedule.times.append(NotificationTimes(event: DateComponents(hour: 11, minute: 0)))
                             schedule = schedule
                         }
 
