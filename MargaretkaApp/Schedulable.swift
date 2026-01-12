@@ -13,6 +13,7 @@ import SwiftUI
 
 import Foundation
 internal import Combine
+import UserNotifications
 
 let schedulingHorizon: DateComponents = DateComponents(month: 12) 
 let maxOccurrencesPerTime = 30 
@@ -593,6 +594,23 @@ class ScheduleData<T: Schedulable>: ObservableObject {
     }
 
 }
+func ensureNotificationAuthorization() {
+    let center = UNUserNotificationCenter.current()
+    center.getNotificationSettings { settings in
+        switch settings.authorizationStatus {
+        case .notDetermined:
+            center.requestAuthorization(options: [.alert, .sound, .badge]) { _, error in
+                if let error = error {
+                    print("Permission error: \(error)")
+                }
+            }
+        case .denied:
+            print("Notification permission denied")
+        default:
+            break
+        }
+    }
+}
 struct SchedulableForm<T: Schedulable>: View {
     @Environment(\.dismiss) var dismiss
     @State var item: T
@@ -637,6 +655,7 @@ struct SchedulableForm<T: Schedulable>: View {
                                 Button("Save") {
                                     savingNow = true
                                     DispatchQueue.main.async {
+                                        ensureNotificationAuthorization()
                                         item.lastModified = Date()
                                         onSave(item)
                                         dismiss()
