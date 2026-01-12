@@ -59,20 +59,32 @@ struct PriestEditorView: View {
                                 )
                                 .frame(width: screen.width, height: screen.height)
 
-                                VStack {
+                                VStack(spacing: 18) {
                                     RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.white.opacity(0.18))
-                                        .frame(height: 34)
-                                        .padding(.top, 18)
-                                        .padding(.horizontal, 26)
+                                        .fill(Color.white.opacity(0.3))
+                                        .frame(height: 30)
+                                        .padding(.top, 12)
+                                        .padding(.horizontal, 24)
+
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(Color.white.opacity(0.3))
+                                        .frame(height: 52)
+                                        .padding(.horizontal, 16)
 
                                     Spacer()
 
-                                    RoundedRectangle(cornerRadius: 18)
-                                        .fill(Color.white.opacity(0.18))
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(Color.white.opacity(0.3))
                                         .frame(height: 360)
+                                        .padding(.horizontal, 8)
+
+                                    Spacer(minLength: 24)
+
+                                    RoundedRectangle(cornerRadius: 18)
+                                        .fill(Color.white.opacity(0.3))
+                                        .frame(height: 80)
                                         .padding(.horizontal, 16)
-                                        .padding(.bottom, 72)
+                                        .padding(.bottom, 40)
                                 }
                                 .allowsHitTesting(false)
                             }
