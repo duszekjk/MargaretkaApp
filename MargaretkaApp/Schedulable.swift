@@ -356,7 +356,9 @@ class ScheduleData<T: Schedulable>: ObservableObject {
         var upcomingNotifications: [(eventDate: Date, id: String, notificationDate: Date)] = []
 
         for time in item.schedule.times {
-            guard calendar.date(from: time.event) != nil else { continue }
+            if time.event.hour == nil && time.event.minute == nil {
+                continue
+            }
             if upcomingNotifications.count >= maxNotificationsToSchedule {
                 break
             }
