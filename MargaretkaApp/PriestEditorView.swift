@@ -21,6 +21,7 @@ struct PriestEditorView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var photoScale: Double = 1.0
     @State private var photoOffset: CGSize = .zero
+    @State private var showPhotoAdjuster = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -50,44 +51,12 @@ struct PriestEditorView: View {
                                 geo.size.width / screen.width,
                                 geo.size.height / screen.height
                             )
-                            ZStack {
-                                PhotoAdjustmentView(
-                                    image: photo,
-                                    scale: $photoScale,
-                                    offset: $photoOffset,
-                                    gestureScaleFactor: scale
-                                )
-                                .frame(width: screen.width, height: screen.height)
-
-                                VStack(spacing: 18) {
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color.white.opacity(0.3))
-                                        .frame(height: 30)
-                                        .padding(.top, 12)
-                                        .padding(.horizontal, 24)
-
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(Color.white.opacity(0.3))
-                                        .frame(height: 52)
-                                        .padding(.horizontal, 16)
-
-                                    Spacer()
-
-                                    RoundedRectangle(cornerRadius: 20)
-                                        .fill(Color.white.opacity(0.3))
-                                        .frame(height: 360)
-                                        .padding(.horizontal, 8)
-
-                                    Spacer(minLength: 24)
-
-                                    RoundedRectangle(cornerRadius: 18)
-                                        .fill(Color.white.opacity(0.3))
-                                        .frame(height: 80)
-                                        .padding(.horizontal, 16)
-                                        .padding(.bottom, 40)
-                                }
-                                .allowsHitTesting(false)
-                            }
+                            AdjustableBackgroundImage(
+                                image: photo,
+                                scale: photoScale,
+                                offset: photoOffset,
+                                size: screen.size
+                            )
                             .frame(width: screen.width, height: screen.height)
                             .scaleEffect(scale, anchor: .topLeading)
                             .frame(width: screen.width * scale, height: screen.height * scale)
@@ -97,11 +66,18 @@ struct PriestEditorView: View {
                         Slider(value: $photoScale, in: 1.0...3.0, step: 0.05) {
                             Text("Powiększenie")
                         }
-                        Button("Wycentruj zdjęcie") {
-                            photoScale = 1.0
-                            photoOffset = .zero
+                        HStack {
+                            Button("Wycentruj zdjęcie") {
+                                photoScale = 1.0
+                                photoOffset = .zero
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button("Dopasuj na pełnym ekranie") {
+                                showPhotoAdjuster = true
+                            }
+                            .buttonStyle(.borderedProminent)
                         }
-                        .buttonStyle(.bordered)
                     }
                     .padding(.horizontal)
                     .onChange(of: photoScale) {
@@ -163,6 +139,18 @@ struct PriestEditorView: View {
                     priest.photoOffsetX = 0.0
                     priest.photoOffsetY = 0.0
                 }
+            }
+        }
+        .fullScreenCover(isPresented: $showPhotoAdjuster) {
+            if let photo {
+                PhotoAdjustmentFullScreenView(image: photo, scale: $photoScale, offset: $photoOffset)
+                    .onChange(of: photoScale) {
+                        priest.photoScale = photoScale
+                    }
+                    .onChange(of: photoOffset) {
+                        priest.photoOffsetX = photoOffset.width
+                        priest.photoOffsetY = photoOffset.height
+                    }
             }
         }
     }
