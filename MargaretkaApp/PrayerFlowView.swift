@@ -95,6 +95,13 @@ struct PrayerFlowView: View {
                 bg
                     .resizable()
                     .scaledToFill()
+                    .scaleEffect(selectedPriest?.photoScale ?? 1.0)
+                    .offset(
+                        x: selectedPriest?.photoOffsetX ?? 0.0,
+                        y: selectedPriest?.photoOffsetY ?? 0.0
+                    )
+                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+                    .clipped()
                     .ignoresSafeArea()
             }
 //            else {
@@ -216,7 +223,7 @@ struct PrayerFlowView: View {
                 {
                         RoundedRectangle(cornerRadius: 20)
                             .fill(.ultraThinMaterial)
-                            .frame(width:UIScreen.main.bounds.width-8, height: 360)
+                            .frame(width:UIScreen.main.bounds.width-8, height: 400)
                             .overlay(
                                 ScrollView
                                 {
@@ -266,7 +273,7 @@ struct PrayerFlowView: View {
                                         }
                                     }
                                 }
-                                    .frame(width:UIScreen.main.bounds.width-10, height: 360)
+                                    .frame(width:UIScreen.main.bounds.width-10, height: 400)
                                 
                             )
                             .padding(.horizontal)
