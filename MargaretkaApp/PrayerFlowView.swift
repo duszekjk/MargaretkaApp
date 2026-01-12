@@ -246,30 +246,17 @@ struct PrayerFlowView: View {
                                         {
                                             if(priestLast == selectedPriest)
                                             {
-                                                let formatter = DateFormatter()
-                                                formatter.dateFormat = "dd.MM.yyyy"
-                                                let dateStringEvent = formatter.string(from: .now)
                                                 if(finished)
                                                 {
-                                                    let notificationsToRemove = selectedPriest?.notificationIds.filter {
-                                                        $0.contains(dateStringEvent) && $0.contains(selectedPriest?.firstName ?? "nothing selected")
-                                                    } ?? []
-                                                    for id in notificationsToRemove {
-                                                        if !(selectedPriest?.notificationIdsFinished.contains(id) ?? false) {
-                                                            selectedPriest?.notificationIdsFinished.append(id)
-                                                        }
+                                                    if let priestId = selectedPriest?.id {
+                                                        scheduleData.markDayDone(itemID: priestId, on: Date())
                                                     }
-                                                    
-                                                    scheduleData.refresh()
                                                 }
                                                 else
                                                 {
-                                                    selectedPriest?.notificationIdsFinished.removeAll(where:
-                                                                                                        {
-                                                        $0.contains(dateStringEvent) && $0.contains(selectedPriest!.firstName)
-                                                    })
-                                                    
-                                                    scheduleData.refresh()
+                                                    if let priestId = selectedPriest?.id {
+                                                        scheduleData.unmarkDayDone(itemID: priestId, on: Date())
+                                                    }
                                                 }
                                             }
                                             else
