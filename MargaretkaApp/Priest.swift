@@ -13,6 +13,9 @@ struct Priest: Identifiable, Hashable, Codable {
     var lastName: String
     var title: String
     var photoData: Data?
+    var photoScale: Double = 1.0
+    var photoOffsetX: Double = 0.0
+    var photoOffsetY: Double = 0.0
     var assignedPrayerGroups: [AssignedPrayerGroup]
     
     
@@ -46,6 +49,68 @@ struct Priest: Identifiable, Hashable, Codable {
     static func load() -> [Priest]
     {
         return LocalDatabase.shared.load(from: Self.storageKey)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case firstName
+        case lastName
+        case title
+        case photoData
+        case photoScale
+        case photoOffsetX
+        case photoOffsetY
+        case assignedPrayerGroups
+        case schedule
+        case lastModified
+        case notificationIds
+        case notificationIdsFinished
+        case notificationTitle
+        case notificationMessage
+        case notificationSound
+        case notificationTypeId
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        firstName = try container.decode(String.self, forKey: .firstName)
+        lastName = try container.decode(String.self, forKey: .lastName)
+        title = try container.decode(String.self, forKey: .title)
+        photoData = try container.decodeIfPresent(Data.self, forKey: .photoData)
+        photoScale = try container.decodeIfPresent(Double.self, forKey: .photoScale) ?? 1.0
+        photoOffsetX = try container.decodeIfPresent(Double.self, forKey: .photoOffsetX) ?? 0.0
+        photoOffsetY = try container.decodeIfPresent(Double.self, forKey: .photoOffsetY) ?? 0.0
+        assignedPrayerGroups = try container.decode([AssignedPrayerGroup].self, forKey: .assignedPrayerGroups)
+        schedule = try container.decode(SchedulePlan.self, forKey: .schedule)
+        lastModified = try container.decode(Date.self, forKey: .lastModified)
+        notificationIds = try container.decodeIfPresent([String].self, forKey: .notificationIds) ?? []
+        notificationIdsFinished = try container.decodeIfPresent([String].self, forKey: .notificationIdsFinished) ?? []
+        notificationTitle = try container.decode(String.self, forKey: .notificationTitle)
+        notificationMessage = try container.decode(String.self, forKey: .notificationMessage)
+        notificationSound = try container.decodeIfPresent(String.self, forKey: .notificationSound)
+        notificationTypeId = try container.decodeIfPresent(String.self, forKey: .notificationTypeId) ?? "Priest"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(firstName, forKey: .firstName)
+        try container.encode(lastName, forKey: .lastName)
+        try container.encode(title, forKey: .title)
+        try container.encodeIfPresent(photoData, forKey: .photoData)
+        try container.encode(photoScale, forKey: .photoScale)
+        try container.encode(photoOffsetX, forKey: .photoOffsetX)
+        try container.encode(photoOffsetY, forKey: .photoOffsetY)
+        try container.encode(assignedPrayerGroups, forKey: .assignedPrayerGroups)
+        try container.encode(schedule, forKey: .schedule)
+        try container.encode(lastModified, forKey: .lastModified)
+        try container.encode(notificationIds, forKey: .notificationIds)
+        try container.encode(notificationIdsFinished, forKey: .notificationIdsFinished)
+        try container.encode(notificationTitle, forKey: .notificationTitle)
+        try container.encode(notificationMessage, forKey: .notificationMessage)
+        try container.encodeIfPresent(notificationSound, forKey: .notificationSound)
+        try container.encode(notificationTypeId, forKey: .notificationTypeId)
     }
 }
 extension Priest: Schedulable {
