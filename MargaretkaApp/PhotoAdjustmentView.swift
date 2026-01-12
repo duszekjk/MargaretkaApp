@@ -11,6 +11,7 @@ struct PhotoAdjustmentView: View {
     let image: UIImage
     @Binding var scale: Double
     @Binding var offset: CGSize
+    var gestureScaleFactor: Double = 1.0
 
     @State private var gestureScale: Double = 1.0
     @State private var gestureOffset: CGSize = .zero
@@ -36,11 +37,16 @@ struct PhotoAdjustmentView: View {
     private var dragGesture: some Gesture {
         DragGesture()
             .onChanged { value in
-                gestureOffset = value.translation
+                let factor = max(gestureScaleFactor, 0.001)
+                gestureOffset = CGSize(
+                    width: value.translation.width / factor,
+                    height: value.translation.height / factor
+                )
             }
             .onEnded { value in
-                offset.width += value.translation.width
-                offset.height += value.translation.height
+                let factor = max(gestureScaleFactor, 0.001)
+                offset.width += value.translation.width / factor
+                offset.height += value.translation.height / factor
                 gestureOffset = .zero
             }
     }
