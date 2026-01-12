@@ -297,8 +297,20 @@ struct PrayerFlowView: View {
         .onAppear()
         {
             scheduleData.load()
-            selectedPriest = todayPriest
+            syncSelectedPriest()
             requestNotificationPermissions()
+        }
+        .onChange(of: scheduleData.items) {
+            syncSelectedPriest()
+        }
+    }
+
+    private func syncSelectedPriest() {
+        if let selectedId = selectedPriest?.id,
+           let updated = scheduleData.items.first(where: { $0.id == selectedId }) {
+            selectedPriest = updated
+        } else {
+            selectedPriest = todayPriest
         }
     }
 }
