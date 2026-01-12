@@ -300,6 +300,12 @@ struct PrayerFlowView: View {
             syncSelectedPriest()
             requestNotificationPermissions()
         }
+        .onChange(of: showEditor) { _, isShowing in
+            if !isShowing {
+                scheduleData.load()
+                syncSelectedPriest()
+            }
+        }
         .onChange(of: scheduleData.items) {
             syncSelectedPriest()
         }
