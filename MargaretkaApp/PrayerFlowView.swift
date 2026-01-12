@@ -83,26 +83,25 @@ struct PrayerFlowView: View {
         return rows
     }
 
-    var backgroundImage: Image? {
+    var backgroundImage: UIImage? {
         guard let data = selectedPriest?.photoData,
               let uiImage = UIImage(data: data) else { return nil }
-        return Image(uiImage: uiImage)
+        return uiImage
     }
 
     var body: some View {
         ZStack {
             if let bg = backgroundImage {
-                bg
-                    .resizable()
-                    .scaledToFill()
-                    .scaleEffect(selectedPriest?.photoScale ?? 1.0)
-                    .offset(
-                        x: selectedPriest?.photoOffsetX ?? 0.0,
-                        y: selectedPriest?.photoOffsetY ?? 0.0
-                    )
-                    .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
-                    .clipped()
-                    .ignoresSafeArea()
+                AdjustableBackgroundImage(
+                    image: bg,
+                    scale: selectedPriest?.photoScale ?? 1.0,
+                    offset: CGSize(
+                        width: selectedPriest?.photoOffsetX ?? 0.0,
+                        height: selectedPriest?.photoOffsetY ?? 0.0
+                    ),
+                    size: UIScreen.main.bounds.size
+                )
+                .ignoresSafeArea()
             }
 //            else {
 //                Color.white.ignoresSafeArea()
