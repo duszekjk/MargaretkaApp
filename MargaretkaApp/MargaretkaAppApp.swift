@@ -9,6 +9,7 @@ import SwiftUI
 
 @main
 struct MargaretkaAppApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate: AppDelegate
     @StateObject var scheduleData = ScheduleData<Priest>(saveKey: "priest_sch")
     @State private var didScheduleNotificationRefresh = false
     var body: some Scene {
