@@ -29,7 +29,15 @@ private let templatePrayerIds: [String: UUID] = [
     "Modlitwa Pawła VI za kapłanów": UUID(uuidString: "2a94d795-bf82-4320-937b-33aefce4a541")!,
     "Modlitwa św. Piusa X za kapłanów": UUID(uuidString: "6eb9e98e-3036-4019-8977-620738eba535")!,
     "Modlitwa św. Jana Pawła II za kapłanów": UUID(uuidString: "a9f0fcee-1734-4945-ba1b-6ee5b0abb57a")!,
-    "Modlitwa św. Urszuli Ledóchowskiej za kapłanów": UUID(uuidString: "2e38befb-046b-49d6-afcd-621bee8cf5db")!
+    "Modlitwa św. Urszuli Ledóchowskiej za kapłanów": UUID(uuidString: "2e38befb-046b-49d6-afcd-621bee8cf5db")!,
+    "Wezwanie (Brewiarz)": UUID(uuidString: "5bb86df2-6625-4e5e-9afb-ad66a662df9c")!,
+    "Godzina Czytań (Brewiarz)": UUID(uuidString: "92ca4c07-c16c-4053-825f-e67939bc7f98")!,
+    "Jutrznia (Brewiarz)": UUID(uuidString: "c828488b-85ad-4b80-ae01-97c105ad802a")!,
+    "Modlitwa przedpołudniowa (Brewiarz)": UUID(uuidString: "d7f19135-7186-4462-be63-f7c1a43c596f")!,
+    "Modlitwa południowa (Brewiarz)": UUID(uuidString: "5ba99cbf-2f0b-4ace-8986-9c83027e1515")!,
+    "Modlitwa popołudniowa (Brewiarz)": UUID(uuidString: "c7f26387-2e8f-472f-aac6-eb2534292540")!,
+    "Nieszpory (Brewiarz)": UUID(uuidString: "5ea91147-c605-47e2-8c43-f1813ba9c1a3")!,
+    "Kompleta (Brewiarz)": UUID(uuidString: "3e5f93dd-c1f7-46d7-85a4-5d62265329c4")!
 ]
 
 var prayersTemplate : [String:Prayer] = [
@@ -166,4 +174,20 @@ var prayersTemplate : [String:Prayer] = [
         Żyj w nich, o Panie, przeistaczaj ich w siebie, uczyń ich mocą łaski swojej narzędziami swego miłosierdzia. Działaj w nich i przez nich i spraw, by przyoblekłszy się zupełnie w Ciebie przez wierne naśladowanie Twych godnych uwielbienia cnót, wykonywali mocą Twego imienia i Twego ducha uczynki, któreś sam zdziałał dla zbawienia świata.
         Boski Odkupicielu dusz, spojrzyj, jak wielu jest jeszcze pogrążonych w ciemnościach błędu. Policz owieczki zbłąkane, krążące nad przepaścią, wejrzyj na tłumy ubogich, głodnych, nieświadomych i słabych, jęczących w opuszczeniu. Wracaj do nas, o Jezu, przez Twych kapłanów. Ożyj w nich rzeczywiście, działaj przez nich i przejdź znowu przez świat ucząc, przebaczając, pocieszając, poświęcając się i nawiązując na nowo święte więzy miłości łączące Serce Boże z sercem człowieczym. Amen
         """, symbol: "hands.and.sparkles", audioFilename: nil, audioSource: nil, timestampedLines: nil),
+    "Wezwanie (Brewiarz)":
+        Prayer(id: templatePrayerIds["Wezwanie (Brewiarz)"]!, name: "Wezwanie", text: "Modlitwa w brewiarz.pl", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .brewiarz(.wezwanie)),
+    "Godzina Czytań (Brewiarz)":
+        Prayer(id: templatePrayerIds["Godzina Czytań (Brewiarz)"]!, name: "Godzina Czytań", text: "Modlitwa w brewiarz.pl", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .brewiarz(.godzinaCzytan)),
+    "Jutrznia (Brewiarz)":
+        Prayer(id: templatePrayerIds["Jutrznia (Brewiarz)"]!, name: "Jutrznia", text: "Modlitwa w brewiarz.pl", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .brewiarz(.jutrznia)),
+    "Modlitwa przedpołudniowa (Brewiarz)":
+        Prayer(id: templatePrayerIds["Modlitwa przedpołudniowa (Brewiarz)"]!, name: "Modlitwa przedpołudniowa", text: "Modlitwa w brewiarz.pl", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .brewiarz(.modlitwaPrzedpoludniowa)),
+    "Modlitwa południowa (Brewiarz)":
+        Prayer(id: templatePrayerIds["Modlitwa południowa (Brewiarz)"]!, name: "Modlitwa południowa", text: "Modlitwa w brewiarz.pl", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .brewiarz(.modlitwaPoludniowa)),
+    "Modlitwa popołudniowa (Brewiarz)":
+        Prayer(id: templatePrayerIds["Modlitwa popołudniowa (Brewiarz)"]!, name: "Modlitwa popołudniowa", text: "Modlitwa w brewiarz.pl", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .brewiarz(.modlitwaPopoludniowa)),
+    "Nieszpory (Brewiarz)":
+        Prayer(id: templatePrayerIds["Nieszpory (Brewiarz)"]!, name: "Nieszpory", text: "Modlitwa w brewiarz.pl", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .brewiarz(.nieszpory)),
+    "Kompleta (Brewiarz)":
+        Prayer(id: templatePrayerIds["Kompleta (Brewiarz)"]!, name: "Kompleta", text: "Modlitwa w brewiarz.pl", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .brewiarz(.kompleta)),
 ]
