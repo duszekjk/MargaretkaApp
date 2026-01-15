@@ -29,7 +29,7 @@ struct MargaretkaAppApp: App {
         didScheduleNotificationRefresh = true
 
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 5.0) {
-            scheduleData.refresh()
+            scheduleData.rescheduleAll()
         }
     }
 }
