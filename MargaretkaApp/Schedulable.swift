@@ -688,6 +688,7 @@ struct ScheduleList<T: Schedulable>: View {
     var formBuilder: (T?) -> T
     var formFields: (Binding<T>) -> AnyView
     var onAdd: (T) -> (Void)
+    var filter: (T) -> Bool
 
     init(
         title: String,
@@ -698,6 +699,7 @@ struct ScheduleList<T: Schedulable>: View {
         formBuilder: @escaping (T?) -> T,
         formFields: @escaping (Binding<T>) -> AnyView,
         onAdd: @escaping (T) -> (Void),
+        filter: @escaping (T) -> Bool = { _ in true },
         showingForm: Binding<Bool> 
     ) {
         _data = StateObject(wrappedValue: ScheduleData<T>(saveKey: saveKey))
@@ -709,6 +711,7 @@ struct ScheduleList<T: Schedulable>: View {
         self.itemSummary = itemSummary
         self.formFields = formFields
         self.onAdd = onAdd
+        self.filter = filter
         self._showingForm = showingForm 
     }
     let timeFormatter: DateFormatter = {
@@ -726,10 +729,23 @@ struct ScheduleList<T: Schedulable>: View {
     }
 
 
+    private var filteredItems: [T] {
+        data.items.filter(filter)
+    }
+
+    private func deleteFiltered(at offsets: IndexSet) {
+        let idsToDelete = offsets.map { filteredItems[$0].id }
+        let indices = data.items.enumerated().compactMap { index, item in
+            idsToDelete.contains(item.id) ? index : nil
+        }
+        guard !indices.isEmpty else { return }
+        data.delete(at: IndexSet(indices))
+    }
+
     var body: some View {
         NavigationView {
             List {
-                ForEach(data.items) { item in
+                ForEach(filteredItems) { item in
                     Button {
                         editingItem = item
                     } label: {
@@ -746,7 +762,7 @@ struct ScheduleList<T: Schedulable>: View {
                         }
                     }
                 }
-                .onDelete(perform: data.delete)
+                .onDelete(perform: deleteFiltered)
             }
             .navigationTitle(title)
             .toolbar {

@@ -23,6 +23,29 @@ struct PriestEditorView: View {
     @State private var photoOffset: CGSize = .zero
     @State private var showPhotoAdjuster = false
 
+    private var editorTitle: String {
+        switch priest.category {
+        case .priest:
+            return "Ksiądz \(priest.firstName)"
+        case .person:
+            return "Osoba \(priest.firstName)"
+        case .prayer:
+            return "Modlitwa \(priest.firstName)"
+        }
+    }
+
+    private func updateNotificationText() {
+        let name = priest.displayName
+        switch priest.category {
+        case .prayer:
+            priest.notificationTitle = "Modlitwa: \(name)"
+            priest.notificationMessage = "Jest czas na modlitwę: \(name)"
+        case .person, .priest:
+            priest.notificationTitle = "Pomódl się za \(name)"
+            priest.notificationMessage = "Jest czas na twoją margaretkę za \(name)"
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Section("Zdjęcie") {
@@ -90,23 +113,41 @@ struct PriestEditorView: View {
                 }
             }
 
+            Section("Typ") {
+                Picker("Typ", selection: $priest.category) {
+                    ForEach(PrayerTargetCategory.allCases) { category in
+                        Text(category.displayName).tag(category)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .onChange(of: priest.category) {
+                    updateNotificationText()
+                }
+            }
 
             Section("Dane osobowe") {
-                TextField("Tytuł", text: $priest.title)
+                if priest.category == .priest {
+                    TextField("Tytuł", text: $priest.title)
+                        .padding()
+                        .onChange(of: priest.title) {
+                            updateNotificationText()
+                        }
+                }
+
+                TextField(priest.category == .prayer ? "Nazwa modlitwy" : "Imię", text: $priest.firstName)
                     .padding()
-                TextField("Imię", text: $priest.firstName)
-                    .padding()
-                TextField("Nazwisko", text: $priest.lastName)
-                    .padding()
-                    .onChange(of: priest.firstName,
-                {
-                    priest.notificationTitle = "Pomódl się za \(priest.firstName)"
-                    priest.notificationMessage = "Jest czas na twoją margaretkę za \(priest.title) \(priest.firstName) \(priest.lastName)"
-                })
-                    .onChange(of: priest.lastName,
-                {
-                    priest.notificationMessage = "Jest czas na twoją margaretkę za \(priest.title) \(priest.firstName) \(priest.lastName)"
-                })
+                    .onChange(of: priest.firstName) {
+                        updateNotificationText()
+                    }
+
+                if priest.category != .prayer {
+                    TextField("Nazwisko", text: $priest.lastName)
+                        .padding()
+                        .onChange(of: priest.lastName) {
+                            updateNotificationText()
+                        }
+                }
             }
 
             Section("Modlitwy") {
@@ -123,7 +164,7 @@ struct PriestEditorView: View {
             }
 
         }
-        .navigationTitle("Ksiądz \(priest.firstName)")
+        .navigationTitle(editorTitle)
         .onChange(of: selectedPhotoItem) { newItem in
             Task {
                 if let data = try? await newItem?.loadTransferable(type: Data.self),

@@ -15,7 +15,7 @@ var peopleTemplates : [Priest] = {
     let photoDataM = image2.pngData()
     return [
         
-        Priest(id: UUID(), firstName: "Różaniec", lastName: "", title: "", photoData: photoData,
+        Priest(id: UUID(), firstName: "Różaniec", lastName: "", title: "", category: .prayer, photoData: photoData,
                assignedPrayerGroups: [
                 AssignedPrayerGroup(id: UUID(), prayerIds: [
                     prayersTemplate["Skład apostolski (Wyznanie wiary)"]!.id,
@@ -100,7 +100,7 @@ var peopleTemplates : [Priest] = {
                 
                ], schedule: SchedulePlan(), lastModified: Date(), notificationTitle: "Różaniec", notificationMessage: ""),
         
-        Priest(id: UUID(), firstName: "Koronka do Miłosierdzia Bożego", lastName: "", title: "", photoData: photoDataM,
+        Priest(id: UUID(), firstName: "Koronka do Miłosierdzia Bożego", lastName: "", title: "", category: .prayer, photoData: photoDataM,
                assignedPrayerGroups: [
                 AssignedPrayerGroup(id: UUID(), prayerIds: [
                     prayersTemplate["Ojcze Nasz"]!.id,

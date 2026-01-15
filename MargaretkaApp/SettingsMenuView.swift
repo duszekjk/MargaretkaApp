@@ -19,17 +19,43 @@ struct SettingsMenuView: View {
         VStack
         {
             List {
-                NavigationLink("Modlitwy", destination: PrayerListSettingsView())
+                NavigationLink("Modlitwy (pojedyncze)", destination: PrayerListSettingsView())
+
+                NavigationLink(
+                    destination: PriestListView(
+                        store: priestStore,
+                        availablePrayers: $availablePrayers,
+                        showEditor: $showEditor,
+                        category: .priest,
+                        title: "Księża"
+                    )
+                ) {
+                    Text("Księża")
+                }
                 
                 NavigationLink(
                     destination: PriestListView(
                         store: priestStore,
                         availablePrayers: $availablePrayers,
-                        showEditor: $showEditor
+                        showEditor: $showEditor,
+                        category: .person,
+                        title: "Osoby"
                     ),
                     isActive: $showOsoby
                 ) {
                     Text("Osoby")
+                }
+
+                NavigationLink(
+                    destination: PriestListView(
+                        store: priestStore,
+                        availablePrayers: $availablePrayers,
+                        showEditor: $showEditor,
+                        category: .prayer,
+                        title: "Modlitwy złożone"
+                    )
+                ) {
+                    Text("Modlitwy złożone")
                 }
                 
                 NavigationLink(

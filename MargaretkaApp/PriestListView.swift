@@ -11,33 +11,47 @@ struct PriestListView: View {
     @Binding var availablePrayers: [Prayer]
     @Binding var showEditor: Bool
     @State var selectedPriest: Priest?
-    var księża_tytuł : String = "Księża"
+    let category: PrayerTargetCategory
+    let title: String
     var body: some View {
 
-        ScheduleList<Priest>(title: księża_tytuł, saveKey: "priest_sch", forceFrequency: .weekly, forever: true, itemSummary: {
-                return "\($0.title) \($0.firstName) \($0.lastName)"
-                
-            }, formBuilder: {existing in
-                if(existing != nil)
-                {
-                    return existing!
+        ScheduleList<Priest>(
+            title: title,
+            saveKey: "priest_sch",
+            forceFrequency: .weekly,
+            forever: true,
+            itemSummary: { $0.displayName },
+            formBuilder: { existing in
+                if let existing {
+                    return existing
                 }
-                return Priest(id: UUID(), firstName: "", lastName: "", title: "", assignedPrayerGroups: [], schedule: SchedulePlan(), lastModified: Date(), notificationTitle: "Time to pray", notificationMessage: "")
-            }, formFields:
-            { nowPriest in
+                return Priest(
+                    id: UUID(),
+                    firstName: "",
+                    lastName: "",
+                    title: "",
+                    category: category,
+                    assignedPrayerGroups: [],
+                    schedule: SchedulePlan(),
+                    lastModified: Date(),
+                    notificationTitle: "Time to pray",
+                    notificationMessage: ""
+                )
+            },
+            formFields: { nowPriest in
                 return AnyView(
-                    VStack()
-                    {
-                        PriestEditorView(store: store, priest:nowPriest, availablePrayers: $availablePrayers)
+                    VStack() {
+                        PriestEditorView(store: store, priest: nowPriest, availablePrayers: $availablePrayers)
                     }
                 )
-                
-            }, onAdd:
-            { newPriest in
-                    newPriest.save()
-                    store.addOrUpdate(newPriest)
-            }, showingForm: $showEditor
-            )
+            },
+            onAdd: { newPriest in
+                newPriest.save()
+                store.addOrUpdate(newPriest)
+            },
+            filter: { $0.category == category },
+            showingForm: $showEditor
+        )
 
 
     }

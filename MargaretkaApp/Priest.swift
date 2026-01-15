@@ -6,12 +6,32 @@
 //
 import SwiftUI
 
+enum PrayerTargetCategory: String, Codable, CaseIterable, Identifiable {
+    case priest
+    case person
+    case prayer
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .priest:
+            return "Księża"
+        case .person:
+            return "Osoby"
+        case .prayer:
+            return "Modlitwy"
+        }
+    }
+}
+
 struct Priest: Identifiable, Hashable, Codable {
     
     var id: UUID
     var firstName: String
     var lastName: String
     var title: String
+    var category: PrayerTargetCategory = .priest
     var photoData: Data?
     var photoScale: Double = 1.0
     var photoOffsetX: Double = 0.0
@@ -37,6 +57,7 @@ struct Priest: Identifiable, Hashable, Codable {
         firstName: String,
         lastName: String,
         title: String,
+        category: PrayerTargetCategory = .priest,
         photoData: Data? = nil,
         photoScale: Double = 1.0,
         photoOffsetX: Double = 0.0,
@@ -55,6 +76,7 @@ struct Priest: Identifiable, Hashable, Codable {
         self.firstName = firstName
         self.lastName = lastName
         self.title = title
+        self.category = category
         self.photoData = photoData
         self.photoScale = photoScale
         self.photoOffsetX = photoOffsetX
@@ -94,6 +116,7 @@ struct Priest: Identifiable, Hashable, Codable {
         case firstName
         case lastName
         case title
+        case category
         case photoData
         case photoScale
         case photoOffsetX
@@ -115,6 +138,7 @@ struct Priest: Identifiable, Hashable, Codable {
         firstName = try container.decode(String.self, forKey: .firstName)
         lastName = try container.decode(String.self, forKey: .lastName)
         title = try container.decode(String.self, forKey: .title)
+        category = try container.decodeIfPresent(PrayerTargetCategory.self, forKey: .category) ?? .priest
         photoData = try container.decodeIfPresent(Data.self, forKey: .photoData)
         photoScale = try container.decodeIfPresent(Double.self, forKey: .photoScale) ?? 1.0
         photoOffsetX = try container.decodeIfPresent(Double.self, forKey: .photoOffsetX) ?? 0.0
@@ -136,6 +160,7 @@ struct Priest: Identifiable, Hashable, Codable {
         try container.encode(firstName, forKey: .firstName)
         try container.encode(lastName, forKey: .lastName)
         try container.encode(title, forKey: .title)
+        try container.encode(category, forKey: .category)
         try container.encodeIfPresent(photoData, forKey: .photoData)
         try container.encode(photoScale, forKey: .photoScale)
         try container.encode(photoOffsetX, forKey: .photoOffsetX)
@@ -152,4 +177,23 @@ struct Priest: Identifiable, Hashable, Codable {
     }
 }
 extension Priest: Schedulable {
+}
+
+extension Priest {
+    var displayName: String {
+        switch category {
+        case .prayer:
+            return firstName.isEmpty ? "Modlitwa" : firstName
+        case .person:
+            return [firstName, lastName]
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+                .joined(separator: " ")
+        case .priest:
+            return [title, firstName, lastName]
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+                .joined(separator: " ")
+        }
+    }
 }

@@ -14,6 +14,7 @@ struct PrayerFlowView: View {
     @State var priestLast: Priest?
     @StateObject var scheduleData = ScheduleData<Priest>(saveKey: "priest_sch")
     @State private var activeIndex: Int = 0
+    @State private var selectedCategory: PrayerTargetCategory = .priest
     
     @Binding var showSettings: Bool
     @Binding var showEditor: Bool
@@ -23,14 +24,14 @@ struct PrayerFlowView: View {
 
     @Namespace private var namespace
     var priestsAndPrayers: [Priest] {
-        scheduleData.items
+        scheduleData.items.filter { $0.category == selectedCategory }
     }
     var today: Weekday {
         Weekday.today
     }
 
     var todayPriest: Priest? {
-        scheduleData.items.first(where: { $0.schedule.daysOfWeek.contains(today) }) ?? scheduleData.items.first
+        priestsAndPrayers.first(where: { $0.schedule.daysOfWeek.contains(today) }) ?? priestsAndPrayers.first
     }
 
     var allPrayers: [UUID: Prayer] {
@@ -112,7 +113,7 @@ struct PrayerFlowView: View {
                 {
 //                    if(selectedPriest?.photoData == nil)
 //                    {
-                        Text("\(selectedPriest?.title ?? "") \(selectedPriest?.firstName ?? "") \(selectedPriest?.lastName ?? "")")
+                        Text(selectedPriest?.displayName ?? "")
                             .lineLimit(4)
                             .padding(3)
                             .glassEffect()
@@ -124,7 +125,26 @@ struct PrayerFlowView: View {
                     GlassEffectContainer(spacing: 0) {
                         
                         Menu {
-                            
+                            Section("Pokaż") {
+                                Button {
+                                    selectedCategory = .priest
+                                } label: {
+                                    Label("Księża", systemImage: selectedCategory == .priest ? "checkmark" : "")
+                                }
+
+                                Button {
+                                    selectedCategory = .person
+                                } label: {
+                                    Label("Osoby", systemImage: selectedCategory == .person ? "checkmark" : "")
+                                }
+
+                                Button {
+                                    selectedCategory = .prayer
+                                } label: {
+                                    Label("Modlitwy", systemImage: selectedCategory == .prayer ? "checkmark" : "")
+                                }
+                            }
+
                             if selectedPriest != nil {
                                 Button("Deselect") {
                                     selectedPriest = nil
@@ -140,7 +160,7 @@ struct PrayerFlowView: View {
                                         selectedPriest = priest
                                     }
                                 }) {
-                                    Label("\(priest.firstName) \(priest.lastName)", systemImage: selectedPriest?.id == priest.id ? "checkmark" : "")
+                                    Label(priest.displayName, systemImage: selectedPriest?.id == priest.id ? "checkmark" : "")
                                         .cornerRadius(16)
                                 }
                             }
@@ -306,6 +326,11 @@ struct PrayerFlowView: View {
                 syncSelectedPriest()
             }
         }
+        .onChange(of: selectedCategory) { _, _ in
+            activeIndex = 0
+            finished = false
+            syncSelectedPriest()
+        }
         .onChange(of: scheduleData.items) {
             syncSelectedPriest()
         }
@@ -327,8 +352,17 @@ struct PrayerFlowView: View {
     }
 
     private func syncSelectedPriest() {
+        if priestsAndPrayers.isEmpty {
+            if let fallback = PrayerTargetCategory.allCases.first(where: { category in
+                scheduleData.items.contains { $0.category == category }
+            }),
+            fallback != selectedCategory {
+                selectedCategory = fallback
+                return
+            }
+        }
         if let selectedId = selectedPriest?.id,
-           let updated = scheduleData.items.first(where: { $0.id == selectedId }) {
+           let updated = priestsAndPrayers.first(where: { $0.id == selectedId }) {
             selectedPriest = updated
         } else {
             selectedPriest = todayPriest
