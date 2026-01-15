@@ -406,6 +406,7 @@ struct PrayerFlowView: View {
         }
         .animation(.easeInOut(duration: 0.25), value: isFullscreen)
         .statusBarHidden(isFullscreen)
+        .persistentSystemOverlays(isFullscreen ? .hidden : .visible)
     }
 
     private func syncSelectedPriest() {
@@ -528,6 +529,9 @@ struct BrewiarzFullScreenView: View {
             .padding(.top, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
+        .statusBarHidden(true)
+        .persistentSystemOverlays(.hidden)
     }
 }
 
