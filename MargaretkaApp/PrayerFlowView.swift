@@ -16,6 +16,7 @@ struct PrayerFlowView: View {
     @State private var activeIndex: Int = 0
     @State private var selectedCategory: PrayerTargetCategory = .priest
     @State private var isFullscreen: Bool = false
+    @State private var userSelectedCategory: Bool = false
     
     @Binding var showSettings: Bool
     @Binding var showEditor: Bool
@@ -145,18 +146,21 @@ struct PrayerFlowView: View {
                         Menu {
                             Section("Pokaż") {
                                 Button {
+                                    userSelectedCategory = true
                                     selectedCategory = .priest
                                 } label: {
                                     Label("Księża", systemImage: selectedCategory == .priest ? "checkmark" : "")
                                 }
 
                                 Button {
+                                    userSelectedCategory = true
                                     selectedCategory = .person
                                 } label: {
                                     Label("Osoby", systemImage: selectedCategory == .person ? "checkmark" : "")
                                 }
 
                                 Button {
+                                    userSelectedCategory = true
                                     selectedCategory = .prayer
                                 } label: {
                                     Label("Modlitwy", systemImage: selectedCategory == .prayer ? "checkmark" : "")
@@ -330,7 +334,8 @@ struct PrayerFlowView: View {
         .onChange(of: selectedCategory) { _, _ in
             activeIndex = 0
             finished = false
-            syncSelectedPriest()
+            syncSelectedPriest(userInitiated: userSelectedCategory)
+            userSelectedCategory = false
         }
         .onChange(of: activeIndex) { _, _ in
             if activeIndex < flattenedPrayerSymbols.count {
@@ -392,37 +397,42 @@ struct PrayerFlowView: View {
     }
 
     private func syncSelectedPriest() {
+        syncSelectedPriest(userInitiated: false)
+    }
+
+    private func syncSelectedPriest(userInitiated: Bool) {
         if priestsAndPrayers.isEmpty {
-            if let fallback = PrayerTargetCategory.allCases.first(where: { category in
-                scheduleData.items.contains { $0.category == category }
-            }),
-            fallback != selectedCategory {
+            if !userInitiated,
+               let fallback = PrayerTargetCategory.allCases.first(where: { category in
+                   scheduleData.items.contains { $0.category == category }
+               }),
+               fallback != selectedCategory {
                 selectedCategory = fallback
                 return
             }
+            selectedPriest = nil
+            return
         }
         if let selectedId = selectedPriest?.id,
            let updated = priestsAndPrayers.first(where: { $0.id == selectedId }) {
             selectedPriest = updated
         } else {
             let now = Date()
-            if let closest = closestScheduledToday(in: scheduleData.items, now: now) {
-                if selectedCategory != closest.category {
-                    selectedCategory = closest.category
-                    selectedPriest = closest
-                    return
-                }
+            if let closest = closestScheduledToday(in: priestsAndPrayers, now: now) {
                 selectedPriest = closest
-            } else if let fallback = fallbackPrayer(in: scheduleData.items, now: now) {
+                return
+            }
+            if !userInitiated,
+               let fallback = fallbackPrayer(in: scheduleData.items, now: now) {
                 if selectedCategory != fallback.category {
                     selectedCategory = fallback.category
                     selectedPriest = fallback
                     return
                 }
                 selectedPriest = fallback
-            } else {
-                selectedPriest = todayPriest
+                return
             }
+            selectedPriest = todayPriest
         }
     }
 
