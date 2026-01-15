@@ -316,6 +316,7 @@ struct PrayerFlowView: View {
         .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         .onAppear()
         {
+            Priest.ensureTemplates()
             scheduleData.load()
             syncSelectedPriest()
             requestNotificationPermissions()
