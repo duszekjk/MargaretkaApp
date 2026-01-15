@@ -29,16 +29,28 @@ class PrayerStore: ObservableObject {
     private let key = "stored_prayers"
 
     private func load() {
+        var loaded: [Prayer] = []
         if let data = UserDefaults.standard.data(forKey: key),
            let decoded = try? JSONDecoder().decode([Prayer].self, from: data) {
-            self.prayers = decoded
+            loaded = decoded
         }
+        self.prayers = mergeDefaultPrayers(into: loaded)
     }
 
     private func save() {
         if let data = try? JSONEncoder().encode(prayers) {
             UserDefaults.standard.set(data, forKey: key)
         }
+    }
+
+    private func mergeDefaultPrayers(into existing: [Prayer]) -> [Prayer] {
+        let existingNames = Set(existing.map { $0.name })
+        let templates = Array(prayersTemplate.values)
+        var merged = existing
+        for template in templates where !existingNames.contains(template.name) {
+            merged.append(template)
+        }
+        return merged
     }
 
     func addOrUpdate(_ prayer: Prayer) {
