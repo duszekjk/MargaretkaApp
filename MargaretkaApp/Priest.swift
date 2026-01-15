@@ -51,6 +51,18 @@ struct Priest: Identifiable, Hashable, Codable {
     var notificationTypeId: String = "Priest"
     
     static let storageKey = "priest_sch"
+    static func loadWithTemplates() -> [Priest] {
+        let stored: [Priest] = LocalDatabase.shared.load(from: Self.storageKey)
+        let merged = mergeTemplates(into: stored)
+        if merged.count != stored.count {
+            LocalDatabase.shared.save(merged, as: Self.storageKey)
+        }
+        return merged
+    }
+
+    static func ensureTemplates() {
+        _ = loadWithTemplates()
+    }
 
     init(
         id: UUID,
@@ -180,6 +192,23 @@ extension Priest: Schedulable {
 }
 
 extension Priest {
+    static func templateKey(for priest: Priest) -> String {
+        "\(priest.category.rawValue)|\(priest.title)|\(priest.firstName)|\(priest.lastName)"
+    }
+
+    static func mergeTemplates(into stored: [Priest]) -> [Priest] {
+        var merged = stored
+        var existingKeys = Set(stored.map { templateKey(for: $0) })
+        for template in peopleTemplates {
+            let key = templateKey(for: template)
+            if !existingKeys.contains(key) {
+                merged.append(template)
+                existingKeys.insert(key)
+            }
+        }
+        return merged
+    }
+
     var displayName: String {
         switch category {
         case .prayer:
