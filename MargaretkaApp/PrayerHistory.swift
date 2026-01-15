@@ -24,22 +24,29 @@ class PrayerStore: ObservableObject {
 
     init() {
         load()
+        ensureDefaultPrayers()
     }
 
     private let key = "stored_prayers"
 
     private func load() {
-        var loaded: [Prayer] = []
         if let data = UserDefaults.standard.data(forKey: key),
            let decoded = try? JSONDecoder().decode([Prayer].self, from: data) {
-            loaded = decoded
+            self.prayers = decoded
         }
-        self.prayers = mergeDefaultPrayers(into: loaded)
     }
 
     private func save() {
         if let data = try? JSONEncoder().encode(prayers) {
             UserDefaults.standard.set(data, forKey: key)
+        }
+    }
+
+    private func ensureDefaultPrayers() {
+        let merged = mergeDefaultPrayers(into: prayers)
+        if merged.count != prayers.count {
+            prayers = merged
+            save()
         }
     }
 
