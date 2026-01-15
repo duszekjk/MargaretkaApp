@@ -35,7 +35,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         let eventTime = userInfo["eventTime"] as? Double
 
         switch response.actionIdentifier {
-        case notificationActionRestart:
+        case notificationActionRestart, UNNotificationDefaultActionIdentifier:
             NotificationCenter.default.post(
                 name: .prayerRestartRequested,
                 object: itemId
