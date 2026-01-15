@@ -43,10 +43,32 @@ class PrayerStore: ObservableObject {
     }
 
     private func ensureDefaultPrayers() {
-        let merged = mergeDefaultPrayers(into: prayers)
-        if merged.count != prayers.count {
-            prayers = merged
+        let templateByName = Dictionary(uniqueKeysWithValues: prayersTemplate.values.map { ($0.name, $0) })
+        var idMapping: [UUID: UUID] = [:]
+        var updated: [Prayer] = []
+        for prayer in prayers {
+            if let template = templateByName[prayer.name] {
+                if prayer.id != template.id {
+                    idMapping[prayer.id] = template.id
+                }
+                updated.append(template)
+            } else {
+                updated.append(prayer)
+            }
+        }
+
+        let existingNames = Set(updated.map { $0.name })
+        for template in prayersTemplate.values where !existingNames.contains(template.name) {
+            updated.append(template)
+        }
+
+        if updated != prayers {
+            prayers = updated
             save()
+        }
+
+        if !idMapping.isEmpty {
+            migrateAssignedPrayerIds(using: idMapping)
         }
     }
 
@@ -60,6 +82,40 @@ class PrayerStore: ObservableObject {
         return merged
     }
 
+    private func migrateAssignedPrayerIds(using mapping: [UUID: UUID]) {
+        let stored: [Priest] = LocalDatabase.shared.load(from: Priest.storageKey)
+        var updatedPriests: [Priest] = []
+        var changed = false
+
+        for var priest in stored {
+            let updatedGroups = priest.assignedPrayerGroups.map { updateGroup($0, mapping: mapping) }
+            if updatedGroups != priest.assignedPrayerGroups {
+                priest.assignedPrayerGroups = updatedGroups
+                changed = true
+            }
+            updatedPriests.append(priest)
+        }
+
+        if changed {
+            LocalDatabase.shared.save(updatedPriests, as: Priest.storageKey)
+        }
+    }
+
+    private func updateGroup(_ group: AssignedPrayerGroup, mapping: [UUID: UUID]) -> AssignedPrayerGroup {
+        let updatedItems: [AssignedPrayerItem] = group.items.map { item in
+            switch item {
+            case .prayer(let id):
+                if let newId = mapping[id] {
+                    return .prayer(newId)
+                }
+                return item
+            case .subgroup:
+                return item
+            }
+        }
+        let updatedSubgroups = group.subgroups.map { updateGroup($0, mapping: mapping) }
+        return AssignedPrayerGroup(id: group.id, items: updatedItems, repeatCount: group.repeatCount, subgroups: updatedSubgroups)
+    }
     func addOrUpdate(_ prayer: Prayer) {
         if let index = prayers.firstIndex(where: { $0.id == prayer.id }) {
             prayers[index] = prayer
