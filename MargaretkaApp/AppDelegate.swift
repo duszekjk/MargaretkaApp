@@ -24,4 +24,31 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
     ) {
         completionHandler([.banner, .sound, .badge, .list])
     }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let userInfo = response.notification.request.content.userInfo
+        let itemId = userInfo["itemId"] as? String
+        let eventTime = userInfo["eventTime"] as? Double
+
+        switch response.actionIdentifier {
+        case notificationActionRestart:
+            NotificationCenter.default.post(
+                name: .prayerRestartRequested,
+                object: itemId
+            )
+        case notificationActionMarkDone:
+            NotificationCenter.default.post(
+                name: .prayerMarkDoneRequested,
+                object: (itemId, eventTime)
+            )
+        default:
+            break
+        }
+
+        completionHandler()
+    }
 }
