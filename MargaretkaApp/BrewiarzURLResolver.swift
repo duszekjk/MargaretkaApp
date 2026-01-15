@@ -92,15 +92,11 @@ actor BrewiarzURLResolver {
     }
 
     private func firstOfficiumIndexURL(in html: String, baseURL: URL) -> URL? {
-        let pattern = "<a\\s+[^>]*href\\s*=\\s*['\"]([^'\"]+index\\.php3\\?l=i[^'\"]*)['\"][^>]*>"
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
-            return nil
-        }
-        let range = NSRange(html.startIndex..<html.endIndex, in: html)
-        if let match = regex.firstMatch(in: html, options: [], range: range),
-           let hrefRange = Range(match.range(at: 1), in: html) {
-            let href = String(html[hrefRange])
-            return resolveURL(href: href, baseURL: baseURL)
+        let anchors = parseAnchors(from: html)
+        for anchor in anchors {
+            if anchor.href.lowercased().contains("index.php3?l=i") {
+                return resolveURL(href: anchor.href, baseURL: baseURL)
+            }
         }
         return nil
     }
