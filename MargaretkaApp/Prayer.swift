@@ -7,6 +7,78 @@
 
 import SwiftUI
 
+enum BrewiarzPrayerKey: String, Codable, CaseIterable, Identifiable {
+    case wezwanie
+    case godzinaCzytan
+    case jutrznia
+    case modlitwaPrzedpoludniowa
+    case modlitwaPoludniowa
+    case modlitwaPopoludniowa
+    case nieszpory
+    case kompleta
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .wezwanie:
+            return "Wezwanie"
+        case .godzinaCzytan:
+            return "Godzina Czytań"
+        case .jutrznia:
+            return "Jutrznia"
+        case .modlitwaPrzedpoludniowa:
+            return "Modlitwa przedpołudniowa"
+        case .modlitwaPoludniowa:
+            return "Modlitwa południowa"
+        case .modlitwaPopoludniowa:
+            return "Modlitwa popołudniowa"
+        case .nieszpory:
+            return "Nieszpory"
+        case .kompleta:
+            return "Kompleta"
+        }
+    }
+}
+
+enum PrayerContent: Hashable, Codable {
+    case text
+    case brewiarz(BrewiarzPrayerKey)
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case key
+    }
+
+    enum ContentType: String, Codable {
+        case text
+        case brewiarz
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decodeIfPresent(ContentType.self, forKey: .type) ?? .text
+        switch type {
+        case .text:
+            self = .text
+        case .brewiarz:
+            let key = try container.decode(BrewiarzPrayerKey.self, forKey: .key)
+            self = .brewiarz(key)
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .text:
+            try container.encode(ContentType.text, forKey: .type)
+        case .brewiarz(let key):
+            try container.encode(ContentType.brewiarz, forKey: .type)
+            try container.encode(key, forKey: .key)
+        }
+    }
+}
+
 struct Prayer: Identifiable, Hashable, Codable {
     let id: UUID
     var name: String
@@ -15,8 +87,20 @@ struct Prayer: Identifiable, Hashable, Codable {
     var audioFilename: String? 
     var audioSource: AudioSource?
     var timestampedLines: [TimestampedLine]? 
+    var content: PrayerContent = .text
 
-    init(id: UUID = UUID(), name: String, text: String, symbol: String, audioFilename: String?, audioSource: AudioSource?, timestampedLines: [TimestampedLine]?) {
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case text
+        case symbol
+        case audioFilename
+        case audioSource
+        case timestampedLines
+        case content
+    }
+
+    init(id: UUID = UUID(), name: String, text: String, symbol: String, audioFilename: String?, audioSource: AudioSource?, timestampedLines: [TimestampedLine]?, content: PrayerContent = .text) {
         self.id = id
         self.name = name
         self.text = text
@@ -24,6 +108,31 @@ struct Prayer: Identifiable, Hashable, Codable {
         self.audioFilename = audioFilename
         self.audioSource = audioSource
         self.timestampedLines = timestampedLines
+        self.content = content
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        text = try container.decode(String.self, forKey: .text)
+        symbol = try container.decode(String.self, forKey: .symbol)
+        audioFilename = try container.decodeIfPresent(String.self, forKey: .audioFilename)
+        audioSource = try container.decodeIfPresent(AudioSource.self, forKey: .audioSource)
+        timestampedLines = try container.decodeIfPresent([TimestampedLine].self, forKey: .timestampedLines)
+        content = try container.decodeIfPresent(PrayerContent.self, forKey: .content) ?? .text
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(text, forKey: .text)
+        try container.encode(symbol, forKey: .symbol)
+        try container.encodeIfPresent(audioFilename, forKey: .audioFilename)
+        try container.encodeIfPresent(audioSource, forKey: .audioSource)
+        try container.encodeIfPresent(timestampedLines, forKey: .timestampedLines)
+        try container.encode(content, forKey: .content)
     }
 }
 
