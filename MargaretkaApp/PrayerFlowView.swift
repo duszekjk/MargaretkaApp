@@ -407,6 +407,8 @@ struct PrayerFlowView: View {
         .animation(.easeInOut(duration: 0.25), value: isFullscreen)
         .statusBarHidden(isFullscreen)
         .persistentSystemOverlays(isFullscreen ? .hidden : .visible)
+        .toolbar(isFullscreen ? .hidden : .visible, for: .navigationBar)
+        .toolbarBackground(isFullscreen ? .hidden : .visible, for: .navigationBar)
     }
 
     private func syncSelectedPriest() {
