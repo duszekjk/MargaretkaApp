@@ -25,6 +25,7 @@ struct PrayerFlowView: View {
     @Binding var showJakSie: Bool
 
     @Namespace private var namespace
+    @Namespace private var brewiarzNamespace
     var priestsAndPrayers: [Priest] {
         scheduleData.items.filter { $0.category == selectedCategory }
     }
@@ -252,7 +253,9 @@ struct PrayerFlowView: View {
                         if isCurrentPrayerWeb {
                             GlassEffectContainer(spacing: 0) {
                                 Button(action: {
-                                    isFullscreen = true
+                                    withAnimation(.easeInOut(duration: 0.25)) {
+                                        isFullscreen = true
+                                    }
                                 }) {
                                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                                         .padding(12)
@@ -284,6 +287,8 @@ struct PrayerFlowView: View {
                                     if activeIndex < flattenedPrayerSymbols.count,
                                        let key = currentBrewiarzKey {
                                         BrewiarzPrayerView(key: key)
+                                            .matchedGeometryEffect(id: "brewiarzWeb", in: brewiarzNamespace, isSource: !isFullscreen)
+                                            .opacity(isFullscreen ? 0 : 1)
                                     } else {
                                         ScrollView {
                                             Text(activeIndex < flattenedPrayerSymbols.count
@@ -344,7 +349,9 @@ struct PrayerFlowView: View {
                 finished = true
             }
             if isFullscreen && !isCurrentPrayerWeb {
-                isFullscreen = false
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    isFullscreen = false
+                }
             }
         }
         .onChange(of: finished) { _, _ in
@@ -384,16 +391,19 @@ struct PrayerFlowView: View {
             let eventDate = payload.1.map { Date(timeIntervalSince1970: $0) } ?? Date()
             scheduleData.markDayDone(itemID: uuid, on: eventDate)
         }
-        .fullScreenCover(isPresented: $isFullscreen) {
-            if let key = currentBrewiarzKey {
+        .overlay {
+            if isFullscreen, let key = currentBrewiarzKey {
                 BrewiarzFullScreenView(
                     key: key,
                     activeIndex: $activeIndex,
                     maxIndex: flattenedPrayerSymbols.count,
-                    isPresented: $isFullscreen
+                    isPresented: $isFullscreen,
+                    namespace: brewiarzNamespace
                 )
+                .transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: isFullscreen)
     }
 
     private func syncSelectedPriest() {
@@ -479,15 +489,19 @@ struct BrewiarzFullScreenView: View {
     @Binding var activeIndex: Int
     let maxIndex: Int
     @Binding var isPresented: Bool
+    let namespace: Namespace.ID
 
     var body: some View {
         ZStack(alignment: .top) {
             BrewiarzPrayerView(key: key)
+                .matchedGeometryEffect(id: "brewiarzWeb", in: namespace, isSource: isPresented)
                 .ignoresSafeArea()
 
             HStack {
                 Button(action: {
-                    isPresented = false
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        isPresented = false
+                    }
                 }) {
                     Image(systemName: "arrow.down.right.and.arrow.up.left")
                         .padding(8)
