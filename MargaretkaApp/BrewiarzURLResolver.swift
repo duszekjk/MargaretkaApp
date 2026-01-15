@@ -22,12 +22,18 @@ actor BrewiarzURLResolver {
 
     func resolveURL(for key: BrewiarzPrayerKey, date: Date = .now) async -> URL? {
         do {
+            print("🔎 Brewiarz resolve URL for \(key.rawValue) \(Self.dateKey(for: date))")
             let resolved = try await resolveLinks(for: date)
+            print("✅ Brewiarz resolved index: \(resolved.chosenOfficiumIndexURL)")
+            print("✅ Brewiarz prayer links count: \(resolved.prayerLinks.count)")
             if let urlString = resolved.prayerLinks[key] {
+                print("➡️ Brewiarz link for \(key.rawValue): \(urlString)")
                 return URL(string: urlString)
             }
+            print("⚠️ Brewiarz missing key \(key.rawValue), falling back to index")
             return URL(string: resolved.chosenOfficiumIndexURL)
         } catch {
+            print("❌ Brewiarz resolve failed: \(error.localizedDescription)")
             return URL(string: "https://brewiarz.pl/dzis.php")
         }
     }
@@ -43,17 +49,24 @@ actor BrewiarzURLResolver {
         }
 
         let dzisURL = URL(string: "https://brewiarz.pl/dzis.php")!
+        print("🌍 Brewiarz fetch dzis: \(dzisURL.absoluteString)")
         let (dzisHTML, dzisFinalURL) = try await fetchHTML(from: dzisURL)
+        print("🌍 Brewiarz dzis final: \(dzisFinalURL.absoluteString)")
 
         let indexURL: URL
         if let resolvedIndex = firstOfficiumIndexURL(in: dzisHTML, baseURL: dzisFinalURL, date: date) {
+            print("✅ Brewiarz picked officium index: \(resolvedIndex.absoluteString)")
             indexURL = resolvedIndex
         } else {
+            print("⚠️ Brewiarz no officium index found, using dzis final")
             indexURL = dzisFinalURL
         }
 
+        print("🌍 Brewiarz fetch index: \(indexURL.absoluteString)")
         let (indexHTML, indexFinalURL) = try await fetchHTML(from: indexURL)
+        print("🌍 Brewiarz index final: \(indexFinalURL.absoluteString)")
         let anchors = parseAnchors(from: indexHTML)
+        print("🔗 Brewiarz anchors: \(anchors.count)")
 
         var prayerLinks: [BrewiarzPrayerKey: String] = [:]
         var miscLinks: [String] = []
