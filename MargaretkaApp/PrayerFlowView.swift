@@ -289,6 +289,7 @@ struct PrayerFlowView: View {
                                         BrewiarzPrayerView(key: key)
                                             .matchedGeometryEffect(id: "brewiarzWeb", in: brewiarzNamespace, isSource: !isFullscreen)
                                             .opacity(isFullscreen ? 0 : 1)
+                                            .allowsHitTesting(!isFullscreen)
                                     } else {
                                         ScrollView {
                                             Text(activeIndex < flattenedPrayerSymbols.count
@@ -404,6 +405,7 @@ struct PrayerFlowView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: isFullscreen)
+        .statusBarHidden(isFullscreen)
     }
 
     private func syncSelectedPriest() {
@@ -495,6 +497,7 @@ struct BrewiarzFullScreenView: View {
         ZStack(alignment: .top) {
             BrewiarzPrayerView(key: key)
                 .matchedGeometryEffect(id: "brewiarzWeb", in: namespace, isSource: isPresented)
+                .zIndex(0)
                 .ignoresSafeArea()
 
             HStack {
@@ -520,9 +523,11 @@ struct BrewiarzFullScreenView: View {
                 }
                 .glassEffect()
             }
+            .zIndex(1)
             .padding(.horizontal, 16)
             .padding(.top, 20)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
