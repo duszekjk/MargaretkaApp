@@ -50,8 +50,13 @@ actor BrewiarzURLResolver {
 
         let dzisURL = URL(string: "https://brewiarz.pl/dzis.php")!
         print("🌍 Brewiarz fetch dzis: \(dzisURL.absoluteString)")
-        let (dzisHTML, dzisFinalURL) = try await fetchHTML(from: dzisURL)
+        var (dzisHTML, dzisFinalURL) = try await fetchHTML(from: dzisURL)
         print("🌍 Brewiarz dzis final: \(dzisFinalURL.absoluteString)")
+        if let metaURL = metaRefreshURL(in: dzisHTML, baseURL: dzisFinalURL, date: date) {
+            print("🔁 Brewiarz meta refresh dzis: \(metaURL.absoluteString)")
+            (dzisHTML, dzisFinalURL) = try await fetchHTML(from: metaURL)
+            print("🌍 Brewiarz dzis after refresh: \(dzisFinalURL.absoluteString)")
+        }
 
         let indexURL: URL
         if let resolvedIndex = firstOfficiumIndexURL(in: dzisHTML, baseURL: dzisFinalURL, date: date) {
@@ -63,10 +68,17 @@ actor BrewiarzURLResolver {
         }
 
         print("🌍 Brewiarz fetch index: \(indexURL.absoluteString)")
-        let (indexHTML, indexFinalURL) = try await fetchHTML(from: indexURL)
+        var (indexHTML, indexFinalURL) = try await fetchHTML(from: indexURL)
         print("🌍 Brewiarz index final: \(indexFinalURL.absoluteString)")
-        let anchors = parseAnchors(from: indexHTML)
+        var anchors = parseAnchors(from: indexHTML)
         print("🔗 Brewiarz anchors: \(anchors.count)")
+        if anchors.isEmpty, let metaURL = metaRefreshURL(in: indexHTML, baseURL: indexFinalURL, date: date) {
+            print("🔁 Brewiarz meta refresh index: \(metaURL.absoluteString)")
+            (indexHTML, indexFinalURL) = try await fetchHTML(from: metaURL)
+            print("🌍 Brewiarz index after refresh: \(indexFinalURL.absoluteString)")
+            anchors = parseAnchors(from: indexHTML)
+            print("🔗 Brewiarz anchors after refresh: \(anchors.count)")
+        }
         if anchors.isEmpty {
             let preview = String(indexHTML.prefix(400))
             print("⚠️ Brewiarz empty anchors, html preview: \(preview)")
@@ -189,6 +201,21 @@ actor BrewiarzURLResolver {
         decoded = decoded.replacingOccurrences(of: "&apos;", with: "'")
         decoded = decoded.replacingOccurrences(of: "&#39;", with: "'")
         return decoded
+    }
+
+    private func metaRefreshURL(in html: String, baseURL: URL, date: Date) -> URL? {
+        let pattern = "http-equiv\\s*=\\s*['\"]refresh['\"][^>]*content\\s*=\\s*['\"][^'\"]*url=([^'\"]+)['\"]"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+            return nil
+        }
+        let range = NSRange(html.startIndex..<html.endIndex, in: html)
+        guard let match = regex.firstMatch(in: html, options: [], range: range),
+              let urlRange = Range(match.range(at: 1), in: html) else {
+            return nil
+        }
+        let rawURL = String(html[urlRange])
+        let href = decodeHTMLEntities(rawURL)
+        return resolveURL(href: href, baseURL: baseURL, date: date)
     }
 
     private func fallbackIndexURL(in html: String, baseURL: URL, date: Date) -> URL? {
