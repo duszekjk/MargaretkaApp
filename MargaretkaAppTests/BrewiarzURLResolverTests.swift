@@ -17,8 +17,9 @@ final class BrewiarzURLResolverTests: XCTestCase {
         </body></html>
         """
         let baseURL = URL(string: "https://brewiarz.pl/i_26/1501/wyb.php3")!
+        let date = DateComponents(calendar: Calendar(identifier: .gregorian), timeZone: TimeZone(identifier: "Europe/Warsaw"), year: 2026, month: 1, day: 15).date!
         let resolver = await BrewiarzURLResolver.shared
-        let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL)
+        let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL, date: date)
 
         XCTAssertEqual(url?.absoluteString, "https://brewiarz.pl/i_26/1501p/index.php3?l=i")
     }
@@ -31,8 +32,9 @@ final class BrewiarzURLResolverTests: XCTestCase {
         </body></html>
         """
         let baseURL = URL(string: "https://brewiarz.pl/i_26/1501/wyb.php3")!
+        let date = DateComponents(calendar: Calendar(identifier: .gregorian), timeZone: TimeZone(identifier: "Europe/Warsaw"), year: 2026, month: 1, day: 15).date!
         let resolver = await BrewiarzURLResolver.shared
-        let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL)
+        let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL, date: date)
 
         XCTAssertEqual(url?.absoluteString, "https://brewiarz.pl/i_26/1501p/index.php3?l=i")
     }
@@ -44,8 +46,9 @@ final class BrewiarzURLResolverTests: XCTestCase {
         </body></html>
         """
         let baseURL = URL(string: "https://brewiarz.pl/i_26/1501/wyb.php3")!
+        let date = DateComponents(calendar: Calendar(identifier: .gregorian), timeZone: TimeZone(identifier: "Europe/Warsaw"), year: 2026, month: 1, day: 15).date!
         let resolver = await BrewiarzURLResolver.shared
-        let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL)
+        let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL, date: date)
 
         XCTAssertNil(url)
     }
@@ -58,8 +61,9 @@ final class BrewiarzURLResolverTests: XCTestCase {
         </body></html>
         """
         let baseURL = URL(string: "https://brewiarz.pl/i_26/1501/wyb.php3")!
+        let date = DateComponents(calendar: Calendar(identifier: .gregorian), timeZone: TimeZone(identifier: "Europe/Warsaw"), year: 2026, month: 1, day: 15).date!
         let resolver = await BrewiarzURLResolver.shared
-        let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL)
+        let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL, date: date)
 
         XCTAssertEqual(url?.absoluteString, "https://brewiarz.pl/i_26/1501p/index.php3?l=i")
     }
@@ -70,9 +74,10 @@ final class BrewiarzURLResolverTests: XCTestCase {
         <a href="../1501p/index.php3?l=i&amp;d=1">Oficjum 1</a>
         </body></html>
         """
-        let baseURL = URL(string: "https://brewiarz.pl/i_26/1501/wyb.php3")!
+        let baseURL = URL(string: "https://brewiarz.pl/dzis.php")!
+        let date = DateComponents(calendar: Calendar(identifier: .gregorian), timeZone: TimeZone(identifier: "Europe/Warsaw"), year: 2026, month: 1, day: 15).date!
         let resolver = await BrewiarzURLResolver.shared
-        let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL)
+        let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL, date: date)
 
         XCTAssertEqual(url?.absoluteString, "https://brewiarz.pl/i_26/1501p/index.php3?l=i&d=1")
     }
