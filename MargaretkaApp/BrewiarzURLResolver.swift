@@ -17,7 +17,7 @@ struct BrewiarzDailyLinks: Codable, Hashable {
 actor BrewiarzURLResolver {
     static let shared = BrewiarzURLResolver()
 
-    private let cacheKey = "brewiarz_daily_links"
+    private let cacheKey = "brewiarz_daily_links_v2"
     private var cachedLinks: BrewiarzDailyLinks?
 
     func resolveURL(for key: BrewiarzPrayerKey, date: Date = .now) async -> URL? {
@@ -79,7 +79,9 @@ actor BrewiarzURLResolver {
             prayerLinks: prayerLinks,
             miscLinks: miscLinks
         )
-        saveCache(resolved)
+        if isValidIndexURL(indexFinalURL), !resolved.prayerLinks.isEmpty {
+            saveCache(resolved)
+        }
         cachedLinks = resolved
         return resolved
     }
@@ -253,6 +255,7 @@ actor BrewiarzURLResolver {
         guard let data = UserDefaults.standard.data(forKey: cacheKey),
               let cached = try? JSONDecoder().decode(BrewiarzDailyLinks.self, from: data),
               cached.chosenOfficiumIndexURL.lowercased().contains("index.php3?l=i"),
+              !cached.chosenOfficiumIndexURL.lowercased().contains("wyb"),
               !cached.prayerLinks.isEmpty,
               cached.dateKey == dateKey else {
             return nil
@@ -263,5 +266,10 @@ actor BrewiarzURLResolver {
     private func saveCache(_ cache: BrewiarzDailyLinks) {
         guard let data = try? JSONEncoder().encode(cache) else { return }
         UserDefaults.standard.set(data, forKey: cacheKey)
+    }
+
+    private func isValidIndexURL(_ url: URL) -> Bool {
+        let lowercased = url.absoluteString.lowercased()
+        return lowercased.contains("index.php3?l=i") && !lowercased.contains("wyb")
     }
 }
