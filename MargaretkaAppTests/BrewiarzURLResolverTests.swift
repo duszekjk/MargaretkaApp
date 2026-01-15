@@ -81,4 +81,19 @@ final class BrewiarzURLResolverTests: XCTestCase {
 
         XCTAssertEqual(url?.absoluteString, "https://brewiarz.pl/i_26/1501p/index.php3?l=i&d=1")
     }
+
+    func testFirstOfficiumIndexURLFindsPlainTextLink() async {
+        let html = """
+        <html><body>
+        WYBIERZ OFICJUM:
+        ../1501p/index.php3?l=i
+        </body></html>
+        """
+        let baseURL = URL(string: "https://brewiarz.pl/dzis.php")!
+        let date = DateComponents(calendar: Calendar(identifier: .gregorian), timeZone: TimeZone(identifier: "Europe/Warsaw"), year: 2026, month: 1, day: 15).date!
+        let resolver = await BrewiarzURLResolver.shared
+        let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL, date: date)
+
+        XCTAssertEqual(url?.absoluteString, "https://brewiarz.pl/i_26/1501p/index.php3?l=i")
+    }
 }
