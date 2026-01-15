@@ -239,6 +239,17 @@ class ScheduleData<T: Schedulable>: ObservableObject {
     @Published var items: [T] = []
     let saveKey: String
     
+    private struct Scheduled {
+        let itemId: T.ID
+        let typeId: String
+        let title: String
+        let message: String
+        let sound: String?
+        let eventDate: Date
+        let notificationDate: Date
+        let id: String
+        let payload: [String: Any]?
+    }
 
 
     init(saveKey: String) {
@@ -354,21 +365,9 @@ class ScheduleData<T: Schedulable>: ObservableObject {
             )
             notificationCenter.setNotificationCategories([category])
 
-            struct Scheduled {
-                let itemId: T.ID
-                let typeId: String
-                let title: String
-                let message: String
-                let sound: String?
-                let eventDate: Date
-                let notificationDate: Date
-                let id: String
-                let payload: [String: Any]?
-            }
-
             var scheduled: [Scheduled] = []
             for item in itemsSnapshot {
-                let upcoming = buildUpcomingNotifications(for: item, title: item.notificationTitle, now: now, calendar: calendar)
+                let upcoming = self.buildUpcomingNotifications(for: item, title: item.notificationTitle, now: now, calendar: calendar)
                 for entry in upcoming {
                     if item.notificationIdsFinished.contains(entry.id) { continue }
                     if let end = item.schedule.endDate, entry.notificationDate > end { continue }
