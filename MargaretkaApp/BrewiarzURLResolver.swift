@@ -102,22 +102,30 @@ actor BrewiarzURLResolver {
     }
 
     private func parseAnchors(from html: String) -> [(href: String, text: String)] {
-        let pattern = "<a\\s+[^>]*href\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>(.*?)</a>"
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
-            return []
-        }
-        let range = NSRange(html.startIndex..<html.endIndex, in: html)
-        let matches = regex.matches(in: html, options: [], range: range)
-        return matches.compactMap { match in
-            guard let hrefRange = Range(match.range(at: 1), in: html),
-                  let textRange = Range(match.range(at: 2), in: html) else {
-                return nil
+        let quotedPattern = "<a\\s+[^>]*href\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>(.*?)</a>"
+        let unquotedPattern = "<a\\s+[^>]*href\\s*=\\s*([^\\s>]+)[^>]*>(.*?)</a>"
+
+        let patterns = [quotedPattern, unquotedPattern]
+        var results: [(href: String, text: String)] = []
+
+        for pattern in patterns {
+            guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
+                continue
             }
-            let href = String(html[hrefRange])
-            let rawText = String(html[textRange])
-            let text = stripHTML(rawText)
-            return (href: href, text: text)
+            let range = NSRange(html.startIndex..<html.endIndex, in: html)
+            let matches = regex.matches(in: html, options: [], range: range)
+            for match in matches {
+                guard let hrefRange = Range(match.range(at: 1), in: html),
+                      let textRange = Range(match.range(at: 2), in: html) else {
+                    continue
+                }
+                let href = String(html[hrefRange])
+                let rawText = String(html[textRange])
+                let text = stripHTML(rawText)
+                results.append((href: href, text: text))
+            }
         }
+        return results
     }
 
     private func stripHTML(_ text: String) -> String {
@@ -208,6 +216,8 @@ actor BrewiarzURLResolver {
     private func loadCache(dateKey: String) -> BrewiarzDailyLinks? {
         guard let data = UserDefaults.standard.data(forKey: cacheKey),
               let cached = try? JSONDecoder().decode(BrewiarzDailyLinks.self, from: data),
+              cached.chosenOfficiumIndexURL.lowercased().contains("index.php3?l=i"),
+              !cached.prayerLinks.isEmpty,
               cached.dateKey == dateKey else {
             return nil
         }
