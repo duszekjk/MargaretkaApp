@@ -31,7 +31,7 @@ struct PrayerFlowView: View {
     }
 
     var todayPriest: Priest? {
-        priestsAndPrayers.first(where: { $0.schedule.daysOfWeek.contains(today) }) ?? priestsAndPrayers.first
+        priestsAndPrayers.first(where: { isScheduledToday($0) }) ?? priestsAndPrayers.first
     }
 
     var allPrayers: [UUID: Prayer] {
@@ -366,8 +366,61 @@ struct PrayerFlowView: View {
            let updated = priestsAndPrayers.first(where: { $0.id == selectedId }) {
             selectedPriest = updated
         } else {
-            selectedPriest = todayPriest
+            let now = Date()
+            if let closest = closestScheduledToday(in: scheduleData.items, now: now) {
+                if selectedCategory != closest.category {
+                    selectedCategory = closest.category
+                    selectedPriest = closest
+                    return
+                }
+                selectedPriest = closest
+            } else if let fallback = fallbackPrayer(in: scheduleData.items, now: now) {
+                if selectedCategory != fallback.category {
+                    selectedCategory = fallback.category
+                    selectedPriest = fallback
+                    return
+                }
+                selectedPriest = fallback
+            } else {
+                selectedPriest = todayPriest
+            }
         }
+    }
+
+    private func isScheduledToday(_ priest: Priest) -> Bool {
+        if priest.schedule.daysOfWeek.isEmpty {
+            return true
+        }
+        return priest.schedule.daysOfWeek.contains(today)
+    }
+
+    private func closestScheduledToday(in items: [Priest], now: Date) -> Priest? {
+        let calendar = Calendar.current
+        var best: (Priest, TimeInterval)?
+
+        for priest in items where isScheduledToday(priest) {
+            let timeOffsets = priest.schedule.times.compactMap { time -> TimeInterval? in
+                let hour = time.event.hour ?? 11
+                let minute = time.event.minute ?? 0
+                guard let date = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: now) else {
+                    return nil
+                }
+                return abs(date.timeIntervalSince(now))
+            }
+            guard let closestOffset = timeOffsets.min() else { continue }
+            if best == nil || closestOffset < best!.1 {
+                best = (priest, closestOffset)
+            }
+        }
+        return best?.0
+    }
+
+    private func fallbackPrayer(in items: [Priest], now: Date) -> Priest? {
+        let hour = Calendar.current.component(.hour, from: now)
+        let name = (hour >= 14 && hour < 16)
+        ? "Koronka do Miłosierdzia Bożego"
+        : "Różaniec"
+        return items.first { $0.category == .prayer && $0.displayName == name }
     }
 }
 
