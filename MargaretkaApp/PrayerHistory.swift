@@ -84,10 +84,6 @@ struct HomeView: View {
     @State var showCzymJest: Bool = false
     @State var showJakSie: Bool = false
 
-    private func templateKey(for priest: Priest) -> String {
-        "\(priest.category.rawValue)|\(priest.title)|\(priest.firstName)|\(priest.lastName)"
-    }
-
     var body: some View {
         PrayerFlowView(showSettings: $showSettings, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie)
             .toolbar {
@@ -98,17 +94,7 @@ struct HomeView: View {
             }
             .onAppear()
         {
-            var storedPriests = Priest.load()
-            var storedPriestKeys = Set(storedPriests.map { templateKey(for: $0) })
-            for template in peopleTemplates {
-                let key = templateKey(for: template)
-                if !storedPriestKeys.contains(key) {
-                    storedPriests.append(template)
-                    storedPriestKeys.insert(key)
-                    template.save()
-                }
-            }
-            priestStore.priests = storedPriests
+            priestStore.priests = Priest.loadWithTemplates()
 
             let templatePrayers = Array(prayersTemplate.values)
             let existingPrayerNames = Set(prayerStore.prayers.map { $0.name })
