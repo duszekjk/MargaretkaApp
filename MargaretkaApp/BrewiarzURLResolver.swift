@@ -92,10 +92,18 @@ actor BrewiarzURLResolver {
     }
 
     func firstOfficiumIndexURL(in html: String, baseURL: URL) -> URL? {
-        let anchors = parseAnchors(from: html)
-        for anchor in anchors {
-            if anchor.href.lowercased().contains("index.php3?l=i") {
-                return resolveURL(href: anchor.href, baseURL: baseURL)
+        let pattern = "href\\s*=\\s*(['\"]?)([^'\"\\s>]+)\\1"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+            return nil
+        }
+        let range = NSRange(html.startIndex..<html.endIndex, in: html)
+        let matches = regex.matches(in: html, options: [], range: range)
+        for match in matches {
+            guard let hrefRange = Range(match.range(at: 2), in: html) else { continue }
+            let rawHref = String(html[hrefRange])
+            let href = decodeHTMLEntities(rawHref)
+            if href.lowercased().contains("index.php3?l=i") {
+                return resolveURL(href: href, baseURL: baseURL)
             }
         }
         return nil
@@ -131,6 +139,14 @@ actor BrewiarzURLResolver {
     private func stripHTML(_ text: String) -> String {
         text.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func decodeHTMLEntities(_ text: String) -> String {
+        var decoded = text.replacingOccurrences(of: "&amp;", with: "&")
+        decoded = decoded.replacingOccurrences(of: "&quot;", with: "\"")
+        decoded = decoded.replacingOccurrences(of: "&apos;", with: "'")
+        decoded = decoded.replacingOccurrences(of: "&#39;", with: "'")
+        return decoded
     }
 
     private func resolveURL(href: String, baseURL: URL) -> URL? {
