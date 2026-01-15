@@ -46,7 +46,7 @@ actor BrewiarzURLResolver {
         let (dzisHTML, dzisFinalURL) = try await fetchHTML(from: dzisURL)
 
         let indexURL: URL
-        if let resolvedIndex = firstOfficiumIndexURL(in: dzisHTML, baseURL: dzisFinalURL) {
+        if let resolvedIndex = firstOfficiumIndexURL(in: dzisHTML, baseURL: dzisFinalURL, date: date) {
             indexURL = resolvedIndex
         } else {
             indexURL = dzisFinalURL
@@ -59,7 +59,7 @@ actor BrewiarzURLResolver {
         var miscLinks: [String] = []
 
         for anchor in anchors {
-            guard let resolvedURL = resolveURL(href: anchor.href, baseURL: indexFinalURL) else { continue }
+            guard let resolvedURL = resolveURL(href: anchor.href, baseURL: indexFinalURL, date: date) else { continue }
             guard resolvedURL.host == "brewiarz.pl" else { continue }
             guard resolvedURL.path.contains("/i_") else { continue }
             guard resolvedURL.path.lowercased().hasSuffix(".php3") else { continue }
@@ -91,7 +91,7 @@ actor BrewiarzURLResolver {
         return (html, finalURL)
     }
 
-    func firstOfficiumIndexURL(in html: String, baseURL: URL) -> URL? {
+    func firstOfficiumIndexURL(in html: String, baseURL: URL, date: Date = .now) -> URL? {
         let pattern = "href\\s*=\\s*(['\"]?)([^'\"\\s>]+)\\1"
         guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
             return nil
@@ -103,7 +103,7 @@ actor BrewiarzURLResolver {
             let rawHref = String(html[hrefRange])
             let href = decodeHTMLEntities(rawHref)
             if href.lowercased().contains("index.php3?l=i") {
-                return resolveURL(href: href, baseURL: baseURL)
+                return resolveURL(href: href, baseURL: baseURL, date: date)
             }
         }
         return nil
@@ -149,12 +149,32 @@ actor BrewiarzURLResolver {
         return decoded
     }
 
-    private func resolveURL(href: String, baseURL: URL) -> URL? {
+    private func stripLeadingDotDots(from href: String) -> String {
+        var trimmed = href
+        while trimmed.hasPrefix("../") {
+            trimmed = String(trimmed.dropFirst(3))
+        }
+        return trimmed
+    }
+
+    private static func yearSuffix(for date: Date) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Warsaw") ?? .current
+        let year = calendar.component(.year, from: date)
+        return String(format: "%02d", year % 100)
+    }
+
+    private func resolveURL(href: String, baseURL: URL, date: Date) -> URL? {
         if href.hasPrefix("http://") || href.hasPrefix("https://") {
             return URL(string: href)
         }
         if href.hasPrefix("/") {
             return URL(string: "https://brewiarz.pl\(href)")
+        }
+        if href.hasPrefix("../"), !baseURL.path.contains("/i_") {
+            let trimmed = stripLeadingDotDots(from: href)
+            let yearSuffix = Self.yearSuffix(for: date)
+            return URL(string: "https://brewiarz.pl/i_\(yearSuffix)/\(trimmed)")
         }
         return URL(string: href, relativeTo: baseURL)?.absoluteURL
     }
