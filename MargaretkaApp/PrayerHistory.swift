@@ -94,7 +94,7 @@ struct HomeView: View {
             }
             .onAppear()
         {
-            priestStore.priests = Priest.loadWithTemplates()
+            priestStore.priests = Priest.loadWithTemplates(using: prayerStore.prayers)
 
             let templatePrayers = Array(prayersTemplate.values)
             let existingPrayerNames = Set(prayerStore.prayers.map { $0.name })
