@@ -39,13 +39,27 @@ struct PrayerEditorView: View {
     @State private var audioSource: AudioSource = .file
     @State private var audioFilename: String = ""
     @State private var showingFileImporter = false
+    @State private var content: PrayerContent = .text
+
+    private var isWebPrayer: Bool {
+        if case .brewiarz = content {
+            return true
+        }
+        return false
+    }
 
     var body: some View {
         Form {
             Section(header: Text("Podstawowe informacje")) {
                 TextField("Nazwa", text: $name)
-                TextField("Tekst modlitwy", text: $text, axis: .vertical)
-                    .lineLimit(5...10)
+                if isWebPrayer {
+                    Text("Modlitwa online z brewiarz.pl")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    TextField("Tekst modlitwy", text: $text, axis: .vertical)
+                        .lineLimit(5...10)
+                }
                 Picker("Ikona", selection: $symbol) {
                     ForEach(["book", "bird", "bird.fill", "heart", "heart.fill", "bolt.heart", "bolt.heart.fill", "hands.sparkles", "star", "cross", "sun.min", "moon", "music.note", "leaf", "flame", "flame.fill"], id: \.self) {
                         Label($0, systemImage: $0).tag($0)
@@ -54,31 +68,37 @@ struct PrayerEditorView: View {
             }
 
             Section(header: Text("Audio")) {
-                Picker("Źródło audio", selection: $audioSource) {
-                    ForEach(AudioSource.allCases, id: \.self) {
-                        Text($0.rawValue.capitalized)
-                    }
-                }
-
-                Group {
-                    switch audioSource {
-                    case .file:
-                        Button("Wybierz plik audio") {
-                            showingFileImporter = true
+                if isWebPrayer {
+                    Text("Audio niedostępne dla modlitw online.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Picker("Źródło audio", selection: $audioSource) {
+                        ForEach(AudioSource.allCases, id: \.self) {
+                            Text($0.rawValue.capitalized)
                         }
-                        if !audioFilename.isEmpty {
-                            Text("Wybrano: \(audioFilename)")
-                        }
-
-                    case .recorded:
-                        AudioRecorderView(audioFilename: $audioFilename)
-
-                    case .generated:
-                        TextToSpeechGeneratorView(text: $text, audioFilename: $audioFilename)
                     }
-                }
 
-                AudioPlayerView(text: $text, audioSource: $audioSource, audioFilename: $audioFilename)
+                    Group {
+                        switch audioSource {
+                        case .file:
+                            Button("Wybierz plik audio") {
+                                showingFileImporter = true
+                            }
+                            if !audioFilename.isEmpty {
+                                Text("Wybrano: \(audioFilename)")
+                            }
+
+                        case .recorded:
+                            AudioRecorderView(audioFilename: $audioFilename)
+
+                        case .generated:
+                            TextToSpeechGeneratorView(text: $text, audioFilename: $audioFilename)
+                        }
+                    }
+
+                    AudioPlayerView(text: $text, audioSource: $audioSource, audioFilename: $audioFilename)
+                }
             }
 
 
@@ -91,7 +111,8 @@ struct PrayerEditorView: View {
                     symbol: symbol,
                     audioFilename: audioFilename,
                     audioSource: audioSource,
-                    timestampedLines: prayer?.timestampedLines
+                    timestampedLines: prayer?.timestampedLines,
+                    content: content
                 )
                 store.addOrUpdate(newPrayer)
                 dismiss()
@@ -105,6 +126,7 @@ struct PrayerEditorView: View {
                 symbol = prayer.symbol
                 audioFilename = prayer.audioFilename ?? ""
                 audioSource = prayer.audioSource ?? .file
+                content = prayer.content
             }
         }
         .fileImporter(
