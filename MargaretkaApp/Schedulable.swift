@@ -16,7 +16,7 @@ internal import Combine
 import UserNotifications
 
 let schedulingHorizon: DateComponents = DateComponents(month: 12) 
-let maxOccurrencesPerTime = 30 
+let maxOccurrencesPerTime = 4 
 let maxNotificationsToSchedule = 60
 
 
