@@ -68,6 +68,9 @@
         }
       }
     },
+    "Anuluj" : {
+
+    },
     "At times" : {
       "localizations" : {
         "pl" : {
@@ -161,6 +164,9 @@
     "Dodaj nową podgrupę" : {
 
     },
+    "Dopasuj" : {
+
+    },
     "Edit" : {
       "localizations" : {
         "pl" : {
@@ -211,6 +217,9 @@
 
     },
     "frequency_label" : {
+
+    },
+    "Gotowe" : {
 
     },
     "Ikona" : {
@@ -841,6 +850,12 @@
 
     },
     "Wybrano: %@" : {
+
+    },
+    "Wycentruj" : {
+
+    },
+    "Wycentruj zdjęcie" : {
 
     },
     "Zapisano jako: %@" : {
