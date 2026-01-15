@@ -108,7 +108,7 @@ actor BrewiarzURLResolver {
                 return resolveURL(href: href, baseURL: baseURL, date: date)
             }
         }
-        return nil
+        return fallbackIndexURL(in: html, baseURL: baseURL, date: date)
     }
 
     private func parseAnchors(from html: String) -> [(href: String, text: String)] {
@@ -149,6 +149,24 @@ actor BrewiarzURLResolver {
         decoded = decoded.replacingOccurrences(of: "&apos;", with: "'")
         decoded = decoded.replacingOccurrences(of: "&#39;", with: "'")
         return decoded
+    }
+
+    private func fallbackIndexURL(in html: String, baseURL: URL, date: Date) -> URL? {
+        let pattern = "(https?://[^\\s'\"<>]*index\\.php3\\?l=i[^\\s'\"<>]*)|(\\.{2}/[^\\s'\"<>]*index\\.php3\\?l=i[^\\s'\"<>]*)|(/[^\\s'\"<>]*index\\.php3\\?l=i[^\\s'\"<>]*)"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
+            return nil
+        }
+        let range = NSRange(html.startIndex..<html.endIndex, in: html)
+        let matches = regex.matches(in: html, options: [], range: range)
+        for match in matches {
+            guard let matchRange = Range(match.range, in: html) else { continue }
+            let rawHref = String(html[matchRange])
+            let href = decodeHTMLEntities(rawHref)
+            if href.lowercased().contains("index.php3?l=i") {
+                return resolveURL(href: href, baseURL: baseURL, date: date)
+            }
+        }
+        return nil
     }
 
     private func stripLeadingDotDots(from href: String) -> String {
