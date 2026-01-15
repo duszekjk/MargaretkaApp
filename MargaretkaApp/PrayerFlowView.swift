@@ -309,6 +309,21 @@ struct PrayerFlowView: View {
         .onChange(of: scheduleData.items) {
             syncSelectedPriest()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .prayerRestartRequested)) { notification in
+            guard let itemId = notification.object as? String,
+                  let uuid = UUID(uuidString: itemId) else { return }
+            if let priest = scheduleData.items.first(where: { $0.id == uuid }) {
+                selectedPriest = priest
+                activeIndex = 0
+                finished = false
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .prayerMarkDoneRequested)) { notification in
+            guard let payload = notification.object as? (String?, Double?) else { return }
+            guard let itemId = payload.0, let uuid = UUID(uuidString: itemId) else { return }
+            let eventDate = payload.1.map { Date(timeIntervalSince1970: $0) } ?? Date()
+            scheduleData.markDayDone(itemID: uuid, on: eventDate)
+        }
     }
 
     private func syncSelectedPriest() {
