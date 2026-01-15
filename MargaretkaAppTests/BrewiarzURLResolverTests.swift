@@ -16,11 +16,11 @@ final class BrewiarzURLResolverTests: XCTestCase {
         <a href="../1501w/index.php3?l=i">Oficjum 2</a>
         </body></html>
         """
-        let baseURL = URL(string: "https://brewiarz.pl/dzis.php")!
+        let baseURL = URL(string: "https://brewiarz.pl/i_26/1501/wyb.php3")!
         let resolver = await BrewiarzURLResolver.shared
         let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL)
 
-        XCTAssertEqual(url?.absoluteString, "https://brewiarz.pl/1501p/index.php3?l=i")
+        XCTAssertEqual(url?.absoluteString, "https://brewiarz.pl/i_26/1501p/index.php3?l=i")
     }
 
     func testFirstOfficiumIndexURLParsesUnquotedHref() async {
@@ -30,11 +30,11 @@ final class BrewiarzURLResolverTests: XCTestCase {
         <a href=../1501w/index.php3?l=i>Oficjum 2</a>
         </body></html>
         """
-        let baseURL = URL(string: "https://brewiarz.pl/dzis.php")!
+        let baseURL = URL(string: "https://brewiarz.pl/i_26/1501/wyb.php3")!
         let resolver = await BrewiarzURLResolver.shared
         let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL)
 
-        XCTAssertEqual(url?.absoluteString, "https://brewiarz.pl/1501p/index.php3?l=i")
+        XCTAssertEqual(url?.absoluteString, "https://brewiarz.pl/i_26/1501p/index.php3?l=i")
     }
 
     func testFirstOfficiumIndexURLReturnsNilWhenMissing() async {
@@ -43,10 +43,37 @@ final class BrewiarzURLResolverTests: XCTestCase {
         <a href="https://example.com">Nope</a>
         </body></html>
         """
-        let baseURL = URL(string: "https://brewiarz.pl/dzis.php")!
+        let baseURL = URL(string: "https://brewiarz.pl/i_26/1501/wyb.php3")!
         let resolver = await BrewiarzURLResolver.shared
         let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL)
 
         XCTAssertNil(url)
+    }
+
+    func testFirstOfficiumIndexURLParsesHrefWithoutClosingTag() async {
+        let html = """
+        <html><body>
+        <a href="../1501p/index.php3?l=i">Oficjum 1
+        <a href="../1501w/index.php3?l=i">Oficjum 2</a>
+        </body></html>
+        """
+        let baseURL = URL(string: "https://brewiarz.pl/i_26/1501/wyb.php3")!
+        let resolver = await BrewiarzURLResolver.shared
+        let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL)
+
+        XCTAssertEqual(url?.absoluteString, "https://brewiarz.pl/i_26/1501p/index.php3?l=i")
+    }
+
+    func testFirstOfficiumIndexURLDecodesEntities() async {
+        let html = """
+        <html><body>
+        <a href="../1501p/index.php3?l=i&amp;d=1">Oficjum 1</a>
+        </body></html>
+        """
+        let baseURL = URL(string: "https://brewiarz.pl/i_26/1501/wyb.php3")!
+        let resolver = await BrewiarzURLResolver.shared
+        let url = await resolver.firstOfficiumIndexURL(in: html, baseURL: baseURL)
+
+        XCTAssertEqual(url?.absoluteString, "https://brewiarz.pl/i_26/1501p/index.php3?l=i&d=1")
     }
 }
