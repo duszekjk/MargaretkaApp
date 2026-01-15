@@ -67,6 +67,10 @@ actor BrewiarzURLResolver {
         print("🌍 Brewiarz index final: \(indexFinalURL.absoluteString)")
         let anchors = parseAnchors(from: indexHTML)
         print("🔗 Brewiarz anchors: \(anchors.count)")
+        if anchors.isEmpty {
+            let preview = String(indexHTML.prefix(400))
+            print("⚠️ Brewiarz empty anchors, html preview: \(preview)")
+        }
 
         var prayerLinks: [BrewiarzPrayerKey: String] = [:]
         var miscLinks: [String] = []
@@ -100,10 +104,33 @@ actor BrewiarzURLResolver {
     }
 
     private func fetchHTML(from url: URL) async throws -> (String, URL) {
-        let (data, response) = try await URLSession.shared.data(from: url)
-        let html = String(decoding: data, as: UTF8.self)
-        let finalURL = (response as? HTTPURLResponse)?.url ?? url
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 20
+        request.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1", forHTTPHeaderField: "User-Agent")
+        request.setValue("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", forHTTPHeaderField: "Accept")
+        request.setValue("pl-PL,pl;q=0.9,en;q=0.8", forHTTPHeaderField: "Accept-Language")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let httpResponse = response as? HTTPURLResponse
+        let finalURL = httpResponse?.url ?? url
+        let encodingName = httpResponse?.textEncodingName
+        let html = decodeHTML(data, encodingName: encodingName)
+        if let encodingName {
+            print("ℹ️ Brewiarz encoding: \(encodingName)")
+        }
+        if let status = httpResponse?.statusCode {
+            print("ℹ️ Brewiarz status: \(status)")
+        }
         return (html, finalURL)
+    }
+
+    private func decodeHTML(_ data: Data, encodingName: String?) -> String {
+        if let encodingName,
+           let encoding = String.Encoding(ianaCharsetName: encodingName),
+           let decoded = String(data: data, encoding: encoding) {
+            return decoded
+        }
+        return String(decoding: data, as: UTF8.self)
     }
 
     func firstOfficiumIndexURL(in html: String, baseURL: URL, date: Date = .now) -> URL? {
@@ -302,5 +329,15 @@ actor BrewiarzURLResolver {
     private func isValidIndexURL(_ url: URL) -> Bool {
         let lowercased = url.absoluteString.lowercased()
         return lowercased.contains("index.php3?l=i") && !lowercased.contains("wyb")
+    }
+}
+
+private extension String.Encoding {
+    init?(ianaCharsetName: String) {
+        let cfEncoding = CFStringConvertIANACharSetNameToEncoding(ianaCharsetName as CFString)
+        if cfEncoding == kCFStringEncodingInvalidId {
+            return nil
+        }
+        self = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(cfEncoding))
     }
 }
