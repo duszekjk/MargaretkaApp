@@ -51,17 +51,17 @@ struct Priest: Identifiable, Hashable, Codable {
     var notificationTypeId: String = "Priest"
     
     static let storageKey = "priest_sch"
-    static func loadWithTemplates() -> [Priest] {
+    static func loadWithTemplates(using prayers: [Prayer]) -> [Priest] {
         let stored: [Priest] = LocalDatabase.shared.load(from: Self.storageKey)
-        let merged = mergeTemplates(into: stored)
-        if merged.count != stored.count {
+        let merged = mergeTemplates(into: stored, using: prayers)
+        if merged != stored {
             LocalDatabase.shared.save(merged, as: Self.storageKey)
         }
         return merged
     }
 
-    static func ensureTemplates() {
-        _ = loadWithTemplates()
+    static func ensureTemplates(using prayers: [Prayer]) {
+        _ = loadWithTemplates(using: prayers)
     }
 
     init(
@@ -118,8 +118,7 @@ struct Priest: Identifiable, Hashable, Codable {
         LocalDatabase.shared.save(existing, as: Self.storageKey)
     }
     
-    static func load() -> [Priest]
-    {
+    static func load() -> [Priest] {
         return LocalDatabase.shared.load(from: Self.storageKey)
     }
 
@@ -196,13 +195,40 @@ extension Priest {
         "\(priest.category.rawValue)|\(priest.title)|\(priest.firstName)|\(priest.lastName)"
     }
 
-    static func mergeTemplates(into stored: [Priest]) -> [Priest] {
-        var merged = stored
-        var existingKeys = Set(stored.map { templateKey(for: $0) })
+    static func mergeTemplates(into stored: [Priest], using prayers: [Prayer]) -> [Priest] {
+        let prayerIdByName = Dictionary(uniqueKeysWithValues: prayers.map { ($0.name, $0.id) })
+        let templateIdToName = Dictionary(uniqueKeysWithValues: prayersTemplate.values.map { ($0.id, $0.name) })
+
+        func remapGroup(_ group: AssignedPrayerGroup) -> AssignedPrayerGroup {
+            let updatedItems: [AssignedPrayerItem] = group.items.map { item in
+                switch item {
+                case .prayer(let id):
+                    if let name = templateIdToName[id],
+                       let mappedId = prayerIdByName[name] {
+                        return .prayer(mappedId)
+                    }
+                    return item
+                case .subgroup:
+                    return item
+                }
+            }
+            let updatedSubgroups = group.subgroups.map(remapGroup)
+            return AssignedPrayerGroup(id: group.id, items: updatedItems, repeatCount: group.repeatCount, subgroups: updatedSubgroups)
+        }
+
+        var merged: [Priest] = stored.map { priest in
+            var updated = priest
+            updated.assignedPrayerGroups = priest.assignedPrayerGroups.map(remapGroup)
+            return updated
+        }
+
+        var existingKeys = Set(merged.map { templateKey(for: $0) })
         for template in peopleTemplates {
             let key = templateKey(for: template)
             if !existingKeys.contains(key) {
-                merged.append(template)
+                var updatedTemplate = template
+                updatedTemplate.assignedPrayerGroups = template.assignedPrayerGroups.map(remapGroup)
+                merged.append(updatedTemplate)
                 existingKeys.insert(key)
             }
         }
