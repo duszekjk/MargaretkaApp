@@ -91,7 +91,7 @@ actor BrewiarzURLResolver {
         return (html, finalURL)
     }
 
-    private func firstOfficiumIndexURL(in html: String, baseURL: URL) -> URL? {
+    func firstOfficiumIndexURL(in html: String, baseURL: URL) -> URL? {
         let anchors = parseAnchors(from: html)
         for anchor in anchors {
             if anchor.href.lowercased().contains("index.php3?l=i") {
