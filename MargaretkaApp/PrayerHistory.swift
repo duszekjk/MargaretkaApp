@@ -65,6 +65,10 @@ struct HomeView: View {
     @State var showCzymJest: Bool = false
     @State var showJakSie: Bool = false
 
+    private func templateKey(for priest: Priest) -> String {
+        "\(priest.category.rawValue)|\(priest.title)|\(priest.firstName)|\(priest.lastName)"
+    }
+
     var body: some View {
         PrayerFlowView(showSettings: $showSettings, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie)
             .toolbar {
@@ -75,17 +79,26 @@ struct HomeView: View {
             }
             .onAppear()
         {
-            var priestss = Priest.load()
-            priestStore.priests = Priest.load()
-            if(prayerStore.prayers.isEmpty)
-            {
-                prayerStore.prayers = Array(prayersTemplate.values)
-                
-                priestStore.priests = peopleTemplates
-                for priest in priestStore.priests
-                {
-                    priest.save()
+            var storedPriests = Priest.load()
+            var storedPriestKeys = Set(storedPriests.map { templateKey(for: $0) })
+            for template in peopleTemplates {
+                let key = templateKey(for: template)
+                if !storedPriestKeys.contains(key) {
+                    storedPriests.append(template)
+                    storedPriestKeys.insert(key)
+                    template.save()
                 }
+            }
+            priestStore.priests = storedPriests
+
+            let templatePrayers = Array(prayersTemplate.values)
+            let existingPrayerNames = Set(prayerStore.prayers.map { $0.name })
+            var mergedPrayers = prayerStore.prayers
+            for template in templatePrayers where !existingPrayerNames.contains(template.name) {
+                mergedPrayers.append(template)
+            }
+            if mergedPrayers.count != prayerStore.prayers.count {
+                prayerStore.prayers = mergedPrayers
             }
         }
     }
