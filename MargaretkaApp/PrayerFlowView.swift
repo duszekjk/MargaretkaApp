@@ -15,6 +15,7 @@ struct PrayerFlowView: View {
     @StateObject var scheduleData = ScheduleData<Priest>(saveKey: "priest_sch")
     @State private var activeIndex: Int = 0
     @State private var selectedCategory: PrayerTargetCategory = .priest
+    @State private var isFullscreen: Bool = false
     
     @Binding var showSettings: Bool
     @Binding var showEditor: Bool
@@ -36,6 +37,23 @@ struct PrayerFlowView: View {
 
     var allPrayers: [UUID: Prayer] {
         Dictionary(uniqueKeysWithValues: prayerStore.prayers.map { ($0.id, $0) })
+    }
+
+    var currentPrayer: Prayer? {
+        guard activeIndex < flattenedPrayerIds.count else { return nil }
+        return allPrayers[flattenedPrayerIds[activeIndex]]
+    }
+
+    var currentBrewiarzKey: BrewiarzPrayerKey? {
+        guard let prayer = currentPrayer else { return nil }
+        if case .brewiarz(let key) = prayer.content {
+            return key
+        }
+        return nil
+    }
+
+    var isCurrentPrayerWeb: Bool {
+        currentBrewiarzKey != nil
     }
 
     var flattenedPrayerIds: [UUID] {
@@ -226,6 +244,20 @@ struct PrayerFlowView: View {
                                 .foregroundStyle(.primary)
                             }
                         }
+
+                        if isCurrentPrayerWeb {
+                            GlassEffectContainer(spacing: 0) {
+                                Button(action: {
+                                    isFullscreen = true
+                                }) {
+                                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                        .padding(12)
+                                }
+                                .glassEffect()
+                                .symbolRenderingMode(.monochrome)
+                                .foregroundStyle(.primary)
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 16.0)
@@ -244,51 +276,19 @@ struct PrayerFlowView: View {
                             .fill(.ultraThinMaterial)
                             .frame(width:UIScreen.main.bounds.width-8, height: 400)
                             .overlay(
-                                ScrollView
-                                {
-                                    Text(activeIndex < flattenedPrayerSymbols.count
-                                         ? ((allPrayers[flattenedPrayerIds[activeIndex]]?.text ?? "Modlitwa") + "\n\n\((allPrayers[flattenedPrayerIds[activeIndex]]?.name ?? "Modlitwa"))")
-                                         : "Koniec 🙏")
-                                    .lineLimit(30)
-                                    .font(.headline)
-                                    .multilineTextAlignment(.center)
-                                    .padding()
-                                    .onChange(of: activeIndex)
-                                    {
-                                        let formatter = DateFormatter()
-                                        formatter.dateFormat = "dd.MM.yyyy"
-                                        let dateStringEvent = formatter.string(from: .now)
-                                        if(activeIndex < flattenedPrayerSymbols.count)
-                                        {
-                                            finished = false
-                                        } else {
-                                            finished = true
-                                        }
-                                    }
-                                    .onChange(of: finished)
-                                    {
-                                        if(selectedPriest != nil)
-                                        {
-                                            if(priestLast == selectedPriest)
-                                            {
-                                                if(finished)
-                                                {
-                                                    if let priestId = selectedPriest?.id {
-                                                        scheduleData.markDayDone(itemID: priestId, on: Date())
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    if let priestId = selectedPriest?.id {
-                                                        scheduleData.unmarkDayDone(itemID: priestId, on: Date())
-                                                    }
-                                                }
-                                            }
-                                            else
-                                            {
-                                                priestLast = selectedPriest
-                                            }
-                                            
+                                Group {
+                                    if activeIndex < flattenedPrayerSymbols.count,
+                                       let key = currentBrewiarzKey {
+                                        BrewiarzPrayerView(key: key)
+                                    } else {
+                                        ScrollView {
+                                            Text(activeIndex < flattenedPrayerSymbols.count
+                                                 ? ((allPrayers[flattenedPrayerIds[activeIndex]]?.text ?? "Modlitwa") + "\n\n\((allPrayers[flattenedPrayerIds[activeIndex]]?.name ?? "Modlitwa"))")
+                                                 : "Koniec 🙏")
+                                            .lineLimit(30)
+                                            .font(.headline)
+                                            .multilineTextAlignment(.center)
+                                            .padding()
                                         }
                                     }
                                 }
@@ -332,6 +332,35 @@ struct PrayerFlowView: View {
             finished = false
             syncSelectedPriest()
         }
+        .onChange(of: activeIndex) { _, _ in
+            if activeIndex < flattenedPrayerSymbols.count {
+                finished = false
+            } else {
+                finished = true
+            }
+            if isFullscreen && !isCurrentPrayerWeb {
+                isFullscreen = false
+            }
+        }
+        .onChange(of: finished) { _, _ in
+            if selectedPriest != nil {
+                if priestLast == selectedPriest {
+                    if finished {
+                        if let priestId = selectedPriest?.id {
+                            scheduleData.markDayDone(itemID: priestId, on: Date())
+                        }
+                    }
+                    else {
+                        if let priestId = selectedPriest?.id {
+                            scheduleData.unmarkDayDone(itemID: priestId, on: Date())
+                        }
+                    }
+                }
+                else {
+                    priestLast = selectedPriest
+                }
+            }
+        }
         .onChange(of: scheduleData.items) {
             syncSelectedPriest()
         }
@@ -349,6 +378,16 @@ struct PrayerFlowView: View {
             guard let itemId = payload.0, let uuid = UUID(uuidString: itemId) else { return }
             let eventDate = payload.1.map { Date(timeIntervalSince1970: $0) } ?? Date()
             scheduleData.markDayDone(itemID: uuid, on: eventDate)
+        }
+        .fullScreenCover(isPresented: $isFullscreen) {
+            if let key = currentBrewiarzKey {
+                BrewiarzFullScreenView(
+                    key: key,
+                    activeIndex: $activeIndex,
+                    maxIndex: flattenedPrayerSymbols.count,
+                    isPresented: $isFullscreen
+                )
+            }
         }
     }
 
@@ -421,6 +460,45 @@ struct PrayerFlowView: View {
         ? "Koronka do Miłosierdzia Bożego"
         : "Różaniec"
         return items.first { $0.category == .prayer && $0.displayName == name }
+    }
+}
+
+
+struct BrewiarzFullScreenView: View {
+    let key: BrewiarzPrayerKey
+    @Binding var activeIndex: Int
+    let maxIndex: Int
+    @Binding var isPresented: Bool
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            BrewiarzPrayerView(key: key)
+                .ignoresSafeArea()
+
+            HStack {
+                Button(action: {
+                    isPresented = false
+                }) {
+                    Image(systemName: "arrow.down.right.and.arrow.up.left")
+                        .padding(8)
+                }
+                .glassEffect()
+
+                Spacer()
+
+                Button(action: {
+                    if activeIndex < maxIndex {
+                        activeIndex += 1
+                    }
+                }) {
+                    Image(systemName: "chevron.right")
+                        .padding(12)
+                }
+                .glassEffect()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 20)
+        }
     }
 }
 
