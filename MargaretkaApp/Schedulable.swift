@@ -16,8 +16,11 @@ internal import Combine
 import UserNotifications
 
 let schedulingHorizon: DateComponents = DateComponents(month: 12) 
-let maxOccurrencesPerTime = 4 
-let maxNotificationsToSchedule = 60
+let maxOccurrencesPerTime = 4
+let maxNotificationsToSchedule = 40
+let notificationCategoryId = "SCHEDULABLE_TASK"
+let notificationActionMarkDone = "MARK_AS_DONE"
+let notificationActionRestart = "RESTART_PRAYER"
 
 
 
@@ -252,49 +255,19 @@ class ScheduleData<T: Schedulable>: ObservableObject {
     }
 
     func add(_ item: T) {
-        DispatchQueue.global(qos: .userInitiated).async {
-            var newItem = item
-            newItem.notificationIds = self.scheduleNotifications(
-                for: newItem,
-                title: newItem.notificationTitle,
-                message: newItem.notificationMessage,
-                sound: newItem.notificationSound
-            )
-            DispatchQueue.main.async {
-                self.items.append(newItem)
-                self.save()
-            }
-        }
+        items.append(item)
+        rescheduleAll()
     }
 
     func update(_ item: T) {
         if let index = items.firstIndex(where: { $0.id == item.id }) {
-            let oldIds = items[index].notificationIds
-            DispatchQueue.global(qos: .userInitiated).async {
-                self.removeScheduledNotifications(for: oldIds)
-
-                var newItem = item
-                newItem.notificationIds = []
-
-                newItem.notificationIds = self.scheduleNotifications(
-                    for: newItem,
-                    title: newItem.notificationTitle,
-                    message: newItem.notificationMessage,
-                    sound: newItem.notificationSound
-                )
-                DispatchQueue.main.async {
-                    self.items[index] = newItem
-                    self.save()
-                }
-            }
+            items[index] = item
+            rescheduleAll()
         }
     }
     public func refresh()
     {
-        for itemID in items.indices
-        {
-            update(items[itemID])
-        }
+        rescheduleAll()
     }
 
     @MainActor
@@ -356,18 +329,137 @@ class ScheduleData<T: Schedulable>: ObservableObject {
             items[ix].notificationIds.removeAll(where: {$0.contains(idNow)})
         }
     }
-    func scheduleNotifications(for item: some Schedulable, title: String, message: String, sound: String?) -> [String] {
-        let notificationCenter = UNUserNotificationCenter.current()
-        var scheduledIDs: [String] = []
-        let now = Date()
-        let calendar = Calendar.current
-        var upcomingNotifications: [(eventDate: Date, id: String, notificationDate: Date)] = []
+    func rescheduleAll() {
+        let itemsSnapshot = items
+        DispatchQueue.global(qos: .userInitiated).async {
+            let now = Date()
+            let calendar = Calendar.current
+            let notificationCenter = UNUserNotificationCenter.current()
+
+            let completeAction = UNNotificationAction(
+                identifier: notificationActionMarkDone,
+                title: "Mark as Done",
+                options: []
+            )
+            let restartAction = UNNotificationAction(
+                identifier: notificationActionRestart,
+                title: "Restart",
+                options: [.foreground]
+            )
+            let category = UNNotificationCategory(
+                identifier: notificationCategoryId,
+                actions: [completeAction, restartAction],
+                intentIdentifiers: [],
+                options: []
+            )
+            notificationCenter.setNotificationCategories([category])
+
+            struct Scheduled {
+                let itemId: T.ID
+                let typeId: String
+                let title: String
+                let message: String
+                let sound: String?
+                let eventDate: Date
+                let notificationDate: Date
+                let id: String
+                let payload: [String: Any]?
+            }
+
+            var scheduled: [Scheduled] = []
+            for item in itemsSnapshot {
+                let upcoming = buildUpcomingNotifications(for: item, title: item.notificationTitle, now: now, calendar: calendar)
+                for entry in upcoming {
+                    if item.notificationIdsFinished.contains(entry.id) { continue }
+                    if let end = item.schedule.endDate, entry.notificationDate > end { continue }
+                    if entry.notificationDate < now { continue }
+
+                    let payload: [String: Any]?
+                    if let encoded = try? JSONEncoder().encode(item),
+                       let json = try? JSONSerialization.jsonObject(with: encoded) as? [String: Any] {
+                        payload = json
+                    } else {
+                        payload = nil
+                    }
+
+                    scheduled.append(Scheduled(
+                        itemId: item.id,
+                        typeId: item.notificationTypeId,
+                        title: item.notificationTitle,
+                        message: item.notificationMessage,
+                        sound: item.notificationSound,
+                        eventDate: entry.eventDate,
+                        notificationDate: entry.notificationDate,
+                        id: entry.id,
+                        payload: payload
+                    ))
+                }
+            }
+
+            scheduled.sort { $0.notificationDate < $1.notificationDate }
+            if scheduled.count > maxNotificationsToSchedule {
+                scheduled = Array(scheduled.prefix(maxNotificationsToSchedule))
+            }
+
+            notificationCenter.removeAllPendingNotificationRequests()
+
+            var idsByItem: [T.ID: [String]] = [:]
+            for entry in scheduled {
+                let content = UNMutableNotificationContent()
+                content.title = entry.title
+                content.body = entry.message
+                if entry.sound == nil {
+                    content.sound = .default
+                } else if let sound = entry.sound,
+                          let _ = Bundle.main.url(forResource: sound, withExtension: "wav") {
+                    content.sound = UNNotificationSound(named: UNNotificationSoundName("\(sound).wav"))
+                } else if let _ = Bundle.main.url(forResource: "default", withExtension: "wav") {
+                    content.sound = UNNotificationSound(named: UNNotificationSoundName("default.wav"))
+                } else {
+                    content.sound = .default
+                }
+                content.categoryIdentifier = notificationCategoryId
+                content.userInfo = [
+                    "type": entry.typeId,
+                    "itemId": String(describing: entry.itemId),
+                    "eventTime": entry.eventDate.timeIntervalSince1970,
+                    "payload": entry.payload ?? [:]
+                ]
+
+                let triggerDate = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: entry.notificationDate)
+                let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+                let request = UNNotificationRequest(identifier: entry.id, content: content, trigger: trigger)
+                notificationCenter.add(request) { error in
+                    if let error = error {
+                        print("Error scheduling notification: \(error.localizedDescription)")
+                    }
+                }
+                idsByItem[entry.itemId, default: []].append(entry.id)
+            }
+
+            DispatchQueue.main.async {
+                for index in self.items.indices {
+                    let itemId = self.items[index].id
+                    self.items[index].notificationIds = idsByItem[itemId] ?? []
+                }
+                self.save()
+            }
+        }
+    }
+
+    func buildUpcomingNotifications(
+        for item: some Schedulable,
+        title: String,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> [(eventDate: Date, notificationDate: Date, id: String)] {
+        var upcoming: [(Date, Date, String)] = []
 
         for time in item.schedule.times {
             if time.event.hour == nil && time.event.minute == nil {
                 continue
             }
-            if upcomingNotifications.count >= maxNotificationsToSchedule {
+            if upcoming.count >= maxNotificationsToSchedule {
                 break
             }
             let todayAtTime = calendar.date(bySettingHour: time.event.hour ?? 11, minute: time.event.minute ?? 0, second: 0, of: now)
@@ -383,33 +475,25 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                 var emitted = 0
 
                 while cursor <= end && emitted < maxOccurrencesPerTime {
-                    
-                    upcomingNotifications.append((cursor, makeID(with: title, eventTime: cursor, notificationTime: cursor), cursor))
-
-                    
+                    let eventId = makeID(with: title, eventTime: cursor, notificationTime: cursor)
+                    upcoming.append((cursor, cursor, eventId))
                     for notif in time.notifications {
-                        if let dateN = Calendar.current.date(byAdding: notif, to: cursor, direction: .before) {
-                            upcomingNotifications.append((cursor, makeID(with: title, eventTime: cursor, notificationTime: dateN), dateN))
+                        if let dateN = calendar.date(byAdding: notif, to: cursor, direction: .before) {
+                            let notifId = makeID(with: title, eventTime: cursor, notificationTime: dateN)
+                            upcoming.append((cursor, dateN, notifId))
                         }
                     }
-
-                    
-                    guard let next = Calendar.current.date(byAdding: .day, value: item.schedule.everyN, to: cursor) else { break }
+                    guard let next = calendar.date(byAdding: .day, value: item.schedule.everyN, to: cursor) else { break }
                     cursor = next
                     emitted += 1
                 }
 
             case .weekly:
-                
-                let allWeekdaySymbols = Weekday.allCases
                 let selectedWeekdays: [Weekday] = {
                     if item.schedule.daysOfWeek.isEmpty {
-                        
                         return [Weekday.today]
                     }
-                    return allWeekdaySymbols
-                        .filter { item.schedule.daysOfWeek.contains($0) }
-
+                    return Weekday.allCases.filter { item.schedule.daysOfWeek.contains($0) }
                 }()
 
                 let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
@@ -426,23 +510,20 @@ class ScheduleData<T: Schedulable>: ObservableObject {
 
                 while weekCursor <= end && emitted < maxOccurrencesPerTime {
                     for wd in selectedWeekdays {
-                        
                         var comps = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: weekCursor)
                         comps.weekday = wd.calendarWeekday
                         comps.hour = hour
                         comps.minute = minute
 
                         if let candidate = calendar.date(from: comps) {
-                            
                             if candidate >= firstCandidateAtTime && candidate <= end {
                                 if candidate < now { continue }
-                                
-                                upcomingNotifications.append((candidate, makeID(with: title, eventTime: candidate, notificationTime: candidate), candidate))
-
-                                
+                                let eventId = makeID(with: title, eventTime: candidate, notificationTime: candidate)
+                                upcoming.append((candidate, candidate, eventId))
                                 for notif in time.notifications {
                                     if let dateN = calendar.date(byAdding: notif, to: candidate, direction: .before) {
-                                        upcomingNotifications.append((candidate, makeID(with: title, eventTime: candidate, notificationTime: dateN), dateN))
+                                        let notifId = makeID(with: title, eventTime: candidate, notificationTime: dateN)
+                                        upcoming.append((candidate, dateN, notifId))
                                     }
                                 }
                                 emitted += 1
@@ -450,7 +531,6 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                             }
                         }
                     }
-                    
                     if let nextWeek = calendar.date(byAdding: .weekOfYear, value: item.schedule.everyN, to: weekCursor) {
                         weekCursor = nextWeek
                     } else {
@@ -459,7 +539,6 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                 }
 
             case .monthly:
-                
                 let selectedDays: [Int] = {
                     if item.schedule.daysOfMonth.isEmpty {
                         let d = calendar.component(.day, from: item.schedule.startDate)
@@ -473,10 +552,8 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                 let minute = time.event.minute ?? 0
                 var emitted = 0
 
-                
                 let firstAnchor = max(now, item.schedule.startDate)
                 let firstAtTime = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: firstAnchor) ?? firstAnchor
-
                 var monthCursorComps = calendar.dateComponents([.year, .month], from: firstAtTime)
                 var monthCursor = calendar.date(from: monthCursorComps) ?? firstAtTime
 
@@ -490,17 +567,15 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                         comps.hour = hour
                         comps.minute = minute
 
-                        
                         if let candidate = calendar.date(from: comps) {
                             if candidate >= firstAtTime && candidate <= end {
                                 if candidate < now { continue }
-                                
-                                upcomingNotifications.append((candidate, makeID(with: title, eventTime: candidate, notificationTime: candidate), candidate))
-
-                                
+                                let eventId = makeID(with: title, eventTime: candidate, notificationTime: candidate)
+                                upcoming.append((candidate, candidate, eventId))
                                 for notif in time.notifications {
                                     if let dateN = calendar.date(byAdding: notif, to: candidate, direction: .before) {
-                                        upcomingNotifications.append((candidate, makeID(with: title, eventTime: candidate, notificationTime: dateN), dateN))
+                                        let notifId = makeID(with: title, eventTime: candidate, notificationTime: dateN)
+                                        upcoming.append((candidate, dateN, notifId))
                                     }
                                 }
                                 emitted += 1
@@ -508,102 +583,16 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                             }
                         }
                     }
-                    
                     if let nextMonth = calendar.date(byAdding: .month, value: item.schedule.everyN, to: monthCursor) {
                         monthCursor = nextMonth
                     } else {
                         break
                     }
                 }
-
             }
         }
 
-        upcomingNotifications.sort { $0.notificationDate < $1.notificationDate }
-
-        let completeAction = UNNotificationAction(
-            identifier: "MARK_AS_DONE",
-            title: "Mark as Done",
-            options: []
-        )
-
-        let categoryIdentifier = "SCHEDULABLE_TASK"
-
-        let category = UNNotificationCategory(
-            identifier: categoryIdentifier,
-            actions: [completeAction],
-            intentIdentifiers: [],
-            options: []
-        )
-        UNUserNotificationCenter.current().setNotificationCategories([category])
-
-        for (eventDate, id, date) in upcomingNotifications {
-            if scheduledIDs.count >= maxNotificationsToSchedule { break }
-            if let end = item.schedule.endDate, date > end { continue }
-            if date < now { continue }
-
-            if item.notificationIds.contains(id) { continue }
-            if item.notificationIdsFinished.contains(id) { continue }
-            let eventIdPrefix = makeIDShort(with: title, eventTime: eventDate)
-            var idsToRemove : [String] = []
-            for notificationId in item.notificationIds {
-                if(notificationId.contains(eventIdPrefix))
-                {
-                    idsToRemove.append(notificationId)
-                }
-            }
-            var itemNow = item
-            itemNow.notificationIdsFinished = idsToRemove
-
-            guard let encoded = try? JSONEncoder().encode(itemNow),
-                  let json = try? JSONSerialization.jsonObject(with: encoded) as? [String: Any] else {
-                continue
-            }
-
-            let content = UNMutableNotificationContent()
-            content.title = title
-            content.body = message
-            if(sound ==  nil)
-            {
-                content.sound = .default
-            }
-            else
-            {
-                if let _ = Bundle.main.url(forResource: sound!, withExtension: "wav") {
-                    content.sound = UNNotificationSound(named: UNNotificationSoundName("\(sound!).wav"))
-                } else {
-                    if let _ = Bundle.main.url(forResource: "default", withExtension: "wav") {
-                        content.sound = UNNotificationSound(named: UNNotificationSoundName("default.wav"))
-                    } else {
-                        content.sound = .default
-                    }
-                }
-            }
-            content.categoryIdentifier = categoryIdentifier
-
-
-            content.userInfo = [
-                "type": (item as? Schedulable)?.notificationTypeId ?? "",
-                "itemId": String(describing: item.id),
-                "eventTime": eventDate.timeIntervalSince1970,
-                "payload": json
-            ]
-
-            let triggerDate = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
-            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
-
-            scheduledIDs.append(id)
-
-            let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
-            notificationCenter.add(request){ error in
-                if let error = error {
-                    print("Error scheduling notification: \(error.localizedDescription)")
-                }
-            }
-
-        }
-
-        return scheduledIDs
+        return upcoming
     }
     func removeScheduledNotifications(for ids: [String]) {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
@@ -1005,12 +994,10 @@ struct SchedulingView: View {
 }
 func scheduleNotificationsFor(_ item: Schedulable) -> [String] {
     let scheduler = ScheduleData<DummySchedulable>(saveKey: "dummy")
-    return scheduler.scheduleNotifications(
+    return scheduler.buildUpcomingNotifications(
         for: item,
-        title: item.notificationTitle,
-        message: item.notificationMessage,
-        sound: item.notificationSound
-    )
+        title: item.notificationTitle
+    ).map { $0.id }
 }
 
 private struct DummySchedulable: Schedulable {
