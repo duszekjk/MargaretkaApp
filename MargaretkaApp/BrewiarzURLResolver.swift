@@ -46,8 +46,7 @@ actor BrewiarzURLResolver {
         let (dzisHTML, dzisFinalURL) = try await fetchHTML(from: dzisURL)
 
         let indexURL: URL
-        if isOfficiumSelectionPage(dzisHTML),
-           let resolvedIndex = firstOfficiumIndexURL(in: dzisHTML, baseURL: dzisFinalURL) {
+        if let resolvedIndex = firstOfficiumIndexURL(in: dzisHTML, baseURL: dzisFinalURL) {
             indexURL = resolvedIndex
         } else {
             indexURL = dzisFinalURL
@@ -90,10 +89,6 @@ actor BrewiarzURLResolver {
         let html = String(decoding: data, as: UTF8.self)
         let finalURL = (response as? HTTPURLResponse)?.url ?? url
         return (html, finalURL)
-    }
-
-    private func isOfficiumSelectionPage(_ html: String) -> Bool {
-        html.range(of: "WYBIERZ OFICJUM", options: .caseInsensitive) != nil
     }
 
     private func firstOfficiumIndexURL(in html: String, baseURL: URL) -> URL? {
