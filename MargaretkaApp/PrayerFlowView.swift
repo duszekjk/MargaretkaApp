@@ -495,43 +495,46 @@ struct BrewiarzFullScreenView: View {
     let namespace: Namespace.ID
 
     var body: some View {
-        ZStack(alignment: .top) {
-            BrewiarzPrayerView(key: key)
-                .matchedGeometryEffect(id: "brewiarzWeb", in: namespace, isSource: isPresented)
-                .zIndex(0)
-                .ignoresSafeArea()
+        GeometryReader { proxy in
+            let safeTop = proxy.safeAreaInsets.top
+            ZStack(alignment: .top) {
+                BrewiarzPrayerView(key: key)
+                    .matchedGeometryEffect(id: "brewiarzWeb", in: namespace, isSource: isPresented)
+                    .zIndex(0)
+                    .ignoresSafeArea()
 
-            HStack {
-                Button(action: {
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        isPresented = false
+                HStack {
+                    Button(action: {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            isPresented = false
+                        }
+                    }) {
+                        Image(systemName: "arrow.down.right.and.arrow.up.left")
+                            .padding(8)
                     }
-                }) {
-                    Image(systemName: "arrow.down.right.and.arrow.up.left")
-                        .padding(8)
-                }
-                .glassEffect()
+                    .glassEffect()
 
-                Spacer()
+                    Spacer()
 
-                Button(action: {
-                    if activeIndex < maxIndex {
-                        activeIndex += 1
+                    Button(action: {
+                        if activeIndex < maxIndex {
+                            activeIndex += 1
+                        }
+                    }) {
+                        Image(systemName: "chevron.right")
+                            .padding(12)
                     }
-                }) {
-                    Image(systemName: "chevron.right")
-                        .padding(12)
+                    .glassEffect()
                 }
-                .glassEffect()
+                .zIndex(1)
+                .padding(.horizontal, 16)
+                .padding(.top, safeTop + 8)
             }
-            .zIndex(1)
-            .padding(.horizontal, 16)
-            .padding(.top, 20)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea()
+            .statusBarHidden(true)
+            .persistentSystemOverlays(.hidden)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .ignoresSafeArea()
-        .statusBarHidden(true)
-        .persistentSystemOverlays(.hidden)
     }
 }
 
