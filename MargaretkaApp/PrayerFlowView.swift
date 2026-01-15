@@ -495,46 +495,41 @@ struct BrewiarzFullScreenView: View {
     let namespace: Namespace.ID
 
     var body: some View {
-        GeometryReader { proxy in
-            let safeTop = proxy.safeAreaInsets.top
-            ZStack(alignment: .top) {
-                BrewiarzPrayerView(key: key)
-                    .matchedGeometryEffect(id: "brewiarzWeb", in: namespace, isSource: isPresented)
-                    .zIndex(0)
-                    .ignoresSafeArea()
-
-                HStack {
-                    Button(action: {
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            isPresented = false
-                        }
-                    }) {
-                        Image(systemName: "arrow.down.right.and.arrow.up.left")
-                            .padding(8)
-                    }
-                    .glassEffect()
-
-                    Spacer()
-
-                    Button(action: {
-                        if activeIndex < maxIndex {
-                            activeIndex += 1
-                        }
-                    }) {
-                        Image(systemName: "chevron.right")
-                            .padding(12)
-                    }
-                    .glassEffect()
-                }
-                .zIndex(1)
-                .padding(.horizontal, 16)
-                .padding(.top, safeTop + 8)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .ignoresSafeArea()
-            .statusBarHidden(true)
-            .persistentSystemOverlays(.hidden)
+        ZStack {
+            BrewiarzPrayerView(key: key)
+                .matchedGeometryEffect(id: "brewiarzWeb", in: namespace, isSource: isPresented)
+                .zIndex(0)
+                .ignoresSafeArea()
         }
+        .safeAreaInset(edge: .top) {
+            HStack {
+                Button(action: {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        isPresented = false
+                    }
+                }) {
+                    Image(systemName: "arrow.down.right.and.arrow.up.left")
+                        .padding(8)
+                }
+                .glassEffect()
+
+                Spacer()
+
+                Button(action: {
+                    if activeIndex < maxIndex {
+                        activeIndex += 1
+                    }
+                }) {
+                    Image(systemName: "chevron.right")
+                        .padding(12)
+                }
+                .glassEffect()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+        }
+        .statusBarHidden(true)
+        .persistentSystemOverlays(.hidden)
     }
 }
 
