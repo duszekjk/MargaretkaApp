@@ -198,12 +198,13 @@ extension Priest {
     static func mergeTemplates(into stored: [Priest], using prayers: [Prayer]) -> [Priest] {
         let prayerIdByName = Dictionary(uniqueKeysWithValues: prayers.map { ($0.name, $0.id) })
         let templateIdToName = Dictionary(uniqueKeysWithValues: prayersTemplate.values.map { ($0.id, $0.name) })
+        let legacyIdToName = legacyTemplateIdMapping(from: stored)
 
         func remapGroup(_ group: AssignedPrayerGroup) -> AssignedPrayerGroup {
             let updatedItems: [AssignedPrayerItem] = group.items.map { item in
                 switch item {
                 case .prayer(let id):
-                    if let name = templateIdToName[id],
+                    if let name = legacyIdToName[id] ?? templateIdToName[id],
                        let mappedId = prayerIdByName[name] {
                         return .prayer(mappedId)
                     }
@@ -233,6 +234,65 @@ extension Priest {
             }
         }
         return merged
+    }
+
+    private static func legacyTemplateIdMapping(from stored: [Priest]) -> [UUID: String] {
+        let templateIdToName = Dictionary(uniqueKeysWithValues: prayersTemplate.values.map { ($0.id, $0.name) })
+        let templateByKey = Dictionary(uniqueKeysWithValues: peopleTemplates.map { (templateKey(for: $0), $0) })
+        var mapping: [UUID: String] = [:]
+
+        func flattenIds(from group: AssignedPrayerGroup) -> [UUID] {
+            var ids: [UUID] = []
+            for _ in 0..<group.repeatCount {
+                for item in group.items {
+                    switch item {
+                    case .prayer(let id):
+                        ids.append(id)
+                    case .subgroup(let index):
+                        if index < group.subgroups.count {
+                            ids.append(contentsOf: flattenIds(from: group.subgroups[index]))
+                        }
+                    }
+                }
+            }
+            return ids
+        }
+
+        func flattenNames(from group: AssignedPrayerGroup) -> [String] {
+            var names: [String] = []
+            for _ in 0..<group.repeatCount {
+                for item in group.items {
+                    switch item {
+                    case .prayer(let id):
+                        if let name = templateIdToName[id] {
+                            names.append(name)
+                        }
+                    case .subgroup(let index):
+                        if index < group.subgroups.count {
+                            names.append(contentsOf: flattenNames(from: group.subgroups[index]))
+                        }
+                    }
+                }
+            }
+            return names
+        }
+
+        for priest in stored {
+            let key = templateKey(for: priest)
+            guard let template = templateByKey[key] else { continue }
+            let storedIds = priest.assignedPrayerGroups.flatMap { flattenIds(from: $0) }
+            let templateNames = template.assignedPrayerGroups.flatMap { flattenNames(from: $0) }
+            let count = min(storedIds.count, templateNames.count)
+            guard count > 0 else { continue }
+            for index in 0..<count {
+                let legacyId = storedIds[index]
+                let name = templateNames[index]
+                if mapping[legacyId] == nil {
+                    mapping[legacyId] = name
+                }
+            }
+        }
+        return mapping
     }
 
     var displayName: String {
