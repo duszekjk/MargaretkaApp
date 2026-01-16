@@ -670,18 +670,18 @@ struct PrayerTouchScrollerView: View {
                                 
                             } else if delta == 1 && index == symbols.count - 1 {
                                 updateIndex(index)
-                                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                                UIImpactFeedbackGenerator(style: .heavy).impactOccurred(intensity: 1.0)
                             } else if delta == 1 {
                                 updateIndex(index)
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 1.0)
                             } else if delta == -1 {
                                 updateIndex(index)
-                                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                                UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.9)
                             } else {
-                                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.4)
                             }
                         } else {
-                            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.4)
                         }
                     }
                     .onEnded { _ in
