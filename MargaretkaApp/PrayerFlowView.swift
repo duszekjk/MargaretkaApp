@@ -17,7 +17,7 @@ struct PrayerFlowView: View {
     @State private var selectedCategory: PrayerTargetCategory = .priest
     @State private var isFullscreen: Bool = false
     @State private var userSelectedCategory: Bool = false
-    @State private var previousIndex: Int = 0
+    @State private var isAdvancing: Bool = true
     
     @Binding var showSettings: Bool
     @Binding var showEditor: Bool
@@ -57,10 +57,6 @@ struct PrayerFlowView: View {
 
     var isCurrentPrayerWeb: Bool {
         currentBrewiarzKey != nil
-    }
-
-    var isAdvancing: Bool {
-        activeIndex >= previousIndex
     }
 
     var flattenedPrayerIds: [UUID] {
@@ -357,7 +353,7 @@ struct PrayerFlowView: View {
             userSelectedCategory = false
         }
         .onChange(of: activeIndex) { oldValue, _ in
-            previousIndex = oldValue
+            isAdvancing = activeIndex >= oldValue
             if activeIndex < flattenedPrayerSymbols.count {
                 finished = false
             } else {
