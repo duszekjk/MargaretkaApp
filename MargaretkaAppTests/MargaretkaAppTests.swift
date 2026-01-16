@@ -5,6 +5,7 @@
 //  Created by Jacek Kauny on 11/07/2025.
 //
 
+import Foundation
 import Testing
 @testable import MargaretkaApp
 
