@@ -292,19 +292,24 @@ struct PrayerFlowView: View {
                                             .allowsHitTesting(!isFullscreen)
                                     } else {
                                         ScrollView {
-                                            Text(activeIndex < flattenedPrayerSymbols.count
-                                                 ? ((allPrayers[flattenedPrayerIds[activeIndex]]?.text ?? "Modlitwa") + "\n\n\((allPrayers[flattenedPrayerIds[activeIndex]]?.name ?? "Modlitwa"))")
-                                                 : "Koniec 🙏")
-                                            .lineLimit(30)
-                                            .font(.headline)
-                                            .multilineTextAlignment(.center)
-                                            .padding()
+                                            ZStack {
+                                                Text(activeIndex < flattenedPrayerSymbols.count
+                                                     ? ((allPrayers[flattenedPrayerIds[activeIndex]]?.text ?? "Modlitwa") + "\n\n\((allPrayers[flattenedPrayerIds[activeIndex]]?.name ?? "Modlitwa"))")
+                                                     : "Koniec 🙏")
+                                                .lineLimit(30)
+                                                .font(.headline)
+                                                .multilineTextAlignment(.center)
+                                                .padding()
+                                                .id(activeIndex)
+                                                .transition(.asymmetric(
+                                                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                                                    removal: .move(edge: .leading).combined(with: .opacity)
+                                                ))
+                                            }
+                                            .animation(.easeInOut(duration: 0.25), value: activeIndex)
                                         }
                                     }
                                 }
-                                .id(activeIndex)
-                                .transition(.opacity.combined(with: .move(edge: .trailing)))
-                                .animation(.easeInOut(duration: 0.25), value: activeIndex)
                                     .frame(width:UIScreen.main.bounds.width-10, height: 400)
                                 
                             )
