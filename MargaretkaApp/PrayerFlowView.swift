@@ -18,6 +18,17 @@ struct PrayerFlowView: View {
     @State private var isFullscreen: Bool = false
     @State private var userSelectedCategory: Bool = false
     @State private var isAdvancing: Bool = true
+    @StateObject private var sessionStore = PrayerSessionStore()
+    @State private var sessionStart: Date?
+    @State private var sessionPauseStart: Date?
+    @State private var sessionPausedTotal: TimeInterval = 0
+    @State private var sessionPrayerIds: [UUID] = []
+    @State private var sessionPrayerNames: [String] = []
+    @State private var sessionTargetName: String = ""
+    @State private var sessionTargetId: UUID?
+    @State private var sessionTargetCategory: PrayerTargetCategory = .priest
+    @State private var sessionCompletion: PrayerSessionCompletion = .finished
+    @State private var sessionForcedEndDate: Date?
     
     @Binding var showSettings: Bool
     @Binding var showEditor: Bool
@@ -25,6 +36,7 @@ struct PrayerFlowView: View {
     @Binding var showCzymJest: Bool
     @Binding var showJakSie: Bool
 
+    @Environment(\.scenePhase) private var scenePhase
     @Namespace private var namespace
     @Namespace private var brewiarzNamespace
     var priestsAndPrayers: [Priest] {
@@ -371,8 +383,24 @@ struct PrayerFlowView: View {
             syncSelectedPriest(userInitiated: userSelectedCategory)
             userSelectedCategory = false
         }
-        .onChange(of: activeIndex) { _, _ in
-            if activeIndex < flattenedPrayerSymbols.count {
+        .onChange(of: activeIndex) { oldValue, newValue in
+            if sessionStart == nil,
+               oldValue == 0,
+               newValue == 1,
+               selectedPriest != nil {
+                startSession()
+            } else if sessionStart != nil,
+                      newValue == 0,
+                      oldValue != 0 {
+                finishSession(
+                    endDate: Date(),
+                    completed: false,
+                    completion: .abandoned,
+                    completedSubprayerCount: min(oldValue, flattenedPrayerIds.count)
+                )
+            }
+
+            if newValue < flattenedPrayerSymbols.count {
                 finished = false
             } else {
                 finished = true
@@ -383,7 +411,19 @@ struct PrayerFlowView: View {
                 }
             }
         }
-        .onChange(of: finished) { _, _ in
+        .onChange(of: finished) { _, newValue in
+            if newValue, sessionStart != nil {
+                let endDate = sessionForcedEndDate ?? Date()
+                finishSession(
+                    endDate: endDate,
+                    completed: true,
+                    completion: sessionCompletion,
+                    completedSubprayerCount: min(activeIndex, flattenedPrayerIds.count)
+                )
+                sessionForcedEndDate = nil
+                sessionCompletion = .finished
+            }
+
             if selectedPriest != nil {
                 if priestLast == selectedPriest {
                     if finished {
@@ -401,6 +441,19 @@ struct PrayerFlowView: View {
                     priestLast = selectedPriest
                 }
             }
+        }
+        .onChange(of: selectedPriest?.id) { oldValue, newValue in
+            if oldValue != newValue {
+                finishSession(
+                    endDate: Date(),
+                    completed: false,
+                    completion: .abandoned,
+                    completedSubprayerCount: min(activeIndex, flattenedPrayerIds.count)
+                )
+            }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            handleScenePhaseChange(newPhase)
         }
         .onChange(of: scheduleData.items) {
             syncSelectedPriest()
@@ -440,6 +493,89 @@ struct PrayerFlowView: View {
         .persistentSystemOverlays(isFullscreen ? .hidden : .visible)
         .toolbar(isFullscreen ? .hidden : .visible, for: .navigationBar)
         .toolbarBackground(isFullscreen ? .hidden : .visible, for: .navigationBar)
+    }
+
+    private func startSession() {
+        guard sessionStart == nil, let target = selectedPriest else { return }
+        sessionStart = Date()
+        sessionPauseStart = nil
+        sessionPausedTotal = 0
+        sessionPrayerIds = flattenedPrayerIds
+        sessionPrayerNames = flattenedPrayerIds.map { allPrayers[$0]?.name ?? "Modlitwa" }
+        sessionTargetId = target.id
+        sessionTargetName = target.displayName
+        sessionTargetCategory = target.category
+    }
+
+    private func finishSession(
+        endDate: Date,
+        completed: Bool,
+        completion: PrayerSessionCompletion,
+        completedSubprayerCount: Int
+    ) {
+        guard let startedAt = sessionStart else { return }
+        let effectiveCompletion: PrayerSessionCompletion = completed ? completion : .abandoned
+        let effectiveEnd = max(startedAt, endDate)
+        let duration = max(0, effectiveEnd.timeIntervalSince(startedAt) - sessionPausedTotal)
+        let totalSubprayers = sessionPrayerIds.count
+        let completedCount = min(max(completedSubprayerCount, 0), totalSubprayers)
+        let session = PrayerSession(
+            id: UUID(),
+            targetId: sessionTargetId,
+            targetName: sessionTargetName,
+            targetCategory: sessionTargetCategory,
+            prayerIds: sessionPrayerIds,
+            prayerNames: sessionPrayerNames,
+            startedAt: startedAt,
+            endedAt: effectiveEnd,
+            duration: duration,
+            totalSubprayerCount: totalSubprayers,
+            completedSubprayerCount: completedCount,
+            completed: completed,
+            completion: effectiveCompletion
+        )
+        sessionStore.add(session)
+
+        sessionStart = nil
+        sessionPauseStart = nil
+        sessionPausedTotal = 0
+        sessionPrayerIds = []
+        sessionPrayerNames = []
+        sessionTargetName = ""
+        sessionTargetId = nil
+    }
+
+    private func handleScenePhaseChange(_ newPhase: ScenePhase) {
+        switch newPhase {
+        case .background, .inactive:
+            pauseSessionIfNeeded()
+        case .active:
+            resumeSessionIfNeeded()
+        @unknown default:
+            break
+        }
+    }
+
+    private func pauseSessionIfNeeded() {
+        guard sessionStart != nil, sessionPauseStart == nil, !finished else { return }
+        sessionPauseStart = Date()
+    }
+
+    private func resumeSessionIfNeeded() {
+        guard let pauseStart = sessionPauseStart else { return }
+        let now = Date()
+        let pauseDuration = now.timeIntervalSince(pauseStart)
+
+        sessionPauseStart = nil
+
+        if pauseDuration > 600, sessionStart != nil, !finished {
+            sessionCompletion = .timeout
+            sessionForcedEndDate = pauseStart
+            moveToIndex(flattenedPrayerSymbols.count, animated: false)
+            return
+        }
+
+        sessionPausedTotal += pauseDuration
     }
 
     private func syncSelectedPriest() {
