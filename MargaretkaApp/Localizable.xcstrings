@@ -61,7 +61,7 @@
         }
       }
     },
-    "Aktywnosc Margaretki (8 tygodni)" : {
+    "Aktywnosc tygodniowa (8 tygodni)" : {
 
     },
     "Anuluj" : {
@@ -99,10 +99,10 @@
         }
       }
     },
-    "Checkpoint zaliczony" : {
+    "Checkpoint Margaretki" : {
 
     },
-    "Checkpointy" : {
+    "Checkpointy tygodniowe" : {
 
     },
     "Codzienna propozycja (minimum)" : {
@@ -176,7 +176,7 @@
     "Dodaj nową podgrupę" : {
 
     },
-    "Dodatkowe modlitwy" : {
+    "Dodatkowe modlitwy (poza Margaretka)" : {
 
     },
     "Dopasuj" : {
@@ -273,9 +273,6 @@
     "Ładowanie..." : {
 
     },
-    "Margaretka – rytm tygodnia" : {
-
-    },
     "Modlitwa Margaretka" : {
 
     },
@@ -346,13 +343,13 @@
     "Podstawowe informacje" : {
 
     },
-    "Podsumowanie roku" : {
+    "Podsumowanie roku Margaretki" : {
 
     },
     "Pokaż" : {
 
     },
-    "Pora dnia" : {
+    "Pora dnia modlitwy" : {
 
     },
     "Powtórz %lldx" : {
@@ -364,7 +361,7 @@
     "Praktyka może się nieco różnić w poszczególnych wspólnotach/parafiach – dostosuj do lokalnych zwyczajów. Istota pozostaje ta sama: **stała modlitwa za kapłana**." : {
 
     },
-    "Rekordy" : {
+    "Rekordy Margaretki" : {
 
     },
     "Remove last" : {
@@ -410,7 +407,7 @@
         }
       }
     },
-    "Seria tygodniowa" : {
+    "Seria tygodni Margaretki" : {
 
     },
     "Sesje: %lld" : {
@@ -430,6 +427,9 @@
       }
     },
     "Statystyki" : {
+
+    },
+    "Statystyki Margaretki" : {
 
     },
     "Tekst modlitwy" : {
@@ -870,7 +870,7 @@
     "Udostępnij" : {
 
     },
-    "Ulubione" : {
+    "Ulubione w Margaretce" : {
 
     },
     "Unit" : {
