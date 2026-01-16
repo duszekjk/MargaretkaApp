@@ -26,14 +26,14 @@ struct StatsView: View {
                 .pickerStyle(.segmented)
 
                 HStack(spacing: 16) {
-                    statCard(title: "Sesje", value: "\(summary.totalSessions)", detail: "Aktywne tygodnie: \(summary.activeWeeks)")
-                    statCard(title: "Ukonczone", value: "\(summary.completedSessions)", detail: "Skutecznosc: \(summary.completionRateText)")
+                    statCard(title: "Sesje Margaretki", value: "\(summary.totalSessions)", detail: "Ukonczone: \(summary.completedSessions)")
+                    statCard(title: "Aktywne tygodnie", value: "\(summary.activeWeeks)", detail: "Skutecznosc: \(summary.completionRateText)")
                 }
 
                 weeklyStreakCard(summary: summary)
 
                 HStack(spacing: 16) {
-                    statCard(title: "Czas", value: summary.totalDurationText, detail: "Srednio: \(summary.averageDurationText)")
+                    statCard(title: "Czas Margaretki", value: summary.totalDurationText, detail: "Srednio: \(summary.averageDurationText)")
                     statCard(title: "Submodlitwy", value: "\(summary.totalSubprayers)", detail: "Srednio: \(summary.averageSubprayersText)")
                 }
 
@@ -187,10 +187,9 @@ struct StatsView: View {
             Text("Ulubione")
                 .font(.headline)
 
-            favoriteRow(title: "Kaplan", value: summary.favoritePriestTarget ?? summary.favoriteTarget ?? "Brak danych")
+            favoriteRow(title: "Kaplan", value: summary.favoritePriestTarget ?? "Brak danych")
             favoriteRow(title: "Submodlitwa", value: summary.favoritePrayer ?? "Brak danych")
             favoriteRow(title: "Pora dnia", value: summary.favoriteTimeOfDay ?? "Brak danych")
-            favoriteRow(title: "Kategoria", value: summary.favoriteCategory ?? "Brak danych")
         }
         .padding(16)
         .background(cardBackground(colors: [Color.white.opacity(0.7), Color.white.opacity(0.35)]))
@@ -237,7 +236,7 @@ struct StatsView: View {
 
     private func activityCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Aktywnosc 7 dni")
+            Text("Aktywnosc Margaretki (7 dni)")
                 .font(.headline)
 
             HStack(alignment: .bottom, spacing: 10) {
@@ -260,22 +259,30 @@ struct StatsView: View {
 
     private func categoriesCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Kategorie")
+            Text("Dodatkowe modlitwy")
                 .font(.headline)
 
-            ForEach(summary.categories, id: \.category) { entry in
-                HStack {
-                    Text(entry.title)
-                        .font(.subheadline.weight(.semibold))
-                    Spacer()
-                    Text("\(entry.count)")
-                        .font(.subheadline)
+            if summary.otherCategories.allSatisfy({ $0.count == 0 }) {
+                Text("Brak dodatkowych modlitw w tym okresie.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(summary.otherCategories, id: \.category) { entry in
+                    if entry.count > 0 {
+                        HStack {
+                            Text(entry.title)
+                                .font(.subheadline.weight(.semibold))
+                            Spacer()
+                            Text("\(entry.count)")
+                                .font(.subheadline)
+                        }
+                        .padding(10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.6))
+                        )
+                    }
                 }
-                .padding(10)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.white.opacity(0.6))
-                )
             }
         }
         .padding(16)
@@ -441,7 +448,7 @@ struct PrayerStats {
     let longestSession: PrayerSession?
     let lastSevenDays: [DayCount]
     let timeOfDayBuckets: [TimeBucket]
-    let categories: [CategoryEntry]
+    let otherCategories: [CategoryEntry]
     let milestones: [Milestone]
     let nextMilestoneTitle: String
     let progressToNextMilestone: Double
@@ -449,9 +456,7 @@ struct PrayerStats {
     let highlightText: String?
     let subtitle: String
     let favoritePrayer: String?
-    let favoriteTarget: String?
     let favoritePriestTarget: String?
-    let favoriteCategory: String?
     let favoriteTimeOfDay: String?
     let totalDurationText: String
     let averageDurationText: String
@@ -472,21 +477,23 @@ struct PrayerStats {
             return session.endedAt >= start
         }
 
-        let perDay = PrayerStats.sessionsPerDay(filteredSessions, calendar: calendar)
-        let sessionCount = filteredSessions.count
-        let completedCount = filteredSessions.filter { $0.completed }.count
-        let activeDays = perDay.keys.count
-
         let priestSessions = filteredSessions.filter { $0.targetCategory == .priest }
         let priestCompletedSessions = priestSessions.filter { $0.completed }
+        let otherSessions = filteredSessions.filter { $0.targetCategory != .priest }
+
+        let perDay = PrayerStats.sessionsPerDay(priestSessions, calendar: calendar)
+        let sessionCount = priestSessions.count
+        let completedCount = priestCompletedSessions.count
+        let activeDays = perDay.keys.count
+
         let activeWeeksValue = PrayerStats.activeWeeks(from: priestCompletedSessions, calendar: calendar)
         let weeklyStreakValue = PrayerStats.currentWeeklyStreak(from: referenceDate, sessions: priestCompletedSessions, calendar: calendar)
         let longestWeeklyStreakValue = PrayerStats.longestWeeklyStreak(in: priestCompletedSessions, calendar: calendar)
-        let totalDurationValue = filteredSessions.reduce(0) { $0 + $1.duration }
+        let totalDurationValue = priestSessions.reduce(0) { $0 + $1.duration }
         let averageDurationValue = sessionCount > 0 ? totalDurationValue / Double(sessionCount) : 0
-        let totalSubprayersValue = PrayerStats.totalCompletedSubprayers(filteredSessions)
+        let totalSubprayersValue = PrayerStats.totalCompletedSubprayers(priestSessions)
         let averageSubprayersValue = sessionCount > 0 ? Double(totalSubprayersValue) / Double(sessionCount) : 0
-        let longestSessionValue = filteredSessions.max(by: { $0.duration < $1.duration })
+        let longestSessionValue = priestSessions.max(by: { $0.duration < $1.duration })
 
         let lastSeven = PrayerStats.lastDays(count: 7, referenceDate: referenceDate, calendar: calendar)
         let maxValue = max(lastSeven.map { perDay[$0, default: 0] }.max() ?? 1, 1)
@@ -496,16 +503,18 @@ struct PrayerStats {
             return DayCount(label: PrayerStats.shortLabel(for: day), value: value, height: height)
         }
 
-        let timeBucketsValue = PrayerStats.timeBuckets(filteredSessions)
+        let timeBucketsValue = PrayerStats.timeBuckets(priestSessions)
 
-        let perCategory = PrayerStats.countByCategory(filteredSessions)
-        let categoriesValue = PrayerTargetCategory.allCases.map { category in
-            CategoryEntry(
-                category: category,
-                title: category.displayName,
-                count: perCategory[category, default: 0]
-            )
-        }
+        let perCategory = PrayerStats.countByCategory(otherSessions)
+        let categoriesValue = PrayerTargetCategory.allCases
+            .filter { $0 != .priest }
+            .map { category in
+                CategoryEntry(
+                    category: category,
+                    title: category.displayName,
+                    count: perCategory[category, default: 0]
+                )
+            }
 
         let goals = [3, 7, 14, 30, 60, 100, 180, 365]
         let milestonesValue = goals.map { goal in
@@ -515,18 +524,16 @@ struct PrayerStats {
 
         let nextMilestoneTitleValue: String
         let progressValue: Double
-        if let next = goals.first(where: { activeDays < $0 }) {
+        if let next = goals.first(where: { activeWeeksValue < $0 }) {
             nextMilestoneTitleValue = "\(next) tyg"
-            progressValue = activeDays == 0 ? 0 : Double(activeDays) / Double(next)
+            progressValue = activeWeeksValue == 0 ? 0 : Double(activeWeeksValue) / Double(next)
         } else {
             nextMilestoneTitleValue = "Cel osiagniety"
             progressValue = 1.0
         }
 
-        let favoritePrayerValue = PrayerStats.favoritePrayerName(in: filteredSessions)
-        let favoriteTargetValue = PrayerStats.favoriteTargetName(in: filteredSessions)
-        let favoriteCategoryValue = PrayerStats.favoriteCategoryName(in: filteredSessions)
-        let favoriteTimeOfDayValue = PrayerStats.favoriteTimeBucketName(in: filteredSessions)
+        let favoritePrayerValue = PrayerStats.favoritePrayerName(in: priestCompletedSessions)
+        let favoriteTimeOfDayValue = PrayerStats.favoriteTimeBucketName(in: priestSessions)
 
         let totalDurationTextValue = PrayerStats.formatDuration(totalDurationValue)
         let averageDurationTextValue = PrayerStats.formatDuration(averageDurationValue)
@@ -534,7 +541,7 @@ struct PrayerStats {
 
         let highlightValue: String?
         if sessionCount == 0 {
-            highlightValue = "Zacznij od pierwszej sesji, aby uruchomic statystyki."
+            highlightValue = "Statystyki Margaretki uruchomia sie po pierwszej modlitwie za kaplana."
         } else if completedCount >= 7 {
             highlightValue = "Masz \(weeklyStreakValue) tygodni z modlitwa za kaplanow."
         } else if sessionCount >= 3 {
@@ -543,14 +550,16 @@ struct PrayerStats {
             highlightValue = nil
         }
 
-        let subtitleValue = range == .allTime ? "Caly czas" : "Ostatnie \(range == .last7 ? "7" : "30") dni"
+        let subtitleValue = range == .allTime
+            ? "Modlitwa za kaplanow - caly czas"
+            : "Modlitwa za kaplanow - ostatnie \(range == .last7 ? "7" : "30") dni"
         let completionRateValue = PrayerStats.formatCompletionRate(completed: completedCount, total: sessionCount)
         let longestSessionTextValue = PrayerStats.formatDuration(longestSessionValue?.duration ?? 0)
         let longestTargetNameValue = longestSessionValue?.targetName
 
         let yearWindow = PrayerStats.yearWindow(for: referenceDate, calendar: calendar)
         let shouldShowYearSummaryValue = yearWindow.contains(calendar.startOfDay(for: referenceDate))
-        let yearlySessions = PrayerStats.sessionsInYear(sessions, referenceDate: referenceDate, calendar: calendar)
+        let yearlySessions = PrayerStats.sessionsInYear(priestSessions, referenceDate: referenceDate, calendar: calendar)
         let yearTotalSessionsValue = yearlySessions.count
         let yearTotalDurationTextValue = PrayerStats.formatDuration(yearlySessions.reduce(0) { $0 + $1.duration })
         let yearPeakMonthValue = PrayerStats.peakMonthName(for: yearlySessions, calendar: calendar)
@@ -568,7 +577,7 @@ struct PrayerStats {
         longestSession = longestSessionValue
         lastSevenDays = lastSevenDaysValue
         timeOfDayBuckets = timeBucketsValue
-        categories = categoriesValue
+        otherCategories = categoriesValue
         milestones = milestonesValue
         latestUnlockedMilestoneTitle = latestUnlockedTitleValue
         nextMilestoneTitle = nextMilestoneTitleValue
@@ -576,9 +585,7 @@ struct PrayerStats {
         highlightText = highlightValue
         subtitle = subtitleValue
         favoritePrayer = favoritePrayerValue
-        favoriteTarget = favoriteTargetValue
         favoritePriestTarget = PrayerStats.favoriteTargetName(in: priestCompletedSessions)
-        favoriteCategory = favoriteCategoryValue
         favoriteTimeOfDay = favoriteTimeOfDayValue
         totalDurationText = totalDurationTextValue
         averageDurationText = averageDurationTextValue
