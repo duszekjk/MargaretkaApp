@@ -637,13 +637,19 @@ struct PrayerTouchScrollerView: View {
                             if index == activeIndex {
                                 
                             } else if delta == 1 && index == symbols.count - 1 {
-                                activeIndex = index
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    activeIndex = index
+                                }
                                 UINotificationFeedbackGenerator().notificationOccurred(.success)
                             } else if delta == 1 {
-                                activeIndex = index
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    activeIndex = index
+                                }
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             } else if delta == -1 {
-                                activeIndex = index
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    activeIndex = index
+                                }
                                 UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
                             } else {
                                 UINotificationFeedbackGenerator().notificationOccurred(.warning)
