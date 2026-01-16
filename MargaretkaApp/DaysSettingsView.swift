@@ -26,14 +26,14 @@ struct StatsView: View {
                 .pickerStyle(.segmented)
 
                 HStack(spacing: 16) {
-                    statCard(title: "Sesje Margaretki", value: "\(summary.totalSessions)", detail: "Ukonczone: \(summary.completedSessions)")
+                    statCard(title: "Sesje za kaplanow", value: "\(summary.totalSessions)", detail: "Ukonczone: \(summary.completedSessions)")
                     statCard(title: "Aktywne tygodnie", value: "\(summary.activeWeeks)", detail: "Skutecznosc: \(summary.completionRateText)")
                 }
 
                 weeklyStreakCard(summary: summary)
 
                 HStack(spacing: 16) {
-                    statCard(title: "Czas Margaretki", value: summary.totalDurationText, detail: "Srednio: \(summary.averageDurationText)")
+                    statCard(title: "Czas modlitwy", value: summary.totalDurationText, detail: "Srednio: \(summary.averageDurationText)")
                     statCard(title: "Submodlitwy", value: "\(summary.totalSubprayers)", detail: "Srednio: \(summary.averageSubprayersText)")
                 }
 
@@ -69,7 +69,7 @@ struct StatsView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Margaretka – rytm tygodnia")
+                    Text("Statystyki Margaretki")
                         .font(.title2.bold())
                     Text(summary.subtitle)
                         .font(.subheadline)
@@ -81,7 +81,7 @@ struct StatsView: View {
                 ProgressRing(
                     progress: summary.progressToNextMilestone,
                     title: summary.nextMilestoneTitle,
-                    subtitle: "Nastepny checkpoint"
+                    subtitle: "Najblizszy checkpoint"
                 )
             }
 
@@ -104,7 +104,7 @@ struct StatsView: View {
 
     private func weeklyStreakCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Seria tygodniowa")
+            Text("Seria tygodni Margaretki")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
             Text("\(summary.currentWeeklyStreak) tyg")
@@ -142,7 +142,7 @@ struct StatsView: View {
 
         return AnyView(
             VStack(alignment: .leading, spacing: 12) {
-                Text("Checkpoint zaliczony")
+                Text("Checkpoint Margaretki")
                     .font(.headline)
 
                 Text("Osiagnieto: \(title)")
@@ -156,11 +156,11 @@ struct StatsView: View {
 
     private func recordsCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Rekordy")
+            Text("Rekordy Margaretki")
                 .font(.headline)
 
-            recordRow(title: "Najdluzsza sesja", value: summary.longestSessionText)
-            recordRow(title: "Najdluzszy cel", value: summary.longestTargetName ?? "Brak danych")
+            recordRow(title: "Najdluzsza modlitwa", value: summary.longestSessionText)
+            recordRow(title: "Kaplan w najdluzszej modlitwie", value: summary.longestTargetName ?? "Brak danych")
         }
         .padding(16)
         .background(cardBackground(colors: [Color.white.opacity(0.7), Color.white.opacity(0.35)]))
@@ -184,7 +184,7 @@ struct StatsView: View {
 
     private func favoritesCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Ulubione")
+            Text("Ulubione w Margaretce")
                 .font(.headline)
 
             favoriteRow(title: "Kaplan", value: summary.favoritePriestTarget ?? "Brak danych")
@@ -213,7 +213,7 @@ struct StatsView: View {
 
     private func timeOfDayCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Pora dnia")
+            Text("Pora dnia modlitwy")
                 .font(.headline)
 
             HStack(alignment: .bottom, spacing: 12) {
@@ -236,7 +236,7 @@ struct StatsView: View {
 
     private func activityCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Aktywnosc Margaretki (8 tygodni)")
+            Text("Aktywnosc tygodniowa (8 tygodni)")
                 .font(.headline)
 
             HStack(alignment: .bottom, spacing: 10) {
@@ -259,7 +259,7 @@ struct StatsView: View {
 
     private func categoriesCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Dodatkowe modlitwy")
+            Text("Dodatkowe modlitwy (poza Margaretka)")
                 .font(.headline)
 
             if summary.otherCategories.allSatisfy({ $0.count == 0 }) {
@@ -291,7 +291,7 @@ struct StatsView: View {
 
     private func milestonesCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Checkpointy")
+            Text("Checkpointy tygodniowe")
                 .font(.headline)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -320,7 +320,7 @@ struct StatsView: View {
 
     private func yearSummaryCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Podsumowanie roku")
+            Text("Podsumowanie roku Margaretki")
                 .font(.headline)
 
             Text("Sesje: \(summary.yearTotalSessions)")
