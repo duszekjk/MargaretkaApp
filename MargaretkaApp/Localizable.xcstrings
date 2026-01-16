@@ -93,6 +93,12 @@
         }
       }
     },
+    "Checkpoint osiagniety" : {
+
+    },
+    "Checkpointy" : {
+
+    },
     "Codzienna propozycja (minimum)" : {
 
     },
@@ -246,6 +252,9 @@
     "Kategorie" : {
 
     },
+    "Kontynuuj" : {
+
+    },
     "Kopiuj" : {
 
     },
@@ -286,9 +295,6 @@
     "Można dołączyć (opcjonalnie)" : {
 
     },
-    "Nagrody i checkpointy" : {
-
-    },
     "Najmocniejszy miesiac: %@" : {
 
     },
@@ -310,7 +316,13 @@
     "Nowa modlitwa" : {
 
     },
+    "Odblokowales: %@" : {
+
+    },
     "Odblokowane" : {
+
+    },
+    "Odblokuj telefon i dotknij Kontynuuj, aby rozpoczac." : {
 
     },
     "Osoby" : {
@@ -354,6 +366,9 @@
       }
     },
     "Rozpocznij nagrywanie" : {
+
+    },
+    "Rytm modlitwy" : {
 
     },
     "Save" : {
@@ -406,6 +421,9 @@
 
     },
     "Tekst modlitwy" : {
+
+    },
+    "Testy UI uruchomione" : {
 
     },
     "Time:" : {
@@ -829,9 +847,6 @@
       }
     },
     "To modlitwa siedmiu osób za **jednego konkretnego kapłana** – każda osoba obejmuje go modlitwą w wybrany dzień tygodnia. Razem tworzą „stokrotkę” (7 płatków) z kapłanem w środku. Zobowiązanie ma charakter **stały** (długoterminowy)." : {
-
-    },
-    "Twoja droga modlitwy" : {
 
     },
     "Typ" : {
