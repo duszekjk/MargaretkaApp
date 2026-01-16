@@ -587,6 +587,7 @@ struct PrayerTouchScrollerView: View {
     @GestureState private var dragLocation: CGPoint = .zero
     
     @State private var frames: [Int: CGRect] = [:]
+    @State private var lastSwitchAt: TimeInterval = 0
 
     init(rows: [[String]], symbols: [String], prayerNames: [String?], activeIndex: Binding<Int>, onIndexChange: ((Int) -> Void)? = nil) {
         self.rows = rows
@@ -675,21 +676,28 @@ struct PrayerTouchScrollerView: View {
                             if index == activeIndex {
                                 
                             } else {
-                                let fromName = prayerName(at: activeIndex)
-                                let toName = prayerName(at: index)
-                                let isSubprayerSwitch = fromName != nil && toName != nil && fromName != toName
+                                let now = Date().timeIntervalSince1970
+                                let isRateLimited = now - lastSwitchAt < 1.0
 
-                                if isSubprayerSwitch {
-                                    updateIndex(index)
-                                    subprayerHaptic()
-                                } else if delta == 1 {
-                                    updateIndex(index)
-                                    UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 1.0)
-                                } else if delta == -1 {
-                                    updateIndex(index)
-                                    UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.9)
-                                } else {
+                                if abs(delta) != 1 {
                                     UINotificationFeedbackGenerator().notificationOccurred(.error)
+                                } else if isRateLimited {
+                                    UINotificationFeedbackGenerator().notificationOccurred(.error)
+                                } else {
+                                    let fromName = prayerName(at: activeIndex)
+                                    let toName = prayerName(at: index)
+                                    let isSubprayerSwitch = fromName != nil && toName != nil && fromName != toName
+
+                                    updateIndex(index)
+                                    lastSwitchAt = now
+
+                                    if isSubprayerSwitch {
+                                        subprayerHaptic()
+                                    } else if delta == 1 {
+                                        UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 1.0)
+                                    } else {
+                                        UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.9)
+                                    }
                                 }
                             }
                         } else {
