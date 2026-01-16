@@ -26,15 +26,15 @@ struct StatsView: View {
                 .pickerStyle(.segmented)
 
                 HStack(spacing: 16) {
-                    statCard(title: "Sesje za kaplanow", value: "\(summary.totalSessions)", detail: "Ukonczone: \(summary.completedSessions)")
-                    statCard(title: "Aktywne tygodnie", value: "\(summary.activeWeeks)", detail: "Skutecznosc: \(summary.completionRateText)")
+                    statCard(title: "Sesje za kapłanów", value: "\(summary.totalSessions)", detail: "Ukończone: \(summary.completedSessions)")
+                    statCard(title: "Aktywne tygodnie", value: "\(summary.activeWeeks)", detail: "Skuteczność: \(summary.completionRateText)")
                 }
 
                 weeklyStreakCard(summary: summary)
 
                 HStack(spacing: 16) {
-                    statCard(title: "Czas modlitwy", value: summary.totalDurationText, detail: "Srednio: \(summary.averageDurationText)")
-                    statCard(title: "Submodlitwy", value: "\(summary.totalSubprayers)", detail: "Srednio: \(summary.averageSubprayersText)")
+                    statCard(title: "Czas modlitwy", value: summary.totalDurationText, detail: "Średnio: \(summary.averageDurationText)")
+                    statCard(title: "Submodlitwy", value: "\(summary.totalSubprayers)", detail: "Średnio: \(summary.averageSubprayersText)")
                 }
 
                 checkpointAlertCard(summary: summary)
@@ -81,7 +81,7 @@ struct StatsView: View {
                 ProgressRing(
                     progress: summary.progressToNextMilestone,
                     title: summary.nextMilestoneTitle,
-                    subtitle: "Najblizszy checkpoint"
+                    subtitle: "Najbliższy checkpoint"
                 )
             }
 
@@ -109,7 +109,7 @@ struct StatsView: View {
                 .foregroundStyle(.secondary)
             Text("\(summary.currentWeeklyStreak) tyg")
                 .font(.title2.bold())
-            Text("Najdluzsza: \(summary.longestWeeklyStreak) tyg")
+            Text("Najdłuższa: \(summary.longestWeeklyStreak) tyg")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -145,7 +145,7 @@ struct StatsView: View {
                 Text("Checkpoint Margaretki")
                     .font(.headline)
 
-                Text("Osiagnieto: \(title)")
+                Text("Osiągnięto: \(title)")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
@@ -159,8 +159,8 @@ struct StatsView: View {
             Text("Rekordy Margaretki")
                 .font(.headline)
 
-            recordRow(title: "Najdluzsza modlitwa", value: summary.longestSessionText)
-            recordRow(title: "Kaplan w najdluzszej modlitwie", value: summary.longestTargetName ?? "Brak danych")
+            recordRow(title: "Najdłuższa modlitwa", value: summary.longestSessionText)
+            recordRow(title: "Kapłan w najdłuższej modlitwie", value: summary.longestTargetName ?? "Brak danych")
         }
         .padding(16)
         .background(cardBackground(colors: [Color.white.opacity(0.7), Color.white.opacity(0.35)]))
@@ -187,7 +187,7 @@ struct StatsView: View {
             Text("Ulubione w Margaretce")
                 .font(.headline)
 
-            favoriteRow(title: "Kaplan", value: summary.favoritePriestTarget ?? "Brak danych")
+            favoriteRow(title: "Kapłan", value: summary.favoritePriestTarget ?? "Brak danych")
             favoriteRow(title: "Submodlitwa", value: summary.favoritePrayer ?? "Brak danych")
             favoriteRow(title: "Pora dnia", value: summary.favoriteTimeOfDay ?? "Brak danych")
         }
@@ -236,7 +236,7 @@ struct StatsView: View {
 
     private func activityCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Aktywnosc tygodniowa (8 tygodni)")
+            Text("Aktywność tygodniowa (8 tygodni)")
                 .font(.headline)
 
             HStack(alignment: .bottom, spacing: 10) {
@@ -259,7 +259,7 @@ struct StatsView: View {
 
     private func categoriesCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Dodatkowe modlitwy (poza Margaretka)")
+            Text("Dodatkowe modlitwy (poza Margaretką)")
                 .font(.headline)
 
             if summary.otherCategories.allSatisfy({ $0.count == 0 }) {
@@ -327,7 +327,7 @@ struct StatsView: View {
                 .font(.subheadline.weight(.semibold))
             Text("Czas: \(summary.yearTotalDurationText)")
                 .font(.subheadline)
-            Text("Najmocniejszy miesiac: \(summary.yearPeakMonth)")
+            Text("Najmocniejszy miesiąc: \(summary.yearPeakMonth)")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -534,7 +534,7 @@ struct PrayerStats {
             nextMilestoneTitleValue = "\(next) tyg"
             progressValue = activeWeeksValue == 0 ? 0 : Double(activeWeeksValue) / Double(next)
         } else {
-            nextMilestoneTitleValue = "Cel osiagniety"
+            nextMilestoneTitleValue = "Cel osiągnięty"
             progressValue = 1.0
         }
 
@@ -547,11 +547,11 @@ struct PrayerStats {
 
         let highlightValue: String?
         if sessionCount == 0 {
-            highlightValue = "Statystyki Margaretki uruchomia sie po pierwszej modlitwie za kaplana."
+            highlightValue = "Statystyki Margaretki uruchomią się po pierwszej modlitwie za kapłana."
         } else if completedCount >= 7 {
-            highlightValue = "Masz \(weeklyStreakValue) tygodni z modlitwa za kaplanow."
+            highlightValue = "Masz \(weeklyStreakValue) tygodni z modlitwą za kapłanów."
         } else if sessionCount >= 3 {
-            highlightValue = "Swietny start - \(sessionCount) sesje modlitwy."
+            highlightValue = "Świetny start - \(sessionCount) sesje modlitwy."
         } else {
             highlightValue = nil
         }
@@ -559,13 +559,13 @@ struct PrayerStats {
         let subtitleValue: String
         switch range {
         case .allTime:
-            subtitleValue = "Modlitwa za kaplanow - caly czas"
+            subtitleValue = "Modlitwa za kapłanów – cały czas"
         case .last8Weeks:
-            subtitleValue = "Modlitwa za kaplanow - ostatnie 8 tygodni"
+            subtitleValue = "Modlitwa za kapłanów – ostatnie 8 tygodni"
         case .last12Weeks:
-            subtitleValue = "Modlitwa za kaplanow - ostatnie 12 tygodni"
+            subtitleValue = "Modlitwa za kapłanów – ostatnie 12 tygodni"
         case .last52Weeks:
-            subtitleValue = "Modlitwa za kaplanow - ostatnie 52 tygodnie"
+            subtitleValue = "Modlitwa za kapłanów – ostatnie 52 tygodnie"
         }
         let completionRateValue = PrayerStats.formatCompletionRate(completed: completedCount, total: sessionCount)
         let longestSessionTextValue = PrayerStats.formatDuration(longestSessionValue?.duration ?? 0)
@@ -734,7 +734,7 @@ struct PrayerStats {
     }
 
     private static func timeBuckets(_ sessions: [PrayerSession]) -> [TimeBucket] {
-        let labels = ["Noc", "Rano", "Popoludnie", "Wieczor"]
+        let labels = ["Noc", "Rano", "Popołudnie", "Wieczór"]
         var counts = Array(repeating: 0, count: labels.count)
 
         for session in sessions {
