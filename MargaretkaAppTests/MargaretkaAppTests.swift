@@ -43,7 +43,24 @@ struct MargaretkaAppTests {
         #expect(stats.favoritePrayer == "A")
     }
 
-    @Test func statsCompletionRate() async throws {
+    
+    @Test func weeklyStreakCountsPriestWeeks() async throws {
+        let calendar = Calendar.current
+        let referenceDate = calendar.date(from: DateComponents(year: 2025, month: 9, day: 3))!
+        let weekStart = calendar.date(from: DateComponents(year: 2025, month: 9, day: 1))!
+        let previousWeek = calendar.date(byAdding: .weekOfYear, value: -1, to: weekStart)!
+
+        let priestSession = makeSession(endedAt: weekStart, completed: true, category: .priest)
+        let priestPrev = makeSession(endedAt: previousWeek, completed: true, category: .priest)
+        let otherCategory = makeSession(endedAt: weekStart, completed: true, category: .person)
+
+        let stats = PrayerStats(sessions: [priestSession, priestPrev, otherCategory], range: .allTime, referenceDate: referenceDate)
+
+        #expect(stats.currentWeeklyStreak == 2)
+        #expect(stats.activeWeeks == 2)
+    }
+
+@Test func statsCompletionRate() async throws {
         let date = Date()
         let completed = makeSession(endedAt: date, completed: true)
         let incomplete = makeSession(endedAt: date, completed: false)
@@ -70,13 +87,14 @@ struct MargaretkaAppTests {
         endedAt: Date,
         completed: Bool,
         prayerNames: [String] = ["A"],
-        completedSubprayerCount: Int = 1
+        completedSubprayerCount: Int = 1,
+        category: PrayerTargetCategory = .priest
     ) -> PrayerSession {
         PrayerSession(
             id: UUID(),
             targetId: UUID(),
             targetName: "Target",
-            targetCategory: .priest,
+            targetCategory: category,
             prayerIds: prayerNames.map { _ in UUID() },
             prayerNames: prayerNames,
             startedAt: endedAt.addingTimeInterval(-600),
