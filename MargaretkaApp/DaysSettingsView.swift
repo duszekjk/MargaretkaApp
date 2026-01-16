@@ -428,27 +428,27 @@ struct PrayerStats {
         }
 
         let perDay = PrayerStats.sessionsPerDay(filteredSessions, calendar: calendar)
-        totalSessions = filteredSessions.count
-        completedSessions = filteredSessions.filter { $0.completed }.count
-        totalActiveDays = perDay.keys.count
-        totalDuration = filteredSessions.reduce(0) { $0 + $1.duration }
-        averageDuration = totalSessions > 0 ? totalDuration / Double(totalSessions) : 0
-        totalSubprayers = PrayerStats.totalCompletedSubprayers(filteredSessions)
-        averageSubprayers = totalSessions > 0 ? Double(totalSubprayers) / Double(totalSessions) : 0
-        longestSession = filteredSessions.max(by: { $0.duration < $1.duration })
+        let sessionCount = filteredSessions.count
+        let completedCount = filteredSessions.filter { $0.completed }.count
+        let activeDays = perDay.keys.count
+        let totalDurationValue = filteredSessions.reduce(0) { $0 + $1.duration }
+        let averageDurationValue = sessionCount > 0 ? totalDurationValue / Double(sessionCount) : 0
+        let totalSubprayersValue = PrayerStats.totalCompletedSubprayers(filteredSessions)
+        let averageSubprayersValue = sessionCount > 0 ? Double(totalSubprayersValue) / Double(sessionCount) : 0
+        let longestSessionValue = filteredSessions.max(by: { $0.duration < $1.duration })
 
         let lastSeven = PrayerStats.lastDays(count: 7, referenceDate: referenceDate, calendar: calendar)
         let maxValue = max(lastSeven.map { perDay[$0, default: 0] }.max() ?? 1, 1)
-        lastSevenDays = lastSeven.map { day in
+        let lastSevenDaysValue = lastSeven.map { day in
             let value = perDay[day, default: 0]
             let height = CGFloat(value) / CGFloat(maxValue) * 64
             return DayCount(label: PrayerStats.shortLabel(for: day), value: value, height: height)
         }
 
-        timeOfDayBuckets = PrayerStats.timeBuckets(filteredSessions)
+        let timeBucketsValue = PrayerStats.timeBuckets(filteredSessions)
 
         let perCategory = PrayerStats.countByCategory(filteredSessions)
-        categories = PrayerTargetCategory.allCases.map { category in
+        let categoriesValue = PrayerTargetCategory.allCases.map { category in
             CategoryEntry(
                 category: category,
                 title: category.displayName,
@@ -457,49 +457,82 @@ struct PrayerStats {
         }
 
         let goals = [3, 7, 14, 30, 60, 100, 180, 365]
-        milestones = goals.map { goal in
-            Milestone(title: "\(goal) dni", goal: goal, isUnlocked: totalActiveDays >= goal)
+        let milestonesValue = goals.map { goal in
+            Milestone(title: "\(goal) dni", goal: goal, isUnlocked: activeDays >= goal)
         }
 
-        if let next = goals.first(where: { totalActiveDays < $0 }) {
-            nextMilestoneTitle = "\(next) dni"
-            progressToNextMilestone = totalActiveDays == 0 ? 0 : Double(totalActiveDays) / Double(next)
+        let nextMilestoneTitleValue: String
+        let progressValue: Double
+        if let next = goals.first(where: { activeDays < $0 }) {
+            nextMilestoneTitleValue = "\(next) dni"
+            progressValue = activeDays == 0 ? 0 : Double(activeDays) / Double(next)
         } else {
-            nextMilestoneTitle = "Cel osiagniety"
-            progressToNextMilestone = 1.0
+            nextMilestoneTitleValue = "Cel osiagniety"
+            progressValue = 1.0
         }
 
-        favoritePrayer = PrayerStats.favoritePrayerName(in: filteredSessions)
-        favoriteTarget = PrayerStats.favoriteTargetName(in: filteredSessions)
-        favoriteCategory = PrayerStats.favoriteCategoryName(in: filteredSessions)
-        favoriteTimeOfDay = PrayerStats.favoriteTimeBucketName(in: filteredSessions)
+        let favoritePrayerValue = PrayerStats.favoritePrayerName(in: filteredSessions)
+        let favoriteTargetValue = PrayerStats.favoriteTargetName(in: filteredSessions)
+        let favoriteCategoryValue = PrayerStats.favoriteCategoryName(in: filteredSessions)
+        let favoriteTimeOfDayValue = PrayerStats.favoriteTimeBucketName(in: filteredSessions)
 
-        totalDurationText = PrayerStats.formatDuration(totalDuration)
-        averageDurationText = PrayerStats.formatDuration(averageDuration)
-        averageSubprayersText = PrayerStats.formatSubprayers(averageSubprayers)
+        let totalDurationTextValue = PrayerStats.formatDuration(totalDurationValue)
+        let averageDurationTextValue = PrayerStats.formatDuration(averageDurationValue)
+        let averageSubprayersTextValue = PrayerStats.formatSubprayers(averageSubprayersValue)
 
-        if totalSessions == 0 {
-            highlightText = "Zacznij od pierwszej sesji, aby uruchomic statystyki."
-        } else if completedSessions >= 7 {
-            highlightText = "Masz \(completedSessions) ukonczonych sesji. Trzymaj tempo!"
-        } else if totalSessions >= 3 {
-            highlightText = "Swietny start - \(totalSessions) sesje modlitwy."
+        let highlightValue: String?
+        if sessionCount == 0 {
+            highlightValue = "Zacznij od pierwszej sesji, aby uruchomic statystyki."
+        } else if completedCount >= 7 {
+            highlightValue = "Masz \(completedCount) ukonczonych sesji. Trzymaj tempo!"
+        } else if sessionCount >= 3 {
+            highlightValue = "Swietny start - \(sessionCount) sesje modlitwy."
         } else {
-            highlightText = nil
+            highlightValue = nil
         }
 
-        subtitle = range == .allTime ? "Caly czas" : "Ostatnie \(range == .last7 ? "7" : "30") dni"
-
-        completionRateText = PrayerStats.formatCompletionRate(completed: completedSessions, total: totalSessions)
-        longestSessionText = PrayerStats.formatDuration(longestSession?.duration ?? 0)
-        longestTargetName = longestSession?.targetName
+        let subtitleValue = range == .allTime ? "Caly czas" : "Ostatnie \(range == .last7 ? "7" : "30") dni"
+        let completionRateValue = PrayerStats.formatCompletionRate(completed: completedCount, total: sessionCount)
+        let longestSessionTextValue = PrayerStats.formatDuration(longestSessionValue?.duration ?? 0)
+        let longestTargetNameValue = longestSessionValue?.targetName
 
         let yearWindow = PrayerStats.yearWindow(for: referenceDate, calendar: calendar)
-        shouldShowYearSummary = yearWindow.contains(calendar.startOfDay(for: referenceDate))
+        let shouldShowYearSummaryValue = yearWindow.contains(calendar.startOfDay(for: referenceDate))
         let yearlySessions = PrayerStats.sessionsInYear(sessions, referenceDate: referenceDate, calendar: calendar)
-        yearTotalSessions = yearlySessions.count
-        yearTotalDurationText = PrayerStats.formatDuration(yearlySessions.reduce(0) { $0 + $1.duration })
-        yearPeakMonth = PrayerStats.peakMonthName(for: yearlySessions, calendar: calendar)
+        let yearTotalSessionsValue = yearlySessions.count
+        let yearTotalDurationTextValue = PrayerStats.formatDuration(yearlySessions.reduce(0) { $0 + $1.duration })
+        let yearPeakMonthValue = PrayerStats.peakMonthName(for: yearlySessions, calendar: calendar)
+
+        totalSessions = sessionCount
+        completedSessions = completedCount
+        totalActiveDays = activeDays
+        totalDuration = totalDurationValue
+        averageDuration = averageDurationValue
+        totalSubprayers = totalSubprayersValue
+        averageSubprayers = averageSubprayersValue
+        longestSession = longestSessionValue
+        lastSevenDays = lastSevenDaysValue
+        timeOfDayBuckets = timeBucketsValue
+        categories = categoriesValue
+        milestones = milestonesValue
+        nextMilestoneTitle = nextMilestoneTitleValue
+        progressToNextMilestone = progressValue
+        highlightText = highlightValue
+        subtitle = subtitleValue
+        favoritePrayer = favoritePrayerValue
+        favoriteTarget = favoriteTargetValue
+        favoriteCategory = favoriteCategoryValue
+        favoriteTimeOfDay = favoriteTimeOfDayValue
+        totalDurationText = totalDurationTextValue
+        averageDurationText = averageDurationTextValue
+        averageSubprayersText = averageSubprayersTextValue
+        completionRateText = completionRateValue
+        longestSessionText = longestSessionTextValue
+        longestTargetName = longestTargetNameValue
+        shouldShowYearSummary = shouldShowYearSummaryValue
+        yearTotalSessions = yearTotalSessionsValue
+        yearTotalDurationText = yearTotalDurationTextValue
+        yearPeakMonth = yearPeakMonthValue
     }
 
     private static func sessionsPerDay(_ sessions: [PrayerSession], calendar: Calendar) -> [Date: Int] {
