@@ -61,7 +61,7 @@
         }
       }
     },
-    "Aktywnosc tygodniowa (8 tygodni)" : {
+    "Aktywność tygodniowa (8 tygodni)" : {
 
     },
     "Anuluj" : {
@@ -176,7 +176,7 @@
     "Dodaj nową podgrupę" : {
 
     },
-    "Dodatkowe modlitwy (poza Margaretka)" : {
+    "Dodatkowe modlitwy (poza Margaretką)" : {
 
     },
     "Dopasuj" : {
@@ -301,10 +301,10 @@
     "Można dołączyć (opcjonalnie)" : {
 
     },
-    "Najdluzsza: %lld tyg" : {
+    "Najdłuższa: %lld tyg" : {
 
     },
-    "Najmocniejszy miesiac: %@" : {
+    "Najmocniejszy miesiąc: %@" : {
 
     },
     "Nazwa" : {
@@ -331,7 +331,7 @@
     "Odblokuj telefon i dotknij Kontynuuj, aby rozpoczac." : {
 
     },
-    "Osiagnieto: %@" : {
+    "Osiągnięto: %@" : {
 
     },
     "Osoby" : {
