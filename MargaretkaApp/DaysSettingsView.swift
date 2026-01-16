@@ -27,10 +27,17 @@ struct StatsView: View {
 
                 HStack(spacing: 16) {
                     statCard(title: "Sesje", value: "\(summary.totalSessions)", detail: "Dni aktywne: \(summary.totalActiveDays)")
-                    statCard(title: "Czas", value: summary.totalDurationText, detail: "Srednio: \(summary.averageDurationText)")
+                    statCard(title: "Ukonczone", value: "\(summary.completedSessions)", detail: "Skutecznosc: \(summary.completionRateText)")
                 }
 
+                HStack(spacing: 16) {
+                    statCard(title: "Czas", value: summary.totalDurationText, detail: "Srednio: \(summary.averageDurationText)")
+                    statCard(title: "Submodlitwy", value: "\(summary.totalSubprayers)", detail: "Srednio: \(summary.averageSubprayersText)")
+                }
+
+                recordsCard(summary: summary)
                 favoritesCard(summary: summary)
+                timeOfDayCard(summary: summary)
                 activityCard(summary: summary)
                 categoriesCard(summary: summary)
                 milestonesCard(summary: summary)
@@ -43,6 +50,7 @@ struct StatsView: View {
             .padding(.top, 16)
             .padding(.bottom, 32)
         }
+        .accessibilityIdentifier("stats_view")
         .background(
             LinearGradient(
                 colors: [Color(red: 0.96, green: 0.98, blue: 1.0), Color(red: 0.90, green: 0.94, blue: 0.98)],
@@ -106,13 +114,42 @@ struct StatsView: View {
         .background(cardBackground(colors: [Color.white.opacity(0.6), Color.white.opacity(0.3)]))
     }
 
+    private func recordsCard(summary: PrayerStats) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Rekordy")
+                .font(.headline)
+
+            recordRow(title: "Najdluzsza sesja", value: summary.longestSessionText)
+            recordRow(title: "Najdluzszy cel", value: summary.longestTargetName ?? "Brak danych")
+        }
+        .padding(16)
+        .background(cardBackground(colors: [Color.white.opacity(0.7), Color.white.opacity(0.35)]))
+    }
+
+    private func recordRow(title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+            Spacer()
+            Text(value)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.6))
+        )
+    }
+
     private func favoritesCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Ulubione")
                 .font(.headline)
 
             favoriteRow(title: "Osoba/kaplan", value: summary.favoriteTarget ?? "Brak danych")
-            favoriteRow(title: "Modlitwa", value: summary.favoritePrayer ?? "Brak danych")
+            favoriteRow(title: "Submodlitwa", value: summary.favoritePrayer ?? "Brak danych")
+            favoriteRow(title: "Pora dnia", value: summary.favoriteTimeOfDay ?? "Brak danych")
             favoriteRow(title: "Kategoria", value: summary.favoriteCategory ?? "Brak danych")
         }
         .padding(16)
@@ -133,6 +170,29 @@ struct StatsView: View {
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.white.opacity(0.6))
         )
+    }
+
+    private func timeOfDayCard(summary: PrayerStats) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Pora dnia")
+                .font(.headline)
+
+            HStack(alignment: .bottom, spacing: 12) {
+                ForEach(summary.timeOfDayBuckets) { bucket in
+                    VStack(spacing: 6) {
+                        Capsule()
+                            .fill(bucket.value == 0 ? Color.gray.opacity(0.25) : Color(red: 0.28, green: 0.56, blue: 0.82))
+                            .frame(height: max(10, bucket.height))
+                        Text(bucket.label)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        }
+        .padding(16)
+        .background(cardBackground(colors: [Color.white.opacity(0.7), Color.white.opacity(0.4)]))
     }
 
     private func activityCard(summary: PrayerStats) -> some View {
@@ -308,6 +368,13 @@ struct PrayerStats {
         let height: CGFloat
     }
 
+    struct TimeBucket: Identifiable {
+        let id = UUID()
+        let label: String
+        let value: Int
+        let height: CGFloat
+    }
+
     struct CategoryEntry {
         let category: PrayerTargetCategory
         let title: String
@@ -322,10 +389,15 @@ struct PrayerStats {
     }
 
     let totalSessions: Int
+    let completedSessions: Int
     let totalActiveDays: Int
     let totalDuration: TimeInterval
     let averageDuration: TimeInterval
+    let totalSubprayers: Int
+    let averageSubprayers: Double
+    let longestSession: PrayerSession?
     let lastSevenDays: [DayCount]
+    let timeOfDayBuckets: [TimeBucket]
     let categories: [CategoryEntry]
     let milestones: [Milestone]
     let nextMilestoneTitle: String
@@ -335,8 +407,13 @@ struct PrayerStats {
     let favoritePrayer: String?
     let favoriteTarget: String?
     let favoriteCategory: String?
+    let favoriteTimeOfDay: String?
     let totalDurationText: String
     let averageDurationText: String
+    let averageSubprayersText: String
+    let completionRateText: String
+    let longestSessionText: String
+    let longestTargetName: String?
     let shouldShowYearSummary: Bool
     let yearTotalSessions: Int
     let yearTotalDurationText: String
@@ -344,18 +421,21 @@ struct PrayerStats {
 
     init(sessions: [PrayerSession], range: StatsRange, referenceDate: Date) {
         let calendar = Calendar.current
-        let completedSessions = sessions.filter { $0.completed }
         let rangeStart = range.startDate(relativeTo: referenceDate, calendar: calendar)
-        let filteredSessions = completedSessions.filter { session in
+        let filteredSessions = sessions.filter { session in
             guard let start = rangeStart else { return true }
             return session.endedAt >= start
         }
 
         let perDay = PrayerStats.sessionsPerDay(filteredSessions, calendar: calendar)
         totalSessions = filteredSessions.count
+        completedSessions = filteredSessions.filter { $0.completed }.count
         totalActiveDays = perDay.keys.count
         totalDuration = filteredSessions.reduce(0) { $0 + $1.duration }
         averageDuration = totalSessions > 0 ? totalDuration / Double(totalSessions) : 0
+        totalSubprayers = PrayerStats.totalCompletedSubprayers(filteredSessions)
+        averageSubprayers = totalSessions > 0 ? Double(totalSubprayers) / Double(totalSessions) : 0
+        longestSession = filteredSessions.max(by: { $0.duration < $1.duration })
 
         let lastSeven = PrayerStats.lastDays(count: 7, referenceDate: referenceDate, calendar: calendar)
         let maxValue = max(lastSeven.map { perDay[$0, default: 0] }.max() ?? 1, 1)
@@ -364,6 +444,8 @@ struct PrayerStats {
             let height = CGFloat(value) / CGFloat(maxValue) * 64
             return DayCount(label: PrayerStats.shortLabel(for: day), value: value, height: height)
         }
+
+        timeOfDayBuckets = PrayerStats.timeBuckets(filteredSessions)
 
         let perCategory = PrayerStats.countByCategory(filteredSessions)
         categories = PrayerTargetCategory.allCases.map { category in
@@ -390,14 +472,16 @@ struct PrayerStats {
         favoritePrayer = PrayerStats.favoritePrayerName(in: filteredSessions)
         favoriteTarget = PrayerStats.favoriteTargetName(in: filteredSessions)
         favoriteCategory = PrayerStats.favoriteCategoryName(in: filteredSessions)
+        favoriteTimeOfDay = PrayerStats.favoriteTimeBucketName(in: filteredSessions)
 
         totalDurationText = PrayerStats.formatDuration(totalDuration)
         averageDurationText = PrayerStats.formatDuration(averageDuration)
+        averageSubprayersText = PrayerStats.formatSubprayers(averageSubprayers)
 
         if totalSessions == 0 {
             highlightText = "Zacznij od pierwszej sesji, aby uruchomic statystyki."
-        } else if totalActiveDays >= 7 {
-            highlightText = "Masz \(totalActiveDays) aktywnych dni. Trzymaj tempo!"
+        } else if completedSessions >= 7 {
+            highlightText = "Masz \(completedSessions) ukonczonych sesji. Trzymaj tempo!"
         } else if totalSessions >= 3 {
             highlightText = "Swietny start - \(totalSessions) sesje modlitwy."
         } else {
@@ -406,9 +490,13 @@ struct PrayerStats {
 
         subtitle = range == .allTime ? "Caly czas" : "Ostatnie \(range == .last7 ? "7" : "30") dni"
 
+        completionRateText = PrayerStats.formatCompletionRate(completed: completedSessions, total: totalSessions)
+        longestSessionText = PrayerStats.formatDuration(longestSession?.duration ?? 0)
+        longestTargetName = longestSession?.targetName
+
         let yearWindow = PrayerStats.yearWindow(for: referenceDate, calendar: calendar)
         shouldShowYearSummary = yearWindow.contains(calendar.startOfDay(for: referenceDate))
-        let yearlySessions = PrayerStats.sessionsInYear(completedSessions, referenceDate: referenceDate, calendar: calendar)
+        let yearlySessions = PrayerStats.sessionsInYear(sessions, referenceDate: referenceDate, calendar: calendar)
         yearTotalSessions = yearlySessions.count
         yearTotalDurationText = PrayerStats.formatDuration(yearlySessions.reduce(0) { $0 + $1.duration })
         yearPeakMonth = PrayerStats.peakMonthName(for: yearlySessions, calendar: calendar)
@@ -423,6 +511,10 @@ struct PrayerStats {
         return perDay
     }
 
+    private static func totalCompletedSubprayers(_ sessions: [PrayerSession]) -> Int {
+        sessions.reduce(0) { $0 + $1.completedSubprayerCount }
+    }
+
     private static func countByCategory(_ sessions: [PrayerSession]) -> [PrayerTargetCategory: Int] {
         var counts: [PrayerTargetCategory: Int] = [:]
         for session in sessions {
@@ -434,7 +526,8 @@ struct PrayerStats {
     private static func favoritePrayerName(in sessions: [PrayerSession]) -> String? {
         var counts: [String: Int] = [:]
         for session in sessions {
-            for name in session.prayerNames where !name.isEmpty {
+            let limit = min(session.completedSubprayerCount, session.prayerNames.count)
+            for name in session.prayerNames.prefix(limit) where !name.isEmpty {
                 counts[name, default: 0] += 1
             }
         }
@@ -458,6 +551,37 @@ struct PrayerStats {
         return best.displayName
     }
 
+    private static func timeBuckets(_ sessions: [PrayerSession]) -> [TimeBucket] {
+        let labels = ["Noc", "Rano", "Popoludnie", "Wieczor"]
+        var counts = Array(repeating: 0, count: labels.count)
+
+        for session in sessions {
+            let hour = Calendar.current.component(.hour, from: session.startedAt)
+            let index: Int
+            switch hour {
+            case 0...5:
+                index = 0
+            case 6...11:
+                index = 1
+            case 12...17:
+                index = 2
+            default:
+                index = 3
+            }
+            counts[index] += 1
+        }
+
+        let maxValue = max(counts.max() ?? 1, 1)
+        return counts.enumerated().map { idx, value in
+            TimeBucket(label: labels[idx], value: value, height: CGFloat(value) / CGFloat(maxValue) * 64)
+        }
+    }
+
+    private static func favoriteTimeBucketName(in sessions: [PrayerSession]) -> String? {
+        let buckets = timeBuckets(sessions)
+        return buckets.max(by: { $0.value < $1.value })?.label
+    }
+
     private static func formatDuration(_ duration: TimeInterval) -> String {
         guard duration > 0 else { return "0 min" }
         let totalMinutes = Int(duration / 60)
@@ -467,6 +591,16 @@ struct PrayerStats {
             return "\(hours)h \(minutes)m"
         }
         return "\(minutes)m"
+    }
+
+    private static func formatSubprayers(_ value: Double) -> String {
+        String(format: "%.1f", value)
+    }
+
+    private static func formatCompletionRate(completed: Int, total: Int) -> String {
+        guard total > 0 else { return "0%" }
+        let percent = (Double(completed) / Double(total)) * 100
+        return String(format: "%.0f%%", percent)
     }
 
     private static func lastDays(count: Int, referenceDate: Date, calendar: Calendar) -> [Date] {

@@ -23,12 +23,19 @@ final class MargaretkaAppUITests: XCTestCase {
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testOpenStatsView() throws {
         let app = XCUIApplication()
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        let settingsButton = app.buttons["gear"].firstMatch
+        XCTAssertTrue(settingsButton.waitForExistence(timeout: 4))
+        settingsButton.tap()
+
+        let statsLink = app.staticTexts["settings_stats_link"].firstMatch
+        XCTAssertTrue(statsLink.waitForExistence(timeout: 4))
+        statsLink.tap()
+
+        XCTAssertTrue(app.scrollViews["stats_view"].waitForExistence(timeout: 4))
     }
 
     @MainActor
