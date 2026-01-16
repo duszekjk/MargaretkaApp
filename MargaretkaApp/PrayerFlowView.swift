@@ -55,8 +55,14 @@ struct PrayerFlowView: View {
     }
 
     var currentPrayer: Prayer? {
-        guard activeIndex < flattenedPrayerIds.count else { return nil }
-        return allPrayers[flattenedPrayerIds[activeIndex]]
+        guard let index = currentPrayerIndex else { return nil }
+        return allPrayers[flattenedPrayerIds[index]]
+    }
+
+    var currentPrayerIndex: Int? {
+        let index = activeIndex - 1
+        guard index >= 0, index < flattenedPrayerIds.count else { return nil }
+        return index
     }
 
     var currentBrewiarzKey: BrewiarzPrayerKey? {
@@ -116,9 +122,25 @@ struct PrayerFlowView: View {
         flattenedPrayerIds.map { allPrayers[$0]?.name }
     }
 
+    var displayPrayerSymbols: [String] {
+        ["play.circle"] + flattenedPrayerSymbols + ["rectangle.pattern.checkered"]
+    }
+
+    var displayPrayerNames: [String?] {
+        [nil] + flattenedPrayerNames + [nil]
+    }
+
+    var lastDisplayIndex: Int {
+        max(0, displayPrayerSymbols.count - 1)
+    }
+
+    var displayProgress: Int {
+        let count = flattenedPrayerSymbols.count
+        return min(max(activeIndex, 0), count)
+    }
+
     var arrangedInS: [[String]] {
-        var flat = flattenedPrayerSymbols
-        flat.append("rectangle.pattern.checkered")
+        var flat = displayPrayerSymbols
         var rows: [[String]] = []
 
         for i in stride(from: 0, to: flat.count, by: 14) {
@@ -130,6 +152,27 @@ struct PrayerFlowView: View {
         }
 
         return rows
+    }
+
+    var startPageText: String {
+        let title = "Start modlitwy"
+        let target = selectedPriest?.displayName ?? "Kapłan"
+        let count = flattenedPrayerIds.count
+        let timeText: String
+        if let average = averageSessionDuration {
+            timeText = "Średni czas tej modlitwy: \(formatDuration(average))."
+        } else {
+            timeText = "Czas zależy od tempa modlitwy."
+        }
+        return "\(title)\n\nModlitwa za: \(target)\nLiczba submodlitw: \(count)\n\(timeText)"
+    }
+
+    var averageSessionDuration: TimeInterval? {
+        guard let targetId = selectedPriest?.id else { return nil }
+        let sessions = sessionStore.sessions.filter { $0.targetId == targetId && $0.completed }
+        guard !sessions.isEmpty else { return nil }
+        let total = sessions.reduce(0) { $0 + $1.duration }
+        return total / Double(sessions.count)
     }
 
     var backgroundImage: UIImage? {
@@ -234,7 +277,7 @@ struct PrayerFlowView: View {
                     {
                         GlassEffectContainer(spacing: 0) {
                             HStack(spacing: 0) {
-                                Text("\(activeIndex)/\(flattenedPrayerSymbols.count)")
+                                Text("\(displayProgress)/\(flattenedPrayerSymbols.count)")
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
                                     .glassEffect() 
@@ -267,7 +310,7 @@ struct PrayerFlowView: View {
                             else
                             {
                                 Button(action: {
-                                    moveToIndex(flattenedPrayerSymbols.count, animated: true)
+                                    moveToIndex(lastDisplayIndex, animated: true)
                                 }) {
                                     Image(systemName: "checkmark")
                                         .padding(12)
@@ -312,8 +355,7 @@ struct PrayerFlowView: View {
                             .frame(width:UIScreen.main.bounds.width-8, height: 400)
                             .overlay(
                                 Group {
-                                    if activeIndex < flattenedPrayerSymbols.count,
-                                       let key = currentBrewiarzKey {
+                                    if let key = currentBrewiarzKey {
                                         BrewiarzPrayerView(key: key, fullScreen: $isFullscreen)
                                             .matchedGeometryEffect(id: "brewiarzWeb", in: brewiarzNamespace, isSource: !isFullscreen)
 //                                            .opacity(isFullscreen ? 0 : 1)
@@ -321,9 +363,11 @@ struct PrayerFlowView: View {
                                     } else {
                                         ScrollView {
                                             ZStack {
-                                                Text(activeIndex < flattenedPrayerSymbols.count
-                                                     ? ((allPrayers[flattenedPrayerIds[activeIndex]]?.text ?? "Modlitwa") + "\n\n\((allPrayers[flattenedPrayerIds[activeIndex]]?.name ?? "Modlitwa"))")
-                                                     : "Koniec 🙏")
+                                                Text(activeIndex == 0
+                                                     ? startPageText
+                                                     : (activeIndex <= flattenedPrayerSymbols.count
+                                                            ? ((allPrayers[flattenedPrayerIds[activeIndex - 1]]?.text ?? "Modlitwa") + "\n\n\((allPrayers[flattenedPrayerIds[activeIndex - 1]]?.name ?? "Modlitwa"))")
+                                                            : "Koniec 🙏"))
                                                 .lineLimit(30)
                                                 .font(.headline)
                                                 .multilineTextAlignment(.center)
@@ -347,8 +391,8 @@ struct PrayerFlowView: View {
                 if selectedPriest != nil {
                     PrayerTouchScrollerView(
                         rows: arrangedInS,
-                        symbols: flattenedPrayerSymbols + ["end"],
-                        prayerNames: flattenedPrayerNames + [nil],
+                        symbols: displayPrayerSymbols,
+                        prayerNames: displayPrayerNames,
                         activeIndex: $activeIndex,
                         onIndexChange: { index in
                             moveToIndex(index, animated: true)
@@ -396,11 +440,11 @@ struct PrayerFlowView: View {
                     endDate: Date(),
                     completed: false,
                     completion: .abandoned,
-                    completedSubprayerCount: min(oldValue, flattenedPrayerIds.count)
+                    completedSubprayerCount: completedSubprayerCount(for: oldValue)
                 )
             }
 
-            if newValue < flattenedPrayerSymbols.count {
+            if newValue < lastDisplayIndex {
                 finished = false
             } else {
                 finished = true
@@ -418,7 +462,7 @@ struct PrayerFlowView: View {
                     endDate: endDate,
                     completed: true,
                     completion: sessionCompletion,
-                    completedSubprayerCount: min(activeIndex, flattenedPrayerIds.count)
+                    completedSubprayerCount: completedSubprayerCount(for: activeIndex)
                 )
                 sessionForcedEndDate = nil
                 sessionCompletion = .finished
@@ -448,7 +492,7 @@ struct PrayerFlowView: View {
                     endDate: Date(),
                     completed: false,
                     completion: .abandoned,
-                    completedSubprayerCount: min(activeIndex, flattenedPrayerIds.count)
+                    completedSubprayerCount: completedSubprayerCount(for: activeIndex)
                 )
             }
         }
@@ -478,7 +522,7 @@ struct PrayerFlowView: View {
                 BrewiarzFullScreenView(
                     key: key,
                     activeIndex: $activeIndex,
-                    maxIndex: flattenedPrayerSymbols.count,
+                    maxIndex: lastDisplayIndex,
                     isPresented: $isFullscreen,
                     namespace: brewiarzNamespace,
                     onIndexChange: { index in
@@ -571,7 +615,7 @@ struct PrayerFlowView: View {
         if pauseDuration > 600, sessionStart != nil, !finished {
             sessionCompletion = .timeout
             sessionForcedEndDate = pauseStart
-            moveToIndex(flattenedPrayerSymbols.count, animated: false)
+            moveToIndex(lastDisplayIndex, animated: false)
             return
         }
 
@@ -652,6 +696,22 @@ struct PrayerFlowView: View {
         ? "Koronka do Miłosierdzia Bożego"
         : "Różaniec"
         return items.first { $0.category == .prayer && $0.displayName == name }
+    }
+
+    private func completedSubprayerCount(for index: Int) -> Int {
+        let adjusted = max(index - 1, 0)
+        return min(adjusted, flattenedPrayerIds.count)
+    }
+
+    private func formatDuration(_ duration: TimeInterval) -> String {
+        guard duration > 0 else { return "0 min" }
+        let totalMinutes = Int(duration / 60)
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        }
+        return "\(minutes)m"
     }
 }
 
