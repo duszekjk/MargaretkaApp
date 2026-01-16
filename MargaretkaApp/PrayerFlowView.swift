@@ -17,6 +17,7 @@ struct PrayerFlowView: View {
     @State private var selectedCategory: PrayerTargetCategory = .priest
     @State private var isFullscreen: Bool = false
     @State private var userSelectedCategory: Bool = false
+    @State private var previousIndex: Int = 0
     
     @Binding var showSettings: Bool
     @Binding var showEditor: Bool
@@ -56,6 +57,10 @@ struct PrayerFlowView: View {
 
     var isCurrentPrayerWeb: Bool {
         currentBrewiarzKey != nil
+    }
+
+    var isAdvancing: Bool {
+        activeIndex >= previousIndex
     }
 
     var flattenedPrayerIds: [UUID] {
@@ -302,8 +307,8 @@ struct PrayerFlowView: View {
                                                 .padding()
                                                 .id(activeIndex)
                                                 .transition(.asymmetric(
-                                                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                                                    removal: .move(edge: .leading).combined(with: .opacity)
+                                                    insertion: .move(edge: isAdvancing ? .trailing : .leading).combined(with: .opacity),
+                                                    removal: .move(edge: isAdvancing ? .leading : .trailing).combined(with: .opacity)
                                                 ))
                                             }
                                             .animation(.easeInOut(duration: 0.25), value: activeIndex)
@@ -351,7 +356,8 @@ struct PrayerFlowView: View {
             syncSelectedPriest(userInitiated: userSelectedCategory)
             userSelectedCategory = false
         }
-        .onChange(of: activeIndex) { _, _ in
+        .onChange(of: activeIndex) { oldValue, _ in
+            previousIndex = oldValue
             if activeIndex < flattenedPrayerSymbols.count {
                 finished = false
             } else {
