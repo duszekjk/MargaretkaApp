@@ -286,9 +286,9 @@ struct PrayerFlowView: View {
                                 Group {
                                     if activeIndex < flattenedPrayerSymbols.count,
                                        let key = currentBrewiarzKey {
-                                        BrewiarzPrayerView(key: key)
+                                        BrewiarzPrayerView(key: key, fullScreen: $isFullscreen)
                                             .matchedGeometryEffect(id: "brewiarzWeb", in: brewiarzNamespace, isSource: !isFullscreen)
-                                            .opacity(isFullscreen ? 0 : 1)
+//                                            .opacity(isFullscreen ? 0 : 1)
                                             .allowsHitTesting(!isFullscreen)
                                     } else {
                                         ScrollView {
@@ -302,6 +302,9 @@ struct PrayerFlowView: View {
                                         }
                                     }
                                 }
+                                .id(activeIndex)
+                                .transition(.opacity.combined(with: .move(edge: .trailing)))
+                                .animation(.easeInOut(duration: 0.25), value: activeIndex)
                                     .frame(width:UIScreen.main.bounds.width-10, height: 400)
                                 
                             )
@@ -498,12 +501,13 @@ struct BrewiarzFullScreenView: View {
 
     var body: some View {
         ZStack {
-            BrewiarzPrayerView(key: key)
+            BrewiarzPrayerView(key: key, fullScreen: .constant(true))
                 .matchedGeometryEffect(id: "brewiarzWeb", in: namespace, isSource: isPresented)
                 .zIndex(0)
                 .ignoresSafeArea()
+            
         }
-        .safeAreaInset(edge: .top) {
+        .safeAreaInset(edge: .bottom) {
             HStack {
                 Button(action: {
                     withAnimation(.easeInOut(duration: 0.25)) {
@@ -511,7 +515,7 @@ struct BrewiarzFullScreenView: View {
                     }
                 }) {
                     Image(systemName: "arrow.down.right.and.arrow.up.left")
-                        .padding(8)
+                        .padding(16)
                 }
                 .glassEffect()
 
@@ -523,12 +527,14 @@ struct BrewiarzFullScreenView: View {
                     }
                 }) {
                     Image(systemName: "chevron.right")
-                        .padding(12)
+                    
+                        .padding(.horizontal, 4.0)
+                        .padding(16)
                 }
                 .glassEffect()
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
+            .padding(.horizontal, 32)
+            .padding(.bottom, 48)
         }
         .statusBarHidden(true)
         .persistentSystemOverlays(.hidden)
