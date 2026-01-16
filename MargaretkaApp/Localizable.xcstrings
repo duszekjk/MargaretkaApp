@@ -58,6 +58,9 @@
         }
       }
     },
+    "Aktywnosc 7 dni" : {
+
+    },
     "Anuluj" : {
 
     },
@@ -91,6 +94,9 @@
       }
     },
     "Codzienna propozycja (minimum)" : {
+
+    },
+    "Czas: %@" : {
 
     },
     "Czym jest „Margaretka”?" : {
@@ -237,6 +243,9 @@
     "Kapłan" : {
 
     },
+    "Kategorie" : {
+
+    },
     "Kopiuj" : {
 
     },
@@ -277,6 +286,12 @@
     "Można dołączyć (opcjonalnie)" : {
 
     },
+    "Nagrody i checkpointy" : {
+
+    },
+    "Najmocniejszy miesiac: %@" : {
+
+    },
     "Nazwa" : {
 
     },
@@ -295,6 +310,9 @@
     "Nowa modlitwa" : {
 
     },
+    "Odblokowane" : {
+
+    },
     "Osoby" : {
 
     },
@@ -304,7 +322,13 @@
     "Podstawowe informacje" : {
 
     },
+    "Podsumowanie roku" : {
+
+    },
     "Pokaż" : {
+
+    },
+    "Pora dnia" : {
 
     },
     "Powtórz %lldx" : {
@@ -314,6 +338,9 @@
 
     },
     "Praktyka może się nieco różnić w poszczególnych wspólnotach/parafiach – dostosuj do lokalnych zwyczajów. Istota pozostaje ta sama: **stała modlitwa za kapłana**." : {
+
+    },
+    "Rekordy" : {
 
     },
     "Remove last" : {
@@ -359,6 +386,9 @@
         }
       }
     },
+    "Sesje: %lld" : {
+
+    },
     "Skopiowano" : {
 
     },
@@ -372,7 +402,7 @@
         }
       }
     },
-    "Statystyki modlitw" : {
+    "Statystyki" : {
 
     },
     "Tekst modlitwy" : {
@@ -801,6 +831,9 @@
     "To modlitwa siedmiu osób za **jednego konkretnego kapłana** – każda osoba obejmuje go modlitwą w wybrany dzień tygodnia. Razem tworzą „stokrotkę” (7 płatków) z kapłanem w środku. Zobowiązanie ma charakter **stały** (długoterminowy)." : {
 
     },
+    "Twoja droga modlitwy" : {
+
+    },
     "Typ" : {
 
     },
@@ -808,6 +841,9 @@
 
     },
     "Udostępnij" : {
+
+    },
+    "Ulubione" : {
 
     },
     "Unit" : {
@@ -842,6 +878,9 @@
     "W razie lokalnych zwyczajów/parafialnych wytycznych – dostosuj formę, zachowując sens: **stała modlitwa za kapłana**." : {
 
     },
+    "W toku" : {
+
+    },
     "weekly" : {
       "localizations" : {
         "pl" : {
@@ -871,6 +910,9 @@
 
     },
     "Wycentruj zdjęcie" : {
+
+    },
+    "Zakres" : {
 
     },
     "Zapisano jako: %@" : {

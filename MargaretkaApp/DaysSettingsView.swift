@@ -9,7 +9,7 @@ import SwiftUI
 
 struct StatsView: View {
     @StateObject private var sessionStore = PrayerSessionStore()
-    @State private var range: StatsRange = .allTime
+    @State private var range: StatsRange = .last7
 
     var body: some View {
         let summary = PrayerStats(sessions: sessionStore.sessions, range: range, referenceDate: Date())
@@ -35,6 +35,7 @@ struct StatsView: View {
                     statCard(title: "Submodlitwy", value: "\(summary.totalSubprayers)", detail: "Srednio: \(summary.averageSubprayersText)")
                 }
 
+                checkpointAlertCard(summary: summary)
                 recordsCard(summary: summary)
                 favoritesCard(summary: summary)
                 timeOfDayCard(summary: summary)
@@ -66,7 +67,7 @@ struct StatsView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Twoja droga modlitwy")
+                    Text("Rytm modlitwy")
                         .font(.title2.bold())
                     Text(summary.subtitle)
                         .font(.subheadline)
@@ -78,7 +79,7 @@ struct StatsView: View {
                 ProgressRing(
                     progress: summary.progressToNextMilestone,
                     title: summary.nextMilestoneTitle,
-                    subtitle: "Nastepny cel"
+                    subtitle: "Nastepny checkpoint"
                 )
             }
 
@@ -112,6 +113,26 @@ struct StatsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(cardBackground(colors: [Color.white.opacity(0.6), Color.white.opacity(0.3)]))
+    }
+
+
+    private func checkpointAlertCard(summary: PrayerStats) -> some View {
+        guard let title = summary.latestUnlockedMilestoneTitle else {
+            return AnyView(EmptyView())
+        }
+
+        return AnyView(
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Checkpoint osiagniety")
+                    .font(.headline)
+
+                Text("Odblokowales: \(title)")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(16)
+            .background(cardBackground(colors: [Color(red: 0.95, green: 0.86, blue: 0.63), Color(red: 0.98, green: 0.93, blue: 0.80)]))
+        )
     }
 
     private func recordsCard(summary: PrayerStats) -> some View {
@@ -244,7 +265,7 @@ struct StatsView: View {
 
     private func milestonesCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Nagrody i checkpointy")
+            Text("Checkpointy")
                 .font(.headline)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -402,6 +423,7 @@ struct PrayerStats {
     let milestones: [Milestone]
     let nextMilestoneTitle: String
     let progressToNextMilestone: Double
+    let latestUnlockedMilestoneTitle: String?
     let highlightText: String?
     let subtitle: String
     let favoritePrayer: String?
@@ -460,6 +482,7 @@ struct PrayerStats {
         let milestonesValue = goals.map { goal in
             Milestone(title: "\(goal) dni", goal: goal, isUnlocked: activeDays >= goal)
         }
+        let latestUnlockedTitleValue = goals.filter { activeDays >= $0 }.max().map { "\($0) dni" }
 
         let nextMilestoneTitleValue: String
         let progressValue: Double
@@ -515,6 +538,7 @@ struct PrayerStats {
         timeOfDayBuckets = timeBucketsValue
         categories = categoriesValue
         milestones = milestonesValue
+        latestUnlockedMilestoneTitle = latestUnlockedTitleValue
         nextMilestoneTitle = nextMilestoneTitleValue
         progressToNextMilestone = progressValue
         highlightText = highlightValue

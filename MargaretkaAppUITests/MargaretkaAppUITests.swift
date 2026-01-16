@@ -25,7 +25,15 @@ final class MargaretkaAppUITests: XCTestCase {
     @MainActor
     func testOpenStatsView() throws {
         let app = XCUIApplication()
+        app.launchArguments.append("--ui-tests")
         app.launch()
+
+        let continueButton = app.buttons["ui_test_continue"].firstMatch
+        if continueButton.waitForExistence(timeout: 10) {
+            let dismissed = NSPredicate(format: "exists == false")
+            let expectation = expectation(for: dismissed, evaluatedWith: continueButton)
+            _ = XCTWaiter.wait(for: [expectation], timeout: 120)
+        }
 
         let settingsButton = app.buttons["gear"].firstMatch
         XCTAssertTrue(settingsButton.waitForExistence(timeout: 4))
