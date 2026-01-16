@@ -100,6 +100,9 @@ struct PrayerFlowView: View {
         flattenedPrayerIds.map { allPrayers[$0]?.symbol ?? "questionmark" }
     }
 
+    var flattenedPrayerNames: [String?] {
+        flattenedPrayerIds.map { allPrayers[$0]?.name }
+    }
 
     var arrangedInS: [[String]] {
         var flat = flattenedPrayerSymbols
@@ -333,6 +336,7 @@ struct PrayerFlowView: View {
                     PrayerTouchScrollerView(
                         rows: arrangedInS,
                         symbols: flattenedPrayerSymbols + ["end"],
+                        prayerNames: flattenedPrayerNames + [nil],
                         activeIndex: $activeIndex,
                         onIndexChange: { index in
                             moveToIndex(index, animated: true)
@@ -575,6 +579,7 @@ struct BrewiarzFullScreenView: View {
 struct PrayerTouchScrollerView: View {
     let rows: [[String]]
     let symbols: [String] 
+    let prayerNames: [String?]
     let rowLength: Int
     let onIndexChange: ((Int) -> Void)?
 
@@ -583,9 +588,10 @@ struct PrayerTouchScrollerView: View {
     
     @State private var frames: [Int: CGRect] = [:]
 
-    init(rows: [[String]], symbols: [String], activeIndex: Binding<Int>, onIndexChange: ((Int) -> Void)? = nil) {
+    init(rows: [[String]], symbols: [String], prayerNames: [String?], activeIndex: Binding<Int>, onIndexChange: ((Int) -> Void)? = nil) {
         self.rows = rows
         self.symbols = symbols
+        self.prayerNames = prayerNames
         self._activeIndex = activeIndex
         self.rowLength = 14
         self.onIndexChange = onIndexChange
@@ -668,20 +674,26 @@ struct PrayerTouchScrollerView: View {
 
                             if index == activeIndex {
                                 
-                            } else if delta == 1 && index == symbols.count - 1 {
-                                updateIndex(index)
-                                UIImpactFeedbackGenerator(style: .heavy).impactOccurred(intensity: 1.0)
-                            } else if delta == 1 {
-                                updateIndex(index)
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 1.0)
-                            } else if delta == -1 {
-                                updateIndex(index)
-                                UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.9)
                             } else {
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.4)
+                                let fromName = prayerName(at: activeIndex)
+                                let toName = prayerName(at: index)
+                                let isSubprayerSwitch = fromName != nil && toName != nil && fromName != toName
+
+                                if isSubprayerSwitch {
+                                    updateIndex(index)
+                                    subprayerHaptic()
+                                } else if delta == 1 {
+                                    updateIndex(index)
+                                    UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 1.0)
+                                } else if delta == -1 {
+                                    updateIndex(index)
+                                    UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.9)
+                                } else {
+                                    UINotificationFeedbackGenerator().notificationOccurred(.error)
+                                }
                             }
                         } else {
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred(intensity: 0.4)
+                            UINotificationFeedbackGenerator().notificationOccurred(.error)
                         }
                     }
                     .onEnded { _ in
@@ -696,6 +708,19 @@ struct PrayerTouchScrollerView: View {
         }.coordinateSpace(name: "scrollZone")
 
     }
+    private func prayerName(at index: Int) -> String? {
+        guard index >= 0 && index < prayerNames.count else { return nil }
+        return prayerNames[index]
+    }
+
+    private func subprayerHaptic() {
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.impactOccurred(intensity: 1.0)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) {
+            generator.impactOccurred(intensity: 0.7)
+        }
+    }
+
     func findTouchedIndex(at location: CGPoint) -> Int? {
         let threshold: CGFloat = 40
         let closest: (Int, CGFloat)? = frames
