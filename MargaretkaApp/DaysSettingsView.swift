@@ -26,9 +26,11 @@ struct StatsView: View {
                 .pickerStyle(.segmented)
 
                 HStack(spacing: 16) {
-                    statCard(title: "Sesje", value: "\(summary.totalSessions)", detail: "Dni aktywne: \(summary.totalActiveDays)")
+                    statCard(title: "Sesje", value: "\(summary.totalSessions)", detail: "Aktywne tygodnie: \(summary.activeWeeks)")
                     statCard(title: "Ukonczone", value: "\(summary.completedSessions)", detail: "Skutecznosc: \(summary.completionRateText)")
                 }
+
+                weeklyStreakCard(summary: summary)
 
                 HStack(spacing: 16) {
                     statCard(title: "Czas", value: summary.totalDurationText, detail: "Srednio: \(summary.averageDurationText)")
@@ -67,7 +69,7 @@ struct StatsView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Rytm modlitwy")
+                    Text("Margaretka – rytm tygodnia")
                         .font(.title2.bold())
                     Text(summary.subtitle)
                         .font(.subheadline)
@@ -99,6 +101,23 @@ struct StatsView: View {
         .background(cardBackground(colors: [Color(red: 0.45, green: 0.66, blue: 0.92), Color(red: 0.58, green: 0.78, blue: 0.94)]))
     }
 
+
+    private func weeklyStreakCard(summary: PrayerStats) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Seria tygodniowa")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text("\(summary.currentWeeklyStreak) tyg")
+                .font(.title2.bold())
+            Text("Najdluzsza: \(summary.longestWeeklyStreak) tyg")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(cardBackground(colors: [Color.white.opacity(0.6), Color.white.opacity(0.3)]))
+    }
+
     private func statCard(title: String, value: String, detail: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
@@ -123,10 +142,10 @@ struct StatsView: View {
 
         return AnyView(
             VStack(alignment: .leading, spacing: 12) {
-                Text("Checkpoint osiagniety")
+                Text("Checkpoint zaliczony")
                     .font(.headline)
 
-                Text("Odblokowales: \(title)")
+                Text("Osiagnieto: \(title)")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
             }
@@ -168,7 +187,7 @@ struct StatsView: View {
             Text("Ulubione")
                 .font(.headline)
 
-            favoriteRow(title: "Osoba/kaplan", value: summary.favoriteTarget ?? "Brak danych")
+            favoriteRow(title: "Kaplan", value: summary.favoritePriestTarget ?? summary.favoriteTarget ?? "Brak danych")
             favoriteRow(title: "Submodlitwa", value: summary.favoritePrayer ?? "Brak danych")
             favoriteRow(title: "Pora dnia", value: summary.favoriteTimeOfDay ?? "Brak danych")
             favoriteRow(title: "Kategoria", value: summary.favoriteCategory ?? "Brak danych")
@@ -412,6 +431,9 @@ struct PrayerStats {
     let totalSessions: Int
     let completedSessions: Int
     let totalActiveDays: Int
+    let activeWeeks: Int
+    let currentWeeklyStreak: Int
+    let longestWeeklyStreak: Int
     let totalDuration: TimeInterval
     let averageDuration: TimeInterval
     let totalSubprayers: Int
@@ -428,6 +450,7 @@ struct PrayerStats {
     let subtitle: String
     let favoritePrayer: String?
     let favoriteTarget: String?
+    let favoritePriestTarget: String?
     let favoriteCategory: String?
     let favoriteTimeOfDay: String?
     let totalDurationText: String
@@ -453,6 +476,12 @@ struct PrayerStats {
         let sessionCount = filteredSessions.count
         let completedCount = filteredSessions.filter { $0.completed }.count
         let activeDays = perDay.keys.count
+
+        let priestSessions = filteredSessions.filter { $0.targetCategory == .priest }
+        let priestCompletedSessions = priestSessions.filter { $0.completed }
+        let activeWeeksValue = PrayerStats.activeWeeks(from: priestCompletedSessions, calendar: calendar)
+        let weeklyStreakValue = PrayerStats.currentWeeklyStreak(from: referenceDate, sessions: priestCompletedSessions, calendar: calendar)
+        let longestWeeklyStreakValue = PrayerStats.longestWeeklyStreak(in: priestCompletedSessions, calendar: calendar)
         let totalDurationValue = filteredSessions.reduce(0) { $0 + $1.duration }
         let averageDurationValue = sessionCount > 0 ? totalDurationValue / Double(sessionCount) : 0
         let totalSubprayersValue = PrayerStats.totalCompletedSubprayers(filteredSessions)
@@ -480,14 +509,14 @@ struct PrayerStats {
 
         let goals = [3, 7, 14, 30, 60, 100, 180, 365]
         let milestonesValue = goals.map { goal in
-            Milestone(title: "\(goal) dni", goal: goal, isUnlocked: activeDays >= goal)
+            Milestone(title: "\(goal) tyg", goal: goal, isUnlocked: activeWeeksValue >= goal)
         }
-        let latestUnlockedTitleValue = goals.filter { activeDays >= $0 }.max().map { "\($0) dni" }
+        let latestUnlockedTitleValue = goals.filter { activeWeeksValue >= $0 }.max().map { "\($0) tyg" }
 
         let nextMilestoneTitleValue: String
         let progressValue: Double
         if let next = goals.first(where: { activeDays < $0 }) {
-            nextMilestoneTitleValue = "\(next) dni"
+            nextMilestoneTitleValue = "\(next) tyg"
             progressValue = activeDays == 0 ? 0 : Double(activeDays) / Double(next)
         } else {
             nextMilestoneTitleValue = "Cel osiagniety"
@@ -507,7 +536,7 @@ struct PrayerStats {
         if sessionCount == 0 {
             highlightValue = "Zacznij od pierwszej sesji, aby uruchomic statystyki."
         } else if completedCount >= 7 {
-            highlightValue = "Masz \(completedCount) ukonczonych sesji. Trzymaj tempo!"
+            highlightValue = "Masz \(weeklyStreakValue) tygodni z modlitwa za kaplanow."
         } else if sessionCount >= 3 {
             highlightValue = "Swietny start - \(sessionCount) sesje modlitwy."
         } else {
@@ -529,6 +558,9 @@ struct PrayerStats {
         totalSessions = sessionCount
         completedSessions = completedCount
         totalActiveDays = activeDays
+        activeWeeks = activeWeeksValue
+        currentWeeklyStreak = weeklyStreakValue
+        longestWeeklyStreak = longestWeeklyStreakValue
         totalDuration = totalDurationValue
         averageDuration = averageDurationValue
         totalSubprayers = totalSubprayersValue
@@ -545,6 +577,7 @@ struct PrayerStats {
         subtitle = subtitleValue
         favoritePrayer = favoritePrayerValue
         favoriteTarget = favoriteTargetValue
+        favoritePriestTarget = PrayerStats.favoriteTargetName(in: priestCompletedSessions)
         favoriteCategory = favoriteCategoryValue
         favoriteTimeOfDay = favoriteTimeOfDayValue
         totalDurationText = totalDurationTextValue
@@ -557,6 +590,77 @@ struct PrayerStats {
         yearTotalSessions = yearTotalSessionsValue
         yearTotalDurationText = yearTotalDurationTextValue
         yearPeakMonth = yearPeakMonthValue
+    }
+
+
+    private static func activeWeeks(from sessions: [PrayerSession], calendar: Calendar) -> Int {
+        let keys = Set(sessions.map { weekKey(for: $0.endedAt, calendar: calendar) })
+        return keys.count
+    }
+
+    private static func currentWeeklyStreak(from referenceDate: Date, sessions: [PrayerSession], calendar: Calendar) -> Int {
+        let weekKeys = Set(sessions.map { weekKey(for: $0.endedAt, calendar: calendar) })
+        var streak = 0
+        var current = weekKey(for: referenceDate, calendar: calendar)
+
+        while weekKeys.contains(current) {
+            streak += 1
+            current = previousWeekKey(from: current, calendar: calendar)
+        }
+        return streak
+    }
+
+    private static func longestWeeklyStreak(in sessions: [PrayerSession], calendar: Calendar) -> Int {
+        let weekKeys = sessions.map { weekKey(for: $0.endedAt, calendar: calendar) }
+        let sorted = Array(Set(weekKeys)).sorted()
+        guard let first = sorted.first else { return 0 }
+
+        var longest = 1
+        var current = 1
+        var prev = first
+
+        for key in sorted.dropFirst() {
+            let next = nextWeekKey(from: prev, calendar: calendar)
+            if next == key {
+                current += 1
+            } else {
+                current = 1
+            }
+            longest = max(longest, current)
+            prev = key
+        }
+        return longest
+    }
+
+    private static func weekKey(for date: Date, calendar: Calendar) -> String {
+        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
+        let year = components.yearForWeekOfYear ?? 0
+        let week = components.weekOfYear ?? 0
+        return String(format: "%04d-%02d", year, week)
+    }
+
+    private static func previousWeekKey(from key: String, calendar: Calendar) -> String {
+        guard let date = date(fromWeekKey: key, calendar: calendar) else { return key }
+        let prev = calendar.date(byAdding: .weekOfYear, value: -1, to: date) ?? date
+        return weekKey(for: prev, calendar: calendar)
+    }
+
+    private static func nextWeekKey(from key: String, calendar: Calendar) -> String {
+        guard let date = date(fromWeekKey: key, calendar: calendar) else { return key }
+        let next = calendar.date(byAdding: .weekOfYear, value: 1, to: date) ?? date
+        return weekKey(for: next, calendar: calendar)
+    }
+
+    private static func date(fromWeekKey key: String, calendar: Calendar) -> Date? {
+        let parts = key.split(separator: "-")
+        guard parts.count == 2,
+              let year = Int(parts[0]),
+              let week = Int(parts[1]) else { return nil }
+        var components = DateComponents()
+        components.yearForWeekOfYear = year
+        components.weekOfYear = week
+        components.weekday = calendar.firstWeekday
+        return calendar.date(from: components)
     }
 
     private static func sessionsPerDay(_ sessions: [PrayerSession], calendar: Calendar) -> [Date: Int] {
