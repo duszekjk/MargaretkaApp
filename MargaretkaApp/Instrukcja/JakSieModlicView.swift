@@ -90,8 +90,12 @@ Maryjo, Matko Kapłanów, otaczaj go swoją opieką. Amen.
     }
 }
 
-#Preview {
-    NavigationStack {
-        JakSieModlicView()
+#if DEBUG
+struct JakSieModlicView_Previews: PreviewProvider {
+    static var previews: some View {
+        NavigationStack {
+            JakSieModlicView()
+        }
     }
 }
+#endif

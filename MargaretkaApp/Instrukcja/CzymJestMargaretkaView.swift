@@ -99,8 +99,12 @@ struct DaisyDiagram: View {
     }
 }
 
-#Preview {
-    NavigationStack {
-        CzymJestMargaretkaView()
+#if DEBUG
+struct CzymJestMargaretkaView_Previews: PreviewProvider {
+    static var previews: some View {
+        NavigationStack {
+            CzymJestMargaretkaView()
+        }
     }
 }
+#endif
