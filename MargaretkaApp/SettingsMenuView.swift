@@ -71,10 +71,10 @@ struct SettingsMenuView: View {
                 ) {
                     Text("Jak się modlić w Margaretce?")
                 }
-                NavigationLink(destination: StatsView()) {
-                    Text("Statystyki")
-                }
-                .accessibilityIdentifier("settings_stats_link")
+                NavigationLink("Statystyki", destination: StatsView())
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Statystyki")
+                    .accessibilityIdentifier("settings_stats_link")
             }
             .navigationTitle("Ustawienia")
             Text("© 2025\nDUSZEKJK Jacek Kałużny\nSoftware Development.\nAll rights reserved.")
