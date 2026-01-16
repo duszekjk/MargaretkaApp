@@ -61,7 +61,7 @@
         }
       }
     },
-    "Aktywnosc 7 dni" : {
+    "Aktywnosc Margaretki (7 dni)" : {
 
     },
     "Anuluj" : {
@@ -84,6 +84,9 @@
 
     },
     "Brak" : {
+
+    },
+    "Brak dodatkowych modlitw w tym okresie." : {
 
     },
     "Cancel" : {
@@ -173,6 +176,9 @@
     "Dodaj nową podgrupę" : {
 
     },
+    "Dodatkowe modlitwy" : {
+
+    },
     "Dopasuj" : {
 
     },
@@ -250,9 +256,6 @@
 
     },
     "Kapłan" : {
-
-    },
-    "Kategorie" : {
 
     },
     "Kontynuuj" : {
