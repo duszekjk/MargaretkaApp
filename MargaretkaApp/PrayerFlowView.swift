@@ -59,6 +59,18 @@ struct PrayerFlowView: View {
         currentBrewiarzKey != nil
     }
 
+    private func moveToIndex(_ index: Int, animated: Bool) {
+        guard index != activeIndex else { return }
+        isAdvancing = index >= activeIndex
+        if animated {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                                moveToIndex(index, animated: true)
+            }
+        } else {
+                                moveToIndex(index, animated: true)
+        }
+    }
+
     var flattenedPrayerIds: [UUID] {
         guard let priest = selectedPriest else { return [] }
 
@@ -215,7 +227,7 @@ struct PrayerFlowView: View {
                                     .foregroundStyle(.primary)
                                 
                                 Button(action: {
-                                    activeIndex = 0
+                                    moveToIndex(0, animated: true)
                                 }) {
                                     Image(systemName: "arrow.triangle.2.circlepath")
                                         .padding(12)
@@ -240,7 +252,7 @@ struct PrayerFlowView: View {
                             else
                             {
                                 Button(action: {
-                                    activeIndex = flattenedPrayerSymbols.count
+                                    moveToIndex(flattenedPrayerSymbols.count, animated: true)
                                 }) {
                                     Image(systemName: "checkmark")
                                         .padding(12)
@@ -352,8 +364,7 @@ struct PrayerFlowView: View {
             syncSelectedPriest(userInitiated: userSelectedCategory)
             userSelectedCategory = false
         }
-        .onChange(of: activeIndex) { oldValue, _ in
-            isAdvancing = activeIndex >= oldValue
+        .onChange(of: activeIndex) { _, _ in
             if activeIndex < flattenedPrayerSymbols.count {
                 finished = false
             } else {
@@ -392,7 +403,7 @@ struct PrayerFlowView: View {
                   let uuid = UUID(uuidString: itemId) else { return }
             if let priest = scheduleData.items.first(where: { $0.id == uuid }) {
                 selectedPriest = priest
-                activeIndex = 0
+                moveToIndex(0, animated: true)
                 finished = false
             }
         }
@@ -409,7 +420,10 @@ struct PrayerFlowView: View {
                     activeIndex: $activeIndex,
                     maxIndex: flattenedPrayerSymbols.count,
                     isPresented: $isFullscreen,
-                    namespace: brewiarzNamespace
+                    namespace: brewiarzNamespace,
+                    onIndexChange: { index in
+                        moveToIndex(index, animated: true)
+                    }
                 )
                 .transition(.opacity)
             }
@@ -505,6 +519,7 @@ struct BrewiarzFullScreenView: View {
     let maxIndex: Int
     @Binding var isPresented: Bool
     let namespace: Namespace.ID
+    var onIndexChange: ((Int) -> Void)?
 
     var body: some View {
         ZStack {
@@ -530,7 +545,12 @@ struct BrewiarzFullScreenView: View {
 
                 Button(action: {
                     if activeIndex < maxIndex {
-                        activeIndex += 1
+                        let nextIndex = activeIndex + 1
+                        if let onIndexChange {
+                            onIndexChange(nextIndex)
+                        } else {
+                            activeIndex = nextIndex
+                        }
                     }
                 }) {
                     Image(systemName: "chevron.right")
@@ -645,7 +665,7 @@ struct PrayerTouchScrollerView: View {
                                 
                             } else if delta == 1 && index == symbols.count - 1 {
                                 withAnimation(.easeInOut(duration: 0.25)) {
-                                    activeIndex = index
+                                moveToIndex(index, animated: true)
                                 }
                                 UINotificationFeedbackGenerator().notificationOccurred(.success)
                             } else if delta == 1 {
