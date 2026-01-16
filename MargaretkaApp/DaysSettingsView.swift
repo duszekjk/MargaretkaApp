@@ -81,7 +81,7 @@ struct StatsView: View {
                 ProgressRing(
                     progress: summary.progressToNextMilestone,
                     title: summary.nextMilestoneTitle,
-                    subtitle: "Kolejny"
+                    subtitle: "Checkpoint"
                 )
             }
 
