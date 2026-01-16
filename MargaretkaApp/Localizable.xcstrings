@@ -17,6 +17,9 @@
     "%lld" : {
 
     },
+    "%lld tyg" : {
+
+    },
     "%lld/%lld" : {
       "localizations" : {
         "pl" : {
@@ -93,7 +96,7 @@
         }
       }
     },
-    "Checkpoint osiagniety" : {
+    "Checkpoint zaliczony" : {
 
     },
     "Checkpointy" : {
@@ -267,6 +270,9 @@
     "Ładowanie..." : {
 
     },
+    "Margaretka – rytm tygodnia" : {
+
+    },
     "Modlitwa Margaretka" : {
 
     },
@@ -295,6 +301,9 @@
     "Można dołączyć (opcjonalnie)" : {
 
     },
+    "Najdluzsza: %lld tyg" : {
+
+    },
     "Najmocniejszy miesiac: %@" : {
 
     },
@@ -316,13 +325,13 @@
     "Nowa modlitwa" : {
 
     },
-    "Odblokowales: %@" : {
-
-    },
     "Odblokowane" : {
 
     },
     "Odblokuj telefon i dotknij Kontynuuj, aby rozpoczac." : {
+
+    },
+    "Osiagnieto: %@" : {
 
     },
     "Osoby" : {
@@ -368,9 +377,6 @@
     "Rozpocznij nagrywanie" : {
 
     },
-    "Rytm modlitwy" : {
-
-    },
     "Save" : {
       "localizations" : {
         "pl" : {
@@ -400,6 +406,9 @@
           }
         }
       }
+    },
+    "Seria tygodniowa" : {
+
     },
     "Sesje: %lld" : {
 
