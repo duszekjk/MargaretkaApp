@@ -39,9 +39,14 @@ final class MargaretkaAppUITests: XCTestCase {
         XCTAssertTrue(settingsButton.waitForExistence(timeout: 4))
         settingsButton.tap()
 
-        let statsLink = app.cells["settings_stats_link"].firstMatch
-        XCTAssertTrue(statsLink.waitForExistence(timeout: 4))
-        statsLink.tap()
+        let statsButton = app.buttons["settings_stats_link"].firstMatch
+        if statsButton.waitForExistence(timeout: 4) {
+            statsButton.tap()
+        } else {
+            let statsCell = app.cells["settings_stats_link"].firstMatch
+            XCTAssertTrue(statsCell.waitForExistence(timeout: 4))
+            statsCell.tap()
+        }
 
         XCTAssertTrue(app.scrollViews["stats_view"].waitForExistence(timeout: 4))
     }
