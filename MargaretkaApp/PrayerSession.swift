@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import Combine
+internal import Combine
 
 enum PrayerSessionCompletion: String, Codable {
     case finished
