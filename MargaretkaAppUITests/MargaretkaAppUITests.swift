@@ -39,7 +39,7 @@ final class MargaretkaAppUITests: XCTestCase {
         XCTAssertTrue(settingsButton.waitForExistence(timeout: 4))
         settingsButton.tap()
 
-        let statsLink = app.staticTexts["settings_stats_link"].firstMatch
+        let statsLink = app.cells["settings_stats_link"].firstMatch
         XCTAssertTrue(statsLink.waitForExistence(timeout: 4))
         statsLink.tap()
 

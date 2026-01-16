@@ -73,8 +73,8 @@ struct SettingsMenuView: View {
                 }
                 NavigationLink(destination: StatsView()) {
                     Text("Statystyki")
-                        .accessibilityIdentifier("settings_stats_link")
                 }
+                .accessibilityIdentifier("settings_stats_link")
             }
             .navigationTitle("Ustawienia")
             Text("© 2025\nDUSZEKJK Jacek Kałużny\nSoftware Development.\nAll rights reserved.")
