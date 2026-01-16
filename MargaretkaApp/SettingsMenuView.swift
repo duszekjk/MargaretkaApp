@@ -71,7 +71,7 @@ struct SettingsMenuView: View {
                 ) {
                     Text("Jak się modlić w Margaretce?")
                 }
-                //            NavigationLink("Statystyki", destination: StatsView())
+                NavigationLink("Statystyki", destination: StatsView())
             }
             .navigationTitle("Ustawienia")
             Text("© 2025\nDUSZEKJK Jacek Kałużny\nSoftware Development.\nAll rights reserved.")
