@@ -15,10 +15,10 @@ struct MargaretkaAppTests {
         let calendar = Calendar.current
         let referenceDate = calendar.date(from: DateComponents(year: 2025, month: 9, day: 1))!
         let recent = makeSession(endedAt: referenceDate, completed: true)
-        let oldDate = calendar.date(byAdding: .day, value: -10, to: referenceDate)!
+        let oldDate = calendar.date(byAdding: .weekOfYear, value: -9, to: referenceDate)!
         let old = makeSession(endedAt: oldDate, completed: true)
 
-        let stats = PrayerStats(sessions: [recent, old], range: .last7, referenceDate: referenceDate)
+        let stats = PrayerStats(sessions: [recent, old], range: .last8Weeks, referenceDate: referenceDate)
 
         #expect(stats.totalSessions == 1)
     }

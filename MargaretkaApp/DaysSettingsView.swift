@@ -9,7 +9,7 @@ import SwiftUI
 
 struct StatsView: View {
     @StateObject private var sessionStore = PrayerSessionStore()
-    @State private var range: StatsRange = .last7
+    @State private var range: StatsRange = .last12Weeks
 
     var body: some View {
         let summary = PrayerStats(sessions: sessionStore.sessions, range: range, referenceDate: Date())
@@ -236,16 +236,16 @@ struct StatsView: View {
 
     private func activityCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Aktywnosc Margaretki (7 dni)")
+            Text("Aktywnosc Margaretki (8 tygodni)")
                 .font(.headline)
 
             HStack(alignment: .bottom, spacing: 10) {
-                ForEach(summary.lastSevenDays) { day in
+                ForEach(summary.recentWeeks) { week in
                     VStack(spacing: 6) {
                         Capsule()
-                            .fill(day.value == 0 ? Color.gray.opacity(0.25) : Color(red: 0.2, green: 0.45, blue: 0.85))
-                            .frame(height: max(10, day.height))
-                        Text(day.label)
+                            .fill(week.value == 0 ? Color.gray.opacity(0.25) : Color(red: 0.2, green: 0.45, blue: 0.85))
+                            .frame(height: max(10, week.height))
+                        Text(week.label)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -379,8 +379,9 @@ struct ProgressRing: View {
 
 enum StatsRange: String, CaseIterable, Identifiable {
     case allTime
-    case last7
-    case last30
+    case last8Weeks
+    case last12Weeks
+    case last52Weeks
 
     var id: String { rawValue }
 
@@ -388,27 +389,32 @@ enum StatsRange: String, CaseIterable, Identifiable {
         switch self {
         case .allTime:
             return "Wszystko"
-        case .last7:
-            return "7 dni"
-        case .last30:
-            return "30 dni"
+        case .last8Weeks:
+            return "8 tyg"
+        case .last12Weeks:
+            return "12 tyg"
+        case .last52Weeks:
+            return "52 tyg"
         }
     }
 
     func startDate(relativeTo date: Date, calendar: Calendar) -> Date? {
+        let weekStart = calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? calendar.startOfDay(for: date)
         switch self {
         case .allTime:
             return nil
-        case .last7:
-            return calendar.date(byAdding: .day, value: -6, to: calendar.startOfDay(for: date))
-        case .last30:
-            return calendar.date(byAdding: .day, value: -29, to: calendar.startOfDay(for: date))
+        case .last8Weeks:
+            return calendar.date(byAdding: .weekOfYear, value: -7, to: weekStart)
+        case .last12Weeks:
+            return calendar.date(byAdding: .weekOfYear, value: -11, to: weekStart)
+        case .last52Weeks:
+            return calendar.date(byAdding: .weekOfYear, value: -51, to: weekStart)
         }
     }
 }
 
 struct PrayerStats {
-    struct DayCount: Identifiable {
+    struct WeekCount: Identifiable {
         let id = UUID()
         let label: String
         let value: Int
@@ -446,7 +452,7 @@ struct PrayerStats {
     let totalSubprayers: Int
     let averageSubprayers: Double
     let longestSession: PrayerSession?
-    let lastSevenDays: [DayCount]
+    let recentWeeks: [WeekCount]
     let timeOfDayBuckets: [TimeBucket]
     let otherCategories: [CategoryEntry]
     let milestones: [Milestone]
@@ -481,10 +487,10 @@ struct PrayerStats {
         let priestCompletedSessions = priestSessions.filter { $0.completed }
         let otherSessions = filteredSessions.filter { $0.targetCategory != .priest }
 
-        let perDay = PrayerStats.sessionsPerDay(priestSessions, calendar: calendar)
+        let perWeek = PrayerStats.sessionsPerWeek(priestSessions, calendar: calendar)
         let sessionCount = priestSessions.count
         let completedCount = priestCompletedSessions.count
-        let activeDays = perDay.keys.count
+        let activeDays = perWeek.keys.count
 
         let activeWeeksValue = PrayerStats.activeWeeks(from: priestCompletedSessions, calendar: calendar)
         let weeklyStreakValue = PrayerStats.currentWeeklyStreak(from: referenceDate, sessions: priestCompletedSessions, calendar: calendar)
@@ -495,12 +501,12 @@ struct PrayerStats {
         let averageSubprayersValue = sessionCount > 0 ? Double(totalSubprayersValue) / Double(sessionCount) : 0
         let longestSessionValue = priestSessions.max(by: { $0.duration < $1.duration })
 
-        let lastSeven = PrayerStats.lastDays(count: 7, referenceDate: referenceDate, calendar: calendar)
-        let maxValue = max(lastSeven.map { perDay[$0, default: 0] }.max() ?? 1, 1)
-        let lastSevenDaysValue = lastSeven.map { day in
-            let value = perDay[day, default: 0]
+        let recentWeekKeys = PrayerStats.lastWeeks(count: 8, referenceDate: referenceDate, calendar: calendar)
+        let maxValue = max(recentWeekKeys.map { perWeek[$0, default: 0] }.max() ?? 1, 1)
+        let recentWeeksValue = recentWeekKeys.map { key in
+            let value = perWeek[key, default: 0]
             let height = CGFloat(value) / CGFloat(maxValue) * 64
-            return DayCount(label: PrayerStats.shortLabel(for: day), value: value, height: height)
+            return WeekCount(label: PrayerStats.weekLabel(for: key, calendar: calendar), value: value, height: height)
         }
 
         let timeBucketsValue = PrayerStats.timeBuckets(priestSessions)
@@ -550,9 +556,17 @@ struct PrayerStats {
             highlightValue = nil
         }
 
-        let subtitleValue = range == .allTime
-            ? "Modlitwa za kaplanow - caly czas"
-            : "Modlitwa za kaplanow - ostatnie \(range == .last7 ? "7" : "30") dni"
+        let subtitleValue: String
+        switch range {
+        case .allTime:
+            subtitleValue = "Modlitwa za kaplanow - caly czas"
+        case .last8Weeks:
+            subtitleValue = "Modlitwa za kaplanow - ostatnie 8 tygodni"
+        case .last12Weeks:
+            subtitleValue = "Modlitwa za kaplanow - ostatnie 12 tygodni"
+        case .last52Weeks:
+            subtitleValue = "Modlitwa za kaplanow - ostatnie 52 tygodnie"
+        }
         let completionRateValue = PrayerStats.formatCompletionRate(completed: completedCount, total: sessionCount)
         let longestSessionTextValue = PrayerStats.formatDuration(longestSessionValue?.duration ?? 0)
         let longestTargetNameValue = longestSessionValue?.targetName
@@ -575,7 +589,7 @@ struct PrayerStats {
         totalSubprayers = totalSubprayersValue
         averageSubprayers = averageSubprayersValue
         longestSession = longestSessionValue
-        lastSevenDays = lastSevenDaysValue
+        recentWeeks = recentWeeksValue
         timeOfDayBuckets = timeBucketsValue
         otherCategories = categoriesValue
         milestones = milestonesValue
@@ -670,13 +684,13 @@ struct PrayerStats {
         return calendar.date(from: components)
     }
 
-    private static func sessionsPerDay(_ sessions: [PrayerSession], calendar: Calendar) -> [Date: Int] {
-        var perDay: [Date: Int] = [:]
+    private static func sessionsPerWeek(_ sessions: [PrayerSession], calendar: Calendar) -> [String: Int] {
+        var perWeek: [String: Int] = [:]
         for session in sessions {
-            let day = calendar.startOfDay(for: session.endedAt)
-            perDay[day, default: 0] += 1
+            let key = weekKey(for: session.endedAt, calendar: calendar)
+            perWeek[key, default: 0] += 1
         }
-        return perDay
+        return perWeek
     }
 
     private static func totalCompletedSubprayers(_ sessions: [PrayerSession]) -> Int {
@@ -771,18 +785,20 @@ struct PrayerStats {
         return String(format: "%.0f%%", percent)
     }
 
-    private static func lastDays(count: Int, referenceDate: Date, calendar: Calendar) -> [Date] {
+    private static func lastWeeks(count: Int, referenceDate: Date, calendar: Calendar) -> [String] {
         guard count > 0 else { return [] }
-        let start = calendar.startOfDay(for: referenceDate)
+        let start = calendar.dateInterval(of: .weekOfYear, for: referenceDate)?.start ?? calendar.startOfDay(for: referenceDate)
         return (0..<count).compactMap { offset in
-            calendar.date(byAdding: .day, value: -(count - 1 - offset), to: start)
+            let date = calendar.date(byAdding: .weekOfYear, value: -(count - 1 - offset), to: start) ?? start
+            return weekKey(for: date, calendar: calendar)
         }
     }
 
-    private static func shortLabel(for date: Date) -> String {
+    private static func weekLabel(for key: String, calendar: Calendar) -> String {
+        guard let date = date(fromWeekKey: key, calendar: calendar) else { return "-" }
         let formatter = DateFormatter()
-        formatter.dateFormat = "EE"
-        return formatter.string(from: date).uppercased()
+        formatter.dateFormat = "dd.MM"
+        return formatter.string(from: date)
     }
 
     private static func yearWindow(for date: Date, calendar: Calendar) -> ClosedRange<Date> {
