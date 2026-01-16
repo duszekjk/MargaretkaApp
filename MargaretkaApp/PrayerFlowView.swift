@@ -64,10 +64,10 @@ struct PrayerFlowView: View {
         isAdvancing = index >= activeIndex
         if animated {
             withAnimation(.easeInOut(duration: 0.25)) {
-                                moveToIndex(index, animated: true)
+                activeIndex = index
             }
         } else {
-                                moveToIndex(index, animated: true)
+            activeIndex = index
         }
     }
 
@@ -333,7 +333,10 @@ struct PrayerFlowView: View {
                     PrayerTouchScrollerView(
                         rows: arrangedInS,
                         symbols: flattenedPrayerSymbols + ["end"],
-                        activeIndex: $activeIndex
+                        activeIndex: $activeIndex,
+                        onIndexChange: { index in
+                            moveToIndex(index, animated: true)
+                        }
                     )
                     .padding(.bottom, 60.0)
                 }
@@ -573,17 +576,19 @@ struct PrayerTouchScrollerView: View {
     let rows: [[String]]
     let symbols: [String] 
     let rowLength: Int
+    let onIndexChange: ((Int) -> Void)?
 
     @Binding var activeIndex: Int
     @GestureState private var dragLocation: CGPoint = .zero
     
     @State private var frames: [Int: CGRect] = [:]
 
-    init(rows: [[String]], symbols: [String], activeIndex: Binding<Int>) {
+    init(rows: [[String]], symbols: [String], activeIndex: Binding<Int>, onIndexChange: ((Int) -> Void)? = nil) {
         self.rows = rows
         self.symbols = symbols
         self._activeIndex = activeIndex
         self.rowLength = 14
+        self.onIndexChange = onIndexChange
     }
 
     var body: some View {
@@ -664,19 +669,13 @@ struct PrayerTouchScrollerView: View {
                             if index == activeIndex {
                                 
                             } else if delta == 1 && index == symbols.count - 1 {
-                                withAnimation(.easeInOut(duration: 0.25)) {
-                                moveToIndex(index, animated: true)
-                                }
+                                updateIndex(index)
                                 UINotificationFeedbackGenerator().notificationOccurred(.success)
                             } else if delta == 1 {
-                                withAnimation(.easeInOut(duration: 0.25)) {
-                                    activeIndex = index
-                                }
+                                updateIndex(index)
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             } else if delta == -1 {
-                                withAnimation(.easeInOut(duration: 0.25)) {
-                                    activeIndex = index
-                                }
+                                updateIndex(index)
                                 UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
                             } else {
                                 UINotificationFeedbackGenerator().notificationOccurred(.warning)
@@ -710,6 +709,16 @@ struct PrayerTouchScrollerView: View {
 
         return closest?.0
 
+    }
+
+    private func updateIndex(_ index: Int) {
+        if let onIndexChange {
+            onIndexChange(index)
+        } else {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                activeIndex = index
+            }
+        }
     }
 
     func paddingFor(row: Int, index: Int, count: Int) -> (top: CGFloat, bottom: CGFloat) {
