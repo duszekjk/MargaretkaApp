@@ -181,12 +181,12 @@ struct PrayerFlowView: View {
                                 }
                             }
 
-                            if selectedPriest != nil {
-                                Button("Deselect") {
-                                    selectedPriest = nil
-                                }
-                                .cornerRadius(16)
-                            }
+//                            if selectedPriest != nil {
+//                                Button("Deselect") {
+//                                    selectedPriest = nil
+//                                }
+//                                .cornerRadius(16)
+//                            }
 
                             
                             ForEach(priestsAndPrayers, id: \.id) { priest in

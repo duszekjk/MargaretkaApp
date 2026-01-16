@@ -12,15 +12,20 @@ struct BrewiarzPrayerView: View {
     let key: BrewiarzPrayerKey
 
     @State private var resolvedURL: URL?
+    @Binding var fullScreen: Bool
 
     var body: some View {
         ZStack {
             if let url = resolvedURL {
                 WebView(url: url)
+                    .ignoresSafeArea()
+                    .padding(fullScreen ? -105.0 : 0.0)
+                    .padding(.leading, fullScreen ? -165.0 : 0.0)
             } else {
                 ProgressView("Ładowanie...")
             }
         }
+        .ignoresSafeArea()
         .task(id: key) {
             resolvedURL = await BrewiarzURLResolver.shared.resolveURL(for: key)
         }
@@ -32,7 +37,8 @@ struct WebView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
         let view = WKWebView()
-        view.allowsBackForwardNavigationGestures = true
+//        view.allowsBackForwardNavigationGestures = true
+        
         return view
     }
 

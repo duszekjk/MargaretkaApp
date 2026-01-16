@@ -14,16 +14,6 @@
         }
       }
     },
-    "%@ %@ %@" : {
-      "localizations" : {
-        "pl" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ %2$@ %3$@"
-          }
-        }
-      }
-    },
     "%lld" : {
 
     },
@@ -84,6 +74,9 @@
     "Audio" : {
 
     },
+    "Audio niedostępne dla modlitw online." : {
+
+    },
     "Brak" : {
 
     },
@@ -140,6 +133,7 @@
       }
     },
     "Deselect" : {
+      "extractionState" : "stale",
       "localizations" : {
         "pl" : {
           "stringUnit" : {
@@ -249,13 +243,25 @@
     "Kroki startowe" : {
 
     },
-    "Ksiądz %@" : {
+    "Księża" : {
+
+    },
+    "Ładowanie..." : {
 
     },
     "Modlitwa Margaretka" : {
 
     },
+    "Modlitwa online z brewiarz.pl" : {
+
+    },
     "Modlitwy" : {
+
+    },
+    "Modlitwy (pojedyncze)" : {
+
+    },
+    "Modlitwy złożone" : {
 
     },
     "monthly" : {
@@ -272,6 +278,9 @@
 
     },
     "Nazwa" : {
+
+    },
+    "Nazwa modlitwy" : {
 
     },
     "Nazwisko" : {
@@ -293,6 +302,9 @@
 
     },
     "Podstawowe informacje" : {
+
+    },
+    "Pokaż" : {
 
     },
     "Powtórz %lldx" : {
@@ -787,6 +799,9 @@
       }
     },
     "To modlitwa siedmiu osób za **jednego konkretnego kapłana** – każda osoba obejmuje go modlitwą w wybrany dzień tygodnia. Razem tworzą „stokrotkę” (7 płatków) z kapłanem w środku. Zobowiązanie ma charakter **stały** (długoterminowy)." : {
+
+    },
+    "Typ" : {
 
     },
     "Tytuł" : {
