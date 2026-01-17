@@ -54,18 +54,35 @@ struct Priest: Identifiable, Hashable, Codable {
 
     static let storageKey = "priest_sch"
     static func loadWithTemplates(using prayers: [Prayer]) -> [Priest] {
+        let overallStart = CFAbsoluteTimeGetCurrent()
+        let loadStart = CFAbsoluteTimeGetCurrent()
         let stored: [Priest] = LocalDatabase.shared.load(from: Self.storageKey)
+        let loadDuration = CFAbsoluteTimeGetCurrent() - loadStart
+
+        let signatureStart = CFAbsoluteTimeGetCurrent()
         let signature = templatesSignature(using: prayers)
-        if let cached = UserDefaults.standard.string(forKey: templatesSignatureKey),
-           cached == signature,
-           storedContainsAllTemplates(stored) {
+        let signatureDuration = CFAbsoluteTimeGetCurrent() - signatureStart
+
+        let cacheCheckStart = CFAbsoluteTimeGetCurrent()
+        let cachedSignature = UserDefaults.standard.string(forKey: templatesSignatureKey)
+        let hasAllTemplates = storedContainsAllTemplates(stored)
+        let cacheCheckDuration = CFAbsoluteTimeGetCurrent() - cacheCheckStart
+        if cachedSignature == signature, hasAllTemplates {
+            let overallDuration = CFAbsoluteTimeGetCurrent() - overallStart
+            print("Priest.loadWithTemplates: load \(String(format: "%.3f", loadDuration))s, signature \(String(format: "%.3f", signatureDuration))s, cacheCheck \(String(format: "%.3f", cacheCheckDuration))s, total \(String(format: "%.3f", overallDuration))s (cached)")
             return stored
         }
+        let mergeStart = CFAbsoluteTimeGetCurrent()
         let merged = mergeTemplates(into: stored, using: prayers)
+        let mergeDuration = CFAbsoluteTimeGetCurrent() - mergeStart
+        let saveStart = CFAbsoluteTimeGetCurrent()
         if merged != stored {
             LocalDatabase.shared.save(merged, as: Self.storageKey)
         }
+        let saveDuration = CFAbsoluteTimeGetCurrent() - saveStart
         UserDefaults.standard.set(signature, forKey: templatesSignatureKey)
+        let overallDuration = CFAbsoluteTimeGetCurrent() - overallStart
+        print("Priest.loadWithTemplates: load \(String(format: "%.3f", loadDuration))s, signature \(String(format: "%.3f", signatureDuration))s, cacheCheck \(String(format: "%.3f", cacheCheckDuration))s, merge \(String(format: "%.3f", mergeDuration))s, save \(String(format: "%.3f", saveDuration))s, total \(String(format: "%.3f", overallDuration))s")
         return merged
     }
 
@@ -227,9 +244,12 @@ extension Priest {
     }
 
     static func mergeTemplates(into stored: [Priest], using prayers: [Prayer]) -> [Priest] {
+        let start = CFAbsoluteTimeGetCurrent()
+        let mappingStart = CFAbsoluteTimeGetCurrent()
         let prayerIdByName = Dictionary(uniqueKeysWithValues: prayers.map { ($0.name, $0.id) })
         let templateIdToName = Dictionary(uniqueKeysWithValues: prayersTemplate.values.map { ($0.id, $0.name) })
         let legacyIdToName = legacyTemplateIdMapping(from: stored)
+        let mappingDuration = CFAbsoluteTimeGetCurrent() - mappingStart
 
         func remapGroup(_ group: AssignedPrayerGroup) -> AssignedPrayerGroup {
             let updatedItems: [AssignedPrayerItem] = group.items.map { item in
@@ -248,12 +268,15 @@ extension Priest {
             return AssignedPrayerGroup(id: group.id, items: updatedItems, repeatCount: group.repeatCount, subgroups: updatedSubgroups)
         }
 
+        let remapStart = CFAbsoluteTimeGetCurrent()
         var merged: [Priest] = stored.map { priest in
             var updated = priest
             updated.assignedPrayerGroups = priest.assignedPrayerGroups.map(remapGroup)
             return updated
         }
+        let remapDuration = CFAbsoluteTimeGetCurrent() - remapStart
 
+        let templateStart = CFAbsoluteTimeGetCurrent()
         var existingKeys = Set(merged.map { templateKey(for: $0) })
         for template in peopleTemplates {
             let key = templateKey(for: template)
@@ -264,10 +287,14 @@ extension Priest {
                 existingKeys.insert(key)
             }
         }
+        let templateDuration = CFAbsoluteTimeGetCurrent() - templateStart
+        let overallDuration = CFAbsoluteTimeGetCurrent() - start
+        print("Priest.mergeTemplates: mapping \(String(format: "%.3f", mappingDuration))s, remap \(String(format: "%.3f", remapDuration))s, templates \(String(format: "%.3f", templateDuration))s, total \(String(format: "%.3f", overallDuration))s")
         return merged
     }
 
     private static func legacyTemplateIdMapping(from stored: [Priest]) -> [UUID: String] {
+        let start = CFAbsoluteTimeGetCurrent()
         let templateIdToName = Dictionary(uniqueKeysWithValues: prayersTemplate.values.map { ($0.id, $0.name) })
         let templateByKey = Dictionary(uniqueKeysWithValues: peopleTemplates.map { (templateKey(for: $0), $0) })
         var mapping: [UUID: String] = [:]
@@ -323,6 +350,8 @@ extension Priest {
                 }
             }
         }
+        let duration = CFAbsoluteTimeGetCurrent() - start
+        print("Priest.legacyTemplateIdMapping in \(String(format: "%.3f", duration))s")
         return mapping
     }
 
