@@ -45,11 +45,11 @@ struct WebView: UIViewRepresentable {
         html { -webkit-text-size-adjust: 160% !important; }
         body { font-size: 110% !important; line-height: 1.1 !important; }
         body, td, th, div, span, p, a, font { font-size: 18pt !important; line-height: 1.1 !important; }
-        .ilg-indent, .ilg-noindent { position: relative !important; padding-left: 0.5em !important; }
+        .ilg-indent, .ilg-noindent { position: relative !important; }
         .ilg-indent::before, .ilg-noindent::before {
           content: '';
           position: absolute;
-          left: 0;
+          left: -0.4em;
           top: 0.15em;
           bottom: 0.15em;
           width: 3px;
