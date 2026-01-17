@@ -274,6 +274,12 @@ class ScheduleData<T: Schedulable>: ObservableObject {
         LocalDatabase.shared.save(items, as: saveKey)
     }
 
+    private func saveAsync() {
+        DispatchQueue.global(qos: .utility).async {
+            self.save()
+        }
+    }
+
     func add(_ item: T) {
         items.append(item)
         rescheduleAll()
@@ -408,49 +414,58 @@ class ScheduleData<T: Schedulable>: ObservableObject {
             if scheduled.count > maxNotificationsToSchedule {
                 scheduled = Array(scheduled.prefix(maxNotificationsToSchedule))
             }
-
-            notificationCenter.removeAllPendingNotificationRequests()
-
             var idsByItem: [T.ID: [String]] = [:]
-            for entry in scheduled {
-                let content = UNMutableNotificationContent()
-                content.title = entry.title
-                content.body = entry.message
-                if entry.sound == nil {
-                    content.sound = .default
-                } else if let sound = entry.sound,
-                          let _ = Bundle.main.url(forResource: sound, withExtension: "wav") {
-                    content.sound = UNNotificationSound(named: UNNotificationSoundName("\(sound).wav"))
-                } else if let _ = Bundle.main.url(forResource: "default", withExtension: "wav") {
-                    content.sound = UNNotificationSound(named: UNNotificationSoundName("default.wav"))
-                } else {
-                    content.sound = .default
-                }
-                content.categoryIdentifier = notificationCategoryId
-                content.userInfo = [
-                    "type": entry.typeId,
-                    "itemId": String(describing: entry.itemId),
-                    "eventTime": entry.eventDate.timeIntervalSince1970,
-                    "payload": entry.payload ?? [:]
-                ]
+            let scheduledIds = Set(scheduled.map { $0.id })
+            notificationCenter.getPendingNotificationRequests { requests in
+                let pendingIds = Set(requests.map { $0.identifier })
+                let needsReschedule = pendingIds != scheduledIds
 
-                let triggerDate = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: entry.notificationDate)
-                let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
-                let request = UNNotificationRequest(identifier: entry.id, content: content, trigger: trigger)
-                notificationCenter.add(request) { error in
-                    if let error = error {
-                        print("Error scheduling notification: \(error.localizedDescription)")
+                if needsReschedule {
+                    notificationCenter.removeAllPendingNotificationRequests()
+                }
+
+                for entry in scheduled {
+                    if needsReschedule {
+                        let content = UNMutableNotificationContent()
+                        content.title = entry.title
+                        content.body = entry.message
+                        if entry.sound == nil {
+                            content.sound = .default
+                        } else if let sound = entry.sound,
+                                  let _ = Bundle.main.url(forResource: sound, withExtension: "wav") {
+                            content.sound = UNNotificationSound(named: UNNotificationSoundName("\(sound).wav"))
+                        } else if let _ = Bundle.main.url(forResource: "default", withExtension: "wav") {
+                            content.sound = UNNotificationSound(named: UNNotificationSoundName("default.wav"))
+                        } else {
+                            content.sound = .default
+                        }
+                        content.categoryIdentifier = notificationCategoryId
+                        content.userInfo = [
+                            "type": entry.typeId,
+                            "itemId": String(describing: entry.itemId),
+                            "eventTime": entry.eventDate.timeIntervalSince1970,
+                            "payload": entry.payload ?? [:]
+                        ]
+
+                        let triggerDate = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: entry.notificationDate)
+                        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+                        let request = UNNotificationRequest(identifier: entry.id, content: content, trigger: trigger)
+                        notificationCenter.add(request) { error in
+                            if let error = error {
+                                print("Error scheduling notification: \(error.localizedDescription)")
+                            }
+                        }
                     }
+                    idsByItem[entry.itemId, default: []].append(entry.id)
                 }
-                idsByItem[entry.itemId, default: []].append(entry.id)
-            }
 
-            DispatchQueue.main.async {
-                for index in self.items.indices {
-                    let itemId = self.items[index].id
-                    self.items[index].notificationIds = idsByItem[itemId] ?? []
+                DispatchQueue.main.async {
+                    for index in self.items.indices {
+                        let itemId = self.items[index].id
+                        self.items[index].notificationIds = idsByItem[itemId] ?? []
+                    }
+                    self.saveAsync()
                 }
-                self.save()
             }
         }
     }
