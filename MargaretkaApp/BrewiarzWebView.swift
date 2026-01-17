@@ -63,33 +63,67 @@ struct WebView: UIViewRepresentable {
           if (!scope) {
             return;
           }
-          var psalmAnchor = scope.querySelector('a[name="psalm"]');
-          var readingAnchor = scope.querySelector('a[name="czyt"]');
-          if (!psalmAnchor || !readingAnchor) {
-            return;
+          function normalizeLabel(text) {
+            return text.replace(/\\s+/g, ' ').trim().toUpperCase();
           }
-          var walker = document.createTreeWalker(scope, NodeFilter.SHOW_ELEMENT, null);
-          var inPsalm = false;
-          var nodes = [];
-          while (walker.nextNode()) {
-            var node = walker.currentNode;
-            if (node === psalmAnchor) {
-              inPsalm = true;
+          function findHeading(label) {
+            var target = normalizeLabel(label);
+            var fonts = scope.querySelectorAll('font');
+            for (var i = 0; i < fonts.length; i++) {
+              if (normalizeLabel(fonts[i].textContent || '') === target) {
+                return fonts[i];
+              }
             }
-            if (node === readingAnchor) {
-              break;
+            return null;
+          }
+          function applyMarkers(startNode, endNode) {
+            if (!startNode || !endNode) {
+              return;
             }
-            if (inPsalm && node.matches && node.matches('div.a, div.b, div.c, div.d')) {
-              nodes.push(node);
+            var walker = document.createTreeWalker(scope, NodeFilter.SHOW_ELEMENT, null);
+            var inSection = false;
+            var nodes = [];
+            while (walker.nextNode()) {
+              var node = walker.currentNode;
+              if (node === startNode) {
+                inSection = true;
+              }
+              if (node === endNode) {
+                break;
+              }
+              if (inSection && node.matches && node.matches('div.a, div.b, div.c, div.d')) {
+                nodes.push(node);
+              }
+            }
+            nodes.forEach(function(el) {
+              if (el.classList.contains('b') || el.classList.contains('d')) {
+                el.classList.add('ilg-indent');
+              } else if (el.classList.contains('a') || el.classList.contains('c')) {
+                el.classList.add('ilg-noindent');
+              }
+            });
+          }
+          function removeTextIndent(startNode, endNode) {
+            if (!startNode || !endNode) {
+              return;
+            }
+            var walker = document.createTreeWalker(scope, NodeFilter.SHOW_ELEMENT, null);
+            var inSection = false;
+            while (walker.nextNode()) {
+              var node = walker.currentNode;
+              if (node === startNode) {
+                inSection = true;
+              }
+              if (node === endNode) {
+                break;
+              }
+              if (inSection && node.matches && node.matches('div.c, div.d')) {
+                node.style.textIndent = '0';
+              }
             }
           }
-          nodes.forEach(function(el) {
-            if (el.classList.contains('b') || el.classList.contains('d')) {
-              el.classList.add('ilg-indent');
-            } else if (el.classList.contains('a') || el.classList.contains('c')) {
-              el.classList.add('ilg-noindent');
-            }
-          });
+          applyMarkers(findHeading('PSALMODIA'), findHeading('CZYTANIE'));
+          removeTextIndent(findHeading('PIEŚŃ ZACHARIASZA'), findHeading('PROŚBY'));
         })();
         """
         let script = WKUserScript(source: scriptSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
