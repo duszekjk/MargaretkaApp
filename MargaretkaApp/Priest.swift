@@ -53,7 +53,7 @@ struct Priest: Identifiable, Hashable, Codable {
     private static let templatesSignatureKey = "priest_templates_signature_v1"
 
     static let storageKey = "priest_sch"
-    static func loadWithTemplates(using prayers: [Prayer]) -> [Priest] {
+    nonisolated static func loadWithTemplates(using prayers: [Prayer]) -> [Priest] {
         let overallStart = CFAbsoluteTimeGetCurrent()
         let loadStart = CFAbsoluteTimeGetCurrent()
         let stored: [Priest] = LocalDatabase.shared.load(from: Self.storageKey)
@@ -86,7 +86,7 @@ struct Priest: Identifiable, Hashable, Codable {
         return merged
     }
 
-    static func ensureTemplates(using prayers: [Prayer]) {
+    nonisolated static func ensureTemplates(using prayers: [Prayer]) {
         _ = loadWithTemplates(using: prayers)
     }
 
@@ -217,7 +217,7 @@ extension Priest: Schedulable {
 }
 
 extension Priest {
-    private static func templatesSignature(using prayers: [Prayer]) -> String {
+    nonisolated private static func templatesSignature(using prayers: [Prayer]) -> String {
         var hasher = Hasher()
         for prayer in prayers.sorted(by: { $0.id.uuidString < $1.id.uuidString }) {
             hasher.combine(prayer.id)
@@ -229,7 +229,7 @@ extension Priest {
         return String(hasher.finalize())
     }
 
-    private static func storedContainsAllTemplates(_ stored: [Priest]) -> Bool {
+    nonisolated private static func storedContainsAllTemplates(_ stored: [Priest]) -> Bool {
         let existingKeys = Set(stored.map { templateKey(for: $0) })
         for template in peopleTemplates {
             if !existingKeys.contains(templateKey(for: template)) {
@@ -239,11 +239,11 @@ extension Priest {
         return true
     }
 
-    static func templateKey(for priest: Priest) -> String {
+    nonisolated static func templateKey(for priest: Priest) -> String {
         "\(priest.category.rawValue)|\(priest.title)|\(priest.firstName)|\(priest.lastName)"
     }
 
-    static func mergeTemplates(into stored: [Priest], using prayers: [Prayer]) -> [Priest] {
+    nonisolated static func mergeTemplates(into stored: [Priest], using prayers: [Prayer]) -> [Priest] {
         let start = CFAbsoluteTimeGetCurrent()
         let mappingStart = CFAbsoluteTimeGetCurrent()
         let prayerIdByName = Dictionary(uniqueKeysWithValues: prayers.map { ($0.name, $0.id) })
@@ -293,7 +293,7 @@ extension Priest {
         return merged
     }
 
-    private static func legacyTemplateIdMapping(from stored: [Priest]) -> [UUID: String] {
+    nonisolated private static func legacyTemplateIdMapping(from stored: [Priest]) -> [UUID: String] {
         let start = CFAbsoluteTimeGetCurrent()
         let templateIdToName = Dictionary(uniqueKeysWithValues: prayersTemplate.values.map { ($0.id, $0.name) })
         let templateByKey = Dictionary(uniqueKeysWithValues: peopleTemplates.map { (templateKey(for: $0), $0) })
