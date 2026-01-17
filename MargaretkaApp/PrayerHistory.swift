@@ -23,8 +23,11 @@ class PrayerStore: ObservableObject {
     }
 
     init() {
+        let start = CFAbsoluteTimeGetCurrent()
         load()
         ensureDefaultPrayers()
+        let duration = CFAbsoluteTimeGetCurrent() - start
+        print("PrayerStore init in \(String(format: \"%.3f\", duration))s")
     }
 
     private let key = "stored_prayers"
@@ -105,12 +108,15 @@ struct HomeView: View {
         let templatePrayers = Array(prayersTemplate.values)
 
         Task.detached(priority: .utility) {
+            let start = CFAbsoluteTimeGetCurrent()
             let loadedPriests = Priest.loadWithTemplates(using: prayersSnapshot)
             let existingPrayerNames = Set(prayersSnapshot.map { $0.name })
             var mergedPrayers = prayersSnapshot
             for template in templatePrayers where !existingPrayerNames.contains(template.name) {
                 mergedPrayers.append(template)
             }
+            let duration = CFAbsoluteTimeGetCurrent() - start
+            print("HomeView loadInitialData in \(String(format: \"%.3f\", duration))s")
 
             await MainActor.run {
                 priestStore.priests = loadedPriests

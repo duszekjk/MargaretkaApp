@@ -30,6 +30,7 @@ final class LocalDatabase {
         return folder.appendingPathComponent(filename)
     }
     func load<T: Decodable>(from filename: String) -> [T] {
+        let start = CFAbsoluteTimeGetCurrent()
         print("loading from LocalDatabase \(filename)")
         let url = path(for: filename)
 
@@ -42,6 +43,8 @@ final class LocalDatabase {
             let data = try Data(contentsOf: url)
             print("loaded local \(filename)")
             let decoded = try JSONDecoder().decode([T].self, from: data)
+            let duration = CFAbsoluteTimeGetCurrent() - start
+            print("loaded LocalDatabase \(filename) in \(String(format: \"%.3f\", duration))s")
 
             if T.self is any Schedulable.Type {
                 repairNotificationsAsync(for: decoded, filename: filename)
@@ -49,6 +52,8 @@ final class LocalDatabase {
 
             return decoded
         } catch {
+            let duration = CFAbsoluteTimeGetCurrent() - start
+            print("LocalDatabase \(filename) failed in \(String(format: \"%.3f\", duration))s")
             print("❌ Failed to load \(filename): \(error)")
             return []
         }
