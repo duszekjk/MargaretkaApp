@@ -126,6 +126,7 @@ struct WebView: UIViewRepresentable {
             psalmEnd = psalmEnd.closest('div') || psalmEnd;
           }
           applyMarkers(psalmStart, psalmEnd);
+          applyMarkers(findHeading('PIEŚŃ ZACHARIASZA'), findHeading('PROŚBY'));
         })();
         """
         let script = WKUserScript(source: scriptSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
