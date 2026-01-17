@@ -20,6 +20,8 @@ import UserNotifications
 final class LocalDatabase {
     static let shared = LocalDatabase()
     static let notificationsLock = NSLock()
+    private static let repairLock = NSLock()
+    private static var activeRepairs = Set<String>()
 
     private let fileManager = FileManager.default
 
@@ -53,11 +55,18 @@ final class LocalDatabase {
     }
 
     private func repairNotificationsAsync<T>(for decoded: [T], filename: String) {
+        guard LocalDatabase.startRepairIfNeeded(for: filename) else { return }
         DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 5.0) {
-            guard LocalDatabase.notificationsLock.try() else { return }
+            guard LocalDatabase.notificationsLock.try() else {
+                LocalDatabase.finishRepair(for: filename)
+                return
+            }
             defer { LocalDatabase.notificationsLock.unlock() }
 
-            guard decoded is [Schedulable] else { return }
+            guard decoded is [Schedulable] else {
+                LocalDatabase.finishRepair(for: filename)
+                return
+            }
 
             let center = UNUserNotificationCenter.current()
             center.getPendingNotificationRequests { requests in
@@ -73,6 +82,7 @@ final class LocalDatabase {
                 }
 
                 print("Repaired notifications for \(filename)")
+                LocalDatabase.finishRepair(for: filename)
             }
         }
     }
@@ -115,6 +125,24 @@ final class LocalDatabase {
         }
     }
 
+}
+
+private extension LocalDatabase {
+    static func startRepairIfNeeded(for filename: String) -> Bool {
+        repairLock.lock()
+        defer { repairLock.unlock() }
+        if activeRepairs.contains(filename) {
+            return false
+        }
+        activeRepairs.insert(filename)
+        return true
+    }
+
+    static func finishRepair(for filename: String) {
+        repairLock.lock()
+        activeRepairs.remove(filename)
+        repairLock.unlock()
+    }
 }
 
 protocol Syncable: Identifiable, Codable {
