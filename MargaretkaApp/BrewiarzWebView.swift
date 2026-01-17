@@ -48,8 +48,6 @@ struct WebView: UIViewRepresentable {
         .ilg-indent, .ilg-noindent {
           position: relative !important;
           overflow: visible !important;
-          padding-left: 2px !important;
-          margin-left: -2px !important;
         }
         .ilg-indent::before, .ilg-noindent::before {
           content: '';
@@ -60,6 +58,7 @@ struct WebView: UIViewRepresentable {
           width: 2px;
           border-radius: 2px;
           pointer-events: none;
+          transform: translateX(-4px);
         }
         .ilg-noindent::before { background: #1f8a3b; }
         .ilg-indent::before { background: #1b5faa; }
@@ -112,7 +111,15 @@ struct WebView: UIViewRepresentable {
               }
             });
           }
-          applyMarkers(findHeading('PSALMODIA'), findHeading('CZYTANIE'));
+          var psalmStart = findHeading('PSALMODIA');
+          var psalmEnd = findHeading('CZYTANIE');
+          if (psalmStart && psalmStart.closest) {
+            psalmStart = psalmStart.closest('div') || psalmStart;
+          }
+          if (psalmEnd && psalmEnd.closest) {
+            psalmEnd = psalmEnd.closest('div') || psalmEnd;
+          }
+          applyMarkers(psalmStart, psalmEnd);
         })();
         """
         let script = WKUserScript(source: scriptSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
