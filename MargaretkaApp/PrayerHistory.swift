@@ -19,53 +19,44 @@ struct PrayerHistory: Identifiable {
 
 class PrayerStore: ObservableObject {
     @Published var prayers: [Prayer] = [] {
-        didSet { saveAsync() }
+        didSet { save() }
     }
 
     private let key = "stored_prayers"
     private let legacyDefaultsKey = "stored_prayers"
-    private let saveQueue = DispatchQueue(label: "PrayerStore.save", qos: .utility)
-    private var isLoading = false
 
     init() {
-        loadAsync()
-    }
-
-    private func loadAsync() {
-        guard !isLoading else { return }
-        isLoading = true
         let start = CFAbsoluteTimeGetCurrent()
-        DispatchQueue.global(qos: .userInitiated).async {
-            let loaded = self.loadFromDisk()
-            let merged = self.mergeDefaultPrayers(into: loaded)
-            DispatchQueue.main.async {
-                self.prayers = merged
-                self.isLoading = false
-                let duration = CFAbsoluteTimeGetCurrent() - start
-                print("PrayerStore load in \(String(format: "%.3f", duration))s")
-            }
-        }
+        load()
+        ensureDefaultPrayers()
+        let duration = CFAbsoluteTimeGetCurrent() - start
+        print("PrayerStore init in \(String(format: "%.3f", duration))s")
     }
 
-    private func loadFromDisk() -> [Prayer] {
+    private func load() {
         let stored: [Prayer] = LocalDatabase.shared.load(from: key)
         if !stored.isEmpty {
-            return stored
+            self.prayers = stored
+            return
         }
 
         if let data = UserDefaults.standard.data(forKey: legacyDefaultsKey),
            let decoded = try? JSONDecoder().decode([Prayer].self, from: data) {
+            self.prayers = decoded
             LocalDatabase.shared.save(decoded, as: key)
             UserDefaults.standard.removeObject(forKey: legacyDefaultsKey)
-            return decoded
         }
-        return []
     }
 
-    private func saveAsync() {
-        let snapshot = prayers
-        saveQueue.async {
-            LocalDatabase.shared.save(snapshot, as: self.key)
+    private func save() {
+        LocalDatabase.shared.save(prayers, as: key)
+    }
+
+    private func ensureDefaultPrayers() {
+        let merged = mergeDefaultPrayers(into: prayers)
+        if merged.count != prayers.count {
+            prayers = merged
+            save()
         }
     }
 
