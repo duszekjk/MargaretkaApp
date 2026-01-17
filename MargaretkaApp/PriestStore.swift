@@ -13,11 +13,12 @@ import SwiftUI
 
 class PriestStore: ObservableObject {
     @Published var priests: [Priest] = [] {
-        didSet { save() }
+        didSet { saveAsync() }
     }
 
     private let key = "stored_priests"
     private let legacyDefaultsKey = "stored_priests"
+    private let saveQueue = DispatchQueue(label: "PriestStore.save", qos: .utility)
 
     init() {
         let start = CFAbsoluteTimeGetCurrent()
@@ -45,24 +46,28 @@ class PriestStore: ObservableObject {
         LocalDatabase.shared.save(priests, as: key)
     }
 
+    private func saveAsync() {
+        let snapshot = priests
+        saveQueue.async {
+            LocalDatabase.shared.save(snapshot, as: self.key)
+        }
+    }
+
     func addOrUpdate(_ priest: Priest) {
         if let index = priests.firstIndex(where: { $0.id == priest.id }) {
             priests[index] = priest
         } else {
             priests.append(priest)
         }
-        save()
     }
 
     func delete(at offsets: IndexSet) {
         priests.remove(atOffsets: offsets)
-        save()
     }
 
     func deletePriest(_ priest: Priest) {
         if let index = priests.firstIndex(of: priest) {
             priests.remove(at: index)
-            save()
         }
     }
 }
