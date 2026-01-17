@@ -74,8 +74,12 @@ final class LocalDatabase {
             }
 
             let center = UNUserNotificationCenter.current()
+            let pendingStart = CFAbsoluteTimeGetCurrent()
             center.getPendingNotificationRequests { requests in
+                let pendingDuration = CFAbsoluteTimeGetCurrent() - pendingStart
                 let pendingIDs = Set(requests.map { $0.identifier })
+                let repairStart = CFAbsoluteTimeGetCurrent()
+                var repairedCount = 0
 
                 for item in decoded {
                     guard var schedulable = item as? Schedulable else { continue }
@@ -83,10 +87,12 @@ final class LocalDatabase {
                     if !missing.isEmpty {
                         center.removePendingNotificationRequests(withIdentifiers: schedulable.notificationIds)
                         schedulable.notificationIds = scheduleNotificationsFor(schedulable)
+                        repairedCount += 1
                     }
                 }
-
-                print("Repaired notifications for \(filename)")
+                let repairDuration = CFAbsoluteTimeGetCurrent() - repairStart
+                let totalDuration = CFAbsoluteTimeGetCurrent() - pendingStart
+                print("Repaired notifications for \(filename): pending \(String(format: \"%.3f\", pendingDuration))s, work \(String(format: \"%.3f\", repairDuration))s, total \(String(format: \"%.3f\", totalDuration))s, repaired \(repairedCount)")
                 LocalDatabase.finishRepair(for: filename)
             }
         }
