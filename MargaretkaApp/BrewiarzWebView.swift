@@ -36,9 +36,24 @@ struct WebView: UIViewRepresentable {
     let url: URL
 
     func makeUIView(context: Context) -> WKWebView {
-        let view = WKWebView()
-//        view.allowsBackForwardNavigationGestures = true
-        
+        let config = WKWebViewConfiguration()
+        let scriptSource = """
+        (function() {
+          var style = document.createElement('style');
+          style.type = 'text/css';
+          style.appendChild(document.createTextNode(`
+        html { -webkit-text-size-adjust: 200% !important; }
+        body { font-size: 200% !important; line-height: 1.4 !important; }
+        body, td, th, div, span, p, a, font { font-size: 24pt !important; line-height: 1.4 !important; }
+        img { max-width: 100% !important; height: auto !important; }
+          `));
+          document.head.appendChild(style);
+          document.documentElement.style.webkitTextSizeAdjust = '200%';
+        })();
+        """
+        let script = WKUserScript(source: scriptSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
+        config.userContentController.addUserScript(script)
+        let view = WKWebView(frame: .zero, configuration: config)
         return view
     }
 
