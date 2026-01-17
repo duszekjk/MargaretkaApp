@@ -19,8 +19,8 @@ struct BrewiarzPrayerView: View {
             if let url = resolvedURL {
                 WebView(url: url)
                     .ignoresSafeArea()
-                    .padding(fullScreen ? -35.0 : 0.0)
-                    .padding(.leading, fullScreen ? -265.0 : 0.0)
+                    .padding(fullScreen ? -45.0 : 0.0)
+                    .padding(.leading, fullScreen ? -275.0 : 0.0)
             } else {
                 ProgressView("Ładowanie...")
             }
@@ -54,7 +54,7 @@ struct WebView: UIViewRepresentable {
         }
         .ilg-noindent {
           text-indent: 0 !important;
-          padding-left: 10px !important;
+          padding-left: 15px !important;
         }
         .ilg-indent { text-indent: 1.2em !important; }
         .ilg-indent::before, .ilg-noindent::before {
@@ -63,10 +63,10 @@ struct WebView: UIViewRepresentable {
           left: 0;
           top: 0.15em;
           bottom: 0.15em;
-          width: 2px;
-          border-radius: 2px;
+          width: 4px;
+          border-radius: 4px;
           pointer-events: none;
-          transform: translateX(-6px);
+          transform: translateX(-9px);
         }
         .ilg-noindent::before { background: #1f8a3b; }
         .ilg-indent::before { background: #1b5faa; }
