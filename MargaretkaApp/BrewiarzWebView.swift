@@ -48,33 +48,22 @@ struct WebView: UIViewRepresentable {
         .ilg-indent, .ilg-noindent {
           background-repeat: no-repeat !important;
           background-size: 2px calc(100% - 0.3em) !important;
-          background-position: 0 0.15em !important;
+          background-position: 2px 0.15em !important;
+        }
+        .ilg-noindent {
+          background-image: linear-gradient(#1f8a3b, #1f8a3b) !important;
           text-indent: 0 !important;
         }
-        .ilg-indent { background-image: linear-gradient(#1f8a3b, #1f8a3b) !important; }
-        .ilg-noindent { background-image: linear-gradient(#1b5faa, #1b5faa) !important; }
+        .ilg-indent { background-image: linear-gradient(#1b5faa, #1b5faa) !important; }
         img { max-width: 100% !important; height: auto !important; }
           `));
           document.head.appendChild(style);
           document.documentElement.style.webkitTextSizeAdjust = '160%';
-          var blocks = document.querySelectorAll('div.a, div.b, div.c, div.d, div.cd, div.cdx, div.ww');
+          var blocks = document.querySelectorAll('div.a, div.b, div.c, div.d');
           blocks.forEach(function(el) {
             if (el.classList.contains('b') || el.classList.contains('d')) {
               el.classList.add('ilg-indent');
-              return;
-            }
-            if (el.classList.contains('a') || el.classList.contains('c')) {
-              el.classList.add('ilg-noindent');
-              return;
-            }
-            var cs = window.getComputedStyle(el);
-            var marginLeft = parseFloat(cs.marginLeft) || 0;
-            var paddingLeft = parseFloat(cs.paddingLeft) || 0;
-            var textIndent = parseFloat(cs.textIndent) || 0;
-            var indent = Math.max(marginLeft, paddingLeft, textIndent);
-            if (indent > 6) {
-              el.classList.add('ilg-indent');
-            } else {
+            } else if (el.classList.contains('a') || el.classList.contains('c')) {
               el.classList.add('ilg-noindent');
             }
           });
