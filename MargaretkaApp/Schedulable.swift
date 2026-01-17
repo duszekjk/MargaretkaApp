@@ -482,7 +482,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                     self.saveAsync()
                     let mainDuration = CFAbsoluteTimeGetCurrent() - mainStart
                     let totalDuration = CFAbsoluteTimeGetCurrent() - rescheduleStart
-                    print("ScheduleData.rescheduleAll \(self.saveKey): build \(String(format: \"%.3f\", buildDuration))s, pending \(String(format: \"%.3f\", pendingDuration))s, schedule \(String(format: \"%.3f\", scheduleDuration))s, main \(String(format: \"%.3f\", mainDuration))s, total \(String(format: \"%.3f\", totalDuration))s, needsReschedule \(needsReschedule)")
+                    print("ScheduleData.rescheduleAll \(self.saveKey): build \(String(format: "%.3f", buildDuration))s, pending \(String(format: "%.3f", pendingDuration))s, schedule \(String(format: "%.3f", scheduleDuration))s, main \(String(format: "%.3f", mainDuration))s, total \(String(format: "%.3f", totalDuration))s, needsReschedule \(needsReschedule)")
                 }
             }
         }
