@@ -92,7 +92,7 @@ final class LocalDatabase {
                 }
                 let repairDuration = CFAbsoluteTimeGetCurrent() - repairStart
                 let totalDuration = CFAbsoluteTimeGetCurrent() - pendingStart
-                print("Repaired notifications for \(filename): pending \(String(format: \"%.3f\", pendingDuration))s, work \(String(format: \"%.3f\", repairDuration))s, total \(String(format: \"%.3f\", totalDuration))s, repaired \(repairedCount)")
+                print("Repaired notifications for \(filename): pending \(String(format: "%.3f", pendingDuration))s, work \(String(format: "%.3f", repairDuration))s, total \(String(format: "%.3f", totalDuration))s, repaired \(repairedCount)")
                 LocalDatabase.finishRepair(for: filename)
             }
         }
