@@ -45,18 +45,13 @@ struct WebView: UIViewRepresentable {
         html { -webkit-text-size-adjust: 160% !important; }
         body { font-size: 110% !important; line-height: 1.1 !important; }
         body, td, th, div, span, p, a, font { font-size: 18pt !important; line-height: 1.1 !important; }
-        .ilg-indent, .ilg-noindent { position: relative !important; }
-        .ilg-indent::before, .ilg-noindent::before {
-          content: '';
-          position: absolute;
-          left: -0.4em;
-          top: 0.15em;
-          bottom: 0.15em;
-          width: 3px;
-          border-radius: 2px;
+        .ilg-indent, .ilg-noindent {
+          background-repeat: no-repeat !important;
+          background-size: 2px calc(100% - 0.3em) !important;
+          background-position: 0 0.15em !important;
         }
-        .ilg-indent::before { background: #1f8a3b; }
-        .ilg-noindent::before { background: #1b5faa; }
+        .ilg-indent { background-image: linear-gradient(#1f8a3b, #1f8a3b) !important; }
+        .ilg-noindent { background-image: linear-gradient(#1b5faa, #1b5faa) !important; }
         img { max-width: 100% !important; height: auto !important; }
           `));
           document.head.appendChild(style);
