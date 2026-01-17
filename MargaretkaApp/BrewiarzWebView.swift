@@ -19,8 +19,8 @@ struct BrewiarzPrayerView: View {
             if let url = resolvedURL {
                 WebView(url: url)
                     .ignoresSafeArea()
-                    .padding(fullScreen ? -105.0 : 0.0)
-                    .padding(.leading, fullScreen ? -165.0 : 0.0)
+                    .padding(fullScreen ? -35.0 : 0.0)
+                    .padding(.leading, fullScreen ? -265.0 : 0.0)
             } else {
                 ProgressView("Ładowanie...")
             }
@@ -42,13 +42,38 @@ struct WebView: UIViewRepresentable {
           var style = document.createElement('style');
           style.type = 'text/css';
           style.appendChild(document.createTextNode(`
-        html { -webkit-text-size-adjust: 200% !important; }
-        body { font-size: 200% !important; line-height: 1.4 !important; }
-        body, td, th, div, span, p, a, font { font-size: 24pt !important; line-height: 1.4 !important; }
+        html { -webkit-text-size-adjust: 160% !important; }
+        body { font-size: 110% !important; line-height: 1.1 !important; }
+        body, td, th, div, span, p, a, font { font-size: 18pt !important; line-height: 1.1 !important; }
+        .ilg-indent, .ilg-noindent { position: relative !important; padding-left: 0.5em !important; }
+        .ilg-indent::before, .ilg-noindent::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0.15em;
+          bottom: 0.15em;
+          width: 3px;
+          border-radius: 2px;
+        }
+        .ilg-indent::before { background: #1f8a3b; }
+        .ilg-noindent::before { background: #1b5faa; }
         img { max-width: 100% !important; height: auto !important; }
           `));
           document.head.appendChild(style);
-          document.documentElement.style.webkitTextSizeAdjust = '200%';
+          document.documentElement.style.webkitTextSizeAdjust = '160%';
+          var blocks = document.querySelectorAll('div.a, div.b, div.c, div.d, div.cd, div.cdx, div.ww');
+          blocks.forEach(function(el) {
+            var cs = window.getComputedStyle(el);
+            var marginLeft = parseFloat(cs.marginLeft) || 0;
+            var paddingLeft = parseFloat(cs.paddingLeft) || 0;
+            var textIndent = parseFloat(cs.textIndent) || 0;
+            var indent = Math.max(marginLeft, paddingLeft, textIndent);
+            if (indent > 0) {
+              el.classList.add('ilg-indent');
+            } else {
+              el.classList.add('ilg-noindent');
+            }
+          });
         })();
         """
         let script = WKUserScript(source: scriptSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
