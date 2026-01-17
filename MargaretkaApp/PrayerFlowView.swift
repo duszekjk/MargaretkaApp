@@ -417,12 +417,10 @@ struct PrayerFlowView: View {
                 print("PrayerFlowView onAppear start at \(String(format: "%.3f", now))")
             }
 
-            Task.detached(priority: .utility) {
-                let templatesStart = CFAbsoluteTimeGetCurrent()
-                Priest.ensureTemplates(using: prayerStore.prayers)
-                let templatesDuration = CFAbsoluteTimeGetCurrent() - templatesStart
-                print("PrayerFlowView ensureTemplates in \(String(format: "%.3f", templatesDuration))s")
-            }
+            let templatesStart = CFAbsoluteTimeGetCurrent()
+            Priest.ensureTemplates(using: prayerStore.prayers)
+            let templatesDuration = CFAbsoluteTimeGetCurrent() - templatesStart
+            print("PrayerFlowView ensureTemplates in \(String(format: "%.3f", templatesDuration))s")
 
             let scheduleStart = CFAbsoluteTimeGetCurrent()
             scheduleData.load()
