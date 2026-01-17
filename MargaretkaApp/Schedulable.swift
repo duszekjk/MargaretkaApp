@@ -483,146 +483,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
         now: Date = Date(),
         calendar: Calendar = .current
     ) -> [(eventDate: Date, notificationDate: Date, id: String)] {
-        var upcoming: [(Date, Date, String)] = []
-
-        for time in item.schedule.times {
-            if time.event.hour == nil && time.event.minute == nil {
-                continue
-            }
-            if upcoming.count >= maxNotificationsToSchedule {
-                break
-            }
-            let todayAtTime = calendar.date(bySettingHour: time.event.hour ?? 11, minute: time.event.minute ?? 0, second: 0, of: now)
-
-            switch item.schedule.frequencyUnit {
-            case .daily:
-                let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
-                var cursor = max(todayAtTime ?? now, item.schedule.startDate)
-                while cursor < now {
-                    guard let next = calendar.date(byAdding: .day, value: item.schedule.everyN, to: cursor) else { break }
-                    cursor = next
-                }
-                var emitted = 0
-
-                while cursor <= end && emitted < maxOccurrencesPerTime {
-                    let eventId = makeID(with: title, eventTime: cursor, notificationTime: cursor)
-                    upcoming.append((cursor, cursor, eventId))
-                    for notif in time.notifications {
-                        if let dateN = calendar.date(byAdding: notif, to: cursor, direction: .before) {
-                            let notifId = makeID(with: title, eventTime: cursor, notificationTime: dateN)
-                            upcoming.append((cursor, dateN, notifId))
-                        }
-                    }
-                    guard let next = calendar.date(byAdding: .day, value: item.schedule.everyN, to: cursor) else { break }
-                    cursor = next
-                    emitted += 1
-                }
-
-            case .weekly:
-                let selectedWeekdays: [Weekday] = {
-                    if item.schedule.daysOfWeek.isEmpty {
-                        return [Weekday.today]
-                    }
-                    return Weekday.allCases.filter { item.schedule.daysOfWeek.contains($0) }
-                }()
-
-                let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
-                let hour = time.event.hour ?? 11
-                let minute = time.event.minute ?? 0
-                var emitted = 0
-
-                let baseStart = max(now, item.schedule.startDate)
-                let initialDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: baseStart) ?? baseStart
-                let firstCandidateAtTime = calendar.date(byAdding: .day, value: -7, to: initialDate) ?? initialDate
-
-                var weekCursor = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: firstCandidateAtTime))
-                    ?? firstCandidateAtTime
-
-                while weekCursor <= end && emitted < maxOccurrencesPerTime {
-                    for wd in selectedWeekdays {
-                        var comps = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: weekCursor)
-                        comps.weekday = wd.calendarWeekday
-                        comps.hour = hour
-                        comps.minute = minute
-
-                        if let candidate = calendar.date(from: comps) {
-                            if candidate >= firstCandidateAtTime && candidate <= end {
-                                if candidate < now { continue }
-                                let eventId = makeID(with: title, eventTime: candidate, notificationTime: candidate)
-                                upcoming.append((candidate, candidate, eventId))
-                                for notif in time.notifications {
-                                    if let dateN = calendar.date(byAdding: notif, to: candidate, direction: .before) {
-                                        let notifId = makeID(with: title, eventTime: candidate, notificationTime: dateN)
-                                        upcoming.append((candidate, dateN, notifId))
-                                    }
-                                }
-                                emitted += 1
-                                if emitted >= maxOccurrencesPerTime { break }
-                            }
-                        }
-                    }
-                    if let nextWeek = calendar.date(byAdding: .weekOfYear, value: item.schedule.everyN, to: weekCursor) {
-                        weekCursor = nextWeek
-                    } else {
-                        break
-                    }
-                }
-
-            case .monthly:
-                let selectedDays: [Int] = {
-                    if item.schedule.daysOfMonth.isEmpty {
-                        let d = calendar.component(.day, from: item.schedule.startDate)
-                        return [d]
-                    }
-                    return item.schedule.daysOfMonth.sorted()
-                }()
-
-                let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
-                let hour = time.event.hour ?? 11
-                let minute = time.event.minute ?? 0
-                var emitted = 0
-
-                let firstAnchor = max(now, item.schedule.startDate)
-                let firstAtTime = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: firstAnchor) ?? firstAnchor
-                var monthCursorComps = calendar.dateComponents([.year, .month], from: firstAtTime)
-                var monthCursor = calendar.date(from: monthCursorComps) ?? firstAtTime
-
-                while monthCursor <= end && emitted < maxOccurrencesPerTime {
-                    let ym = calendar.dateComponents([.year, .month], from: monthCursor)
-                    for day in selectedDays {
-                        var comps = DateComponents()
-                        comps.year = ym.year
-                        comps.month = ym.month
-                        comps.day = day
-                        comps.hour = hour
-                        comps.minute = minute
-
-                        if let candidate = calendar.date(from: comps) {
-                            if candidate >= firstAtTime && candidate <= end {
-                                if candidate < now { continue }
-                                let eventId = makeID(with: title, eventTime: candidate, notificationTime: candidate)
-                                upcoming.append((candidate, candidate, eventId))
-                                for notif in time.notifications {
-                                    if let dateN = calendar.date(byAdding: notif, to: candidate, direction: .before) {
-                                        let notifId = makeID(with: title, eventTime: candidate, notificationTime: dateN)
-                                        upcoming.append((candidate, dateN, notifId))
-                                    }
-                                }
-                                emitted += 1
-                                if emitted >= maxOccurrencesPerTime { break }
-                            }
-                        }
-                    }
-                    if let nextMonth = calendar.date(byAdding: .month, value: item.schedule.everyN, to: monthCursor) {
-                        monthCursor = nextMonth
-                    } else {
-                        break
-                    }
-                }
-            }
-        }
-
-        return upcoming
+        computeUpcomingNotifications(for: item, title: title, now: now, calendar: calendar)
     }
     func removeScheduledNotifications(for ids: [String]) {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
@@ -1038,12 +899,156 @@ struct SchedulingView: View {
         Calendar.current.date(from: components) ?? Date()
     }
 }
+func computeUpcomingNotifications(
+    for item: some Schedulable,
+    title: String,
+    now: Date = Date(),
+    calendar: Calendar = .current
+) -> [(eventDate: Date, notificationDate: Date, id: String)] {
+    var upcoming: [(Date, Date, String)] = []
+
+    for time in item.schedule.times {
+        if time.event.hour == nil && time.event.minute == nil {
+            continue
+        }
+        if upcoming.count >= maxNotificationsToSchedule {
+            break
+        }
+        let todayAtTime = calendar.date(bySettingHour: time.event.hour ?? 11, minute: time.event.minute ?? 0, second: 0, of: now)
+
+        switch item.schedule.frequencyUnit {
+        case .daily:
+            let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
+            var cursor = max(todayAtTime ?? now, item.schedule.startDate)
+            while cursor < now {
+                guard let next = calendar.date(byAdding: .day, value: item.schedule.everyN, to: cursor) else { break }
+                cursor = next
+            }
+            var emitted = 0
+
+            while cursor <= end && emitted < maxOccurrencesPerTime {
+                let eventId = makeID(with: title, eventTime: cursor, notificationTime: cursor)
+                upcoming.append((cursor, cursor, eventId))
+                for notif in time.notifications {
+                    if let dateN = calendar.date(byAdding: notif, to: cursor, direction: .before) {
+                        let notifId = makeID(with: title, eventTime: cursor, notificationTime: dateN)
+                        upcoming.append((cursor, dateN, notifId))
+                    }
+                }
+                guard let next = calendar.date(byAdding: .day, value: item.schedule.everyN, to: cursor) else { break }
+                cursor = next
+                emitted += 1
+            }
+
+        case .weekly:
+            let selectedWeekdays: [Weekday] = {
+                if item.schedule.daysOfWeek.isEmpty {
+                    return [Weekday.today]
+                }
+                return Weekday.allCases.filter { item.schedule.daysOfWeek.contains($0) }
+            }()
+
+            let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
+            let hour = time.event.hour ?? 11
+            let minute = time.event.minute ?? 0
+            var emitted = 0
+
+            let baseStart = max(now, item.schedule.startDate)
+            let initialDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: baseStart) ?? baseStart
+            let firstCandidateAtTime = calendar.date(byAdding: .day, value: -7, to: initialDate) ?? initialDate
+
+            var weekCursor = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: firstCandidateAtTime))
+                ?? firstCandidateAtTime
+
+            while weekCursor <= end && emitted < maxOccurrencesPerTime {
+                for wd in selectedWeekdays {
+                    var comps = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: weekCursor)
+                    comps.weekday = wd.calendarWeekday
+                    comps.hour = hour
+                    comps.minute = minute
+
+                    if let candidate = calendar.date(from: comps) {
+                        if candidate >= firstCandidateAtTime && candidate <= end {
+                            if candidate < now { continue }
+                            let eventId = makeID(with: title, eventTime: candidate, notificationTime: candidate)
+                            upcoming.append((candidate, candidate, eventId))
+                            for notif in time.notifications {
+                                if let dateN = calendar.date(byAdding: notif, to: candidate, direction: .before) {
+                                    let notifId = makeID(with: title, eventTime: candidate, notificationTime: dateN)
+                                    upcoming.append((candidate, dateN, notifId))
+                                }
+                            }
+                            emitted += 1
+                            if emitted >= maxOccurrencesPerTime { break }
+                        }
+                    }
+                }
+                if let nextWeek = calendar.date(byAdding: .weekOfYear, value: item.schedule.everyN, to: weekCursor) {
+                    weekCursor = nextWeek
+                } else {
+                    break
+                }
+            }
+
+        case .monthly:
+            let selectedDays: [Int] = {
+                if item.schedule.daysOfMonth.isEmpty {
+                    let d = calendar.component(.day, from: item.schedule.startDate)
+                    return [d]
+                }
+                return item.schedule.daysOfMonth.sorted()
+            }()
+
+            let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
+            let hour = time.event.hour ?? 11
+            let minute = time.event.minute ?? 0
+            var emitted = 0
+
+            let firstAnchor = max(now, item.schedule.startDate)
+            let firstAtTime = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: firstAnchor) ?? firstAnchor
+            var monthCursorComps = calendar.dateComponents([.year, .month], from: firstAtTime)
+            var monthCursor = calendar.date(from: monthCursorComps) ?? firstAtTime
+
+            while monthCursor <= end && emitted < maxOccurrencesPerTime {
+                let ym = calendar.dateComponents([.year, .month], from: monthCursor)
+                for day in selectedDays {
+                    var comps = DateComponents()
+                    comps.year = ym.year
+                    comps.month = ym.month
+                    comps.day = day
+                    comps.hour = hour
+                    comps.minute = minute
+
+                    if let candidate = calendar.date(from: comps) {
+                        if candidate >= firstAtTime && candidate <= end {
+                            if candidate < now { continue }
+                            let eventId = makeID(with: title, eventTime: candidate, notificationTime: candidate)
+                            upcoming.append((candidate, candidate, eventId))
+                            for notif in time.notifications {
+                                if let dateN = calendar.date(byAdding: notif, to: candidate, direction: .before) {
+                                    let notifId = makeID(with: title, eventTime: candidate, notificationTime: dateN)
+                                    upcoming.append((candidate, dateN, notifId))
+                                }
+                            }
+                            emitted += 1
+                            if emitted >= maxOccurrencesPerTime { break }
+                        }
+                    }
+                }
+                if let nextMonth = calendar.date(byAdding: .month, value: item.schedule.everyN, to: monthCursor) {
+                    monthCursor = nextMonth
+                } else {
+                    break
+                }
+            }
+        }
+    }
+
+    return upcoming
+}
+
 func scheduleNotificationsFor(_ item: Schedulable) -> [String] {
-    let scheduler = ScheduleData<DummySchedulable>(saveKey: "dummy")
-    return scheduler.buildUpcomingNotifications(
-        for: item,
-        title: item.notificationTitle
-    ).map { $0.id }
+    computeUpcomingNotifications(for: item, title: item.notificationTitle).map { $0.id }
 }
 
 private struct DummySchedulable: Schedulable {
