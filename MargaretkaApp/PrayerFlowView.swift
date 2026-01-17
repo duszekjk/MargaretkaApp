@@ -39,6 +39,7 @@ struct PrayerFlowView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Namespace private var namespace
     @Namespace private var brewiarzNamespace
+    @State private var didLogAppear = false
     var priestsAndPrayers: [Priest] {
         scheduleData.items.filter { $0.category == selectedCategory }
     }
@@ -410,9 +411,26 @@ struct PrayerFlowView: View {
         .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         .onAppear()
         {
+            if !didLogAppear {
+                didLogAppear = true
+                let now = CFAbsoluteTimeGetCurrent()
+                print("PrayerFlowView onAppear start at \(String(format: "%.3f", now))")
+            }
+
+            let templatesStart = CFAbsoluteTimeGetCurrent()
             Priest.ensureTemplates(using: prayerStore.prayers)
+            let templatesDuration = CFAbsoluteTimeGetCurrent() - templatesStart
+            print("PrayerFlowView ensureTemplates in \(String(format: "%.3f", templatesDuration))s")
+
+            let scheduleStart = CFAbsoluteTimeGetCurrent()
             scheduleData.load()
+            let scheduleDuration = CFAbsoluteTimeGetCurrent() - scheduleStart
+            print("PrayerFlowView scheduleData.load dispatch in \(String(format: "%.3f", scheduleDuration))s")
+
+            let permissionStart = CFAbsoluteTimeGetCurrent()
             requestNotificationPermissions()
+            let permissionDuration = CFAbsoluteTimeGetCurrent() - permissionStart
+            print("PrayerFlowView requestNotificationPermissions dispatch in \(String(format: "%.3f", permissionDuration))s")
         }
         .onChange(of: showEditor) { _, isShowing in
             if !isShowing {
