@@ -364,7 +364,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
     }
     func rescheduleAll() {
         let itemsSnapshot = items
-        DispatchQueue.global(qos: .userInitiated).async {
+        Task.detached(priority: .background) {
             let rescheduleStart = CFAbsoluteTimeGetCurrent()
             let now = Date()
             let calendar = Calendar.current
@@ -390,7 +390,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
 
             var scheduled: [Scheduled] = []
             let buildStart = CFAbsoluteTimeGetCurrent()
-            for item in itemsSnapshot {
+            for (index, item) in itemsSnapshot.enumerated() {
                 let upcoming = self.buildUpcomingNotifications(for: item, title: item.notificationTitle, now: now, calendar: calendar)
                 for entry in upcoming {
                     if item.notificationIdsFinished.contains(entry.id) { continue }
@@ -416,6 +416,9 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                         id: entry.id,
                         payload: payload
                     ))
+                }
+                if index.isMultiple(of: 4) {
+                    await Task.yield()
                 }
             }
             let buildDuration = CFAbsoluteTimeGetCurrent() - buildStart
