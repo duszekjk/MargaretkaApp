@@ -52,7 +52,10 @@ struct WebView: UIViewRepresentable {
           position: relative !important;
           overflow: visible !important;
         }
-        .ilg-noindent { text-indent: 0 !important; }
+        .ilg-noindent {
+          text-indent: 0 !important;
+          padding-left: 10px !important;
+        }
         .ilg-indent { text-indent: 1.2em !important; }
         .ilg-indent::before, .ilg-noindent::before {
           content: '';
