@@ -102,10 +102,10 @@ struct HomeView: View {
         guard !didLoadInitialData else { return }
         didLoadInitialData = true
         let prayersSnapshot = prayerStore.prayers
+        let templatePrayers = Array(prayersTemplate.values)
 
         Task.detached(priority: .utility) {
             let loadedPriests = Priest.loadWithTemplates(using: prayersSnapshot)
-            let templatePrayers = Array(prayersTemplate.values)
             let existingPrayerNames = Set(prayersSnapshot.map { $0.name })
             var mergedPrayers = prayersSnapshot
             for template in templatePrayers where !existingPrayerNames.contains(template.name) {
