@@ -365,6 +365,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
     func rescheduleAll() {
         let itemsSnapshot = items
         DispatchQueue.global(qos: .userInitiated).async {
+            let rescheduleStart = CFAbsoluteTimeGetCurrent()
             let now = Date()
             let calendar = Calendar.current
             let notificationCenter = UNUserNotificationCenter.current()
@@ -388,6 +389,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
             notificationCenter.setNotificationCategories([category])
 
             var scheduled: [Scheduled] = []
+            let buildStart = CFAbsoluteTimeGetCurrent()
             for item in itemsSnapshot {
                 let upcoming = self.buildUpcomingNotifications(for: item, title: item.notificationTitle, now: now, calendar: calendar)
                 for entry in upcoming {
@@ -416,6 +418,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                     ))
                 }
             }
+            let buildDuration = CFAbsoluteTimeGetCurrent() - buildStart
 
             scheduled.sort { $0.notificationDate < $1.notificationDate }
             if scheduled.count > maxNotificationsToSchedule {
@@ -423,10 +426,13 @@ class ScheduleData<T: Schedulable>: ObservableObject {
             }
             var idsByItem: [T.ID: [String]] = [:]
             let scheduledIds = Set(scheduled.map { $0.id })
+            let pendingStart = CFAbsoluteTimeGetCurrent()
             notificationCenter.getPendingNotificationRequests { requests in
+                let pendingDuration = CFAbsoluteTimeGetCurrent() - pendingStart
                 let pendingIds = Set(requests.map { $0.identifier })
                 let needsReschedule = pendingIds != scheduledIds
 
+                let scheduleStart = CFAbsoluteTimeGetCurrent()
                 if needsReschedule {
                     notificationCenter.removeAllPendingNotificationRequests()
                 }
@@ -465,13 +471,18 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                     }
                     idsByItem[entry.itemId, default: []].append(entry.id)
                 }
+                let scheduleDuration = CFAbsoluteTimeGetCurrent() - scheduleStart
 
                 DispatchQueue.main.async {
+                    let mainStart = CFAbsoluteTimeGetCurrent()
                     for index in self.items.indices {
                         let itemId = self.items[index].id
                         self.items[index].notificationIds = idsByItem[itemId] ?? []
                     }
                     self.saveAsync()
+                    let mainDuration = CFAbsoluteTimeGetCurrent() - mainStart
+                    let totalDuration = CFAbsoluteTimeGetCurrent() - rescheduleStart
+                    print("ScheduleData.rescheduleAll \(self.saveKey): build \(String(format: \"%.3f\", buildDuration))s, pending \(String(format: \"%.3f\", pendingDuration))s, schedule \(String(format: \"%.3f\", scheduleDuration))s, main \(String(format: \"%.3f\", mainDuration))s, total \(String(format: \"%.3f\", totalDuration))s, needsReschedule \(needsReschedule)")
                 }
             }
         }
