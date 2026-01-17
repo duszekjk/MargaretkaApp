@@ -921,10 +921,17 @@ struct PrayerTouchScrollerView: View {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     }
             )
-            .onPreferenceChange(PrayerButtonFramePreferenceKey.self) { value in
-                self.frames = value
-                print("🧩 Prayer frames updated:", value)
+        .onPreferenceChange(PrayerButtonFramePreferenceKey.self) { value in
+            let start = CFAbsoluteTimeGetCurrent()
+            self.frames = value
+            let framesDuration = CFAbsoluteTimeGetCurrent() - start
+            let logStart = CFAbsoluteTimeGetCurrent()
+            print("🧩 Prayer frames updated: count \(value.count), set in \(String(format: "%.3f", framesDuration))s")
+            let logDuration = CFAbsoluteTimeGetCurrent() - logStart
+            if logDuration > 0.05 {
+                print("🧩 Prayer frames log took \(String(format: "%.3f", logDuration))s")
             }
+        }
 
         }.coordinateSpace(name: "scrollZone")
 
