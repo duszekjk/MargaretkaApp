@@ -48,7 +48,7 @@ struct WebView: UIViewRepresentable {
         .ilg-indent, .ilg-noindent {
           background-repeat: no-repeat !important;
           background-size: 2px calc(100% - 0.3em) !important;
-          background-position: 2px 0.15em !important;
+          background-position: 4px 0.15em !important;
         }
         .ilg-noindent {
           background-image: linear-gradient(#1f8a3b, #1f8a3b) !important;
@@ -59,7 +59,11 @@ struct WebView: UIViewRepresentable {
           `));
           document.head.appendChild(style);
           document.documentElement.style.webkitTextSizeAdjust = '160%';
-          var blocks = document.querySelectorAll('div.a, div.b, div.c, div.d');
+          var scope = document.querySelector('td[width="560"]');
+          if (!scope) {
+            return;
+          }
+          var blocks = scope.querySelectorAll('div.a, div.b, div.c, div.d');
           blocks.forEach(function(el) {
             if (el.classList.contains('b') || el.classList.contains('d')) {
               el.classList.add('ilg-indent');
