@@ -27,7 +27,7 @@ class PrayerStore: ObservableObject {
         load()
         ensureDefaultPrayers()
         let duration = CFAbsoluteTimeGetCurrent() - start
-        print("PrayerStore init in \(String(format: \"%.3f\", duration))s")
+        print("PrayerStore init in \(String(format: "%.3f", duration))s")
     }
 
     private let key = "stored_prayers"
@@ -116,7 +116,7 @@ struct HomeView: View {
                 mergedPrayers.append(template)
             }
             let duration = CFAbsoluteTimeGetCurrent() - start
-            print("HomeView loadInitialData in \(String(format: \"%.3f\", duration))s")
+            print("HomeView loadInitialData in \(String(format: "%.3f", duration))s")
 
             await MainActor.run {
                 priestStore.priests = loadedPriests

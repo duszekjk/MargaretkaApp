@@ -22,7 +22,7 @@ class PriestStore: ObservableObject {
         let start = CFAbsoluteTimeGetCurrent()
         load()
         let duration = CFAbsoluteTimeGetCurrent() - start
-        print("PriestStore init in \(String(format: \"%.3f\", duration))s")
+        print("PriestStore init in \(String(format: "%.3f", duration))s")
     }
 
     private func load() {
