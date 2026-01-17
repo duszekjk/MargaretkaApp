@@ -238,6 +238,7 @@ func makeIDShort(with title: String, eventTime: Date) -> String {
 class ScheduleData<T: Schedulable>: ObservableObject {
     @Published var items: [T] = []
     let saveKey: String
+    private var isLoading = false
     
     private struct Scheduled {
         let itemId: T.ID
@@ -258,7 +259,15 @@ class ScheduleData<T: Schedulable>: ObservableObject {
     }
 
     func load() {
-        items = LocalDatabase.shared.load(from: saveKey)
+        guard !isLoading else { return }
+        isLoading = true
+        DispatchQueue.global(qos: .userInitiated).async {
+            let loaded: [T] = LocalDatabase.shared.load(from: self.saveKey)
+            DispatchQueue.main.async {
+                self.items = loaded
+                self.isLoading = false
+            }
+        }
     }
 
     func save() {

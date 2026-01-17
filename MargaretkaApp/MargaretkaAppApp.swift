@@ -24,6 +24,7 @@ struct MargaretkaAppApp: App {
                         scheduleNotificationRefresh()
                     }
             }
+            .environmentObject(scheduleData)
             .overlay {
                 if showUiTestGate {
                     UiTestGateView(isPresented: $showUiTestGate)

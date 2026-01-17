@@ -12,7 +12,7 @@ struct PrayerFlowView: View {
     @State var selectedPriest: Priest?
     @State var finished: Bool = false
     @State var priestLast: Priest?
-    @StateObject var scheduleData = ScheduleData<Priest>(saveKey: "priest_sch")
+    @EnvironmentObject var scheduleData: ScheduleData<Priest>
     @State private var activeIndex: Int = 0
     @State private var selectedCategory: PrayerTargetCategory = .priest
     @State private var isFullscreen: Bool = false
@@ -412,7 +412,6 @@ struct PrayerFlowView: View {
         {
             Priest.ensureTemplates(using: prayerStore.prayers)
             scheduleData.load()
-            syncSelectedPriest()
             requestNotificationPermissions()
         }
         .onChange(of: showEditor) { _, isShowing in
