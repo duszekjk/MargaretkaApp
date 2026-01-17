@@ -83,6 +83,7 @@ struct HomeView: View {
     @State var showOsoby: Bool = false
     @State var showCzymJest: Bool = false
     @State var showJakSie: Bool = false
+    @State private var didLoadInitialData = false
 
     var body: some View {
         PrayerFlowView(showSettings: $showSettings, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie)
@@ -92,18 +93,30 @@ struct HomeView: View {
                     Image(systemName: "gear")
                 }
             }
-            .onAppear()
-        {
-            priestStore.priests = Priest.loadWithTemplates(using: prayerStore.prayers)
+            .task {
+                loadInitialData()
+            }
+    }
 
+    private func loadInitialData() {
+        guard !didLoadInitialData else { return }
+        didLoadInitialData = true
+        let prayersSnapshot = prayerStore.prayers
+
+        Task.detached(priority: .utility) {
+            let loadedPriests = Priest.loadWithTemplates(using: prayersSnapshot)
             let templatePrayers = Array(prayersTemplate.values)
-            let existingPrayerNames = Set(prayerStore.prayers.map { $0.name })
-            var mergedPrayers = prayerStore.prayers
+            let existingPrayerNames = Set(prayersSnapshot.map { $0.name })
+            var mergedPrayers = prayersSnapshot
             for template in templatePrayers where !existingPrayerNames.contains(template.name) {
                 mergedPrayers.append(template)
             }
-            if mergedPrayers.count != prayerStore.prayers.count {
-                prayerStore.prayers = mergedPrayers
+
+            await MainActor.run {
+                priestStore.priests = loadedPriests
+                if mergedPrayers.count != prayersSnapshot.count {
+                    prayerStore.prayers = mergedPrayers
+                }
             }
         }
     }
