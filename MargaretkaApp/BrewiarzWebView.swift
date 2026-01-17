@@ -48,11 +48,13 @@ struct WebView: UIViewRepresentable {
         .ilg-indent, .ilg-noindent {
           position: relative !important;
           overflow: visible !important;
+          padding-left: 2px !important;
+          margin-left: -2px !important;
         }
         .ilg-indent::before, .ilg-noindent::before {
           content: '';
           position: absolute;
-          left: -2px;
+          left: 0;
           top: 0.15em;
           bottom: 0.15em;
           width: 2px;
@@ -74,13 +76,14 @@ struct WebView: UIViewRepresentable {
           }
           function findHeading(label) {
             var target = normalizeLabel(label);
-            var fonts = scope.querySelectorAll('font');
-            for (var i = 0; i < fonts.length; i++) {
-              if (normalizeLabel(fonts[i].textContent || '') === target) {
-                return fonts[i];
+            var candidates = scope.querySelectorAll('font, b');
+            for (var i = 0; i < candidates.length; i++) {
+              var candidate = candidates[i];
+              if (normalizeLabel(candidate.textContent || '') === target) {
+                return candidate;
               }
             }
-            return null;
+            return scope.querySelector('a[name="' + label.toLowerCase() + '"]');
           }
           function applyMarkers(startNode, endNode) {
             if (!startNode || !endNode) {
