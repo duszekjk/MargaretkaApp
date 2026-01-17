@@ -138,8 +138,8 @@ struct HomeView: View {
             let mainDuration = CFAbsoluteTimeGetCurrent() - mainStart
             let overallDuration = CFAbsoluteTimeGetCurrent() - overallStart
 
-            print("HomeView loadInitialData in \(String(format: \"%.3f\", overallDuration))s")
-            print("HomeView loadInitialData breakdown: templates \(String(format: \"%.3f\", templatesDuration))s, merge \(String(format: \"%.3f\", mergeDuration))s, main \(String(format: \"%.3f\", mainDuration))s")
+            print("HomeView loadInitialData in \(String(format: "%.3f", overallDuration))s")
+            print("HomeView loadInitialData breakdown: templates \(String(format: "%.3f", templatesDuration))s, merge \(String(format: "%.3f", mergeDuration))s, main \(String(format: "%.3f", mainDuration))s")
         }
     }
 }
