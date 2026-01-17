@@ -103,6 +103,10 @@ struct HomeView: View {
                     Image(systemName: "gear")
                 }
             }
+            .onAppear {
+                let now = CFAbsoluteTimeGetCurrent()
+                print("HomeView onAppear at \(String(format: "%.3f", now))")
+            }
             .task {
                 loadInitialData()
             }
@@ -111,10 +115,13 @@ struct HomeView: View {
     private func loadInitialData() {
         guard !didLoadInitialData else { return }
         didLoadInitialData = true
+        let scheduledAt = CFAbsoluteTimeGetCurrent()
         let prayersSnapshot = prayerStore.prayers
         let templatePrayers = Array(prayersTemplate.values)
 
         Task.detached(priority: .utility) {
+            let taskStart = CFAbsoluteTimeGetCurrent()
+            let scheduleDelay = taskStart - scheduledAt
             let overallStart = CFAbsoluteTimeGetCurrent()
             let templatesStart = CFAbsoluteTimeGetCurrent()
             let loadedPriests = Priest.loadWithTemplates(using: prayersSnapshot)
@@ -138,6 +145,7 @@ struct HomeView: View {
             let mainDuration = CFAbsoluteTimeGetCurrent() - mainStart
             let overallDuration = CFAbsoluteTimeGetCurrent() - overallStart
 
+            print("HomeView loadInitialData schedule delay \(String(format: "%.3f", scheduleDelay))s")
             print("HomeView loadInitialData in \(String(format: "%.3f", overallDuration))s")
             print("HomeView loadInitialData breakdown: templates \(String(format: "%.3f", templatesDuration))s, merge \(String(format: "%.3f", mergeDuration))s, main \(String(format: "%.3f", mainDuration))s")
         }
