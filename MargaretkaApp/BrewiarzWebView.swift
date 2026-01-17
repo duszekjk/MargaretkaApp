@@ -49,6 +49,7 @@ struct WebView: UIViewRepresentable {
           background-repeat: no-repeat !important;
           background-size: 2px calc(100% - 0.3em) !important;
           background-position: 0 0.15em !important;
+          text-indent: 0 !important;
         }
         .ilg-indent { background-image: linear-gradient(#1f8a3b, #1f8a3b) !important; }
         .ilg-noindent { background-image: linear-gradient(#1b5faa, #1b5faa) !important; }
