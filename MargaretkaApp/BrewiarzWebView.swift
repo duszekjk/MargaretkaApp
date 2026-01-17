@@ -48,7 +48,7 @@ struct WebView: UIViewRepresentable {
         .ilg-indent, .ilg-noindent {
           background-repeat: no-repeat !important;
           background-size: 2px calc(100% - 0.3em) !important;
-          background-position: 4px 0.15em !important;
+          background-position: -2px 0.15em !important;
         }
         .ilg-noindent {
           background-image: linear-gradient(#1f8a3b, #1f8a3b) !important;
@@ -63,8 +63,27 @@ struct WebView: UIViewRepresentable {
           if (!scope) {
             return;
           }
-          var blocks = scope.querySelectorAll('div.a, div.b, div.c, div.d');
-          blocks.forEach(function(el) {
+          var psalmAnchor = scope.querySelector('a[name="psalm"]');
+          var readingAnchor = scope.querySelector('a[name="czyt"]');
+          if (!psalmAnchor || !readingAnchor) {
+            return;
+          }
+          var walker = document.createTreeWalker(scope, NodeFilter.SHOW_ELEMENT, null);
+          var inPsalm = false;
+          var nodes = [];
+          while (walker.nextNode()) {
+            var node = walker.currentNode;
+            if (node === psalmAnchor) {
+              inPsalm = true;
+            }
+            if (node === readingAnchor) {
+              break;
+            }
+            if (inPsalm && node.matches && node.matches('div.a, div.b, div.c, div.d')) {
+              nodes.push(node);
+            }
+          }
+          nodes.forEach(function(el) {
             if (el.classList.contains('b') || el.classList.contains('d')) {
               el.classList.add('ilg-indent');
             } else if (el.classList.contains('a') || el.classList.contains('c')) {
