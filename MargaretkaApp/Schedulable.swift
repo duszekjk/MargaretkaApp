@@ -262,7 +262,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
         guard !isLoading else { return }
         isLoading = true
         let dispatchStart = CFAbsoluteTimeGetCurrent()
-        DispatchQueue.global(qos: .userInitiated).async {
+        DispatchQueue.global(qos: .utility).async {
             let loadStart = CFAbsoluteTimeGetCurrent()
             let loaded: [T] = LocalDatabase.shared.load(from: self.saveKey)
             let loadDuration = CFAbsoluteTimeGetCurrent() - loadStart
