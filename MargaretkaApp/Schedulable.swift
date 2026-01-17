@@ -272,7 +272,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                 self.isLoading = false
                 let mainDuration = CFAbsoluteTimeGetCurrent() - mainStart
                 let dispatchDuration = CFAbsoluteTimeGetCurrent() - dispatchStart
-                print("ScheduleData.load \(self.saveKey): dispatch \(String(format: \"%.3f\", dispatchDuration))s, load \(String(format: \"%.3f\", loadDuration))s, main \(String(format: \"%.3f\", mainDuration))s")
+                print("ScheduleData.load \(self.saveKey): dispatch \(String(format: "%.3f", dispatchDuration))s, load \(String(format: "%.3f", loadDuration))s, main \(String(format: "%.3f", mainDuration))s")
             }
         }
     }
