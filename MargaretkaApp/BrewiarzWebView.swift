@@ -46,15 +46,21 @@ struct WebView: UIViewRepresentable {
         body { font-size: 110% !important; line-height: 1.1 !important; }
         body, td, th, div, span, p, a, font { font-size: 18pt !important; line-height: 1.1 !important; }
         .ilg-indent, .ilg-noindent {
-          background-repeat: no-repeat !important;
-          background-size: 2px calc(100% - 0.3em) !important;
-          background-position: -2px 0.15em !important;
+          position: relative !important;
+          overflow: visible !important;
         }
-        .ilg-noindent {
-          background-image: linear-gradient(#1f8a3b, #1f8a3b) !important;
-          text-indent: 0 !important;
+        .ilg-indent::before, .ilg-noindent::before {
+          content: '';
+          position: absolute;
+          left: -2px;
+          top: 0.15em;
+          bottom: 0.15em;
+          width: 2px;
+          border-radius: 2px;
+          pointer-events: none;
         }
-        .ilg-indent { background-image: linear-gradient(#1b5faa, #1b5faa) !important; }
+        .ilg-noindent::before { background: #1f8a3b; }
+        .ilg-indent::before { background: #1b5faa; }
         img { max-width: 100% !important; height: auto !important; }
           `));
           document.head.appendChild(style);
@@ -103,27 +109,7 @@ struct WebView: UIViewRepresentable {
               }
             });
           }
-          function removeTextIndent(startNode, endNode) {
-            if (!startNode || !endNode) {
-              return;
-            }
-            var walker = document.createTreeWalker(scope, NodeFilter.SHOW_ELEMENT, null);
-            var inSection = false;
-            while (walker.nextNode()) {
-              var node = walker.currentNode;
-              if (node === startNode) {
-                inSection = true;
-              }
-              if (node === endNode) {
-                break;
-              }
-              if (inSection && node.matches && node.matches('div.c, div.d')) {
-                node.style.textIndent = '0';
-              }
-            }
-          }
           applyMarkers(findHeading('PSALMODIA'), findHeading('CZYTANIE'));
-          removeTextIndent(findHeading('PIEŚŃ ZACHARIASZA'), findHeading('PROŚBY'));
         })();
         """
         let script = WKUserScript(source: scriptSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
