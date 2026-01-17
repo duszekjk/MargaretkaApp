@@ -115,6 +115,7 @@ struct HomeView: View {
     private func loadInitialData() {
         guard !didLoadInitialData else { return }
         didLoadInitialData = true
+        let loadId = UUID().uuidString.prefix(6)
         let scheduledAt = CFAbsoluteTimeGetCurrent()
         let prayersSnapshot = prayerStore.prayers
         let templatePrayers = Array(prayersTemplate.values)
@@ -124,8 +125,11 @@ struct HomeView: View {
             let scheduleDelay = taskStart - scheduledAt
             let overallStart = CFAbsoluteTimeGetCurrent()
             let templatesStart = CFAbsoluteTimeGetCurrent()
+            print("HomeView loadInitialData[\(loadId)] templates start \(String(format: "%.3f", templatesStart))")
             let loadedPriests = Priest.loadWithTemplates(using: prayersSnapshot)
-            let templatesDuration = CFAbsoluteTimeGetCurrent() - templatesStart
+            let templatesEnd = CFAbsoluteTimeGetCurrent()
+            let templatesDuration = templatesEnd - templatesStart
+            print("HomeView loadInitialData[\(loadId)] templates end \(String(format: "%.3f", templatesEnd)) elapsed \(String(format: "%.3f", templatesDuration))s")
 
             let mergeStart = CFAbsoluteTimeGetCurrent()
             let existingPrayerNames = Set(prayersSnapshot.map { $0.name })
@@ -145,9 +149,9 @@ struct HomeView: View {
             let mainDuration = CFAbsoluteTimeGetCurrent() - mainStart
             let overallDuration = CFAbsoluteTimeGetCurrent() - overallStart
 
-            print("HomeView loadInitialData schedule delay \(String(format: "%.3f", scheduleDelay))s")
-            print("HomeView loadInitialData in \(String(format: "%.3f", overallDuration))s")
-            print("HomeView loadInitialData breakdown: templates \(String(format: "%.3f", templatesDuration))s, merge \(String(format: "%.3f", mergeDuration))s, main \(String(format: "%.3f", mainDuration))s")
+            print("HomeView loadInitialData[\(loadId)] schedule delay \(String(format: "%.3f", scheduleDelay))s")
+            print("HomeView loadInitialData[\(loadId)] in \(String(format: "%.3f", overallDuration))s")
+            print("HomeView loadInitialData[\(loadId)] breakdown: templates \(String(format: "%.3f", templatesDuration))s, merge \(String(format: "%.3f", mergeDuration))s, main \(String(format: "%.3f", mainDuration))s")
         }
     }
 }
