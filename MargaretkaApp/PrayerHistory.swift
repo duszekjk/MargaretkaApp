@@ -115,22 +115,31 @@ struct HomeView: View {
         let templatePrayers = Array(prayersTemplate.values)
 
         Task.detached(priority: .utility) {
-            let start = CFAbsoluteTimeGetCurrent()
+            let overallStart = CFAbsoluteTimeGetCurrent()
+            let templatesStart = CFAbsoluteTimeGetCurrent()
             let loadedPriests = Priest.loadWithTemplates(using: prayersSnapshot)
+            let templatesDuration = CFAbsoluteTimeGetCurrent() - templatesStart
+
+            let mergeStart = CFAbsoluteTimeGetCurrent()
             let existingPrayerNames = Set(prayersSnapshot.map { $0.name })
             var mergedPrayers = prayersSnapshot
             for template in templatePrayers where !existingPrayerNames.contains(template.name) {
                 mergedPrayers.append(template)
             }
-            let duration = CFAbsoluteTimeGetCurrent() - start
-            print("HomeView loadInitialData in \(String(format: "%.3f", duration))s")
+            let mergeDuration = CFAbsoluteTimeGetCurrent() - mergeStart
 
+            let mainStart = CFAbsoluteTimeGetCurrent()
             await MainActor.run {
                 priestStore.priests = loadedPriests
                 if mergedPrayers.count != prayersSnapshot.count {
                     prayerStore.prayers = mergedPrayers
                 }
             }
+            let mainDuration = CFAbsoluteTimeGetCurrent() - mainStart
+            let overallDuration = CFAbsoluteTimeGetCurrent() - overallStart
+
+            print("HomeView loadInitialData in \(String(format: \"%.3f\", overallDuration))s")
+            print("HomeView loadInitialData breakdown: templates \(String(format: \"%.3f\", templatesDuration))s, merge \(String(format: \"%.3f\", mergeDuration))s, main \(String(format: \"%.3f\", mainDuration))s")
         }
     }
 }
