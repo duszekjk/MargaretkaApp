@@ -45,10 +45,15 @@ struct WebView: UIViewRepresentable {
         html { -webkit-text-size-adjust: 160% !important; }
         body { font-size: 110% !important; line-height: 1.1 !important; }
         body, td, th, div, span, p, a, font { font-size: 18pt !important; line-height: 1.1 !important; }
+        .ilg-main div, .ilg-main p {
+          text-indent: 0 !important;
+        }
         .ilg-indent, .ilg-noindent {
           position: relative !important;
           overflow: visible !important;
         }
+        .ilg-noindent { text-indent: 0 !important; }
+        .ilg-indent { text-indent: 1.2em !important; }
         .ilg-indent::before, .ilg-noindent::before {
           content: '';
           position: absolute;
@@ -58,7 +63,7 @@ struct WebView: UIViewRepresentable {
           width: 2px;
           border-radius: 2px;
           pointer-events: none;
-          transform: translateX(-4px);
+          transform: translateX(-6px);
         }
         .ilg-noindent::before { background: #1f8a3b; }
         .ilg-indent::before { background: #1b5faa; }
@@ -70,6 +75,7 @@ struct WebView: UIViewRepresentable {
           if (!scope) {
             return;
           }
+          scope.classList.add('ilg-main');
           function normalizeLabel(text) {
             return text.replace(/\\s+/g, ' ').trim().toUpperCase();
           }
