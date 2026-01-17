@@ -63,12 +63,20 @@ struct WebView: UIViewRepresentable {
           document.documentElement.style.webkitTextSizeAdjust = '160%';
           var blocks = document.querySelectorAll('div.a, div.b, div.c, div.d, div.cd, div.cdx, div.ww');
           blocks.forEach(function(el) {
+            if (el.classList.contains('b') || el.classList.contains('d')) {
+              el.classList.add('ilg-indent');
+              return;
+            }
+            if (el.classList.contains('a') || el.classList.contains('c')) {
+              el.classList.add('ilg-noindent');
+              return;
+            }
             var cs = window.getComputedStyle(el);
             var marginLeft = parseFloat(cs.marginLeft) || 0;
             var paddingLeft = parseFloat(cs.paddingLeft) || 0;
             var textIndent = parseFloat(cs.textIndent) || 0;
             var indent = Math.max(marginLeft, paddingLeft, textIndent);
-            if (indent > 0) {
+            if (indent > 6) {
               el.classList.add('ilg-indent');
             } else {
               el.classList.add('ilg-noindent');
