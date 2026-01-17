@@ -49,14 +49,23 @@ struct Priest: Identifiable, Hashable, Codable {
     var notificationSound: String?
     
     var notificationTypeId: String = "Priest"
-    
+
+    private static let templatesSignatureKey = "priest_templates_signature_v1"
+
     static let storageKey = "priest_sch"
     static func loadWithTemplates(using prayers: [Prayer]) -> [Priest] {
         let stored: [Priest] = LocalDatabase.shared.load(from: Self.storageKey)
+        let signature = templatesSignature(using: prayers)
+        if let cached = UserDefaults.standard.string(forKey: templatesSignatureKey),
+           cached == signature,
+           storedContainsAllTemplates(stored) {
+            return stored
+        }
         let merged = mergeTemplates(into: stored, using: prayers)
         if merged != stored {
             LocalDatabase.shared.save(merged, as: Self.storageKey)
         }
+        UserDefaults.standard.set(signature, forKey: templatesSignatureKey)
         return merged
     }
 
@@ -191,6 +200,28 @@ extension Priest: Schedulable {
 }
 
 extension Priest {
+    private static func templatesSignature(using prayers: [Prayer]) -> String {
+        var hasher = Hasher()
+        for prayer in prayers.sorted(by: { $0.id.uuidString < $1.id.uuidString }) {
+            hasher.combine(prayer.id)
+            hasher.combine(prayer.name)
+        }
+        for template in peopleTemplates {
+            hasher.combine(templateKey(for: template))
+        }
+        return String(hasher.finalize())
+    }
+
+    private static func storedContainsAllTemplates(_ stored: [Priest]) -> Bool {
+        let existingKeys = Set(stored.map { templateKey(for: $0) })
+        for template in peopleTemplates {
+            if !existingKeys.contains(templateKey(for: template)) {
+                return false
+            }
+        }
+        return true
+    }
+
     static func templateKey(for priest: Priest) -> String {
         "\(priest.category.rawValue)|\(priest.title)|\(priest.firstName)|\(priest.lastName)"
     }

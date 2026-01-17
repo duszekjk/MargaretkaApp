@@ -12,6 +12,7 @@ import AudioToolbox
 struct MargaretkaAppApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate: AppDelegate
     @StateObject var scheduleData = ScheduleData<Priest>(saveKey: "priest_sch")
+    @StateObject var prayerStore = PrayerStore()
     @State private var didScheduleNotificationRefresh = false
     @State private var showUiTestGate = ProcessInfo.processInfo.arguments.contains("--ui-tests")
 
@@ -25,6 +26,7 @@ struct MargaretkaAppApp: App {
                     }
             }
             .environmentObject(scheduleData)
+            .environmentObject(prayerStore)
             .overlay {
                 if showUiTestGate {
                     UiTestGateView(isPresented: $showUiTestGate)

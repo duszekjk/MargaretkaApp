@@ -22,6 +22,9 @@ class PrayerStore: ObservableObject {
         didSet { save() }
     }
 
+    private let key = "stored_prayers"
+    private let legacyDefaultsKey = "stored_prayers"
+
     init() {
         let start = CFAbsoluteTimeGetCurrent()
         load()
@@ -30,19 +33,23 @@ class PrayerStore: ObservableObject {
         print("PrayerStore init in \(String(format: "%.3f", duration))s")
     }
 
-    private let key = "stored_prayers"
-
     private func load() {
-        if let data = UserDefaults.standard.data(forKey: key),
+        let stored: [Prayer] = LocalDatabase.shared.load(from: key)
+        if !stored.isEmpty {
+            self.prayers = stored
+            return
+        }
+
+        if let data = UserDefaults.standard.data(forKey: legacyDefaultsKey),
            let decoded = try? JSONDecoder().decode([Prayer].self, from: data) {
             self.prayers = decoded
+            LocalDatabase.shared.save(decoded, as: key)
+            UserDefaults.standard.removeObject(forKey: legacyDefaultsKey)
         }
     }
 
     private func save() {
-        if let data = try? JSONEncoder().encode(prayers) {
-            UserDefaults.standard.set(data, forKey: key)
-        }
+        LocalDatabase.shared.save(prayers, as: key)
     }
 
     private func ensureDefaultPrayers() {
@@ -78,7 +85,7 @@ class PrayerStore: ObservableObject {
 
 struct HomeView: View {
     @StateObject var priestStore = PriestStore()
-    @StateObject var prayerStore = PrayerStore()
+    @EnvironmentObject var prayerStore: PrayerStore
     
     
     @State var showSettings: Bool = false

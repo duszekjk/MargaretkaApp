@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct PrayerFlowView: View {
-    @StateObject var prayerStore = PrayerStore()
+    @EnvironmentObject var prayerStore: PrayerStore
     @State var selectedPriest: Priest?
     @State var finished: Bool = false
     @State var priestLast: Priest?
