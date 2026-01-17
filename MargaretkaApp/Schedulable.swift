@@ -261,11 +261,18 @@ class ScheduleData<T: Schedulable>: ObservableObject {
     func load() {
         guard !isLoading else { return }
         isLoading = true
+        let dispatchStart = CFAbsoluteTimeGetCurrent()
         DispatchQueue.global(qos: .userInitiated).async {
+            let loadStart = CFAbsoluteTimeGetCurrent()
             let loaded: [T] = LocalDatabase.shared.load(from: self.saveKey)
+            let loadDuration = CFAbsoluteTimeGetCurrent() - loadStart
             DispatchQueue.main.async {
+                let mainStart = CFAbsoluteTimeGetCurrent()
                 self.items = loaded
                 self.isLoading = false
+                let mainDuration = CFAbsoluteTimeGetCurrent() - mainStart
+                let dispatchDuration = CFAbsoluteTimeGetCurrent() - dispatchStart
+                print("ScheduleData.load \(self.saveKey): dispatch \(String(format: \"%.3f\", dispatchDuration))s, load \(String(format: \"%.3f\", loadDuration))s, main \(String(format: \"%.3f\", mainDuration))s")
             }
         }
     }
