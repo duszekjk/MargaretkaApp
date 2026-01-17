@@ -17,6 +17,7 @@ class PriestStore: ObservableObject {
     }
 
     private let key = "stored_priests"
+    private let legacyDefaultsKey = "stored_priests"
 
     init() {
         let start = CFAbsoluteTimeGetCurrent()
@@ -26,16 +27,22 @@ class PriestStore: ObservableObject {
     }
 
     private func load() {
-        if let data = UserDefaults.standard.data(forKey: key),
+        let stored: [Priest] = LocalDatabase.shared.load(from: key)
+        if !stored.isEmpty {
+            self.priests = stored
+            return
+        }
+
+        if let data = UserDefaults.standard.data(forKey: legacyDefaultsKey),
            let decoded = try? JSONDecoder().decode([Priest].self, from: data) {
             self.priests = decoded
+            LocalDatabase.shared.save(decoded, as: key)
+            UserDefaults.standard.removeObject(forKey: legacyDefaultsKey)
         }
     }
 
     private func save() {
-        if let data = try? JSONEncoder().encode(priests) {
-            UserDefaults.standard.set(data, forKey: key)
-        }
+        LocalDatabase.shared.save(priests, as: key)
     }
 
     func addOrUpdate(_ priest: Priest) {
