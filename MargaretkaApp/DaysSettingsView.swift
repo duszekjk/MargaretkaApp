@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct StatsView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @StateObject private var sessionStore = PrayerSessionStore()
     @State private var range: StatsRange = .last12Weeks
 
@@ -56,7 +57,9 @@ struct StatsView: View {
         .accessibilityIdentifier("stats_view")
         .background(
             LinearGradient(
-                colors: [Color(red: 0.96, green: 0.98, blue: 1.0), Color(red: 0.90, green: 0.94, blue: 0.98)],
+                colors: colorScheme == .dark
+                    ? [Color(red: 0.08, green: 0.10, blue: 0.15), Color(red: 0.12, green: 0.16, blue: 0.22)]
+                    : [Color(red: 0.96, green: 0.98, blue: 1.0), Color(red: 0.90, green: 0.94, blue: 0.98)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -93,7 +96,7 @@ struct StatsView: View {
                     .padding(.horizontal, 12)
                     .background(
                         Capsule()
-                            .fill(Color.white.opacity(0.6))
+                            .fill(rowFillColor)
                     )
             }
         }
@@ -178,7 +181,7 @@ struct StatsView: View {
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.6))
+                .fill(rowFillColor)
         )
     }
 
@@ -207,7 +210,7 @@ struct StatsView: View {
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.6))
+                .fill(rowFillColor)
         )
     }
 
@@ -236,20 +239,22 @@ struct StatsView: View {
 
     private func activityCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Aktywność tygodniowa (8 tygodni)")
+            Text(summary.activityTitle)
                 .font(.headline)
 
-            HStack(alignment: .bottom, spacing: 10) {
-                ForEach(summary.recentWeeks) { week in
-                    VStack(spacing: 6) {
-                        Capsule()
-                            .fill(week.value == 0 ? Color.gray.opacity(0.25) : Color(red: 0.2, green: 0.45, blue: 0.85))
-                            .frame(height: max(10, week.height))
-                        Text(week.label)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .bottom, spacing: 10) {
+                    ForEach(summary.recentWeeks) { week in
+                        VStack(spacing: 6) {
+                            Capsule()
+                                .fill(week.value == 0 ? Color.gray.opacity(0.25) : Color(red: 0.2, green: 0.45, blue: 0.85))
+                                .frame(height: max(10, week.height))
+                            Text(week.label)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(width: 24)
                     }
-                    .frame(maxWidth: .infinity)
                 }
             }
         }
@@ -279,7 +284,7 @@ struct StatsView: View {
                         .padding(10)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white.opacity(0.6))
+                                .fill(rowFillColor)
                         )
                     }
                 }
@@ -308,7 +313,7 @@ struct StatsView: View {
                         .frame(width: 140)
                         .background(
                             RoundedRectangle(cornerRadius: 16)
-                                .fill(milestone.isUnlocked ? Color.green.opacity(0.2) : Color.white.opacity(0.6))
+                                .fill(milestone.isUnlocked ? Color.green.opacity(0.2) : rowFillColor)
                         )
                     }
                 }
@@ -336,15 +341,22 @@ struct StatsView: View {
     }
 
     private func cardBackground(colors: [Color]) -> some View {
+        let gradientColors = colorScheme == .dark
+            ? [Color(red: 0.15, green: 0.19, blue: 0.27), Color(red: 0.10, green: 0.13, blue: 0.19)]
+            : colors
         RoundedRectangle(cornerRadius: 22)
             .fill(
-                LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+                LinearGradient(colors: gradientColors, startPoint: .topLeading, endPoint: .bottomTrailing)
             )
-            .shadow(color: Color.black.opacity(0.12), radius: 10, x: 0, y: 6)
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.4 : 0.12), radius: 10, x: 0, y: 6)
             .overlay(
                 RoundedRectangle(cornerRadius: 22)
-                    .stroke(Color.white.opacity(0.35), lineWidth: 1)
+                    .stroke(colorScheme == .dark ? Color.white.opacity(0.12) : Color.white.opacity(0.35), lineWidth: 1)
             )
+    }
+
+    private var rowFillColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.10) : Color.white.opacity(0.6)
     }
 }
 
@@ -384,6 +396,19 @@ enum StatsRange: String, CaseIterable, Identifiable {
     case last52Weeks
 
     var id: String { rawValue }
+
+    var activityWeekCount: Int? {
+        switch self {
+        case .allTime:
+            return nil
+        case .last8Weeks:
+            return 8
+        case .last12Weeks:
+            return 12
+        case .last52Weeks:
+            return 52
+        }
+    }
 
     var title: String {
         switch self {
@@ -461,6 +486,7 @@ struct PrayerStats {
     let latestUnlockedMilestoneTitle: String?
     let highlightText: String?
     let subtitle: String
+    let activityTitle: String
     let favoritePrayer: String?
     let favoritePriestTarget: String?
     let favoriteTimeOfDay: String?
@@ -501,7 +527,8 @@ struct PrayerStats {
         let averageSubprayersValue = sessionCount > 0 ? Double(totalSubprayersValue) / Double(sessionCount) : 0
         let longestSessionValue = priestSessions.max(by: { $0.duration < $1.duration })
 
-        let recentWeekKeys = PrayerStats.lastWeeks(count: 8, referenceDate: referenceDate, calendar: calendar)
+        let recentWeekCount = PrayerStats.recentWeekCount(for: range, sessions: priestSessions, calendar: calendar)
+        let recentWeekKeys = PrayerStats.lastWeeks(count: recentWeekCount, referenceDate: referenceDate, calendar: calendar)
         let maxValue = max(recentWeekKeys.map { perWeek[$0, default: 0] }.max() ?? 1, 1)
         let recentWeeksValue = recentWeekKeys.map { key in
             let value = perWeek[key, default: 0]
@@ -567,6 +594,12 @@ struct PrayerStats {
         case .last52Weeks:
             subtitleValue = "Modlitwa za kapłanów – ostatnie 52 tygodnie"
         }
+        let activityTitleValue: String
+        if range == .allTime {
+            activityTitleValue = "Aktywność tygodniowa (cały okres)"
+        } else {
+            activityTitleValue = "Aktywność tygodniowa (\(recentWeekCount) tygodni)"
+        }
         let completionRateValue = PrayerStats.formatCompletionRate(completed: completedCount, total: sessionCount)
         let longestSessionTextValue = PrayerStats.formatDuration(longestSessionValue?.duration ?? 0)
         let longestTargetNameValue = longestSessionValue?.targetName
@@ -598,6 +631,7 @@ struct PrayerStats {
         progressToNextMilestone = progressValue
         highlightText = highlightValue
         subtitle = subtitleValue
+        activityTitle = activityTitleValue
         favoritePrayer = favoritePrayerValue
         favoritePriestTarget = PrayerStats.favoriteTargetName(in: priestCompletedSessions)
         favoriteTimeOfDay = favoriteTimeOfDayValue
@@ -792,6 +826,14 @@ struct PrayerStats {
             let date = calendar.date(byAdding: .weekOfYear, value: -(count - 1 - offset), to: start) ?? start
             return weekKey(for: date, calendar: calendar)
         }
+    }
+
+    private static func recentWeekCount(for range: StatsRange, sessions: [PrayerSession], calendar: Calendar) -> Int {
+        if let fixed = range.activityWeekCount {
+            return fixed
+        }
+        let distinctWeeks = Set(sessions.map { weekKey(for: $0.endedAt, calendar: calendar) }).count
+        return max(distinctWeeks, 8)
     }
 
     private static func weekLabel(for key: String, calendar: Calendar) -> String {
