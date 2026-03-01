@@ -1,1 +1,1 @@
-chore: pre-change checkpoint (brewiarz url resolver)
+fix: block invalid brewiarz URLs and future dates

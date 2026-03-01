@@ -15,6 +15,23 @@ struct BrewiarzDailyLinks: Codable, Hashable {
 }
 
 actor BrewiarzURLResolver {
+    enum ResolveError: LocalizedError {
+        case dateBeyondTomorrow(requested: String, maxAllowed: String)
+        case missingOfficiumIndex(dateKey: String)
+        case invalidOfficiumIndex(url: String)
+
+        var errorDescription: String? {
+            switch self {
+            case .dateBeyondTomorrow(let requested, let maxAllowed):
+                return "Date \(requested) is beyond tomorrow (max \(maxAllowed))."
+            case .missingOfficiumIndex(let dateKey):
+                return "Missing officium index URL for date \(dateKey)."
+            case .invalidOfficiumIndex(let url):
+                return "Resolved officium index URL is invalid: \(url)"
+            }
+        }
+    }
+
     static let shared = BrewiarzURLResolver()
 
     private let cacheKey = "brewiarz_daily_links_v2"
@@ -31,7 +48,14 @@ actor BrewiarzURLResolver {
                 return URL(string: urlString)
             }
             print("⚠️ Brewiarz missing key \(key.rawValue), falling back to index")
-            return URL(string: resolved.chosenOfficiumIndexURL)
+            if let fallback = URL(string: resolved.chosenOfficiumIndexURL), isValidIndexURL(fallback) {
+                return fallback
+            }
+            print("⛔️ Brewiarz refusing invalid fallback URL: \(resolved.chosenOfficiumIndexURL)")
+            return nil
+        } catch ResolveError.dateBeyondTomorrow(let requested, let maxAllowed) {
+            print("⛔️ Brewiarz stop: requested \(requested), max allowed \(maxAllowed)")
+            return nil
         } catch {
             print("❌ Brewiarz resolve failed: \(error.localizedDescription)")
             return URL(string: "https://brewiarz.pl/dzis.php")
@@ -39,6 +63,13 @@ actor BrewiarzURLResolver {
     }
 
     private func resolveLinks(for date: Date) async throws -> BrewiarzDailyLinks {
+        guard Self.isDateWithinTodayOrTomorrow(date) else {
+            throw ResolveError.dateBeyondTomorrow(
+                requested: Self.dateKey(for: date),
+                maxAllowed: Self.dateKey(for: Self.maxSupportedDate())
+            )
+        }
+
         let dateKey = Self.dateKey(for: date)
         if let cachedLinks, cachedLinks.dateKey == dateKey {
             return cachedLinks
@@ -63,8 +94,11 @@ actor BrewiarzURLResolver {
             print("✅ Brewiarz picked officium index: \(resolvedIndex.absoluteString)")
             indexURL = resolvedIndex
         } else {
-            print("⚠️ Brewiarz no officium index found, using dzis final")
-            indexURL = dzisFinalURL
+            print("⛔️ Brewiarz no officium index found for \(dateKey)")
+            throw ResolveError.missingOfficiumIndex(dateKey: dateKey)
+        }
+        guard isValidIndexURL(indexURL) else {
+            throw ResolveError.invalidOfficiumIndex(url: indexURL.absoluteString)
         }
 
         print("🌍 Brewiarz fetch index: \(indexURL.absoluteString)")
@@ -92,6 +126,7 @@ actor BrewiarzURLResolver {
             guard resolvedURL.host == "brewiarz.pl" else { continue }
             guard resolvedURL.path.contains("/i_") else { continue }
             guard resolvedURL.path.lowercased().hasSuffix(".php3") else { continue }
+            guard resolvedURL.lastPathComponent.lowercased() != "access.php3" else { continue }
 
             if let key = mapKey(for: resolvedURL, anchorText: anchor.text) {
                 if prayerLinks[key] == nil {
@@ -102,13 +137,18 @@ actor BrewiarzURLResolver {
             }
         }
 
+        let chosenIndexURL = isValidIndexURL(indexFinalURL) ? indexFinalURL : indexURL
+        guard isValidIndexURL(chosenIndexURL) else {
+            throw ResolveError.invalidOfficiumIndex(url: chosenIndexURL.absoluteString)
+        }
+
         let resolved = BrewiarzDailyLinks(
             dateKey: dateKey,
-            chosenOfficiumIndexURL: indexFinalURL.absoluteString,
+            chosenOfficiumIndexURL: chosenIndexURL.absoluteString,
             prayerLinks: prayerLinks,
             miscLinks: miscLinks
         )
-        if isValidIndexURL(indexFinalURL), !resolved.prayerLinks.isEmpty {
+        if !resolved.prayerLinks.isEmpty {
             saveCache(resolved)
         }
         cachedLinks = resolved
@@ -245,8 +285,7 @@ actor BrewiarzURLResolver {
     }
 
     private static func yearSuffix(for date: Date) -> String {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Europe/Warsaw") ?? .current
+        var calendar = warsawCalendar()
         let year = calendar.component(.year, from: date)
         return String(format: "%02d", year % 100)
     }
@@ -327,13 +366,30 @@ actor BrewiarzURLResolver {
     }
 
     private static func dateKey(for date: Date) -> String {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "Europe/Warsaw") ?? .current
+        let calendar = warsawCalendar()
         let comps = calendar.dateComponents([.year, .month, .day], from: date)
         let year = comps.year ?? 0
         let month = comps.month ?? 0
         let day = comps.day ?? 0
         return String(format: "%04d-%02d-%02d", year, month, day)
+    }
+
+    private static func warsawCalendar() -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Warsaw") ?? .current
+        return calendar
+    }
+
+    private static func maxSupportedDate(from now: Date = .now) -> Date {
+        let calendar = warsawCalendar()
+        let startOfToday = calendar.startOfDay(for: now)
+        return calendar.date(byAdding: .day, value: 1, to: startOfToday) ?? startOfToday
+    }
+
+    private static func isDateWithinTodayOrTomorrow(_ date: Date, now: Date = .now) -> Bool {
+        let calendar = warsawCalendar()
+        let requestedDay = calendar.startOfDay(for: date)
+        return requestedDay <= maxSupportedDate(from: now)
     }
 
     private func loadCache(dateKey: String) -> BrewiarzDailyLinks? {
@@ -353,9 +409,11 @@ actor BrewiarzURLResolver {
         UserDefaults.standard.set(data, forKey: cacheKey)
     }
 
-    private func isValidIndexURL(_ url: URL) -> Bool {
+    func isValidIndexURL(_ url: URL) -> Bool {
         let lowercased = url.absoluteString.lowercased()
-        return lowercased.contains("index.php3?l=i") && !lowercased.contains("wyb")
+        return lowercased.contains("index.php3?l=i")
+            && !lowercased.contains("wyb")
+            && !lowercased.contains("access.php3")
     }
 }
 

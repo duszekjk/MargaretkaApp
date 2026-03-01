@@ -96,4 +96,28 @@ final class BrewiarzURLResolverTests: XCTestCase {
 
         XCTAssertEqual(url?.absoluteString, "https://brewiarz.pl/i_26/1501p/index.php3?l=i")
     }
+
+    func testResolveURLReturnsNilForDayAfterTomorrow() async {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Warsaw") ?? .current
+        let startOfToday = calendar.startOfDay(for: Date())
+        let dayAfterTomorrow = calendar.date(byAdding: .day, value: 2, to: startOfToday)!
+        let resolver = await BrewiarzURLResolver.shared
+
+        let url = await resolver.resolveURL(for: .jutrznia, date: dayAfterTomorrow)
+
+        XCTAssertNil(url)
+    }
+
+    func testIsValidIndexURLRejectsAccessURL() async {
+        let resolver = await BrewiarzURLResolver.shared
+        let accessURL = URL(string: "https://brewiarz.pl/access.php3")!
+        let validURL = URL(string: "https://brewiarz.pl/ii_26/2802p/index.php3?l=i")!
+
+        let accessValid = await resolver.isValidIndexURL(accessURL)
+        let indexValid = await resolver.isValidIndexURL(validURL)
+
+        XCTAssertFalse(accessValid)
+        XCTAssertTrue(indexValid)
+    }
 }
