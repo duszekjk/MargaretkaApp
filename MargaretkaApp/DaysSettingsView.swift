@@ -344,7 +344,7 @@ struct StatsView: View {
         let gradientColors = colorScheme == .dark
             ? [Color(red: 0.15, green: 0.19, blue: 0.27), Color(red: 0.10, green: 0.13, blue: 0.19)]
             : colors
-        RoundedRectangle(cornerRadius: 22)
+        return RoundedRectangle(cornerRadius: 22)
             .fill(
                 LinearGradient(colors: gradientColors, startPoint: .topLeading, endPoint: .bottomTrailing)
             )

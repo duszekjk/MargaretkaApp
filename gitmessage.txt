@@ -1,1 +1,1 @@
-chore: pre-fix checkpoint (stats compile issue)
+fix: return card background view in stats
