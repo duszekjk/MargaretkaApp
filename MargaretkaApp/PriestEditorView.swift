@@ -36,14 +36,8 @@ struct PriestEditorView: View {
 
     private func updateNotificationText() {
         let name = priest.displayName
-        switch priest.category {
-        case .prayer:
-            priest.notificationTitle = "Modlitwa: \(name)"
-            priest.notificationMessage = "Jest czas na modlitwę: \(name)"
-        case .person, .priest:
-            priest.notificationTitle = "Pomódl się za \(name)"
-            priest.notificationMessage = "Jest czas na twoją margaretkę za \(name)"
-        }
+        priest.notificationTitle = priest.category.notificationTitle(for: name)
+        priest.notificationMessage = priest.category.notificationMessage(for: name)
     }
 
     var body: some View {

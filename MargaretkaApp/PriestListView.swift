@@ -34,8 +34,8 @@ struct PriestListView: View {
                     assignedPrayerGroups: [],
                     schedule: SchedulePlan(),
                     lastModified: Date(),
-                    notificationTitle: "Time to pray",
-                    notificationMessage: ""
+                    notificationTitle: category.notificationTitle(for: ""),
+                    notificationMessage: category.notificationMessage(for: "")
                 )
             },
             formFields: { nowPriest in

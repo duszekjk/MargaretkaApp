@@ -1,1 +1,1 @@
-chore: pre-change checkpoint (context labels + notifications)
+fix: make stats and notifications category-aware

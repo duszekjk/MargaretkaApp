@@ -78,7 +78,7 @@ struct StatsView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Statystyki Margaretki")
+                    Text(summary.headerTitle)
                         .font(.title2.bold())
                     Text(summary.subtitle)
                         .font(.subheadline)
@@ -113,7 +113,7 @@ struct StatsView: View {
 
     private func weeklyStreakCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Seria tygodni Margaretki")
+            Text(summary.weeklyStreakTitle)
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
             Text("\(summary.currentWeeklyStreak) tyg")
@@ -151,7 +151,7 @@ struct StatsView: View {
 
         return AnyView(
             VStack(alignment: .leading, spacing: 12) {
-                Text("Checkpoint Margaretki")
+                Text(summary.checkpointTitle)
                     .font(.headline)
 
                 Text("Osiągnięto: \(title)")
@@ -165,11 +165,11 @@ struct StatsView: View {
 
     private func recordsCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Rekordy Margaretki")
+            Text(summary.recordsTitle)
                 .font(.headline)
 
             recordRow(title: "Najdłuższa modlitwa", value: summary.longestSessionText)
-            recordRow(title: "Kapłan w najdłuższej modlitwie", value: summary.longestTargetName ?? "Brak danych")
+            recordRow(title: summary.longestTargetLabel, value: summary.longestTargetName ?? "Brak danych")
         }
         .padding(16)
         .background(cardBackground(colors: [Color.white.opacity(0.7), Color.white.opacity(0.35)]))
@@ -193,10 +193,10 @@ struct StatsView: View {
 
     private func favoritesCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Ulubione w Margaretce")
+            Text(summary.favoritesTitle)
                 .font(.headline)
 
-            favoriteRow(title: "Kapłan", value: summary.favoritePriestTarget ?? "Brak danych")
+            favoriteRow(title: summary.favoriteTargetLabel, value: summary.favoritePriestTarget ?? "Brak danych")
             favoriteRow(title: "Submodlitwa", value: summary.favoritePrayer ?? "Brak danych")
             favoriteRow(title: "Pora dnia", value: summary.favoriteTimeOfDay ?? "Brak danych")
         }
@@ -415,7 +415,7 @@ struct StatsView: View {
 
     private func yearSummaryCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Podsumowanie roku Margaretki")
+            Text(summary.yearSummaryTitle)
                 .font(.headline)
 
             Text("Sesje: \(summary.yearTotalSessions)")
@@ -575,8 +575,16 @@ struct PrayerStats {
     let progressToNextMilestone: Double
     let latestUnlockedMilestoneTitle: String?
     let highlightText: String?
+    let headerTitle: String
     let subtitle: String
     let activityTitle: String
+    let weeklyStreakTitle: String
+    let checkpointTitle: String
+    let recordsTitle: String
+    let longestTargetLabel: String
+    let favoritesTitle: String
+    let favoriteTargetLabel: String
+    let yearSummaryTitle: String
     let sessionsCardTitle: String
     let categoryCounts: [PrayerTargetCategory: Int]
     let favoritePrayer: String?
@@ -670,11 +678,19 @@ struct PrayerStats {
         let averageSubprayersTextValue = PrayerStats.formatSubprayers(averageSubprayersValue)
 
         let highlightValue: String?
-        let targetNoun = focusCategory.displayName.lowercased()
+        let highlightSubject: String
+        switch focusCategory {
+        case .priest:
+            highlightSubject = "modlitwą za kapłanów"
+        case .person:
+            highlightSubject = "modlitwą za osoby"
+        case .prayer:
+            highlightSubject = "modlitwami"
+        }
         if sessionCount == 0 {
-            highlightValue = "Statystyki uruchomią się po pierwszej modlitwie (\(targetNoun))."
+            highlightValue = "Statystyki uruchomią się po pierwszej modlitwie."
         } else if completedCount >= 7 {
-            highlightValue = "Masz \(weeklyStreakValue) tygodni aktywności (\(targetNoun))."
+            highlightValue = "Masz \(weeklyStreakValue) tygodni z \(highlightSubject)."
         } else if sessionCount >= 3 {
             highlightValue = "Świetny start - \(sessionCount) sesje modlitwy."
         } else {
@@ -698,6 +714,49 @@ struct PrayerStats {
         } else {
             activityTitleValue = "Aktywność tygodniowa (\(recentWeekCount) tygodni)"
         }
+
+        let headerTitleValue: String
+        let weeklyStreakTitleValue: String
+        let checkpointTitleValue: String
+        let recordsTitleValue: String
+        let longestTargetLabelValue: String
+        let favoritesTitleValue: String
+        let favoriteTargetLabelValue: String
+        let yearSummaryTitleValue: String
+        let sessionsCardTitleValue: String
+        switch focusCategory {
+        case .priest:
+            headerTitleValue = "Statystyki Margaretki"
+            weeklyStreakTitleValue = "Seria tygodni Margaretki"
+            checkpointTitleValue = "Checkpoint Margaretki"
+            recordsTitleValue = "Rekordy Margaretki"
+            longestTargetLabelValue = "Kapłan w najdłuższej modlitwie"
+            favoritesTitleValue = "Ulubione w Margaretce"
+            favoriteTargetLabelValue = "Kapłan"
+            yearSummaryTitleValue = "Podsumowanie roku Margaretki"
+            sessionsCardTitleValue = "Sesje za kapłanów"
+        case .person:
+            headerTitleValue = "Statystyki osób"
+            weeklyStreakTitleValue = "Seria tygodni (osoby)"
+            checkpointTitleValue = "Checkpoint modlitwy za osoby"
+            recordsTitleValue = "Rekordy modlitwy za osoby"
+            longestTargetLabelValue = "Osoba w najdłuższej modlitwie"
+            favoritesTitleValue = "Ulubione (osoby)"
+            favoriteTargetLabelValue = "Osoba"
+            yearSummaryTitleValue = "Podsumowanie roku (osoby)"
+            sessionsCardTitleValue = "Sesje za osoby"
+        case .prayer:
+            headerTitleValue = "Statystyki modlitw"
+            weeklyStreakTitleValue = "Seria tygodni (modlitwy)"
+            checkpointTitleValue = "Checkpoint modlitw"
+            recordsTitleValue = "Rekordy modlitw"
+            longestTargetLabelValue = "Modlitwa w najdłuższej sesji"
+            favoritesTitleValue = "Ulubione modlitwy"
+            favoriteTargetLabelValue = "Modlitwa"
+            yearSummaryTitleValue = "Podsumowanie roku (modlitwy)"
+            sessionsCardTitleValue = "Sesje modlitw"
+        }
+
         let completionRateValue = PrayerStats.formatCompletionRate(completed: completedCount, total: sessionCount)
         let longestSessionTextValue = PrayerStats.formatDuration(longestSessionValue?.duration ?? 0)
         let longestTargetNameValue = longestSessionValue?.targetName
@@ -728,9 +787,17 @@ struct PrayerStats {
         nextMilestoneTitle = nextMilestoneTitleValue
         progressToNextMilestone = progressValue
         highlightText = highlightValue
+        headerTitle = headerTitleValue
         subtitle = subtitleValue
         activityTitle = activityTitleValue
-        sessionsCardTitle = "Sesje: \(focusCategory.displayName)"
+        weeklyStreakTitle = weeklyStreakTitleValue
+        checkpointTitle = checkpointTitleValue
+        recordsTitle = recordsTitleValue
+        longestTargetLabel = longestTargetLabelValue
+        favoritesTitle = favoritesTitleValue
+        favoriteTargetLabel = favoriteTargetLabelValue
+        yearSummaryTitle = yearSummaryTitleValue
+        sessionsCardTitle = sessionsCardTitleValue
         categoryCounts = categoryCountsValue
         favoritePrayer = favoritePrayerValue
         favoritePriestTarget = PrayerStats.favoriteTargetName(in: primaryCompletedSessions)

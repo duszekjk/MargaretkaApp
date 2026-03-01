@@ -23,6 +23,28 @@ enum PrayerTargetCategory: String, Codable, CaseIterable, Identifiable {
             return "Modlitwy"
         }
     }
+
+    func notificationTitle(for targetName: String) -> String {
+        let trimmed = targetName.trimmingCharacters(in: .whitespacesAndNewlines)
+        switch self {
+        case .prayer:
+            return trimmed.isEmpty ? "Czas na modlitwę" : "Modlitwa: \(trimmed)"
+        case .person, .priest:
+            return trimmed.isEmpty ? "Czas na modlitwę" : "Pomódl się za \(trimmed)"
+        }
+    }
+
+    func notificationMessage(for targetName: String) -> String {
+        let trimmed = targetName.trimmingCharacters(in: .whitespacesAndNewlines)
+        switch self {
+        case .priest:
+            return trimmed.isEmpty ? "Jest czas na twoją margaretkę." : "Jest czas na twoją margaretkę za \(trimmed)"
+        case .person:
+            return trimmed.isEmpty ? "Jest czas na modlitwę za osobę." : "Jest czas na modlitwę za osobę: \(trimmed)"
+        case .prayer:
+            return trimmed.isEmpty ? "Jest czas na modlitwę." : "Jest czas na modlitwę: \(trimmed)"
+        }
+    }
 }
 
 struct Priest: Identifiable, Hashable, Codable {
@@ -189,6 +211,20 @@ struct Priest: Identifiable, Hashable, Codable {
         notificationMessage = try container.decode(String.self, forKey: .notificationMessage)
         notificationSound = try container.decodeIfPresent(String.self, forKey: .notificationSound)
         notificationTypeId = try container.decodeIfPresent(String.self, forKey: .notificationTypeId) ?? "Priest"
+
+        let loweredTitle = notificationTitle.lowercased()
+        let loweredMessage = notificationMessage.lowercased()
+        let shouldNormalizeNotifications =
+            notificationTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || notificationMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || (category != .priest && loweredMessage.contains("margaretk"))
+            || (category == .prayer && loweredTitle.contains("pomodl sie za"))
+
+        if shouldNormalizeNotifications {
+            let display = displayName
+            notificationTitle = category.notificationTitle(for: display)
+            notificationMessage = category.notificationMessage(for: display)
+        }
     }
 
     func encode(to encoder: Encoder) throws {
