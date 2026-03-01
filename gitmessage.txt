@@ -1,1 +1,1 @@
-chore: pre-change checkpoint (brewiarz meta-refresh index fallback)
+fix: accept iii officium index and meta-refresh fallback

@@ -90,9 +90,13 @@ actor BrewiarzURLResolver {
         }
 
         let indexURL: URL
-        if let resolvedIndex = firstOfficiumIndexURL(in: dzisHTML, baseURL: dzisFinalURL, date: date) {
-            print("✅ Brewiarz picked officium index: \(resolvedIndex.absoluteString)")
-            indexURL = resolvedIndex
+        if let resolvedIndex = firstOfficiumIndexURL(in: dzisHTML, baseURL: dzisFinalURL, date: date),
+           let normalizedIndex = normalizeOfficiumIndexURL(resolvedIndex) {
+            print("✅ Brewiarz picked officium index: \(normalizedIndex.absoluteString)")
+            indexURL = normalizedIndex
+        } else if let normalizedFromRefresh = normalizeOfficiumIndexURL(dzisFinalURL) {
+            print("✅ Brewiarz using refreshed officium index: \(normalizedFromRefresh.absoluteString)")
+            indexURL = normalizedFromRefresh
         } else {
             print("⛔️ Brewiarz no officium index found for \(dateKey)")
             throw ResolveError.missingOfficiumIndex(dateKey: dateKey)
@@ -124,7 +128,7 @@ actor BrewiarzURLResolver {
         for anchor in anchors {
             guard let resolvedURL = resolveURL(href: anchor.href, baseURL: indexFinalURL, date: date) else { continue }
             guard resolvedURL.host == "brewiarz.pl" else { continue }
-            guard resolvedURL.path.contains("/i_") else { continue }
+            guard hasOfficiumPath(resolvedURL.path) else { continue }
             guard resolvedURL.path.lowercased().hasSuffix(".php3") else { continue }
             guard resolvedURL.lastPathComponent.lowercased() != "access.php3" else { continue }
 
@@ -137,7 +141,7 @@ actor BrewiarzURLResolver {
             }
         }
 
-        let chosenIndexURL = isValidIndexURL(indexFinalURL) ? indexFinalURL : indexURL
+        let chosenIndexURL = normalizeOfficiumIndexURL(indexFinalURL) ?? indexURL
         guard isValidIndexURL(chosenIndexURL) else {
             throw ResolveError.invalidOfficiumIndex(url: chosenIndexURL.absoluteString)
         }
@@ -196,7 +200,7 @@ actor BrewiarzURLResolver {
             guard let hrefRange = Range(match.range(at: 2), in: html) else { continue }
             let rawHref = String(html[hrefRange])
             let href = decodeHTMLEntities(rawHref)
-            if href.lowercased().contains("index.php3?l=i") {
+            if href.lowercased().contains("index.php3") {
                 return resolveURL(href: href, baseURL: baseURL, date: date)
             }
         }
@@ -259,7 +263,7 @@ actor BrewiarzURLResolver {
     }
 
     private func fallbackIndexURL(in html: String, baseURL: URL, date: Date) -> URL? {
-        let pattern = "(https?://[^\\s'\"<>]*index\\.php3\\?l=i[^\\s'\"<>]*)|(\\.{2}/[^\\s'\"<>]*index\\.php3\\?l=i[^\\s'\"<>]*)|(/[^\\s'\"<>]*index\\.php3\\?l=i[^\\s'\"<>]*)"
+        let pattern = "(https?://[^\\s'\"<>]*index\\.php3[^\\s'\"<>]*)|(\\.{2}/[^\\s'\"<>]*index\\.php3[^\\s'\"<>]*)|(/[^\\s'\"<>]*index\\.php3[^\\s'\"<>]*)"
         guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
             return nil
         }
@@ -269,7 +273,7 @@ actor BrewiarzURLResolver {
             guard let matchRange = Range(match.range, in: html) else { continue }
             let rawHref = String(html[matchRange])
             let href = decodeHTMLEntities(rawHref)
-            if href.lowercased().contains("index.php3?l=i") {
+            if href.lowercased().contains("index.php3") {
                 return resolveURL(href: href, baseURL: baseURL, date: date)
             }
         }
@@ -297,7 +301,7 @@ actor BrewiarzURLResolver {
         if href.hasPrefix("/") {
             return URL(string: "https://brewiarz.pl\(href)")
         }
-        if href.hasPrefix("../"), !baseURL.path.contains("/i_") {
+        if href.hasPrefix("../"), !hasOfficiumPath(baseURL.path) {
             let trimmed = stripLeadingDotDots(from: href)
             let yearSuffix = Self.yearSuffix(for: date)
             return URL(string: "https://brewiarz.pl/i_\(yearSuffix)/\(trimmed)")
@@ -392,11 +396,33 @@ actor BrewiarzURLResolver {
         return requestedDay <= maxSupportedDate(from: now)
     }
 
+    private func hasOfficiumPath(_ path: String) -> Bool {
+        let lowercased = path.lowercased()
+        return lowercased.contains("/i_")
+            || lowercased.contains("/ii_")
+            || lowercased.contains("/iii_")
+            || lowercased.contains("/iv_")
+    }
+
+    private func normalizeOfficiumIndexURL(_ url: URL) -> URL? {
+        guard url.host == "brewiarz.pl" else { return nil }
+        guard hasOfficiumPath(url.path) else { return nil }
+        guard url.lastPathComponent.lowercased() == "index.php3" else { return nil }
+
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        var queryItems = components?.queryItems ?? []
+        if !queryItems.contains(where: { $0.name.lowercased() == "l" }) {
+            queryItems.append(URLQueryItem(name: "l", value: "i"))
+            components?.queryItems = queryItems
+        }
+        return components?.url
+    }
+
     private func loadCache(dateKey: String) -> BrewiarzDailyLinks? {
         guard let data = UserDefaults.standard.data(forKey: cacheKey),
               let cached = try? JSONDecoder().decode(BrewiarzDailyLinks.self, from: data),
-              cached.chosenOfficiumIndexURL.lowercased().contains("index.php3?l=i"),
-              !cached.chosenOfficiumIndexURL.lowercased().contains("wyb"),
+              let cachedURL = URL(string: cached.chosenOfficiumIndexURL),
+              isValidIndexURL(cachedURL),
               !cached.prayerLinks.isEmpty,
               cached.dateKey == dateKey else {
             return nil
@@ -411,7 +437,8 @@ actor BrewiarzURLResolver {
 
     func isValidIndexURL(_ url: URL) -> Bool {
         let lowercased = url.absoluteString.lowercased()
-        return lowercased.contains("index.php3?l=i")
+        return hasOfficiumPath(url.path)
+            && url.lastPathComponent.lowercased() == "index.php3"
             && !lowercased.contains("wyb")
             && !lowercased.contains("access.php3")
     }

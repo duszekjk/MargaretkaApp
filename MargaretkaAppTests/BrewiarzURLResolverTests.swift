@@ -113,11 +113,14 @@ final class BrewiarzURLResolverTests: XCTestCase {
         let resolver = await BrewiarzURLResolver.shared
         let accessURL = URL(string: "https://brewiarz.pl/access.php3")!
         let validURL = URL(string: "https://brewiarz.pl/ii_26/2802p/index.php3?l=i")!
+        let validNoQueryURL = URL(string: "https://brewiarz.pl/iii_26/0103/index.php3")!
 
         let accessValid = await resolver.isValidIndexURL(accessURL)
         let indexValid = await resolver.isValidIndexURL(validURL)
+        let indexNoQueryValid = await resolver.isValidIndexURL(validNoQueryURL)
 
         XCTAssertFalse(accessValid)
         XCTAssertTrue(indexValid)
+        XCTAssertTrue(indexNoQueryValid)
     }
 }
