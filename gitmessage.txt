@@ -1,1 +1,1 @@
-stats: scalable activity plot and category switch buttons
+chore: pre-change checkpoint (context labels + notifications)
