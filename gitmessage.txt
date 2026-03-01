@@ -1,1 +1,1 @@
-chore: pre-change checkpoint (stats activity plot + category buttons)
+stats: scalable activity plot and category switch buttons

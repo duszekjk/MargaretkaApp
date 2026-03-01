@@ -11,9 +11,15 @@ struct StatsView: View {
     @Environment(\.colorScheme) private var colorScheme
     @StateObject private var sessionStore = PrayerSessionStore()
     @State private var range: StatsRange = .last12Weeks
+    @State private var focusedCategory: PrayerTargetCategory = .priest
 
     var body: some View {
-        let summary = PrayerStats(sessions: sessionStore.sessions, range: range, referenceDate: Date())
+        let summary = PrayerStats(
+            sessions: sessionStore.sessions,
+            range: range,
+            referenceDate: Date(),
+            focusCategory: focusedCategory
+        )
 
         ScrollView {
             VStack(spacing: 20) {
@@ -27,7 +33,7 @@ struct StatsView: View {
                 .pickerStyle(.segmented)
 
                 HStack(spacing: 16) {
-                    statCard(title: "Sesje za kapłanów", value: "\(summary.totalSessions)", detail: "Ukończone: \(summary.completedSessions)")
+                    statCard(title: summary.sessionsCardTitle, value: "\(summary.totalSessions)", detail: "Ukończone: \(summary.completedSessions)")
                     statCard(title: "Aktywne tygodnie", value: "\(summary.activeWeeks)", detail: "Skuteczność: \(summary.completionRateText)")
                 }
 
@@ -242,18 +248,22 @@ struct StatsView: View {
             Text(summary.activityTitle)
                 .font(.headline)
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .bottom, spacing: 10) {
-                    ForEach(summary.recentWeeks) { week in
-                        VStack(spacing: 6) {
-                            Capsule()
-                                .fill(week.value == 0 ? Color.gray.opacity(0.25) : Color(red: 0.2, green: 0.45, blue: 0.85))
-                                .frame(height: max(10, week.height))
-                            Text(week.label)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+            if summary.recentWeeks.count > 15 {
+                denseActivityPlot(weeks: summary.recentWeeks)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .bottom, spacing: 10) {
+                        ForEach(summary.recentWeeks) { week in
+                            VStack(spacing: 6) {
+                                Capsule()
+                                    .fill(week.value == 0 ? Color.gray.opacity(0.25) : Color(red: 0.2, green: 0.45, blue: 0.85))
+                                    .frame(height: max(10, week.height))
+                                Text(week.label)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .frame(width: 24)
                         }
-                        .frame(width: 24)
                     }
                 }
             }
@@ -264,34 +274,114 @@ struct StatsView: View {
 
     private func categoriesCard(summary: PrayerStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Dodatkowe modlitwy (poza Margaretką)")
+            Text("Tryb statystyk")
                 .font(.headline)
 
-            if summary.otherCategories.allSatisfy({ $0.count == 0 }) {
+            HStack(spacing: 10) {
+                statsCategoryButton(title: "Księża", count: summary.categoryCounts[.priest, default: 0], category: .priest)
+                statsCategoryButton(title: "Osoby", count: summary.categoryCounts[.person, default: 0], category: .person)
+                statsCategoryButton(title: "Modlitwy", count: summary.categoryCounts[.prayer, default: 0], category: .prayer)
+            }
+
+            if summary.categoryCounts[.person, default: 0] == 0 && summary.categoryCounts[.prayer, default: 0] == 0 {
                 Text("Brak dodatkowych modlitw w tym okresie.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-            } else {
-                ForEach(summary.otherCategories, id: \.category) { entry in
-                    if entry.count > 0 {
-                        HStack {
-                            Text(entry.title)
-                                .font(.subheadline.weight(.semibold))
-                            Spacer()
-                            Text("\(entry.count)")
-                                .font(.subheadline)
-                        }
-                        .padding(10)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(rowFillColor)
-                        )
-                    }
-                }
             }
         }
         .padding(16)
         .background(cardBackground(colors: [Color.white.opacity(0.7), Color.white.opacity(0.35)]))
+    }
+
+    private func statsCategoryButton(title: String, count: Int, category: PrayerTargetCategory) -> some View {
+        let isActive = focusedCategory == category
+        return Button {
+            focusedCategory = category
+        } label: {
+            VStack(spacing: 4) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                Text("\(count)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isActive ? Color(red: 0.2, green: 0.45, blue: 0.85).opacity(0.28) : rowFillColor)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isActive ? Color(red: 0.2, green: 0.45, blue: 0.85) : Color.clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func denseActivityPlot(weeks: [PrayerStats.WeekCount]) -> some View {
+        let values = weeks.map(\.value)
+        let maxValue = max(values.max() ?? 1, 1)
+        return VStack(spacing: 8) {
+            GeometryReader { proxy in
+                let width = proxy.size.width
+                let height = proxy.size.height
+
+                Canvas { context, size in
+                    guard values.count > 1 else { return }
+
+                    var fillPath = Path()
+                    fillPath.move(to: CGPoint(x: 0, y: size.height))
+
+                    for (idx, value) in values.enumerated() {
+                        let x = width * CGFloat(idx) / CGFloat(values.count - 1)
+                        let normalized = CGFloat(value) / CGFloat(maxValue)
+                        let y = height - (normalized * (height - 8)) - 4
+                        if idx == 0 {
+                            fillPath.addLine(to: CGPoint(x: x, y: y))
+                        } else {
+                            fillPath.addLine(to: CGPoint(x: x, y: y))
+                        }
+                    }
+                    fillPath.addLine(to: CGPoint(x: width, y: size.height))
+                    fillPath.closeSubpath()
+
+                    context.fill(
+                        fillPath,
+                        with: .linearGradient(
+                            Gradient(colors: [Color(red: 0.2, green: 0.45, blue: 0.85).opacity(0.35), .clear]),
+                            startPoint: CGPoint(x: 0, y: 0),
+                            endPoint: CGPoint(x: 0, y: height)
+                        )
+                    )
+
+                    var linePath = Path()
+                    for (idx, value) in values.enumerated() {
+                        let x = width * CGFloat(idx) / CGFloat(values.count - 1)
+                        let normalized = CGFloat(value) / CGFloat(maxValue)
+                        let y = height - (normalized * (height - 8)) - 4
+                        if idx == 0 {
+                            linePath.move(to: CGPoint(x: x, y: y))
+                        } else {
+                            linePath.addLine(to: CGPoint(x: x, y: y))
+                        }
+                    }
+                    context.stroke(linePath, with: .color(Color(red: 0.2, green: 0.45, blue: 0.85)), lineWidth: 2)
+                }
+            }
+            .frame(height: 90)
+
+            HStack {
+                Text(weeks.first?.label ?? "-")
+                Spacer()
+                Text("\(weeks.count) tyg")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text(weeks.last?.label ?? "-")
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+        }
     }
 
     private func milestonesCard(summary: PrayerStats) -> some View {
@@ -487,6 +577,8 @@ struct PrayerStats {
     let highlightText: String?
     let subtitle: String
     let activityTitle: String
+    let sessionsCardTitle: String
+    let categoryCounts: [PrayerTargetCategory: Int]
     let favoritePrayer: String?
     let favoritePriestTarget: String?
     let favoriteTimeOfDay: String?
@@ -501,7 +593,7 @@ struct PrayerStats {
     let yearTotalDurationText: String
     let yearPeakMonth: String
 
-    init(sessions: [PrayerSession], range: StatsRange, referenceDate: Date) {
+    init(sessions: [PrayerSession], range: StatsRange, referenceDate: Date, focusCategory: PrayerTargetCategory) {
         let calendar = Calendar.current
         let rangeStart = range.startDate(relativeTo: referenceDate, calendar: calendar)
         let filteredSessions = sessions.filter { session in
@@ -509,25 +601,30 @@ struct PrayerStats {
             return session.endedAt >= start
         }
 
-        let priestSessions = filteredSessions.filter { $0.targetCategory == .priest }
-        let priestCompletedSessions = priestSessions.filter { $0.completed }
-        let otherSessions = filteredSessions.filter { $0.targetCategory != .priest }
+        var categoryCountsValue: [PrayerTargetCategory: Int] = [:]
+        for session in filteredSessions {
+            categoryCountsValue[session.targetCategory, default: 0] += 1
+        }
 
-        let perWeek = PrayerStats.sessionsPerWeek(priestSessions, calendar: calendar)
-        let sessionCount = priestSessions.count
-        let completedCount = priestCompletedSessions.count
+        let primarySessions = filteredSessions.filter { $0.targetCategory == focusCategory }
+        let primaryCompletedSessions = primarySessions.filter { $0.completed }
+        let otherSessions = filteredSessions.filter { $0.targetCategory != focusCategory }
+
+        let perWeek = PrayerStats.sessionsPerWeek(primarySessions, calendar: calendar)
+        let sessionCount = primarySessions.count
+        let completedCount = primaryCompletedSessions.count
         let activeDays = perWeek.keys.count
 
-        let activeWeeksValue = PrayerStats.activeWeeks(from: priestCompletedSessions, calendar: calendar)
-        let weeklyStreakValue = PrayerStats.currentWeeklyStreak(from: referenceDate, sessions: priestCompletedSessions, calendar: calendar)
-        let longestWeeklyStreakValue = PrayerStats.longestWeeklyStreak(in: priestCompletedSessions, calendar: calendar)
-        let totalDurationValue = priestSessions.reduce(0) { $0 + $1.duration }
+        let activeWeeksValue = PrayerStats.activeWeeks(from: primaryCompletedSessions, calendar: calendar)
+        let weeklyStreakValue = PrayerStats.currentWeeklyStreak(from: referenceDate, sessions: primaryCompletedSessions, calendar: calendar)
+        let longestWeeklyStreakValue = PrayerStats.longestWeeklyStreak(in: primaryCompletedSessions, calendar: calendar)
+        let totalDurationValue = primarySessions.reduce(0) { $0 + $1.duration }
         let averageDurationValue = sessionCount > 0 ? totalDurationValue / Double(sessionCount) : 0
-        let totalSubprayersValue = PrayerStats.totalCompletedSubprayers(priestSessions)
+        let totalSubprayersValue = PrayerStats.totalCompletedSubprayers(primarySessions)
         let averageSubprayersValue = sessionCount > 0 ? Double(totalSubprayersValue) / Double(sessionCount) : 0
-        let longestSessionValue = priestSessions.max(by: { $0.duration < $1.duration })
+        let longestSessionValue = primarySessions.max(by: { $0.duration < $1.duration })
 
-        let recentWeekCount = PrayerStats.recentWeekCount(for: range, sessions: priestSessions, calendar: calendar)
+        let recentWeekCount = PrayerStats.recentWeekCount(for: range, sessions: primarySessions, calendar: calendar)
         let recentWeekKeys = PrayerStats.lastWeeks(count: recentWeekCount, referenceDate: referenceDate, calendar: calendar)
         let maxValue = max(recentWeekKeys.map { perWeek[$0, default: 0] }.max() ?? 1, 1)
         let recentWeeksValue = recentWeekKeys.map { key in
@@ -536,7 +633,7 @@ struct PrayerStats {
             return WeekCount(label: PrayerStats.weekLabel(for: key, calendar: calendar), value: value, height: height)
         }
 
-        let timeBucketsValue = PrayerStats.timeBuckets(priestSessions)
+        let timeBucketsValue = PrayerStats.timeBuckets(primarySessions)
 
         let perCategory = PrayerStats.countByCategory(otherSessions)
         let categoriesValue = PrayerTargetCategory.allCases
@@ -565,18 +662,19 @@ struct PrayerStats {
             progressValue = 1.0
         }
 
-        let favoritePrayerValue = PrayerStats.favoritePrayerName(in: priestCompletedSessions)
-        let favoriteTimeOfDayValue = PrayerStats.favoriteTimeBucketName(in: priestSessions)
+        let favoritePrayerValue = PrayerStats.favoritePrayerName(in: primaryCompletedSessions)
+        let favoriteTimeOfDayValue = PrayerStats.favoriteTimeBucketName(in: primarySessions)
 
         let totalDurationTextValue = PrayerStats.formatDuration(totalDurationValue)
         let averageDurationTextValue = PrayerStats.formatDuration(averageDurationValue)
         let averageSubprayersTextValue = PrayerStats.formatSubprayers(averageSubprayersValue)
 
         let highlightValue: String?
+        let targetNoun = focusCategory.displayName.lowercased()
         if sessionCount == 0 {
-            highlightValue = "Statystyki Margaretki uruchomią się po pierwszej modlitwie za kapłana."
+            highlightValue = "Statystyki uruchomią się po pierwszej modlitwie (\(targetNoun))."
         } else if completedCount >= 7 {
-            highlightValue = "Masz \(weeklyStreakValue) tygodni z modlitwą za kapłanów."
+            highlightValue = "Masz \(weeklyStreakValue) tygodni aktywności (\(targetNoun))."
         } else if sessionCount >= 3 {
             highlightValue = "Świetny start - \(sessionCount) sesje modlitwy."
         } else {
@@ -586,13 +684,13 @@ struct PrayerStats {
         let subtitleValue: String
         switch range {
         case .allTime:
-            subtitleValue = "Modlitwa za kapłanów – cały czas"
+            subtitleValue = "\(focusCategory.displayName) – cały czas"
         case .last8Weeks:
-            subtitleValue = "Modlitwa za kapłanów – ostatnie 8 tygodni"
+            subtitleValue = "\(focusCategory.displayName) – ostatnie 8 tygodni"
         case .last12Weeks:
-            subtitleValue = "Modlitwa za kapłanów – ostatnie 12 tygodni"
+            subtitleValue = "\(focusCategory.displayName) – ostatnie 12 tygodni"
         case .last52Weeks:
-            subtitleValue = "Modlitwa za kapłanów – ostatnie 52 tygodnie"
+            subtitleValue = "\(focusCategory.displayName) – ostatnie 52 tygodnie"
         }
         let activityTitleValue: String
         if range == .allTime {
@@ -606,7 +704,7 @@ struct PrayerStats {
 
         let yearWindow = PrayerStats.yearWindow(for: referenceDate, calendar: calendar)
         let shouldShowYearSummaryValue = yearWindow.contains(calendar.startOfDay(for: referenceDate))
-        let yearlySessions = PrayerStats.sessionsInYear(priestSessions, referenceDate: referenceDate, calendar: calendar)
+        let yearlySessions = PrayerStats.sessionsInYear(primarySessions, referenceDate: referenceDate, calendar: calendar)
         let yearTotalSessionsValue = yearlySessions.count
         let yearTotalDurationTextValue = PrayerStats.formatDuration(yearlySessions.reduce(0) { $0 + $1.duration })
         let yearPeakMonthValue = PrayerStats.peakMonthName(for: yearlySessions, calendar: calendar)
@@ -632,8 +730,10 @@ struct PrayerStats {
         highlightText = highlightValue
         subtitle = subtitleValue
         activityTitle = activityTitleValue
+        sessionsCardTitle = "Sesje: \(focusCategory.displayName)"
+        categoryCounts = categoryCountsValue
         favoritePrayer = favoritePrayerValue
-        favoritePriestTarget = PrayerStats.favoriteTargetName(in: priestCompletedSessions)
+        favoritePriestTarget = PrayerStats.favoriteTargetName(in: primaryCompletedSessions)
         favoriteTimeOfDay = favoriteTimeOfDayValue
         totalDurationText = totalDurationTextValue
         averageDurationText = averageDurationTextValue
