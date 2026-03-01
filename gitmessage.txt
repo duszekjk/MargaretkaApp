@@ -1,1 +1,1 @@
-fix: make stats and notifications category-aware
+chore: pre-change checkpoint (brewiarz meta-refresh index fallback)
