@@ -1,1 +1,1 @@
-adding checkpoint for existing uncommitted work
+adding configurable swipe gestures for prayer navigation

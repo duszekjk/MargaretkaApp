@@ -40,6 +40,8 @@ struct PrayerFlowView: View {
     @Namespace private var namespace
     @Namespace private var brewiarzNamespace
     @State private var didLogAppear = false
+    @AppStorage("prayerSwipeMode") private var prayerSwipeModeRaw: String = PrayerSwipeMode.both.rawValue
+    @GestureState private var prayerSwipeTranslation: CGSize = .zero
     var priestsAndPrayers: [Priest] {
         scheduleData.items.filter { $0.category == selectedCategory }
     }
@@ -180,6 +182,69 @@ struct PrayerFlowView: View {
         guard let data = selectedPriest?.photoData,
               let uiImage = UIImage(data: data) else { return nil }
         return uiImage
+    }
+
+    private var prayerSwipeMode: PrayerSwipeMode {
+        PrayerSwipeMode(rawValue: prayerSwipeModeRaw) ?? .both
+    }
+
+    private var prayerCardText: Text {
+        if activeIndex == 0 {
+            return Text(startPageText)
+        }
+
+        if activeIndex <= flattenedPrayerSymbols.count,
+           let prayer = allPrayers[flattenedPrayerIds[activeIndex - 1]] {
+            return Text(prayer.text + "\n\n" + prayer.name)
+        }
+
+        return Text("Koniec 🙏")
+    }
+
+    private func prayerSwipeTarget(for translation: CGSize) -> Int? {
+        let threshold: CGFloat = 80
+        let horizontal = abs(translation.width)
+        let vertical = abs(translation.height)
+
+        let isHorizontalSwipe = prayerSwipeMode == .horizontal || (prayerSwipeMode == .both && horizontal >= vertical)
+
+        if isHorizontalSwipe {
+            if translation.width >= threshold {
+                return max(activeIndex - 1, 0)
+            }
+            if translation.width <= -threshold {
+                return min(activeIndex + 1, lastDisplayIndex)
+            }
+        } else {
+            if translation.height <= -threshold {
+                return min(activeIndex + 1, lastDisplayIndex)
+            }
+            if translation.height >= threshold {
+                return max(activeIndex - 1, 0)
+            }
+        }
+
+        return nil
+    }
+
+    private var prayerSwipeGesture: some Gesture {
+        DragGesture(minimumDistance: 18)
+            .updating($prayerSwipeTranslation) { value, state, _ in
+                let horizontal = abs(value.translation.width)
+                let vertical = abs(value.translation.height)
+                let isHorizontalSwipe = prayerSwipeMode == .horizontal || (prayerSwipeMode == .both && horizontal >= vertical)
+
+                if isHorizontalSwipe {
+                    state = CGSize(width: max(min(value.translation.width, 120), -120), height: 0)
+                } else {
+                    state = CGSize(width: 0, height: max(min(value.translation.height, 120), -120))
+                }
+            }
+            .onEnded { value in
+                guard let targetIndex = prayerSwipeTarget(for: value.translation),
+                      targetIndex != activeIndex else { return }
+                moveToIndex(targetIndex, animated: true)
+            }
     }
 
     var body: some View {
@@ -364,25 +429,24 @@ struct PrayerFlowView: View {
                                     } else {
                                         ScrollView {
                                             ZStack {
-                                                Text(activeIndex == 0
-                                                     ? startPageText
-                                                     : (activeIndex <= flattenedPrayerSymbols.count
-                                                            ? ((allPrayers[flattenedPrayerIds[activeIndex - 1]]?.text ?? "Modlitwa") + "\n\n\((allPrayers[flattenedPrayerIds[activeIndex - 1]]?.name ?? "Modlitwa"))")
-                                                            : "Koniec 🙏"))
-                                                .lineLimit(30)
-                                                .font(.headline)
-                                                .multilineTextAlignment(.center)
-                                                .padding()
-                                                .id(activeIndex)
-                                                .transition(.asymmetric(
-                                                    insertion: .move(edge: isAdvancing ? .trailing : .leading).combined(with: .opacity),
-                                                    removal: .move(edge: isAdvancing ? .leading : .trailing).combined(with: .opacity)
-                                                ))
+                                                prayerCardText
+                                                    .lineLimit(30)
+                                                    .font(.headline)
+                                                    .multilineTextAlignment(.center)
+                                                    .padding()
+                                                    .offset(prayerSwipeTranslation)
+                                                    .opacity(1 - min(0.35, max(abs(prayerSwipeTranslation.width), abs(prayerSwipeTranslation.height)) / 360))
+                                                    .id(activeIndex)
+                                                    .transition(.asymmetric(
+                                                        insertion: .move(edge: isAdvancing ? .trailing : .leading).combined(with: .opacity),
+                                                        removal: .move(edge: isAdvancing ? .leading : .trailing).combined(with: .opacity)
+                                                    ))
                                             }
                                             .animation(.easeInOut(duration: 0.25), value: activeIndex)
                                         }
                                     }
                                 }
+                                .gesture(prayerSwipeGesture)
                                     .frame(width:UIScreen.main.bounds.width-10, height: 400)
                                 
                             )

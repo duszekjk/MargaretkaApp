@@ -14,11 +14,25 @@ struct SettingsMenuView: View {
     @Binding var showOsoby: Bool
     @Binding var showCzymJest: Bool
     @Binding var showJakSie: Bool
+    @AppStorage("prayerSwipeMode") private var prayerSwipeModeRaw: String = PrayerSwipeMode.both.rawValue
     
     var body: some View {
         VStack
         {
             List {
+                Section("Przesuwanie modlitw") {
+                    Picker("Tryb", selection: $prayerSwipeModeRaw) {
+                        ForEach(PrayerSwipeMode.allCases) { mode in
+                            Text(mode.title).tag(mode.rawValue)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Text("W górę działa jak TikTok, w prawo jak Stories, a oba łączy oba gesty.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 NavigationLink("Modlitwy (pojedyncze)", destination: PrayerListSettingsView())
 
                 NavigationLink(
