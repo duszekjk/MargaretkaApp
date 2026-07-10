@@ -15,6 +15,7 @@ struct SettingsMenuView: View {
     @Binding var showCzymJest: Bool
     @Binding var showJakSie: Bool
     @AppStorage("prayerSwipeMode") private var prayerSwipeModeRaw: String = PrayerSwipeMode.both.rawValue
+    @AppStorage("prayerCompactView") private var prayerCompactView: Bool = false
     
     var body: some View {
         VStack
@@ -29,6 +30,14 @@ struct SettingsMenuView: View {
                     .pickerStyle(.segmented)
 
                     Text("W górę działa jak TikTok, w prawo jak Stories, a oba łączy oba gesty.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("Widok") {
+                    Toggle("Compact view", isOn: $prayerCompactView)
+
+                    Text("Zmniejsza elementy listy modlitw i pokazuje 4 razy więcej na jednym rzędzie.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

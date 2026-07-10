@@ -41,6 +41,7 @@ struct PrayerFlowView: View {
     @Namespace private var brewiarzNamespace
     @State private var didLogAppear = false
     @AppStorage("prayerSwipeMode") private var prayerSwipeModeRaw: String = PrayerSwipeMode.both.rawValue
+    @AppStorage("prayerCompactView") private var prayerCompactView: Bool = false
     @GestureState private var prayerSwipeTranslation: CGSize = .zero
     var priestsAndPrayers: [Priest] {
         scheduleData.items.filter { $0.category == selectedCategory }
@@ -142,13 +143,15 @@ struct PrayerFlowView: View {
         return min(max(activeIndex, 0), count)
     }
 
+    var scrollerRowLength: Int { prayerCompactView ? 56 : 14 }
+
     var arrangedInS: [[String]] {
-        var flat = displayPrayerSymbols
+        let flat = displayPrayerSymbols
         var rows: [[String]] = []
 
-        for i in stride(from: 0, to: flat.count, by: 14) {
-            var row = Array(flat[i..<min(i+14, flat.count)])
-            if i % 2 == 1 {
+        for i in stride(from: 0, to: flat.count, by: scrollerRowLength) {
+            var row = Array(flat[i..<min(i+scrollerRowLength, flat.count)])
+            if (i / scrollerRowLength) % 2 == 1 {
                 row.reverse()
             }
             rows.append(row)
@@ -457,6 +460,7 @@ struct PrayerFlowView: View {
                         rows: arrangedInS,
                         symbols: displayPrayerSymbols,
                         prayerNames: displayPrayerNames,
+                        compactView: prayerCompactView,
                         activeIndex: $activeIndex,
                         onIndexChange: { index in
                             moveToIndex(index, animated: true)
@@ -856,6 +860,7 @@ struct PrayerTouchScrollerView: View {
     let rows: [[String]]
     let symbols: [String] 
     let prayerNames: [String?]
+    let compactView: Bool
     let rowLength: Int
     let onIndexChange: ((Int) -> Void)?
 
@@ -865,12 +870,13 @@ struct PrayerTouchScrollerView: View {
     @State private var frames: [Int: CGRect] = [:]
     @State private var lastSwitchAt: TimeInterval = 0
 
-    init(rows: [[String]], symbols: [String], prayerNames: [String?], activeIndex: Binding<Int>, onIndexChange: ((Int) -> Void)? = nil) {
+    init(rows: [[String]], symbols: [String], prayerNames: [String?], compactView: Bool, activeIndex: Binding<Int>, onIndexChange: ((Int) -> Void)? = nil) {
         self.rows = rows
         self.symbols = symbols
         self.prayerNames = prayerNames
+        self.compactView = compactView
         self._activeIndex = activeIndex
-        self.rowLength = 14
+        self.rowLength = compactView ? 56 : 14
         self.onIndexChange = onIndexChange
     }
 
@@ -891,7 +897,7 @@ struct PrayerTouchScrollerView: View {
 
                             if index < row.count {
                                 let symbol = row[index]
-                                let padding = paddingFor(row: rowIndex, index: index, count: 14)
+                                let padding = paddingFor(row: rowIndex, index: index, count: rowLength)
                                 
                                 let isActive = flatIndex == activeIndex
                                 ZStack{
@@ -905,14 +911,14 @@ struct PrayerTouchScrollerView: View {
                                                 )
                                         }
                                     }
-                                    .frame(width: 25, height: 25)
+                                    .frame(width: compactView ? 6 : 25, height: compactView ? 6 : 25)
                                     if(isActive)
                                     {
                                         Image(systemName: symbol)
                                             .resizable()
                                             .scaledToFit()
-                                            .padding(10)
-                                            .frame(width: 45, height:45)
+                                            .padding(compactView ? 2.5 : 10)
+                                            .frame(width: compactView ? 11 : 45, height: compactView ? 11 : 45)
                                             .clipShape(Circle())
                                             .glassEffect(.regular.tint(Color.green.opacity(0.4)))
                                             .padding(.top, padding.top)
@@ -923,8 +929,8 @@ struct PrayerTouchScrollerView: View {
                                         Image(systemName: symbol)
                                             .resizable()
                                             .scaledToFit()
-                                            .padding(5)
-                                            .frame(width: 25, height:25)
+                                            .padding(compactView ? 1.25 : 5)
+                                            .frame(width: compactView ? 6 : 25, height: compactView ? 6 : 25)
                                             .clipShape(Circle())
                                             .glassEffect()
                                             .padding(.top, padding.top)
@@ -934,7 +940,7 @@ struct PrayerTouchScrollerView: View {
                             } else {
                                 
                                 Circle()
-                                    .frame(width: 25, height: 25)
+                                    .frame(width: compactView ? 6 : 25, height: compactView ? 6 : 25)
                                     .opacity(0)
                             }
                         }
@@ -1038,14 +1044,15 @@ struct PrayerTouchScrollerView: View {
     }
 
     func paddingFor(row: Int, index: Int, count: Int) -> (top: CGFloat, bottom: CGFloat) {
-        var top: CGFloat = 5
-        var bottom: CGFloat = 5
+        let scale: CGFloat = compactView ? 0.25 : 1.0
+        var top: CGFloat = 5 * scale
+        var bottom: CGFloat = 5 * scale
 
         if index == 0 {
-            top = -7; bottom = 13
+            top = -7 * scale; bottom = 13 * scale
         }
         if index == count - 1 {
-            top = 13; bottom = -7
+            top = 13 * scale; bottom = -7 * scale
         }
 
         return (top, bottom)
