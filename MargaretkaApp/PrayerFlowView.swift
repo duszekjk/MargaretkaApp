@@ -204,6 +204,21 @@ struct PrayerFlowView: View {
         return Text("Koniec 🙏")
     }
 
+    private func switchHaptic(from currentIndex: Int, to newIndex: Int) {
+        let fromName = prayerName(at: currentIndex)
+        let toName = prayerName(at: newIndex)
+        let isSubprayerSwitch = fromName != nil && toName != nil && fromName != toName
+        let delta = newIndex - currentIndex
+
+        if isSubprayerSwitch {
+            subprayerHaptic()
+        } else if delta == 1 {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 1.0)
+        } else if delta == -1 {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.9)
+        }
+    }
+
     private func prayerSwipeTarget(for translation: CGSize) -> Int? {
         let threshold: CGFloat = 80
         let horizontal = abs(translation.width)
@@ -246,6 +261,7 @@ struct PrayerFlowView: View {
             .onEnded { value in
                 guard let targetIndex = prayerSwipeTarget(for: value.translation),
                       targetIndex != activeIndex else { return }
+                switchHaptic(from: activeIndex, to: targetIndex)
                 moveToIndex(targetIndex, animated: true)
             }
     }
@@ -966,20 +982,9 @@ struct PrayerTouchScrollerView: View {
                                 } else if isRateLimited {
                                     UINotificationFeedbackGenerator().notificationOccurred(.error)
                                 } else {
-                                    let fromName = prayerName(at: activeIndex)
-                                    let toName = prayerName(at: index)
-                                    let isSubprayerSwitch = fromName != nil && toName != nil && fromName != toName
-
                                     updateIndex(index)
                                     lastSwitchAt = now
-
-                                    if isSubprayerSwitch {
-                                        subprayerHaptic()
-                                    } else if delta == 1 {
-                                        UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 1.0)
-                                    } else {
-                                        UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.9)
-                                    }
+                                    switchHaptic(from: activeIndex, to: index)
                                 }
                             }
                         } else {

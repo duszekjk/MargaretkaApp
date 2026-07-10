@@ -1,1 +1,1 @@
-adding compact view toggle for the prayer scroller
+restoring switch vibrations for prayer navigation
