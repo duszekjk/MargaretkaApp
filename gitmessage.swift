@@ -1,1 +1,1 @@
-removing the prayer card scroll view so swipe gestures reach the card
+adding compact view toggle for the prayer scroller
