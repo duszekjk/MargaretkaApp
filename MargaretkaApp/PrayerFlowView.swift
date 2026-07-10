@@ -427,23 +427,22 @@ struct PrayerFlowView: View {
 //                                            .opacity(isFullscreen ? 0 : 1)
                                             .allowsHitTesting(!isFullscreen)
                                     } else {
-                                        ScrollView {
-                                            ZStack {
-                                                prayerCardText
-                                                    .lineLimit(30)
-                                                    .font(.headline)
-                                                    .multilineTextAlignment(.center)
-                                                    .padding()
-                                                    .offset(prayerSwipeTranslation)
-                                                    .opacity(1 - min(0.35, max(abs(prayerSwipeTranslation.width), abs(prayerSwipeTranslation.height)) / 360))
-                                                    .id(activeIndex)
-                                                    .transition(.asymmetric(
-                                                        insertion: .move(edge: isAdvancing ? .trailing : .leading).combined(with: .opacity),
-                                                        removal: .move(edge: isAdvancing ? .leading : .trailing).combined(with: .opacity)
-                                                    ))
-                                            }
-                                            .animation(.easeInOut(duration: 0.25), value: activeIndex)
+                                        ZStack {
+                                            prayerCardText
+                                                .lineLimit(30)
+                                                .font(.headline)
+                                                .multilineTextAlignment(.center)
+                                                .padding()
+                                                .offset(prayerSwipeTranslation)
+                                                .opacity(1 - min(0.35, max(abs(prayerSwipeTranslation.width), abs(prayerSwipeTranslation.height)) / 360))
+                                                .id(activeIndex)
+                                                .transition(.asymmetric(
+                                                    insertion: .move(edge: isAdvancing ? .trailing : .leading).combined(with: .opacity),
+                                                    removal: .move(edge: isAdvancing ? .leading : .trailing).combined(with: .opacity)
+                                                ))
                                         }
+                                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                        .contentShape(Rectangle())
                                     }
                                 }
                                 .gesture(prayerSwipeGesture)

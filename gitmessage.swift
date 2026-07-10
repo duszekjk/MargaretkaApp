@@ -1,1 +1,1 @@
-fixing prayer swipe mode file placement so the app can compile
+removing the prayer card scroll view so swipe gestures reach the card
