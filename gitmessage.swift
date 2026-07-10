@@ -1,1 +1,1 @@
-restoring switch vibrations for prayer navigation
+fixing prayer switch haptics scope

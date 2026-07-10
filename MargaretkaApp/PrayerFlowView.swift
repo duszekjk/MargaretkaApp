@@ -204,14 +204,14 @@ struct PrayerFlowView: View {
         return Text("Koniec 🙏")
     }
 
-    private func switchHaptic(from currentIndex: Int, to newIndex: Int) {
-        let fromName = prayerName(at: currentIndex)
-        let toName = prayerName(at: newIndex)
+    private func hapticForPrayerSwitch(from fromName: String?, to toName: String?, delta: Int) {
         let isSubprayerSwitch = fromName != nil && toName != nil && fromName != toName
-        let delta = newIndex - currentIndex
 
         if isSubprayerSwitch {
-            subprayerHaptic()
+            UIImpactFeedbackGenerator(style: .heavy).impactOccurred(intensity: 1.0)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) {
+                UIImpactFeedbackGenerator(style: .heavy).impactOccurred(intensity: 0.7)
+            }
         } else if delta == 1 {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 1.0)
         } else if delta == -1 {
@@ -261,7 +261,9 @@ struct PrayerFlowView: View {
             .onEnded { value in
                 guard let targetIndex = prayerSwipeTarget(for: value.translation),
                       targetIndex != activeIndex else { return }
-                switchHaptic(from: activeIndex, to: targetIndex)
+                let fromName = currentPrayer?.name
+                let toName = targetIndex > 0 && targetIndex <= flattenedPrayerSymbols.count ? allPrayers[flattenedPrayerIds[targetIndex - 1]]?.name : nil
+                hapticForPrayerSwitch(from: fromName, to: toName, delta: targetIndex - activeIndex)
                 moveToIndex(targetIndex, animated: true)
             }
     }
@@ -984,7 +986,9 @@ struct PrayerTouchScrollerView: View {
                                 } else {
                                     updateIndex(index)
                                     lastSwitchAt = now
-                                    switchHaptic(from: activeIndex, to: index)
+                                    let fromName = prayerName(at: activeIndex)
+                                    let toName = prayerName(at: index)
+                                    hapticForPrayerSwitch(from: fromName, to: toName, delta: index - activeIndex)
                                 }
                             }
                         } else {
