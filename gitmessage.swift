@@ -1,13 +1,14 @@
-opening reminder prayers and suggesting customary times
+adding prayer Siri and Shortcuts actions
 
-Keep notification-tap navigation pending until prayer data is available, dismiss
-competing screens, and open the notified prayer at its start page.
+Expose people, priests, and standalone prayers as searchable App Entities. Add a
+foreground action that opens the selected prayer at its beginning and background
+actions that log a completed prayer, report its weekly streak, or return its
+average measured duration. Let Siri request missing targets conversationally.
 
-Default new Koronka schedules to 15:00 and add name-based suggestions for common
-Catholic prayers. Persist explicit time edits so later name matches do not replace
-a user's chosen time.
+Refresh an open prayer history when a background shortcut records a session. Add
+target-specific statistics and completed-session tests.
 
-Add coverage for notification routing and time suggestions, and update older stats
-tests for the required focus category. The app build and unit-test target compile;
-runtime tests could not run because the connected iOS 16.5 phone is below the iOS
-26 deployment target and no usable simulator runtime is installed.
+The app build, including App Intents metadata extraction, succeeds and the unit-test
+sources compile. Runtime tests did not start because code signing rejected iCloud
+filesystem metadata on Xcode's copied Testing.framework, so Siri behavior still
+requires validation on an iOS 26 device. The build number is unchanged.

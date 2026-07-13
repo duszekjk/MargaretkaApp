@@ -52,6 +52,78 @@ struct MargaretkaAppTests {
         #expect(router.pendingRoute == nil)
     }
 
+    @Test func shortcutStatisticsAreTargetSpecificAndIgnoreUntimedAverages() {
+        let calendar = Calendar(identifier: .gregorian)
+        let now = calendar.date(from: DateComponents(year: 2026, month: 7, day: 13, hour: 12))!
+        let targetId = UUID()
+        let otherTargetId = UUID()
+        let timed = makeSession(
+            endedAt: now,
+            completed: true,
+            duration: 600,
+            targetId: targetId
+        )
+        let untimed = makeSession(
+            endedAt: now,
+            completed: true,
+            duration: 0,
+            targetId: targetId
+        )
+        let other = makeSession(
+            endedAt: now,
+            completed: true,
+            duration: 3600,
+            targetId: otherTargetId
+        )
+
+        let stats = PrayerShortcutStatistics.calculate(
+            targetId: targetId,
+            sessions: [timed, untimed, other],
+            referenceDate: now,
+            calendar: calendar
+        )
+
+        #expect(stats.completedSessionCount == 2)
+        #expect(stats.currentWeeklyStreak == 1)
+        #expect(stats.averageMeasuredDuration == 600)
+    }
+
+    @Test func shortcutSessionRecordsTheSelectedTargetAndDuration() {
+        let prayer = Prayer(
+            name: "Testowa modlitwa",
+            text: "Tekst",
+            symbol: "hands.sparkles",
+            audioFilename: nil,
+            audioSource: nil,
+            timestampedLines: nil
+        )
+        let target = Priest(
+            id: UUID(),
+            firstName: "Jan",
+            lastName: "Kowalski",
+            title: "ks.",
+            assignedPrayerGroups: [AssignedPrayerGroup(prayerIds: [prayer.id])],
+            schedule: SchedulePlan(),
+            lastModified: Date(),
+            notificationTitle: "Modlitwa",
+            notificationMessage: "Pomódl się"
+        )
+        let now = Date()
+
+        let session = PrayerShortcutRepository.makeCompletedSession(
+            target: target,
+            prayers: [prayer],
+            durationMinutes: 12,
+            now: now
+        )
+
+        #expect(session.targetId == target.id)
+        #expect(session.prayerNames == [prayer.name])
+        #expect(session.duration == 720)
+        #expect(session.completedSubprayerCount == 1)
+        #expect(session.completed)
+    }
+
     @Test func statsFiltersByRange() async throws {
         let calendar = Calendar.current
         let referenceDate = calendar.date(from: DateComponents(year: 2025, month: 9, day: 1))!
@@ -129,18 +201,20 @@ struct MargaretkaAppTests {
         completed: Bool,
         prayerNames: [String] = ["A"],
         completedSubprayerCount: Int = 1,
-        category: PrayerTargetCategory = .priest
+        category: PrayerTargetCategory = .priest,
+        duration: TimeInterval = 600,
+        targetId: UUID = UUID()
     ) -> PrayerSession {
         PrayerSession(
             id: UUID(),
-            targetId: UUID(),
+            targetId: targetId,
             targetName: "Target",
             targetCategory: category,
             prayerIds: prayerNames.map { _ in UUID() },
             prayerNames: prayerNames,
-            startedAt: endedAt.addingTimeInterval(-600),
+            startedAt: endedAt.addingTimeInterval(-duration),
             endedAt: endedAt,
-            duration: 600,
+            duration: duration,
             totalSubprayerCount: prayerNames.count,
             completedSubprayerCount: completedSubprayerCount,
             completed: completed,

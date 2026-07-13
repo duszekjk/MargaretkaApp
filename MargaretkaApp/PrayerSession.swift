@@ -33,22 +33,33 @@ struct PrayerSession: Identifiable, Codable {
 final class PrayerSessionStore: ObservableObject {
     @Published private(set) var sessions: [PrayerSession] = []
 
-    private let saveKey = "prayer_sessions"
+    static let saveKey = "prayer_sessions"
+    private var sessionsChangedCancellable: AnyCancellable?
 
     init() {
         load()
+        sessionsChangedCancellable = NotificationCenter.default
+            .publisher(for: .prayerSessionsChanged)
+            .sink { [weak self] _ in
+                self?.load()
+            }
     }
 
     func add(_ session: PrayerSession) {
         sessions.append(session)
         save()
+        NotificationCenter.default.post(name: .prayerSessionsChanged, object: session.id)
     }
 
     private func load() {
-        sessions = LocalDatabase.shared.load(from: saveKey)
+        sessions = LocalDatabase.shared.load(from: Self.saveKey)
     }
 
     private func save() {
-        LocalDatabase.shared.save(sessions, as: saveKey)
+        LocalDatabase.shared.save(sessions, as: Self.saveKey)
     }
+}
+
+extension Notification.Name {
+    static let prayerSessionsChanged = Notification.Name("prayerSessionsChanged")
 }
