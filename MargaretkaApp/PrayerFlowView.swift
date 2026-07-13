@@ -204,21 +204,6 @@ struct PrayerFlowView: View {
         return Text("Koniec 🙏")
     }
 
-    private func hapticForPrayerSwitch(from fromName: String?, to toName: String?, delta: Int) {
-        let isSubprayerSwitch = fromName != nil && toName != nil && fromName != toName
-
-        if isSubprayerSwitch {
-            UIImpactFeedbackGenerator(style: .heavy).impactOccurred(intensity: 1.0)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) {
-                UIImpactFeedbackGenerator(style: .heavy).impactOccurred(intensity: 0.7)
-            }
-        } else if delta == 1 {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 1.0)
-        } else if delta == -1 {
-            UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.9)
-        }
-    }
-
     private func prayerSwipeTarget(for translation: CGSize) -> Int? {
         let threshold: CGFloat = 80
         let horizontal = abs(translation.width)
@@ -873,6 +858,33 @@ struct BrewiarzFullScreenView: View {
     }
 }
 
+func hapticForPrayerSwitch(from fromName: String?, to toName: String?, delta: Int) {
+    if fromName != nil && toName != nil && fromName != toName {
+        
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.impactOccurred(intensity: 1.0)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            generator.impactOccurred(intensity: 1.0)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            generator.impactOccurred(intensity: 1.0)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            generator.impactOccurred(intensity: 1.0)
+        }
+        print("haptic A")
+    } else if delta == 1 {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred(intensity: 1.0)
+        print("haptic B")
+    } else if delta == -1 {
+        print("haptic C")
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred(intensity: 1.0)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+            generator.impactOccurred(intensity: 0.7)
+        }
+    }
+}
 
 struct PrayerTouchScrollerView: View {
     let rows: [[String]]
@@ -1019,13 +1031,6 @@ struct PrayerTouchScrollerView: View {
         return prayerNames[index]
     }
 
-    private func subprayerHaptic() {
-        let generator = UIImpactFeedbackGenerator(style: .heavy)
-        generator.impactOccurred(intensity: 1.0)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.07) {
-            generator.impactOccurred(intensity: 0.7)
-        }
-    }
 
     func findTouchedIndex(at location: CGPoint) -> Int? {
         let threshold: CGFloat = 40

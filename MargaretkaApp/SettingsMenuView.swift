@@ -15,33 +15,12 @@ struct SettingsMenuView: View {
     @Binding var showCzymJest: Bool
     @Binding var showJakSie: Bool
     @AppStorage("prayerSwipeMode") private var prayerSwipeModeRaw: String = PrayerSwipeMode.both.rawValue
-    @AppStorage("prayerCompactView") private var prayerCompactView: Bool = false
+    @AppStorage("prayerCompactView") private var prayerCompactView: Bool = true
     
     var body: some View {
         VStack
         {
             List {
-                Section("Przesuwanie modlitw") {
-                    Picker("Tryb", selection: $prayerSwipeModeRaw) {
-                        ForEach(PrayerSwipeMode.allCases) { mode in
-                            Text(mode.title).tag(mode.rawValue)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-
-                    Text("W górę działa jak TikTok, w prawo jak Stories, a oba łączy oba gesty.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section("Widok") {
-                    Toggle("Compact view", isOn: $prayerCompactView)
-
-                    Text("Zmniejsza elementy listy modlitw i pokazuje 4 razy więcej na jednym rzędzie.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
                 NavigationLink("Modlitwy (pojedyncze)", destination: PrayerListSettingsView())
 
                 NavigationLink(
@@ -98,6 +77,28 @@ struct SettingsMenuView: View {
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("Statystyki")
                     .accessibilityIdentifier("settings_stats_link")
+                
+                    Section("Przesuwanie modlitw") {
+                        Picker("Tryb", selection: $prayerSwipeModeRaw) {
+                            ForEach(PrayerSwipeMode.allCases) { mode in
+                                Text(mode.title).tag(mode.rawValue)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+
+                        Text("W górę działa jak TikTok, w prawo jak Instagram Stories, a oba pozwala na oba gesty.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Section("Widok") {
+                        Toggle("Compact view", isOn: $prayerCompactView)
+
+                        Text("Zmniejsza elementy listy modlitw")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+
             }
             .navigationTitle("Ustawienia")
             Text("© 2025\nDUSZEKJK Jacek Kałużny\nSoftware Development.\nAll rights reserved.")

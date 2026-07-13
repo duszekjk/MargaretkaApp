@@ -102,6 +102,9 @@
     "Codzienna propozycja (minimum)" : {
 
     },
+    "Compact view" : {
+
+    },
     "Czas: %@" : {
 
     },
@@ -249,6 +252,9 @@
     "Kapłan" : {
 
     },
+    "Koniec 🙏" : {
+
+    },
     "Kontynuuj" : {
 
     },
@@ -347,6 +353,9 @@
 
     },
     "Praktyka może się nieco różnić w poszczególnych wspólnotach/parafiach – dostosuj do lokalnych zwyczajów. Istota pozostaje ta sama: **stała modlitwa za kapłana**." : {
+
+    },
+    "Przesuwanie modlitw" : {
 
     },
     "Remove last" : {
@@ -840,6 +849,9 @@
     "To modlitwa siedmiu osób za **jednego konkretnego kapłana** – każda osoba obejmuje go modlitwą w wybrany dzień tygodnia. Razem tworzą „stokrotkę” (7 płatków) z kapłanem w środku. Zobowiązanie ma charakter **stały** (długoterminowy)." : {
 
     },
+    "Tryb" : {
+
+    },
     "Tryb statystyk" : {
 
     },
@@ -881,6 +893,9 @@
         }
       }
     },
+    "W górę działa jak TikTok, w prawo jak Instagram Stories, a oba pozwala na oba gesty." : {
+
+    },
     "W razie lokalnych zwyczajów/parafialnych wytycznych – dostosuj formę, zachowując sens: **stała modlitwa za kapłana**." : {
 
     },
@@ -896,6 +911,9 @@
           }
         }
       }
+    },
+    "Widok" : {
+
     },
     "Wspieraj duchowo kapłanów\nprzez codzienną modlitwę." : {
 
@@ -940,6 +958,9 @@
 
     },
     "Zdjęcie" : {
+
+    },
+    "Zmniejsza elementy listy modlitw" : {
 
     },
     "Źródło audio" : {
