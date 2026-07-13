@@ -36,10 +36,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
 
         switch response.actionIdentifier {
         case notificationActionRestart, UNNotificationDefaultActionIdentifier:
-            NotificationCenter.default.post(
-                name: .prayerRestartRequested,
-                object: itemId
-            )
+            Task { @MainActor in
+                PrayerNotificationRouter.shared.requestPrayer(itemId: itemId)
+            }
         case notificationActionMarkDone:
             NotificationCenter.default.post(
                 name: .prayerMarkDoneRequested,

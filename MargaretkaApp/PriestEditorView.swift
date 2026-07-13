@@ -40,6 +40,11 @@ struct PriestEditorView: View {
         priest.notificationMessage = priest.category.notificationMessage(for: name)
     }
 
+    private func updateSuggestedPrayerTime() {
+        guard priest.category == .prayer else { return }
+        priest.schedule.applyPrayerTimeSuggestion(for: priest.firstName)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Section("Zdjęcie") {
@@ -117,6 +122,7 @@ struct PriestEditorView: View {
                 .padding(.horizontal)
                 .onChange(of: priest.category) {
                     updateNotificationText()
+                    updateSuggestedPrayerTime()
                 }
             }
 
@@ -133,6 +139,7 @@ struct PriestEditorView: View {
                     .padding()
                     .onChange(of: priest.firstName) {
                         updateNotificationText()
+                        updateSuggestedPrayerTime()
                     }
 
                 if priest.category != .prayer {

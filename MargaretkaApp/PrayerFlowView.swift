@@ -18,6 +18,7 @@ struct PrayerFlowView: View {
     @State private var isFullscreen: Bool = false
     @State private var userSelectedCategory: Bool = false
     @State private var isAdvancing: Bool = true
+    @ObservedObject private var notificationRouter = PrayerNotificationRouter.shared
     @StateObject private var sessionStore = PrayerSessionStore()
     @State private var sessionStart: Date?
     @State private var sessionPauseStart: Date?
@@ -501,6 +502,8 @@ struct PrayerFlowView: View {
             requestNotificationPermissions()
             let permissionDuration = CFAbsoluteTimeGetCurrent() - permissionStart
             print("PrayerFlowView requestNotificationPermissions dispatch in \(String(format: "%.3f", permissionDuration))s")
+
+            applyPendingNotificationRoute()
         }
         .onChange(of: showEditor) { _, isShowing in
             if !isShowing {
@@ -587,16 +590,15 @@ struct PrayerFlowView: View {
             handleScenePhaseChange(newPhase)
         }
         .onChange(of: scheduleData.items) {
-            syncSelectedPriest()
+            if !applyPendingNotificationRoute() {
+                syncSelectedPriest()
+            }
+        }
+        .onChange(of: notificationRouter.pendingRoute) {
+            applyPendingNotificationRoute()
         }
         .onReceive(NotificationCenter.default.publisher(for: .prayerRestartRequested)) { notification in
-            guard let itemId = notification.object as? String,
-                  let uuid = UUID(uuidString: itemId) else { return }
-            if let priest = scheduleData.items.first(where: { $0.id == uuid }) {
-                selectedPriest = priest
-                moveToIndex(0, animated: true)
-                finished = false
-            }
+            notificationRouter.requestPrayer(itemId: notification.object as? String)
         }
         .onReceive(NotificationCenter.default.publisher(for: .prayerMarkDoneRequested)) { notification in
             guard let payload = notification.object as? (String?, Double?) else { return }
@@ -713,7 +715,36 @@ struct PrayerFlowView: View {
         syncSelectedPriest(userInitiated: false)
     }
 
+    @discardableResult
+    private func applyPendingNotificationRoute() -> Bool {
+        guard let route = notificationRouter.pendingRoute else { return false }
+
+        // A notification tap is an explicit navigation request, so dismiss every
+        // competing destination before waiting for or selecting its prayer.
+        showSettings = false
+        showEditor = false
+        showOsoby = false
+        showCzymJest = false
+        showJakSie = false
+        isFullscreen = false
+        userSelectedCategory = false
+
+        guard let target = scheduleData.items.first(where: { $0.id == route.itemId }) else {
+            return true
+        }
+
+        selectedCategory = target.category
+        selectedPriest = target
+        moveToIndex(0, animated: false)
+        finished = false
+        notificationRouter.consume(route)
+        return true
+    }
+
     private func syncSelectedPriest(userInitiated: Bool) {
+        if applyPendingNotificationRoute() {
+            return
+        }
         if priestsAndPrayers.isEmpty {
             if !userInitiated,
                let fallback = PrayerTargetCategory.allCases.first(where: { category in

@@ -189,10 +189,88 @@ struct SchedulePlan: Codable, Hashable {
     var daysOfWeek: [Weekday] = []       
     var daysOfMonth: [Int] = []         
     var times: [NotificationTimes] = [NotificationTimes(event: DateComponents(hour: 11, minute: 0))]    
+    var timeSelectionSource: ScheduleTimeSelectionSource? = .suggested
 
     var startDate: Date = Calendar.current.date(byAdding: .day, value: -7, to: .now) ?? .now
     var endDate: Date? =  Calendar.current.date(byAdding: .year, value: 1, to: .now)
 }
+
+enum ScheduleTimeSelectionSource: String, Codable, Hashable {
+    case suggested
+    case user
+}
+
+struct PrayerTimeSuggestion: Equatable {
+    let hour: Int
+    let minute: Int
+
+    var dateComponents: DateComponents {
+        DateComponents(hour: hour, minute: minute)
+    }
+
+    static func matching(_ prayerName: String) -> PrayerTimeSuggestion? {
+        let name = prayerName
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "pl_PL"))
+            .lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !name.isEmpty else { return nil }
+
+        if name.contains("koronka") || name.contains("godzina milosierdzia") {
+            return PrayerTimeSuggestion(hour: 15, minute: 0)
+        }
+        if name.contains("aniol panski") || name.contains("modlitwa poludniowa") {
+            return PrayerTimeSuggestion(hour: 12, minute: 0)
+        }
+        if name.contains("apel jasnogorski") {
+            return PrayerTimeSuggestion(hour: 21, minute: 0)
+        }
+        if name.contains("jutrznia") || name.contains("modlitwa poranna") {
+            return PrayerTimeSuggestion(hour: 7, minute: 0)
+        }
+        if name.contains("modlitwa przedpoludniowa") {
+            return PrayerTimeSuggestion(hour: 9, minute: 0)
+        }
+        if name.contains("modlitwa popoludniowa") {
+            return PrayerTimeSuggestion(hour: 15, minute: 0)
+        }
+        if name.contains("nieszpory") {
+            return PrayerTimeSuggestion(hour: 18, minute: 0)
+        }
+        if name.contains("kompleta") || name.contains("modlitwa wieczorna") {
+            return PrayerTimeSuggestion(hour: 21, minute: 0)
+        }
+        if name.contains("rozaniec") {
+            return PrayerTimeSuggestion(hour: 20, minute: 0)
+        }
+
+        return nil
+    }
+}
+
+extension SchedulePlan {
+    static func suggested(forPrayerName prayerName: String) -> SchedulePlan {
+        var plan = SchedulePlan()
+        plan.applyPrayerTimeSuggestion(for: prayerName)
+        return plan
+    }
+
+    mutating func applyPrayerTimeSuggestion(for prayerName: String) {
+        guard timeSelectionSource == .suggested,
+              let suggestion = PrayerTimeSuggestion.matching(prayerName) else { return }
+
+        if times.isEmpty {
+            times = [NotificationTimes(event: suggestion.dateComponents)]
+        } else {
+            times[0].event = suggestion.dateComponents
+        }
+    }
+
+    mutating func markTimeAsUserSelected() {
+        timeSelectionSource = .user
+    }
+}
+
 struct NotificationTimes: Codable, Hashable, Identifiable {
     var id: UUID = UUID()
     
@@ -822,6 +900,7 @@ struct SchedulingView: View {
                                 },
                                 set: { newDate in
                                     schedule.times[index].event = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                                    schedule.markTimeAsUserSelected()
                                     schedule = schedule
                                 }
                             ),
@@ -874,12 +953,14 @@ struct SchedulingView: View {
                     HStack {
                         Button("Add time") {
                             schedule.times.append(NotificationTimes(event: DateComponents(hour: 11, minute: 0)))
+                            schedule.markTimeAsUserSelected()
                             schedule = schedule
                         }
 
                         if !schedule.times.isEmpty {
                             Button("Remove last") {
                                 schedule.times.removeLast()
+                                schedule.markTimeAsUserSelected()
                                 schedule = schedule
                             }
                             .foregroundColor(.red)

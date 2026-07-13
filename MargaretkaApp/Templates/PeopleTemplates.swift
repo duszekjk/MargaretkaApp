@@ -98,7 +98,7 @@ var peopleTemplates : [Priest] = {
                 ], repeatCount: 1),
                 
                 
-               ], schedule: SchedulePlan(), lastModified: Date(), notificationTitle: "Różaniec", notificationMessage: ""),
+               ], schedule: .suggested(forPrayerName: "Różaniec"), lastModified: Date(), notificationTitle: "Różaniec", notificationMessage: ""),
         
         Priest(id: UUID(), firstName: "Koronka do Miłosierdzia Bożego", lastName: "", title: "", category: .prayer, photoData: photoDataM,
                assignedPrayerGroups: [
@@ -149,7 +149,7 @@ var peopleTemplates : [Priest] = {
                 ], repeatCount: 3),
                 
                 
-               ], schedule: SchedulePlan(), lastModified: Date(), notificationTitle: "Koronka", notificationMessage: "do Miłosierdzia Bożego"),
+               ], schedule: .suggested(forPrayerName: "Koronka do Miłosierdzia Bożego"), lastModified: Date(), notificationTitle: "Koronka", notificationMessage: "do Miłosierdzia Bożego"),
         
     ]
 }()
