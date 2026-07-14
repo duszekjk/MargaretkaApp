@@ -186,6 +186,26 @@ struct MargaretkaAppTests {
         #expect(stats.totalSessions == 1)
     }
 
+    @Test func rangeFilterDoesNotTruncateLifetimeAchievements() {
+        let calendar = Calendar.current
+        let referenceDate = calendar.date(from: DateComponents(year: 2025, month: 7, day: 15, hour: 12))!
+        let previousFriday = calendar.date(from: DateComponents(year: 2025, month: 7, day: 11, hour: 18))!
+        let sessions = (0..<14).map { offset in
+            let date = calendar.date(byAdding: .weekOfYear, value: -offset, to: previousFriday)!
+            return makeSession(endedAt: date, completed: true, category: .priest)
+        }
+
+        let stats = PrayerStats(sessions: sessions, range: .last8Weeks, referenceDate: referenceDate, focusCategory: .priest)
+
+        #expect(stats.totalSessions == 7)
+        #expect(stats.activeWeeks == 7)
+        #expect(stats.currentWeeklyStreak == 14)
+        #expect(stats.longestWeeklyStreak == 14)
+        #expect(stats.latestUnlockedMilestoneTitle == "14 tyg")
+        #expect(stats.nextMilestoneTitle == "30 tyg")
+        #expect(abs(stats.progressToNextMilestone - 14.0 / 30.0) < 0.000_001)
+    }
+
     @Test func statsFavoritePrayerUsesCompletedSubprayers() async throws {
         let date = Date()
         let first = makeSession(

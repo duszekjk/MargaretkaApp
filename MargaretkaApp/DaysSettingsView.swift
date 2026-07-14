@@ -34,7 +34,7 @@ struct StatsView: View {
 
                 HStack(spacing: 16) {
                     statCard(title: summary.sessionsCardTitle, value: "\(summary.totalSessions)", detail: "Ukończone: \(summary.completedSessions)")
-                    statCard(title: "Aktywne tygodnie", value: "\(summary.activeWeeks)", detail: "Skuteczność: \(summary.completionRateText)")
+                    statCard(title: "Aktywne tygodnie", value: "\(summary.activeWeeks)", detail: "Ukończone sesje: \(summary.completionRateText)")
                 }
 
                 weeklyStreakCard(summary: summary)
@@ -616,6 +616,8 @@ struct PrayerStats {
 
         let primarySessions = filteredSessions.filter { $0.targetCategory == focusCategory }
         let primaryCompletedSessions = primarySessions.filter { $0.completed }
+        let lifetimePrimarySessions = sessions.filter { $0.targetCategory == focusCategory }
+        let lifetimeCompletedSessions = lifetimePrimarySessions.filter { $0.completed }
         let otherSessions = filteredSessions.filter { $0.targetCategory != focusCategory }
 
         let perWeek = PrayerStats.sessionsPerWeek(primarySessions, calendar: calendar)
@@ -624,8 +626,9 @@ struct PrayerStats {
         let activeDays = perWeek.keys.count
 
         let activeWeeksValue = PrayerStats.activeWeeks(from: primaryCompletedSessions, calendar: calendar)
-        let weeklyStreakValue = PrayerStats.currentWeeklyStreak(from: referenceDate, sessions: primaryCompletedSessions, calendar: calendar)
-        let longestWeeklyStreakValue = PrayerStats.longestWeeklyStreak(in: primaryCompletedSessions, calendar: calendar)
+        let lifetimeActiveWeeksValue = PrayerStats.activeWeeks(from: lifetimeCompletedSessions, calendar: calendar)
+        let weeklyStreakValue = PrayerStats.currentWeeklyStreak(from: referenceDate, sessions: lifetimeCompletedSessions, calendar: calendar)
+        let longestWeeklyStreakValue = PrayerStats.longestWeeklyStreak(in: lifetimeCompletedSessions, calendar: calendar)
         let totalDurationValue = primarySessions.reduce(0) { $0 + $1.duration }
         let averageDurationValue = sessionCount > 0 ? totalDurationValue / Double(sessionCount) : 0
         let totalSubprayersValue = PrayerStats.totalCompletedSubprayers(primarySessions)
@@ -656,15 +659,15 @@ struct PrayerStats {
 
         let goals = [3, 7, 14, 30, 60, 100, 180, 365]
         let milestonesValue = goals.map { goal in
-            Milestone(title: "\(goal) tyg", goal: goal, isUnlocked: activeWeeksValue >= goal)
+            Milestone(title: "\(goal) tyg", goal: goal, isUnlocked: lifetimeActiveWeeksValue >= goal)
         }
-        let latestUnlockedTitleValue = goals.filter { activeWeeksValue >= $0 }.max().map { "\($0) tyg" }
+        let latestUnlockedTitleValue = goals.filter { lifetimeActiveWeeksValue >= $0 }.max().map { "\($0) tyg" }
 
         let nextMilestoneTitleValue: String
         let progressValue: Double
-        if let next = goals.first(where: { activeWeeksValue < $0 }) {
+        if let next = goals.first(where: { lifetimeActiveWeeksValue < $0 }) {
             nextMilestoneTitleValue = "\(next) tyg"
-            progressValue = activeWeeksValue == 0 ? 0 : Double(activeWeeksValue) / Double(next)
+            progressValue = lifetimeActiveWeeksValue == 0 ? 0 : Double(lifetimeActiveWeeksValue) / Double(next)
         } else {
             nextMilestoneTitleValue = "Cel osiągnięty"
             progressValue = 1.0
@@ -687,12 +690,12 @@ struct PrayerStats {
         case .prayer:
             highlightSubject = "modlitwami"
         }
-        if sessionCount == 0 {
+        if lifetimePrimarySessions.isEmpty {
             highlightValue = "Statystyki uruchomią się po pierwszej modlitwie."
-        } else if completedCount >= 7 {
+        } else if lifetimeCompletedSessions.count >= 7 {
             highlightValue = "Masz \(weeklyStreakValue) tygodni z \(highlightSubject)."
-        } else if sessionCount >= 3 {
-            highlightValue = "Świetny start - \(sessionCount) sesje modlitwy."
+        } else if lifetimePrimarySessions.count >= 3 {
+            highlightValue = "Świetny start - \(lifetimePrimarySessions.count) sesje modlitwy."
         } else {
             highlightValue = nil
         }
