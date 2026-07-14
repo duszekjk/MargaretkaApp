@@ -1,10 +1,8 @@
-add storage regression tests pending access fix
+expose database payload codec to regression tests
 
-Add checks for database payload round-tripping, the 20 KB and 480-pixel photo
-limits, and removal of bundled PNG payloads from stored prayer templates.
+Keep notification-repair synchronization private while making the pure payload
+compression, decompression, and format-detection helpers internal. This allows the
+test target to validate legacy compatibility and exact round-tripping.
 
-The device test attempt passed framework signing after moving Derived Data out of
-iCloud, but these new tests did not compile because the database payload helpers
-are fileprivate. A follow-up must expose those helpers before tests can run.
-
-The build number remains 38.
+This corrects the previous test compilation failure. Test execution still needs
+to be rerun. The build number remains 38.

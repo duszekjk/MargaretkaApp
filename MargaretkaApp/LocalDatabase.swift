@@ -164,7 +164,9 @@ private extension LocalDatabase {
         activeRepairs.remove(filename)
         repairLock.unlock()
     }
+}
 
+extension LocalDatabase {
     static func storedPayload(from data: Data) throws -> Data {
         let compressed = try (data as NSData).compressed(using: .lzfse) as Data
         guard compressed.count + compressedPayloadMagic.count < data.count else {
