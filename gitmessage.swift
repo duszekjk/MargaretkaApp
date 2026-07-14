@@ -1,9 +1,13 @@
-compress local database payloads without changing their contents
+deduplicate people storage and cap persisted photos
 
-Store JSON database payloads with LZFSE when compression makes the file smaller,
-while continuing to read existing uncompressed files. Rewrite legacy payloads only
-after successful decoding, and use atomic, protected writes for every save.
+Use priest_sch as the single people and schedule database, migrate a legacy
+stored_priests file when necessary, and remove it only after canonical data is
+available. This stops the app from copying the full people database on launch.
 
-This reduces prayer, schedule, and session-history metadata and prevents partial
-writes. It does not yet address duplicated person records, photos, audio, or web
-caches. The build number remains 38.
+Keep built-in Rosary and Divine Mercy artwork in the asset catalog rather than
+Base64-encoding multi-megabyte PNG copies into user data. Remove matching legacy
+PNG payloads during template loading while continuing to display bundled art.
+
+Recompress selected and existing custom photos to at most 480 pixels and target
+20 KB. Replace the process-random template signature with stable FNV-1a hashing.
+The build number remains 38 pending build and behavior validation.

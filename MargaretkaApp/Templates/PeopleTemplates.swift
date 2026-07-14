@@ -9,13 +9,9 @@ import Foundation
 import SwiftUI
 
 var peopleTemplates : [Priest] = {
-    let image = UIImage(named: "rozaniec")!
-    let photoData = image.pngData()
-    let image2 = UIImage(named: "mercy")!
-    let photoDataM = image2.pngData()
     return [
         
-        Priest(id: UUID(), firstName: "Różaniec", lastName: "", title: "", category: .prayer, photoData: photoData,
+        Priest(id: UUID(), firstName: "Różaniec", lastName: "", title: "", category: .prayer,
                assignedPrayerGroups: [
                 AssignedPrayerGroup(id: UUID(), prayerIds: [
                     prayersTemplate["Skład apostolski (Wyznanie wiary)"]!.id,
@@ -100,7 +96,7 @@ var peopleTemplates : [Priest] = {
                 
                ], schedule: .suggested(forPrayerName: "Różaniec"), lastModified: Date(), notificationTitle: "Różaniec", notificationMessage: ""),
         
-        Priest(id: UUID(), firstName: "Koronka do Miłosierdzia Bożego", lastName: "", title: "", category: .prayer, photoData: photoDataM,
+        Priest(id: UUID(), firstName: "Koronka do Miłosierdzia Bożego", lastName: "", title: "", category: .prayer,
                assignedPrayerGroups: [
                 AssignedPrayerGroup(id: UUID(), prayerIds: [
                     prayersTemplate["Ojcze Nasz"]!.id,

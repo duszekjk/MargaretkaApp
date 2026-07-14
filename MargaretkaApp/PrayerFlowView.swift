@@ -183,9 +183,7 @@ struct PrayerFlowView: View {
     }
 
     var backgroundImage: UIImage? {
-        guard let data = selectedPriest?.photoData,
-              let uiImage = UIImage(data: data) else { return nil }
-        return uiImage
+        selectedPriest?.displayPhoto
     }
 
     private var prayerSwipeMode: PrayerSwipeMode {

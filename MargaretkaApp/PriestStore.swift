@@ -16,7 +16,8 @@ class PriestStore: ObservableObject {
         didSet { saveAsync() }
     }
 
-    private let key = "stored_priests"
+    private let key = Priest.storageKey
+    private let legacyFileKey = "stored_priests"
     private let legacyDefaultsKey = "stored_priests"
     private let saveQueue = DispatchQueue(label: "PriestStore.save", qos: .utility)
 
@@ -31,6 +32,15 @@ class PriestStore: ObservableObject {
         let stored: [Priest] = LocalDatabase.shared.load(from: key)
         if !stored.isEmpty {
             self.priests = stored
+            removeLegacyFile()
+            return
+        }
+
+        let legacyStored: [Priest] = LocalDatabase.shared.load(from: legacyFileKey)
+        if !legacyStored.isEmpty {
+            self.priests = legacyStored
+            LocalDatabase.shared.save(legacyStored, as: key)
+            removeLegacyFile()
             return
         }
 
@@ -39,7 +49,13 @@ class PriestStore: ObservableObject {
             self.priests = decoded
             LocalDatabase.shared.save(decoded, as: key)
             UserDefaults.standard.removeObject(forKey: legacyDefaultsKey)
+            removeLegacyFile()
         }
+    }
+
+    private func removeLegacyFile() {
+        let url = LocalDatabase.shared.path(for: legacyFileKey)
+        try? FileManager.default.removeItem(at: url)
     }
 
     private func save() {

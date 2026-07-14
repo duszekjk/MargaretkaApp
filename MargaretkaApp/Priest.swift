@@ -78,7 +78,9 @@ struct Priest: Identifiable, Hashable, Codable {
     nonisolated static func loadWithTemplates(using prayers: [Prayer]) -> [Priest] {
         let overallStart = CFAbsoluteTimeGetCurrent()
         let loadStart = CFAbsoluteTimeGetCurrent()
-        let stored: [Priest] = LocalDatabase.shared.load(from: Self.storageKey)
+        let loaded: [Priest] = LocalDatabase.shared.load(from: Self.storageKey)
+        let stored = loaded.map { $0.compactedForStorage() }
+        let storageNeededCompaction = stored != loaded
         let loadDuration = CFAbsoluteTimeGetCurrent() - loadStart
 
         let signatureStart = CFAbsoluteTimeGetCurrent()
@@ -90,6 +92,9 @@ struct Priest: Identifiable, Hashable, Codable {
         let hasAllTemplates = storedContainsAllTemplates(stored)
         let cacheCheckDuration = CFAbsoluteTimeGetCurrent() - cacheCheckStart
         if cachedSignature == signature, hasAllTemplates {
+            if storageNeededCompaction {
+                LocalDatabase.shared.save(stored, as: Self.storageKey)
+            }
             let overallDuration = CFAbsoluteTimeGetCurrent() - overallStart
             print("Priest.loadWithTemplates: load \(String(format: "%.3f", loadDuration))s, signature \(String(format: "%.3f", signatureDuration))s, cacheCheck \(String(format: "%.3f", cacheCheckDuration))s, total \(String(format: "%.3f", overallDuration))s (cached)")
             return stored
@@ -98,7 +103,7 @@ struct Priest: Identifiable, Hashable, Codable {
         let merged = mergeTemplates(into: stored, using: prayers)
         let mergeDuration = CFAbsoluteTimeGetCurrent() - mergeStart
         let saveStart = CFAbsoluteTimeGetCurrent()
-        if merged != stored {
+        if merged != stored || storageNeededCompaction {
             LocalDatabase.shared.save(merged, as: Self.storageKey)
         }
         let saveDuration = CFAbsoluteTimeGetCurrent() - saveStart
@@ -254,15 +259,23 @@ extension Priest: Schedulable {
 
 extension Priest {
     nonisolated private static func templatesSignature(using prayers: [Prayer]) -> String {
-        var hasher = Hasher()
+        var hash: UInt64 = 14_695_981_039_346_656_037
+
+        func combine(_ value: String) {
+            for byte in value.utf8 {
+                hash ^= UInt64(byte)
+                hash &*= 1_099_511_628_211
+            }
+        }
+
         for prayer in prayers.sorted(by: { $0.id.uuidString < $1.id.uuidString }) {
-            hasher.combine(prayer.id)
-            hasher.combine(prayer.name)
+            combine(prayer.id.uuidString)
+            combine(prayer.name)
         }
         for template in peopleTemplates {
-            hasher.combine(templateKey(for: template))
+            combine(templateKey(for: template))
         }
-        return String(hasher.finalize())
+        return String(hash, radix: 16)
     }
 
     nonisolated private static func storedContainsAllTemplates(_ stored: [Priest]) -> Bool {
@@ -406,5 +419,41 @@ extension Priest {
                 .filter { !$0.isEmpty }
                 .joined(separator: " ")
         }
+    }
+
+    var displayPhoto: UIImage? {
+        if let photoData, let image = UIImage(data: photoData) {
+            return image
+        }
+        guard let bundledPhotoAssetName else { return nil }
+        return UIImage(named: bundledPhotoAssetName)
+    }
+
+    var bundledPhotoAssetName: String? {
+        guard category == .prayer else { return nil }
+        switch firstName {
+        case "Różaniec":
+            return "rozaniec"
+        case "Koronka do Miłosierdzia Bożego":
+            return "mercy"
+        default:
+            return nil
+        }
+    }
+
+    nonisolated func compactedForStorage() -> Priest {
+        var compacted = self
+        guard let data = photoData else { return compacted }
+
+        let pngSignature = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+        if bundledPhotoAssetName != nil, data.starts(with: pngSignature) {
+            compacted.photoData = nil
+        } else if data.count > UIImage.storagePhotoByteLimit,
+                  let image = UIImage(data: data),
+                  let compressed = image.storageJPEGData() {
+            compacted.photoData = compressed
+        }
+
+        return compacted
     }
 }

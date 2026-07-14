@@ -55,9 +55,9 @@ struct PriestEditorView: View {
                     if(photo == nil)
                     {
                         assignedPrayerGroups = priest.assignedPrayerGroups
-                        if(priest.photoData != nil)
+                        if let displayPhoto = priest.displayPhoto
                         {
-                            photo = UIImage(data: priest.photoData!)
+                            photo = displayPhoto
                             photoScale = priest.photoScale
                             photoOffset = CGSize(width: priest.photoOffsetX, height: priest.photoOffsetY)
                         }
@@ -170,10 +170,9 @@ struct PriestEditorView: View {
             Task {
                 if let data = try? await newItem?.loadTransferable(type: Data.self),
                    let uiImage = UIImage(data: data) {
-                    let resized = uiImage.resized(maxDimension: 1500)
-                    photo = resized
-
-                    let photoData = resized.jpegData(compressionQuality: 0.85)
+                    guard let photoData = uiImage.storageJPEGData(),
+                          let storedImage = UIImage(data: photoData) else { return }
+                    photo = storedImage
                     priest.photoData = photoData
                     photoScale = 1.0
                     photoOffset = .zero
@@ -200,6 +199,8 @@ struct PriestEditorView: View {
 import UIKit
 
 extension UIImage {
+    static let storagePhotoByteLimit = 20_000
+
     func resized(maxDimension: CGFloat) -> UIImage {
         let w = size.width, h = size.height
         guard max(w, h) > maxDimension else { return self } 
@@ -212,5 +213,28 @@ extension UIImage {
         return renderer.image { _ in
             self.draw(in: CGRect(origin: .zero, size: newSize))
         }
+    }
+
+    nonisolated func storageJPEGData(
+        maxDimension: CGFloat = 480,
+        byteLimit: Int = storagePhotoByteLimit
+    ) -> Data? {
+        var candidate = resized(maxDimension: maxDimension)
+        var smallest: Data?
+
+        for dimension in [maxDimension, 400, 320, 240] {
+            candidate = candidate.resized(maxDimension: dimension)
+            for quality in [0.50, 0.35, 0.25, 0.18, 0.12, 0.08] {
+                guard let data = candidate.jpegData(compressionQuality: quality) else { continue }
+                if smallest == nil || data.count < smallest!.count {
+                    smallest = data
+                }
+                if data.count <= byteLimit {
+                    return data
+                }
+            }
+        }
+
+        return smallest
     }
 }
