@@ -4,6 +4,9 @@
     "" : {
 
     },
+    "%@" : {
+
+    },
     "%@ %@" : {
       "localizations" : {
         "pl" : {
@@ -15,6 +18,9 @@
       }
     },
     "%lld" : {
+
+    },
+    "%lld osoby lub modlitwy" : {
 
     },
     "%lld tyg" : {
@@ -80,6 +86,19 @@
     "Audio niedostępne dla modlitw online." : {
 
     },
+    "Bieżąca seria dla %@ to %lld tygodni." : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Bieżąca seria dla %1$@ to %2$lld tygodni."
+          }
+        }
+      }
+    },
+    "Bieżąca seria dla %@ to jeden tydzień." : {
+
+    },
     "Brak" : {
 
     },
@@ -105,7 +124,13 @@
     "Compact view" : {
 
     },
+    "Czas w minutach" : {
+
+    },
     "Czas: %@" : {
+
+    },
+    "Czyją serię modlitwy sprawdzić?" : {
 
     },
     "Czym jest „Margaretka”?" : {
@@ -159,6 +184,9 @@
       }
     },
     "Diagram Margaretki: siedem płatków – dni tygodnia – wokół kapłana." : {
+
+    },
+    "Dla kogo sprawdzić średni czas modlitwy?" : {
 
     },
     "Dodaj modlitwę" : {
@@ -267,6 +295,9 @@
     "Księża" : {
 
     },
+    "Którą osobę lub modlitwę masz na myśli?" : {
+
+    },
     "Ładowanie..." : {
 
     },
@@ -313,6 +344,12 @@
     "Nazwisko" : {
 
     },
+    "Nie ma jeszcze bieżącej serii dla: %@." : {
+
+    },
+    "Nie ma jeszcze zmierzonego czasu modlitwy dla: %@." : {
+
+    },
     "Nieznana modlitwa" : {
 
     },
@@ -328,13 +365,31 @@
     "Odblokuj telefon i dotknij Kontynuuj, aby rozpoczac." : {
 
     },
+    "Opcjonalny czas trwania modlitwy. Pozostaw zero, jeśli nie był mierzony." : {
+
+    },
     "Osiągnięto: %@" : {
+
+    },
+    "Osoba lub modlitwa" : {
 
     },
     "Osoby" : {
 
     },
+    "Otwiera wybraną osobę, kapłana lub modlitwę i przechodzi do początku modlitwy." : {
+
+    },
+    "Otwieram modlitwę: %@." : {
+
+    },
     "Po co?" : {
+
+    },
+    "Podaje liczbę kolejnych tygodni z ukończoną modlitwą za wybraną osobę lub dla wybranej modlitwy." : {
+
+    },
+    "Podaje średni zmierzony czas ukończonej modlitwy za wybraną osobę lub dla wybranej modlitwy." : {
 
     },
     "Podstawowe informacje" : {
@@ -367,6 +422,9 @@
           }
         }
       }
+    },
+    "Rozpocznij modlitwę" : {
+
     },
     "Rozpocznij nagrywanie" : {
 
@@ -401,11 +459,33 @@
         }
       }
     },
+    "Seria modlitwy" : {
+
+    },
     "Sesje: %lld" : {
 
     },
     "Skopiowano" : {
 
+    },
+    "Sprawdź serię modlitwy" : {
+
+    },
+    "Sprawdź średni czas modlitwy" : {
+
+    },
+    "Średni czas modlitwy" : {
+
+    },
+    "Średni czas modlitwy dla %@ to %@." : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Średni czas modlitwy dla %1$@ to %2$@."
+          }
+        }
+      }
     },
     "start date" : {
       "localizations" : {
@@ -936,16 +1016,41 @@
     "Wycentruj zdjęcie" : {
 
     },
+    "Za kogo lub jaką modlitwę rozpocząć?" : {
+
+    },
+    "Za kogo lub jaką modlitwę zapisać?" : {
+
+    },
     "Zakres" : {
 
     },
     "Zapisano jako: %@" : {
 
     },
+    "Zapisano ukończoną modlitwę: %@.%@" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Zapisano ukończoną modlitwę: %1$@.%2$@"
+          }
+        }
+      }
+    },
+    "Zapisuje ukończoną modlitwę bez otwierania aplikacji. Czas trwania jest opcjonalny." : {
+
+    },
     "Zapisz" : {
 
     },
     "Zapisz imiona, dzień i datę rozpoczęcia." : {
+
+    },
+    "Zapisz modlitwę" : {
+
+    },
+    "Zapisz ukończoną modlitwę" : {
 
     },
     "Zastępstwo: jeśli nie możesz w danym dniu, postaraj się znaleźć zastępstwo lub odmów modlitwę wcześniej/później." : {
