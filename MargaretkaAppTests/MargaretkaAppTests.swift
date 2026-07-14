@@ -186,7 +186,7 @@ struct MargaretkaAppTests {
         #expect(stats.totalSessions == 1)
     }
 
-    @Test func rangeFilterDoesNotTruncateLifetimeAchievements() {
+    @Test func rangeFilterUsesLastCompletedWeekDuringGracePeriod() {
         let calendar = Calendar.current
         let referenceDate = calendar.date(from: DateComponents(year: 2025, month: 7, day: 15, hour: 12))!
         let previousFriday = calendar.date(from: DateComponents(year: 2025, month: 7, day: 11, hour: 18))!
@@ -197,13 +197,17 @@ struct MargaretkaAppTests {
 
         let stats = PrayerStats(sessions: sessions, range: .last8Weeks, referenceDate: referenceDate, focusCategory: .priest)
 
-        #expect(stats.totalSessions == 7)
-        #expect(stats.activeWeeks == 7)
+        #expect(stats.totalSessions == 8)
+        #expect(stats.activeWeeks == 8)
         #expect(stats.currentWeeklyStreak == 14)
         #expect(stats.longestWeeklyStreak == 14)
         #expect(stats.latestUnlockedMilestoneTitle == "14 tyg")
         #expect(stats.nextMilestoneTitle == "30 tyg")
         #expect(abs(stats.progressToNextMilestone - 14.0 / 30.0) < 0.000_001)
+
+        let afterGracePeriod = previousFriday.addingTimeInterval(8 * 24 * 60 * 60 + 60)
+        let expiredStats = PrayerStats(sessions: sessions, range: .last8Weeks, referenceDate: afterGracePeriod, focusCategory: .priest)
+        #expect(expiredStats.activeWeeks == 7)
     }
 
     @Test func statsFavoritePrayerUsesCompletedSubprayers() async throws {
