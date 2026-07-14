@@ -147,17 +147,10 @@ struct PrayerEditorView: View {
 
                     do {
                         let fileManager = FileManager.default
-                        let appSupport = try fileManager.url(
-                            for: .applicationSupportDirectory,
-                            in: .userDomainMask,
-                            appropriateFor: nil,
-                            create: true
-                        )
-                        let destinationURL = appSupport.appendingPathComponent(selectedURL.lastPathComponent)
-
-                        if !fileManager.fileExists(atPath: destinationURL.path) {
-                            try fileManager.copyItem(at: selectedURL, to: destinationURL)
-                        }
+                        let appSupport = try AudioStorage.applicationSupportDirectory(create: true)
+                        let destinationName = UUID().uuidString + "." + selectedURL.pathExtension
+                        let destinationURL = appSupport.appendingPathComponent(destinationName)
+                        try fileManager.copyItem(at: selectedURL, to: destinationURL)
 
                         audioFilename = destinationURL.lastPathComponent
 
@@ -208,8 +201,7 @@ struct AudioPlayerView: View {
         case .file, .recorded:
 
             do {
-                let url = try FileManager.default
-                    .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: false)
+                let url = try AudioStorage.applicationSupportDirectory(create: false)
                     .appendingPathComponent(audioFilename)
                 audioPlayer = try AVAudioPlayer(contentsOf: url)
                 audioPlayer?.play()

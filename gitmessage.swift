@@ -1,13 +1,10 @@
-deduplicate people storage and cap persisted photos
+bound audio growth and remove orphaned recordings
 
-Use priest_sch as the single people and schedule database, migrate a legacy
-stored_priests file when necessary, and remove it only after canonical data is
-available. This stops the app from copying the full people database on launch.
+Record new voice audio as 16 kHz mono AAC at 24 kbps instead of 44.1 kHz
+Apple Lossless. Give imports unique filenames so unrelated files cannot collide.
 
-Keep built-in Rosary and Divine Mercy artwork in the asset catalog rather than
-Base64-encoding multi-megabyte PNG copies into user data. Remove matching legacy
-PNG payloads during template loading while continuing to display bundled art.
+Delete replaced or removed prayer audio immediately. On launch, remove audio files
+that no saved prayer references, which cleans recordings and imports left behind by
+cancelled editors while preserving every referenced user file.
 
-Recompress selected and existing custom photos to at most 480 pixels and target
-20 KB. Replace the process-random template signature with stable FNV-1a hashing.
 The build number remains 38 pending build and behavior validation.

@@ -29,6 +29,7 @@ class PrayerStore: ObservableObject {
         let start = CFAbsoluteTimeGetCurrent()
         load()
         ensureDefaultPrayers()
+        AudioStorage.removeOrphanedFiles(referencedBy: prayers)
         let duration = CFAbsoluteTimeGetCurrent() - start
         print("PrayerStore init in \(String(format: "%.3f", duration))s")
     }
@@ -72,14 +73,20 @@ class PrayerStore: ObservableObject {
 
     func addOrUpdate(_ prayer: Prayer) {
         if let index = prayers.firstIndex(where: { $0.id == prayer.id }) {
+            let replacedAudio = prayers[index].audioFilename
             prayers[index] = prayer
+            if replacedAudio != prayer.audioFilename {
+                AudioStorage.removeFile(named: replacedAudio)
+            }
         } else {
             prayers.append(prayer)
         }
     }
 
     func delete(at offsets: IndexSet) {
+        let removedAudio = offsets.compactMap { prayers[$0].audioFilename }
         prayers.remove(atOffsets: offsets)
+        removedAudio.forEach(AudioStorage.removeFile(named:))
     }
 }
 

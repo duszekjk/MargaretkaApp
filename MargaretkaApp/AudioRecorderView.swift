@@ -26,16 +26,16 @@ struct AudioRecorderView: View {
 
     func startRecording() {
         let filename = UUID().uuidString + ".m4a"
-        let url = try! FileManager.default
-            .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let url = try! AudioStorage.applicationSupportDirectory(create: true)
             .appendingPathComponent(filename)
         
 
         let settings: [String: Any] = [
-            AVFormatIDKey: Int(kAudioFormatAppleLossless),
-            AVSampleRateKey: 44100.0,
+            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+            AVSampleRateKey: 16000.0,
             AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.max.rawValue
+            AVEncoderBitRateKey: 24000,
+            AVEncoderAudioQualityKey: AVAudioQuality.medium.rawValue
         ]
 
         do {
