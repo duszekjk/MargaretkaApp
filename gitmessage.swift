@@ -1,8 +1,9 @@
-expose database payload codec to regression tests
+remove stale preference snapshots containing legacy photos
 
-Keep notification-repair synchronization private while making the pure payload
-compression, decompression, and format-detection helpers internal. This allows the
-test target to validate legacy compatibility and exact round-tripping.
+Clean only bundle-prefixed preference temporary files older than 24 hours, while
+leaving the active preferences plist and recent in-progress writes untouched.
 
-This corrects the previous test compilation failure. Test execution still needs
-to be rerun. The build number remains 38.
+Connected-device inspection found a 9.7 MB six-month-old binary plist snapshot
+containing legacy stored_priests, stored_prayers, and photoData beside the current
+3.8 KB preferences file. Removing it targets the largest remaining app-owned
+unnecessary file. The build number remains 38 pending validation.

@@ -15,8 +15,33 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        cleanStalePreferenceTemporaryFiles()
         cleanLegacyWebCachesIfNeeded()
         return true
+    }
+
+    private func cleanStalePreferenceTemporaryFiles() {
+        guard let bundleIdentifier = Bundle.main.bundleIdentifier,
+              let library = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first else {
+            return
+        }
+
+        let preferences = library.appendingPathComponent("Preferences", isDirectory: true)
+        let temporaryPrefix = bundleIdentifier + ".plist."
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: preferences,
+            includingPropertiesForKeys: [.contentModificationDateKey, .isRegularFileKey],
+            options: [.skipsHiddenFiles]
+        ) else { return }
+
+        let staleBefore = Date().addingTimeInterval(-24 * 60 * 60)
+        for file in files where file.lastPathComponent.hasPrefix(temporaryPrefix) {
+            guard let values = try? file.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey]),
+                  values.isRegularFile == true,
+                  let modified = values.contentModificationDate,
+                  modified < staleBefore else { continue }
+            try? FileManager.default.removeItem(at: file)
+        }
     }
 
     private func cleanLegacyWebCachesIfNeeded() {
