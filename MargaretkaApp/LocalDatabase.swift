@@ -20,6 +20,7 @@ import UserNotifications
 final class LocalDatabase {
     static let shared = LocalDatabase()
     static let notificationsLock = NSLock()
+    static let compressedPayloadMagic = Data([0x4D, 0x47, 0x4C, 0x46]) // MGLF
     private static let repairLock = NSLock()
     private static var activeRepairs = Set<String>()
 
@@ -40,9 +41,17 @@ final class LocalDatabase {
         }
 
         do {
-            let data = try Data(contentsOf: url)
+            let storedData = try Data(contentsOf: url)
+            let data = try Self.unpackedPayload(from: storedData)
             print("loaded local \(filename)")
             let decoded = try JSONDecoder().decode([T].self, from: data)
+
+            if !Self.isCompressedPayload(storedData),
+               let compacted = try? Self.storedPayload(from: data),
+               compacted.count < storedData.count {
+                try? compacted.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            }
+
             let duration = CFAbsoluteTimeGetCurrent() - start
             print("loaded LocalDatabase \(filename) in \(String(format: "%.3f", duration))s")
 
@@ -106,7 +115,8 @@ final class LocalDatabase {
 
         do {
             let data = try JSONEncoder().encode(items)
-            try data.write(to: url)
+            let payload = try Self.storedPayload(from: data)
+            try payload.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         } catch {
             print("❌ Failed to save \(filename): \(error)")
         }
@@ -153,6 +163,27 @@ private extension LocalDatabase {
         repairLock.lock()
         activeRepairs.remove(filename)
         repairLock.unlock()
+    }
+
+    static func storedPayload(from data: Data) throws -> Data {
+        let compressed = try (data as NSData).compressed(using: .lzfse) as Data
+        guard compressed.count + compressedPayloadMagic.count < data.count else {
+            return data
+        }
+
+        var payload = compressedPayloadMagic
+        payload.append(compressed)
+        return payload
+    }
+
+    static func unpackedPayload(from data: Data) throws -> Data {
+        guard isCompressedPayload(data) else { return data }
+        let compressed = data.dropFirst(compressedPayloadMagic.count)
+        return try (Data(compressed) as NSData).decompressed(using: .lzfse) as Data
+    }
+
+    static func isCompressedPayload(_ data: Data) -> Bool {
+        data.starts(with: compressedPayloadMagic)
     }
 }
 
