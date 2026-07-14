@@ -212,6 +212,7 @@ struct PrayerTimeSuggestion: Equatable {
         let name = prayerName
             .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "pl_PL"))
             .lowercased()
+            .replacingOccurrences(of: "ł", with: "l")
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !name.isEmpty else { return nil }

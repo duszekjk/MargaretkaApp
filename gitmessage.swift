@@ -1,6 +1,5 @@
-bound prayer history growth
+normalize Polish l-stroke in prayer suggestions
 
-Keep at most the newest 512 prayer sessions and compact oversized legacy history
-as soon as it loads. Add a regression test proving the ceiling keeps the newest
-records. The measured 130-session history is only 11.3 KB after compression, but
-this prevents it from growing without limit.
+Treat ł like l after Foundation's diacritic folding so uppercase ANIOŁ PAŃSKI
+matches the noon suggestion. This repairs the pre-existing unit regression that
+was exposed while running the storage tests.
