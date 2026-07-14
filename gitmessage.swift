@@ -1,5 +1,4 @@
-preserve the complete prayer history
+preserve user build number 39
 
-Remove the 512-session retention cap and its regression test. Every existing and
-future prayer session remains stored; the lossless LZFSE database compression
-continues to reduce its disk footprint without deleting history.
+Commit the existing uncommitted project version increase from 38 to 39 before
+changing the weekly prayer streak behavior.
