@@ -821,9 +821,18 @@ struct PrayerStats {
     }
 
     private static func currentWeeklyStreak(from referenceDate: Date, sessions: [PrayerSession], calendar: Calendar) -> Int {
+        guard let latestPrayerDate = sessions.map(\.endedAt).max(),
+              referenceDate.timeIntervalSince(latestPrayerDate) <= 8 * 24 * 60 * 60 else {
+            return 0
+        }
+
         let weekKeys = Set(sessions.map { weekKey(for: $0.endedAt, calendar: calendar) })
         var streak = 0
         var current = weekKey(for: referenceDate, calendar: calendar)
+
+        if !weekKeys.contains(current) {
+            current = weekKey(for: latestPrayerDate, calendar: calendar)
+        }
 
         while weekKeys.contains(current) {
             streak += 1

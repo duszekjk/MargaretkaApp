@@ -223,6 +223,27 @@ struct MargaretkaAppTests {
         #expect(stats.activeWeeks == 2)
     }
 
+    @Test func weeklyStreakWaitsEightDaysBeforeExpiring() {
+        let calendar = Calendar.current
+        let previousFriday = calendar.date(from: DateComponents(year: 2025, month: 7, day: 11, hour: 18))!
+        let fridayBefore = calendar.date(byAdding: .day, value: -7, to: previousFriday)!
+        let followingTuesday = calendar.date(from: DateComponents(year: 2025, month: 7, day: 15, hour: 12))!
+        let justInsideGracePeriod = previousFriday.addingTimeInterval(8 * 24 * 60 * 60 - 60)
+        let afterGracePeriod = previousFriday.addingTimeInterval(8 * 24 * 60 * 60 + 60)
+        let sessions = [
+            makeSession(endedAt: fridayBefore, completed: true, category: .priest),
+            makeSession(endedAt: previousFriday, completed: true, category: .priest)
+        ]
+
+        let tuesdayStats = PrayerStats(sessions: sessions, range: .allTime, referenceDate: followingTuesday, focusCategory: .priest)
+        let insideGraceStats = PrayerStats(sessions: sessions, range: .allTime, referenceDate: justInsideGracePeriod, focusCategory: .priest)
+        let expiredStats = PrayerStats(sessions: sessions, range: .allTime, referenceDate: afterGracePeriod, focusCategory: .priest)
+
+        #expect(tuesdayStats.currentWeeklyStreak == 2)
+        #expect(insideGraceStats.currentWeeklyStreak == 2)
+        #expect(expiredStats.currentWeeklyStreak == 0)
+    }
+
 @Test func statsCompletionRate() async throws {
         let date = Date()
         let completed = makeSession(endedAt: date, completed: true)
