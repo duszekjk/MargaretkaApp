@@ -1,10 +1,11 @@
-bound audio growth and remove orphaned recordings
+stop Brewiarz web data from growing on disk
 
-Record new voice audio as 16 kHz mono AAC at 24 kbps instead of 44.1 kHz
-Apple Lossless. Give imports unique filenames so unrelated files cannot collide.
+Use a nonpersistent WKWebsiteDataStore for Brewiarz prayer pages so HTML, images,
+cookies, and WebKit caches remain in memory instead of accumulating in Documents
+& Data.
 
-Delete replaced or removed prayer audio immediately. On launch, remove audio files
-that no saved prayer references, which cleans recordings and imports left behind by
-cancelled editors while preserving every referenced user file.
+On the first launch after this update, clear the shared URL cache and legacy
+persistent WebKit website data. Mark cleanup complete only in WebKit's completion
+handler so an interrupted attempt retries on the next launch.
 
-The build number remains 38 pending build and behavior validation.
+The build number remains 38 pending final tests and validation.

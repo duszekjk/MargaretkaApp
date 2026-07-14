@@ -7,6 +7,7 @@
 
 import UIKit
 import UserNotifications
+import WebKit
 
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(
@@ -14,7 +15,22 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        cleanLegacyWebCachesIfNeeded()
         return true
+    }
+
+    private func cleanLegacyWebCachesIfNeeded() {
+        let cleanupKey = "legacy_web_cache_cleanup_v1"
+        guard !UserDefaults.standard.bool(forKey: cleanupKey) else { return }
+
+        URLCache.shared.removeAllCachedResponses()
+        let dataStore = WKWebsiteDataStore.default()
+        dataStore.removeData(
+            ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(),
+            modifiedSince: .distantPast
+        ) {
+            UserDefaults.standard.set(true, forKey: cleanupKey)
+        }
     }
 
     func userNotificationCenter(

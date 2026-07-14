@@ -37,6 +37,7 @@ struct WebView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
+        config.websiteDataStore = .nonPersistent()
         let scriptSource = """
         (function() {
           var style = document.createElement('style');
