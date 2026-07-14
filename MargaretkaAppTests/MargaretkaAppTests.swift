@@ -7,10 +7,60 @@
 
 import Foundation
 import Testing
+import UIKit
 @testable import MargaretkaApp
 
 @MainActor
 struct MargaretkaAppTests {
+
+    @Test func databaseCompressionRoundTripsAndAcceptsLegacyPayloads() throws {
+        let raw = Data(repeating: 0x41, count: 20_000)
+
+        let stored = try LocalDatabase.storedPayload(from: raw)
+
+        #expect(LocalDatabase.isCompressedPayload(stored))
+        #expect(stored.count < raw.count)
+        #expect(try LocalDatabase.unpackedPayload(from: stored) == raw)
+        #expect(try LocalDatabase.unpackedPayload(from: raw) == raw)
+    }
+
+    @Test func persistedPhotoHonorsByteAndDimensionLimits() throws {
+        let source = UIGraphicsImageRenderer(size: CGSize(width: 1_200, height: 900)).image { context in
+            UIColor.systemIndigo.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 1_200, height: 900))
+            UIColor.systemYellow.setFill()
+            for offset in stride(from: 0, to: 1_200, by: 40) {
+                context.fill(CGRect(x: offset, y: 0, width: 20, height: 900))
+            }
+        }
+
+        let data = try #require(source.storageJPEGData())
+        let storedImage = try #require(UIImage(data: data))
+
+        #expect(data.count <= UIImage.storagePhotoByteLimit)
+        #expect(max(storedImage.size.width, storedImage.size.height) <= 480)
+    }
+
+    @Test func bundledPrayerArtworkIsNotPersisted() {
+        let pngSignature = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+        let legacyPNG = pngSignature + Data(repeating: 0, count: 50_000)
+        let target = Priest(
+            id: UUID(),
+            firstName: "Różaniec",
+            lastName: "",
+            title: "",
+            category: .prayer,
+            photoData: legacyPNG,
+            assignedPrayerGroups: [],
+            schedule: SchedulePlan(),
+            lastModified: Date(),
+            notificationTitle: "Różaniec",
+            notificationMessage: ""
+        )
+
+        #expect(target.compactedForStorage().photoData == nil)
+        #expect(peopleTemplates.allSatisfy { $0.photoData == nil })
+    }
 
     @Test func koronkaDefaultsToThreePM() {
         let suggestion = PrayerTimeSuggestion.matching("Koronka do Miłosierdzia Bożego")

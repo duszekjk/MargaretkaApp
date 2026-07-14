@@ -1,11 +1,10 @@
-stop Brewiarz web data from growing on disk
+add storage regression tests pending access fix
 
-Use a nonpersistent WKWebsiteDataStore for Brewiarz prayer pages so HTML, images,
-cookies, and WebKit caches remain in memory instead of accumulating in Documents
-& Data.
+Add checks for database payload round-tripping, the 20 KB and 480-pixel photo
+limits, and removal of bundled PNG payloads from stored prayer templates.
 
-On the first launch after this update, clear the shared URL cache and legacy
-persistent WebKit website data. Mark cleanup complete only in WebKit's completion
-handler so an interrupted attempt retries on the next launch.
+The device test attempt passed framework signing after moving Derived Data out of
+iCloud, but these new tests did not compile because the database payload helpers
+are fileprivate. A follow-up must expose those helpers before tests can run.
 
-The build number remains 38 pending final tests and validation.
+The build number remains 38.
