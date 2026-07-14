@@ -1,5 +1,6 @@
-enforce an 8 KB ceiling for persisted photos
+bound prayer history growth
 
-Downscale user photos further when necessary and reject output that cannot meet
-the storage ceiling. This keeps six custom photos within roughly 48 KB instead
-of allowing roughly 120 KB, while bundled prayer artwork remains asset-backed.
+Keep at most the newest 512 prayer sessions and compact oversized legacy history
+as soon as it loads. Add a regression test proving the ceiling keeps the newest
+records. The measured 130-session history is only 11.3 KB after compression, but
+this prevents it from growing without limit.
