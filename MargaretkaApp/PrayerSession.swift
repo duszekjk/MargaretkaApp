@@ -34,7 +34,6 @@ final class PrayerSessionStore: ObservableObject {
     @Published private(set) var sessions: [PrayerSession] = []
 
     static let saveKey = "prayer_sessions"
-    static let maximumStoredSessions = 512
     private var sessionsChangedCancellable: AnyCancellable?
 
     init() {
@@ -48,27 +47,18 @@ final class PrayerSessionStore: ObservableObject {
 
     func add(_ session: PrayerSession) {
         sessions.append(session)
-        sessions = Self.retainedSessions(sessions)
         save()
         NotificationCenter.default.post(name: .prayerSessionsChanged, object: session.id)
     }
 
     private func load() {
-        let loaded: [PrayerSession] = LocalDatabase.shared.load(from: Self.saveKey)
-        sessions = Self.retainedSessions(loaded)
-        if sessions.count != loaded.count {
-            save()
-        }
+        sessions = LocalDatabase.shared.load(from: Self.saveKey)
     }
 
     private func save() {
         LocalDatabase.shared.save(sessions, as: Self.saveKey)
     }
 
-    static func retainedSessions(_ sessions: [PrayerSession]) -> [PrayerSession] {
-        guard sessions.count > maximumStoredSessions else { return sessions }
-        return Array(sessions.suffix(maximumStoredSessions))
-    }
 }
 
 extension Notification.Name {

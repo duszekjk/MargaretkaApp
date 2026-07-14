@@ -1,5 +1,5 @@
-normalize Polish l-stroke in prayer suggestions
+preserve the complete prayer history
 
-Treat ł like l after Foundation's diacritic folding so uppercase ANIOŁ PAŃSKI
-matches the noon suggestion. This repairs the pre-existing unit regression that
-was exposed while running the storage tests.
+Remove the 512-session retention cap and its regression test. Every existing and
+future prayer session remains stored; the lossless LZFSE database compression
+continues to reduce its disk footprint without deleting history.

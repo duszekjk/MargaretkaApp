@@ -62,19 +62,6 @@ struct MargaretkaAppTests {
         #expect(peopleTemplates.allSatisfy { $0.photoData == nil })
     }
 
-    @Test func prayerHistoryHasAFixedStorageCeiling() {
-        let start = Date(timeIntervalSince1970: 1_700_000_000)
-        let sessions = (0...PrayerSessionStore.maximumStoredSessions).map { offset in
-            makeSession(endedAt: start.addingTimeInterval(Double(offset)), completed: true)
-        }
-
-        let retained = PrayerSessionStore.retainedSessions(sessions)
-
-        #expect(retained.count == PrayerSessionStore.maximumStoredSessions)
-        #expect(retained.first?.endedAt == sessions[1].endedAt)
-        #expect(retained.last?.endedAt == sessions.last?.endedAt)
-    }
-
     @Test func koronkaDefaultsToThreePM() {
         let suggestion = PrayerTimeSuggestion.matching("Koronka do Miłosierdzia Bożego")
 
