@@ -90,7 +90,7 @@ struct StatsView: View {
                 ProgressRing(
                     progress: summary.progressToNextMilestone,
                     title: summary.nextMilestoneTitle,
-                    subtitle: "Checkpoint"
+                    subtitle: "Następny cel"
                 )
             }
 
@@ -154,7 +154,7 @@ struct StatsView: View {
                 Text(summary.checkpointTitle)
                     .font(.headline)
 
-                Text("Osiągnięto: \(title)")
+                Text("Ostatni osiągnięty: \(title)")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
             }

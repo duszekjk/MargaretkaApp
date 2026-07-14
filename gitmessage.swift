@@ -1,7 +1,5 @@
-separate lifetime achievements from statistics filters
+clarify next and achieved checkpoint labels
 
-Keep the current streak, longest streak, checkpoint ring, unlocked milestones,
-and header summary based on complete history. The 8/12/52-week picker now limits
-only period statistics such as sessions, active weeks, duration, and completed
-prayer components. Clarify that the displayed percentage is completed sessions,
-and add a regression test covering 14 lifetime weeks through an 8-week filter.
+Label the progress ring as the next goal and the checkpoint card as the last goal
+already achieved. This makes values such as a 30-week next goal and a 14-week
+completed checkpoint read as progress rather than contradictory totals.
