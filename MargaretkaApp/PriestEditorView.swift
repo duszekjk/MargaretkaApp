@@ -199,7 +199,7 @@ struct PriestEditorView: View {
 import UIKit
 
 extension UIImage {
-    static let storagePhotoByteLimit = 20_000
+    static let storagePhotoByteLimit = 8_000
 
     func resized(maxDimension: CGFloat) -> UIImage {
         let w = size.width, h = size.height
@@ -222,7 +222,7 @@ extension UIImage {
         var candidate = resized(maxDimension: maxDimension)
         var smallest: Data?
 
-        for dimension in [maxDimension, 400, 320, 240] {
+        for dimension in [maxDimension, 400, 320, 240, 180, 120, 80] {
             candidate = candidate.resized(maxDimension: dimension)
             for quality in [0.50, 0.35, 0.25, 0.18, 0.12, 0.08] {
                 guard let data = candidate.jpegData(compressionQuality: quality) else { continue }
@@ -235,6 +235,6 @@ extension UIImage {
             }
         }
 
-        return smallest
+        return smallest.flatMap { $0.count <= byteLimit ? $0 : nil }
     }
 }
