@@ -25,6 +25,7 @@ final class LocalDatabase {
     private static var activeRepairs = Set<String>()
 
     private let fileManager = FileManager.default
+    private let ioLock = NSLock()
 
     func path(for filename: String) -> URL {
         let folder = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -33,6 +34,8 @@ final class LocalDatabase {
     func load<T: Decodable>(from filename: String) -> [T] {
         let start = CFAbsoluteTimeGetCurrent()
         print("loading from LocalDatabase \(filename)")
+        ioLock.lock()
+        defer { ioLock.unlock() }
         let url = path(for: filename)
 
         guard fileManager.fileExists(atPath: url.path) else {
@@ -110,13 +113,18 @@ final class LocalDatabase {
 
 
     func save<T: Encodable>(_ items: [T], as filename: String) {
+        let start = CFAbsoluteTimeGetCurrent()
         print("savinng \(filename)")
+        ioLock.lock()
+        defer { ioLock.unlock() }
         let url = path(for: filename)
 
         do {
             let data = try JSONEncoder().encode(items)
             let payload = try Self.storedPayload(from: data)
             try payload.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            let duration = CFAbsoluteTimeGetCurrent() - start
+            print("saved LocalDatabase \(filename) in \(String(format: "%.3f", duration))s")
         } catch {
             print("❌ Failed to save \(filename): \(error)")
         }

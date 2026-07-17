@@ -12,9 +12,7 @@ import SwiftUI
 
 
 class PriestStore: ObservableObject {
-    @Published var priests: [Priest] = [] {
-        didSet { saveAsync() }
-    }
+    @Published private(set) var priests: [Priest] = []
 
     private let key = Priest.storageKey
     private let legacyFileKey = "stored_priests"
@@ -58,15 +56,16 @@ class PriestStore: ObservableObject {
         try? FileManager.default.removeItem(at: url)
     }
 
-    private func save() {
-        LocalDatabase.shared.save(priests, as: key)
-    }
-
     private func saveAsync() {
         let snapshot = priests
         saveQueue.async {
             LocalDatabase.shared.save(snapshot, as: self.key)
         }
+    }
+
+    func replaceLoadedPriests(_ priests: [Priest]) {
+        guard self.priests != priests else { return }
+        self.priests = priests
     }
 
     func addOrUpdate(_ priest: Priest) {
@@ -75,15 +74,18 @@ class PriestStore: ObservableObject {
         } else {
             priests.append(priest)
         }
+        saveAsync()
     }
 
     func delete(at offsets: IndexSet) {
         priests.remove(atOffsets: offsets)
+        saveAsync()
     }
 
     func deletePriest(_ priest: Priest) {
         if let index = priests.firstIndex(of: priest) {
             priests.remove(at: index)
+            saveAsync()
         }
     }
 }

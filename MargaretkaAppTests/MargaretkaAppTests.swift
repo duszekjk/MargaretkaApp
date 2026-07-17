@@ -24,6 +24,42 @@ struct MargaretkaAppTests {
         #expect(try LocalDatabase.unpackedPayload(from: raw) == raw)
     }
 
+    @Test func concurrentDatabaseWritesRemainReadable() {
+        let key = "concurrent_database_test_\(UUID().uuidString)"
+        defer { try? FileManager.default.removeItem(at: LocalDatabase.shared.path(for: key)) }
+        let group = DispatchGroup()
+
+        for value in 0..<16 {
+            group.enter()
+            DispatchQueue.global(qos: .userInitiated).async {
+                LocalDatabase.shared.save([value], as: key)
+                group.leave()
+            }
+        }
+
+        #expect(group.wait(timeout: .now() + 10) == .success)
+        let loaded: [Int] = LocalDatabase.shared.load(from: key)
+        #expect(loaded.count == 1)
+        #expect(loaded.first.map { (0..<16).contains($0) } == true)
+    }
+
+    @Test func unchangedNotificationIDsDoNotRewriteScheduleItems() throws {
+        var priest = try #require(peopleTemplates.first)
+        priest.notificationIds = ["existing-id"]
+
+        let unchanged = ScheduleData<Priest>.itemsByUpdatingNotificationIDs(
+            [priest],
+            idsByItem: [priest.id: ["existing-id"]]
+        )
+        let changed = ScheduleData<Priest>.itemsByUpdatingNotificationIDs(
+            [priest],
+            idsByItem: [priest.id: ["replacement-id"]]
+        )
+
+        #expect(unchanged == nil)
+        #expect(changed?.first?.notificationIds == ["replacement-id"])
+    }
+
     @Test func persistedPhotoHonorsByteAndDimensionLimits() throws {
         let source = UIGraphicsImageRenderer(size: CGSize(width: 1_200, height: 900)).image { context in
             UIColor.systemIndigo.setFill()
