@@ -1,11 +1,11 @@
-prevent competing launch saves from freezing the app
+preserve legacy data while recovering partially corrupt stores
 
-Stop PriestStore from saving data merely because launch loaded it, and skip the
-notification-ID publication and save when rescheduling produced no changes.
-Publish changed IDs once instead of mutating every array element individually,
-save immutable snapshots, and serialize LocalDatabase reads and writes. Add
-regressions for unchanged notification IDs and concurrent database writes.
+Stop deleting legacy preference snapshots before they can be migrated, restore
+prayers, priests, and prayer sessions from those snapshots when the local store
+is empty, and make LocalDatabase salvage valid array entries from partially
+corrupt payloads instead of returning an empty store. Add a regression for
+partial array recovery.
 
-Validated with a successful iOS app build and 26 passing unit tests on the
-connected iPhone. The device test host launched past the former freeze point
-without redundant priest_sch saves.
+Validated with the Swift compiler getting through the changed sources. Full
+device test validation was blocked here by unavailable compatible iOS devices
+and signing/runtime issues in the local environment.

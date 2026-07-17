@@ -24,6 +24,12 @@ final class LocalDatabase {
     private static let repairLock = NSLock()
     private static var activeRepairs = Set<String>()
 
+    private enum ArrayDecodeResult<Element> {
+        case exact([Element])
+        case recovered([Element])
+        case failed
+    }
+
     private let fileManager = FileManager.default
     private let ioLock = NSLock()
 
@@ -47,9 +53,23 @@ final class LocalDatabase {
             let storedData = try Data(contentsOf: url)
             let data = try Self.unpackedPayload(from: storedData)
             print("loaded local \(filename)")
-            let decoded = try JSONDecoder().decode([T].self, from: data)
+            let decodeResult = Self.decodeArray([T].self, from: data)
+            let decoded: [T]
+            let shouldCompactStorage: Bool
+            switch decodeResult {
+            case .exact(let items):
+                decoded = items
+                shouldCompactStorage = true
+            case .recovered(let items):
+                decoded = items
+                shouldCompactStorage = false
+                print("⚠️ Recovered \(items.count) \(filename) records from a partially corrupt payload")
+            case .failed:
+                throw DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: "Unable to decode \(filename)"))
+            }
 
-            if !Self.isCompressedPayload(storedData),
+            if shouldCompactStorage,
+               !Self.isCompressedPayload(storedData),
                let compacted = try? Self.storedPayload(from: data),
                compacted.count < storedData.count {
                 try? compacted.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
@@ -194,6 +214,35 @@ extension LocalDatabase {
 
     static func isCompressedPayload(_ data: Data) -> Bool {
         data.starts(with: compressedPayloadMagic)
+    }
+
+    private static func decodeArray<T: Decodable>(_ type: [T].Type, from data: Data) -> ArrayDecodeResult<T> {
+        if let decoded = try? JSONDecoder().decode([T].self, from: data) {
+            return .exact(decoded)
+        }
+
+        guard
+            let json = try? JSONSerialization.jsonObject(with: data, options: []),
+            let items = json as? [Any]
+        else {
+            return .failed
+        }
+
+        let decoder = JSONDecoder()
+        var recovered: [T] = []
+        recovered.reserveCapacity(items.count)
+
+        for item in items {
+            guard JSONSerialization.isValidJSONObject([item]),
+                  let itemData = try? JSONSerialization.data(withJSONObject: [item], options: []),
+                  let decoded = try? decoder.decode([T].self, from: itemData).first
+            else {
+                continue
+            }
+            recovered.append(decoded)
+        }
+
+        return recovered.isEmpty ? .failed : .recovered(recovered)
     }
 }
 

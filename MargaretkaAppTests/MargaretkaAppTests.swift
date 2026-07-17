@@ -43,6 +43,43 @@ struct MargaretkaAppTests {
         #expect(loaded.first.map { (0..<16).contains($0) } == true)
     }
 
+    @Test func partiallyCorruptDatabaseStillRecoversValidRecords() throws {
+        let key = "partial_recovery_test_\(UUID().uuidString)"
+        defer { try? FileManager.default.removeItem(at: LocalDatabase.shared.path(for: key)) }
+
+        let goodPrayer = Prayer(
+            name: "Recovered prayer",
+            text: "Text",
+            symbol: "hands.sparkles",
+            audioFilename: nil,
+            audioSource: nil,
+            timestampedLines: nil
+        )
+
+        let payload: [[String: Any]] = [
+            [
+                "id": goodPrayer.id.uuidString,
+                "name": goodPrayer.name,
+                "text": goodPrayer.text,
+                "symbol": goodPrayer.symbol
+            ],
+            [
+                "id": "not-a-uuid",
+                "name": 123,
+                "text": false
+            ]
+        ]
+
+        let data = try JSONSerialization.data(withJSONObject: payload, options: [])
+        try data.write(to: LocalDatabase.shared.path(for: key), options: [.atomic])
+
+        let loaded: [Prayer] = LocalDatabase.shared.load(from: key)
+
+        #expect(loaded.count == 1)
+        #expect(loaded.first?.id == goodPrayer.id)
+        #expect(loaded.first?.name == goodPrayer.name)
+    }
+
     @Test func unchangedNotificationIDsDoNotRewriteScheduleItems() throws {
         var priest = try #require(peopleTemplates.first)
         priest.notificationIds = ["existing-id"]
