@@ -1,11 +1,10 @@
-preserve legacy data while recovering partially corrupt stores
+remove the launch-time schedule refresh that froze the app
 
-Stop deleting legacy preference snapshots before they can be migrated, restore
-prayers, priests, and prayer sessions from those snapshots when the local store
-is empty, and make LocalDatabase salvage valid array entries from partially
-corrupt payloads instead of returning an empty store. Add a regression for
-partial array recovery.
+Stop kicking off a full `rescheduleAll()` from app startup. That work was being
+started five seconds after launch and was rebuilding the same priest schedule
+even when nothing had changed, which matches the long `build 30s` launch logs
+and made the app appear frozen as soon as it opened.
 
-Validated with the Swift compiler getting through the changed sources. Full
-device test validation was blocked here by unavailable compatible iOS devices
-and signing/runtime issues in the local environment.
+Validated by source inspection and by getting the build pipeline back to the
+same app-target compilation stage as before. Full device completion was still
+blocked by the local asset/simulator environment.
