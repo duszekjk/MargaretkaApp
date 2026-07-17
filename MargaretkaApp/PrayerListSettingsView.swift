@@ -15,7 +15,7 @@ struct PrayerListSettingsView: View {
         List {
             ForEach(store.prayers) { prayer in
                 NavigationLink(destination: PrayerEditorView(store: store, prayer: prayer)) {
-                    Label(prayer.name, systemImage: prayer.symbol)
+                    Label(prayer.name, systemImage: prayer.renderedSymbol)
                 }
             }
             .onDelete { store.delete(at: $0) }

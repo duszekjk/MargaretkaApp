@@ -317,6 +317,7 @@ func makeIDShort(with title: String, eventTime: Date) -> String {
 class ScheduleData<T: Schedulable>: ObservableObject {
     @Published var items: [T] = []
     let saveKey: String
+    private let rescheduleSignatureKey: String
     private var isLoading = false
     
     private struct Scheduled {
@@ -334,6 +335,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
 
     init(saveKey: String) {
         self.saveKey = saveKey
+        self.rescheduleSignatureKey = "schedule_reschedule_signature_\(saveKey)"
         load()
     }
 
@@ -461,6 +463,11 @@ class ScheduleData<T: Schedulable>: ObservableObject {
     }
     func rescheduleAll() {
         let itemsSnapshot = items
+        if let snapshotSignature = Self.rescheduleSignature(for: itemsSnapshot),
+           UserDefaults.standard.string(forKey: rescheduleSignatureKey) == snapshotSignature {
+            print("ScheduleData.rescheduleAll \(saveKey): skipped unchanged snapshot")
+            return
+        }
         Task.detached(priority: .background) {
             let rescheduleStart = CFAbsoluteTimeGetCurrent()
             let now = Date()
@@ -576,9 +583,13 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                 DispatchQueue.main.async {
                     let mainStart = CFAbsoluteTimeGetCurrent()
                     let updatedItems = Self.itemsByUpdatingNotificationIDs(self.items, idsByItem: idsByItem)
+                    let signatureToStore = Self.rescheduleSignature(for: updatedItems ?? itemsSnapshot)
                     if let updatedItems {
                         self.items = updatedItems
                         self.saveAsync(updatedItems)
+                    }
+                    if let signatureToStore {
+                        UserDefaults.standard.set(signatureToStore, forKey: self.rescheduleSignatureKey)
                     }
                     let mainDuration = CFAbsoluteTimeGetCurrent() - mainStart
                     let totalDuration = CFAbsoluteTimeGetCurrent() - rescheduleStart
@@ -598,6 +609,16 @@ class ScheduleData<T: Schedulable>: ObservableObject {
     }
     func removeScheduledNotifications(for ids: [String]) {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
+    }
+
+    private static func rescheduleSignature(for items: [T]) -> String? {
+        guard let data = try? JSONEncoder().encode(items) else { return nil }
+        var hash: UInt64 = 14_695_981_039_346_656_037
+        for byte in data {
+            hash ^= UInt64(byte)
+            hash &*= 1_099_511_628_211
+        }
+        return String(hash, radix: 16)
     }
 
 }

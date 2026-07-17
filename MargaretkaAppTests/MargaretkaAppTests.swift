@@ -135,6 +135,19 @@ struct MargaretkaAppTests {
         #expect(peopleTemplates.allSatisfy { $0.photoData == nil })
     }
 
+    @Test func invalidPrayerSymbolsFallBackToAVisibleIcon() {
+        let prayer = Prayer(
+            name: "Fallback symbol",
+            text: "Text",
+            symbol: "",
+            audioFilename: nil,
+            audioSource: nil,
+            timestampedLines: nil
+        )
+
+        #expect(prayer.renderedSymbol == "questionmark")
+    }
+
     @Test func koronkaDefaultsToThreePM() {
         let suggestion = PrayerTimeSuggestion.matching("Koronka do Miłosierdzia Bożego")
 

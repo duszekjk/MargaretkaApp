@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 enum BrewiarzPrayerKey: String, Codable, CaseIterable, Identifiable {
     case wezwanie
@@ -88,6 +91,16 @@ struct Prayer: Identifiable, Hashable, Codable {
     var audioSource: AudioSource?
     var timestampedLines: [TimestampedLine]? 
     var content: PrayerContent = .text
+
+    var renderedSymbol: String {
+        let trimmed = symbol.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "questionmark" }
+        #if canImport(UIKit)
+        return UIImage(systemName: trimmed) == nil ? "questionmark" : trimmed
+        #else
+        return trimmed
+        #endif
+    }
 
     enum CodingKeys: String, CodingKey {
         case id
