@@ -360,28 +360,10 @@ class ScheduleData<T: Schedulable>: ObservableObject {
         LocalDatabase.shared.save(items, as: saveKey)
     }
 
-    private func saveAsync(_ snapshot: [T]) {
-        let saveKey = saveKey
+    private func saveAsync() {
         DispatchQueue.global(qos: .utility).async {
-            LocalDatabase.shared.save(snapshot, as: saveKey)
+            self.save()
         }
-    }
-
-    static func itemsByUpdatingNotificationIDs(
-        _ items: [T],
-        idsByItem: [T.ID: [String]]
-    ) -> [T]? {
-        var updatedItems = items
-        var changed = false
-
-        for index in updatedItems.indices {
-            let newIDs = idsByItem[updatedItems[index].id] ?? []
-            guard updatedItems[index].notificationIds != newIDs else { continue }
-            updatedItems[index].notificationIds = newIDs
-            changed = true
-        }
-
-        return changed ? updatedItems : nil
     }
 
     func add(_ item: T) {
@@ -575,14 +557,14 @@ class ScheduleData<T: Schedulable>: ObservableObject {
 
                 DispatchQueue.main.async {
                     let mainStart = CFAbsoluteTimeGetCurrent()
-                    let updatedItems = Self.itemsByUpdatingNotificationIDs(self.items, idsByItem: idsByItem)
-                    if let updatedItems {
-                        self.items = updatedItems
-                        self.saveAsync(updatedItems)
+                    for index in self.items.indices {
+                        let itemId = self.items[index].id
+                        self.items[index].notificationIds = idsByItem[itemId] ?? []
                     }
+                    self.saveAsync()
                     let mainDuration = CFAbsoluteTimeGetCurrent() - mainStart
                     let totalDuration = CFAbsoluteTimeGetCurrent() - rescheduleStart
-                    print("ScheduleData.rescheduleAll \(self.saveKey): build \(String(format: "%.3f", buildDuration))s, pending \(String(format: "%.3f", pendingDuration))s, schedule \(String(format: "%.3f", scheduleDuration))s, main \(String(format: "%.3f", mainDuration))s, total \(String(format: "%.3f", totalDuration))s, needsReschedule \(needsReschedule), updatedIDs \(updatedItems != nil)")
+                    print("ScheduleData.rescheduleAll \(self.saveKey): build \(String(format: "%.3f", buildDuration))s, pending \(String(format: "%.3f", pendingDuration))s, schedule \(String(format: "%.3f", scheduleDuration))s, main \(String(format: "%.3f", mainDuration))s, total \(String(format: "%.3f", totalDuration))s, needsReschedule \(needsReschedule)")
                 }
             }
         }

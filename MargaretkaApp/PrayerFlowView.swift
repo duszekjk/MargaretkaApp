@@ -292,21 +292,21 @@ struct PrayerFlowView: View {
                                     userSelectedCategory = true
                                     selectedCategory = .priest
                                 } label: {
-                                    selectionMenuLabel("Księża", isSelected: selectedCategory == .priest)
+                                    Label("Księża", systemImage: selectedCategory == .priest ? "checkmark" : "")
                                 }
 
                                 Button {
                                     userSelectedCategory = true
                                     selectedCategory = .person
                                 } label: {
-                                    selectionMenuLabel("Osoby", isSelected: selectedCategory == .person)
+                                    Label("Osoby", systemImage: selectedCategory == .person ? "checkmark" : "")
                                 }
 
                                 Button {
                                     userSelectedCategory = true
                                     selectedCategory = .prayer
                                 } label: {
-                                    selectionMenuLabel("Modlitwy", isSelected: selectedCategory == .prayer)
+                                    Label("Modlitwy", systemImage: selectedCategory == .prayer ? "checkmark" : "")
                                 }
                             }
 
@@ -325,7 +325,7 @@ struct PrayerFlowView: View {
                                         selectedPriest = priest
                                     }
                                 }) {
-                                    selectionMenuLabel(priest.displayName, isSelected: selectedPriest?.id == priest.id)
+                                    Label(priest.displayName, systemImage: selectedPriest?.id == priest.id ? "checkmark" : "")
                                         .cornerRadius(16)
                                 }
                             }
@@ -1108,17 +1108,6 @@ struct PrayerButtonFramePreferenceKey: PreferenceKey {
     
     static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
         value.merge(nextValue()) { $1 }
-    }
-}
-
-@ViewBuilder
-private func selectionMenuLabel(_ title: String, isSelected: Bool) -> some View {
-    HStack(spacing: 8) {
-        Text(title)
-        Spacer(minLength: 8)
-        if isSelected {
-            Image(systemName: "checkmark")
-        }
     }
 }
 

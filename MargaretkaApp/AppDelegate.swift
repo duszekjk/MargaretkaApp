@@ -15,12 +15,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
-        migrateLegacyPreferenceTemporaryFiles()
+        cleanStalePreferenceTemporaryFiles()
         cleanLegacyWebCachesIfNeeded()
         return true
     }
 
-    private func migrateLegacyPreferenceTemporaryFiles() {
+    private func cleanStalePreferenceTemporaryFiles() {
         guard let bundleIdentifier = Bundle.main.bundleIdentifier,
               let library = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first else {
             return
@@ -34,42 +34,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             options: [.skipsHiddenFiles]
         ) else { return }
 
+        let staleBefore = Date().addingTimeInterval(-24 * 60 * 60)
         for file in files where file.lastPathComponent.hasPrefix(temporaryPrefix) {
-            guard let snapshot = NSDictionary(contentsOf: file) as? [String: Any] else { continue }
-            restorePrayerDataIfNeeded(from: snapshot)
-            restorePriestDataIfNeeded(from: snapshot)
-            restorePrayerSessionDataIfNeeded(from: snapshot)
+            guard let values = try? file.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey]),
+                  values.isRegularFile == true,
+                  let modified = values.contentModificationDate,
+                  modified < staleBefore else { continue }
+            try? FileManager.default.removeItem(at: file)
         }
-    }
-
-    private func restorePrayerDataIfNeeded(from snapshot: [String: Any]) {
-        guard let legacyData = snapshot["stored_prayers"] as? Data else { return }
-        let current: [Prayer] = LocalDatabase.shared.load(from: "stored_prayers")
-        guard current.isEmpty else { return }
-
-        let candidateData = (try? LocalDatabase.unpackedPayload(from: legacyData)) ?? legacyData
-        guard let decoded = try? JSONDecoder().decode([Prayer].self, from: candidateData), !decoded.isEmpty else { return }
-        LocalDatabase.shared.save(decoded, as: "stored_prayers")
-    }
-
-    private func restorePriestDataIfNeeded(from snapshot: [String: Any]) {
-        guard let legacyData = snapshot["stored_priests"] as? Data else { return }
-        let current: [Priest] = LocalDatabase.shared.load(from: Priest.storageKey)
-        guard current.isEmpty else { return }
-
-        let candidateData = (try? LocalDatabase.unpackedPayload(from: legacyData)) ?? legacyData
-        guard let decoded = try? JSONDecoder().decode([Priest].self, from: candidateData), !decoded.isEmpty else { return }
-        LocalDatabase.shared.save(decoded, as: Priest.storageKey)
-    }
-
-    private func restorePrayerSessionDataIfNeeded(from snapshot: [String: Any]) {
-        guard let legacyData = snapshot[PrayerSessionStore.saveKey] as? Data else { return }
-        let current: [PrayerSession] = LocalDatabase.shared.load(from: PrayerSessionStore.saveKey)
-        guard current.isEmpty else { return }
-
-        let candidateData = (try? LocalDatabase.unpackedPayload(from: legacyData)) ?? legacyData
-        guard let decoded = try? JSONDecoder().decode([PrayerSession].self, from: candidateData), !decoded.isEmpty else { return }
-        LocalDatabase.shared.save(decoded, as: PrayerSessionStore.saveKey)
     }
 
     private func cleanLegacyWebCachesIfNeeded() {

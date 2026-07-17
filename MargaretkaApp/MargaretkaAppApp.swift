@@ -13,6 +13,7 @@ struct MargaretkaAppApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate: AppDelegate
     @StateObject var scheduleData = ScheduleData<Priest>(saveKey: "priest_sch")
     @StateObject var prayerStore = PrayerStore()
+    @State private var didScheduleNotificationRefresh = false
     @State private var showUiTestGate = ProcessInfo.processInfo.arguments.contains("--ui-tests")
 
     var body: some Scene {
@@ -20,6 +21,9 @@ struct MargaretkaAppApp: App {
             NavigationStack {
                 HomeView()
                     .background(Color(.systemGroupedBackground))
+                    .onAppear {
+                        scheduleNotificationRefresh()
+                    }
             }
             .environmentObject(scheduleData)
             .environmentObject(prayerStore)
@@ -28,6 +32,15 @@ struct MargaretkaAppApp: App {
                     UiTestGateView(isPresented: $showUiTestGate)
                 }
             }
+        }
+    }
+
+    private func scheduleNotificationRefresh() {
+        guard !didScheduleNotificationRefresh else { return }
+        didScheduleNotificationRefresh = true
+
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 5.0) {
+            scheduleData.rescheduleAll()
         }
     }
 }

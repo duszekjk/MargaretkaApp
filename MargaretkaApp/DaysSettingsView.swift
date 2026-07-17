@@ -513,18 +513,22 @@ enum StatsRange: String, CaseIterable, Identifiable {
         }
     }
 
-    func dateInterval(relativeTo date: Date, calendar: Calendar) -> DateInterval? {
+    func startDate(relativeTo date: Date, calendar: Calendar) -> Date? {
         let weekStart = calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? calendar.startOfDay(for: date)
-        guard let weekCount = activityWeekCount,
-              let start = calendar.date(byAdding: .weekOfYear, value: -(weekCount - 1), to: weekStart),
-              let end = calendar.date(byAdding: .weekOfYear, value: 1, to: weekStart) else { return nil }
-        return DateInterval(start: start, end: end)
+        switch self {
+        case .allTime:
+            return nil
+        case .last8Weeks:
+            return calendar.date(byAdding: .weekOfYear, value: -7, to: weekStart)
+        case .last12Weeks:
+            return calendar.date(byAdding: .weekOfYear, value: -11, to: weekStart)
+        case .last52Weeks:
+            return calendar.date(byAdding: .weekOfYear, value: -51, to: weekStart)
+        }
     }
 }
 
 struct PrayerStats {
-    private static let weeklyGraceInterval: TimeInterval = 8 * 24 * 60 * 60
-
     struct WeekCount: Identifiable {
         let id = UUID()
         let label: String
@@ -599,19 +603,10 @@ struct PrayerStats {
 
     init(sessions: [PrayerSession], range: StatsRange, referenceDate: Date, focusCategory: PrayerTargetCategory) {
         let calendar = Calendar.current
-        let lifetimePrimarySessions = sessions.filter { $0.targetCategory == focusCategory }
-        let lifetimeCompletedSessions = lifetimePrimarySessions.filter { $0.completed }
-        let rangeReferenceDate = range == .allTime
-            ? referenceDate
-            : PrayerStats.rangeReferenceDate(
-                from: referenceDate,
-                completedSessions: lifetimeCompletedSessions,
-                calendar: calendar
-            )
-        let rangeInterval = range.dateInterval(relativeTo: rangeReferenceDate, calendar: calendar)
+        let rangeStart = range.startDate(relativeTo: referenceDate, calendar: calendar)
         let filteredSessions = sessions.filter { session in
-            guard let rangeInterval else { return true }
-            return session.endedAt >= rangeInterval.start && session.endedAt < rangeInterval.end
+            guard let start = rangeStart else { return true }
+            return session.endedAt >= start
         }
 
         var categoryCountsValue: [PrayerTargetCategory: Int] = [:]
@@ -621,6 +616,8 @@ struct PrayerStats {
 
         let primarySessions = filteredSessions.filter { $0.targetCategory == focusCategory }
         let primaryCompletedSessions = primarySessions.filter { $0.completed }
+        let lifetimePrimarySessions = sessions.filter { $0.targetCategory == focusCategory }
+        let lifetimeCompletedSessions = lifetimePrimarySessions.filter { $0.completed }
         let otherSessions = filteredSessions.filter { $0.targetCategory != focusCategory }
 
         let perWeek = PrayerStats.sessionsPerWeek(primarySessions, calendar: calendar)
@@ -639,7 +636,7 @@ struct PrayerStats {
         let longestSessionValue = primarySessions.max(by: { $0.duration < $1.duration })
 
         let recentWeekCount = PrayerStats.recentWeekCount(for: range, sessions: primarySessions, calendar: calendar)
-        let recentWeekKeys = PrayerStats.lastWeeks(count: recentWeekCount, referenceDate: rangeReferenceDate, calendar: calendar)
+        let recentWeekKeys = PrayerStats.lastWeeks(count: recentWeekCount, referenceDate: referenceDate, calendar: calendar)
         let maxValue = max(recentWeekKeys.map { perWeek[$0, default: 0] }.max() ?? 1, 1)
         let recentWeeksValue = recentWeekKeys.map { key in
             let value = perWeek[key, default: 0]
@@ -827,9 +824,10 @@ struct PrayerStats {
     }
 
     private static func currentWeeklyStreak(from referenceDate: Date, sessions: [PrayerSession], calendar: Calendar) -> Int {
-        guard let latestPrayerDate = sessions.map(\.endedAt).max() else { return 0 }
-        let elapsed = referenceDate.timeIntervalSince(latestPrayerDate)
-        guard elapsed >= 0, elapsed <= weeklyGraceInterval else { return 0 }
+        guard let latestPrayerDate = sessions.map(\.endedAt).max(),
+              referenceDate.timeIntervalSince(latestPrayerDate) <= 8 * 24 * 60 * 60 else {
+            return 0
+        }
 
         let weekKeys = Set(sessions.map { weekKey(for: $0.endedAt, calendar: calendar) })
         var streak = 0
@@ -844,22 +842,6 @@ struct PrayerStats {
             current = previousWeekKey(from: current, calendar: calendar)
         }
         return streak
-    }
-
-    private static func rangeReferenceDate(
-        from referenceDate: Date,
-        completedSessions: [PrayerSession],
-        calendar: Calendar
-    ) -> Date {
-        let currentWeek = weekKey(for: referenceDate, calendar: calendar)
-        if completedSessions.contains(where: { weekKey(for: $0.endedAt, calendar: calendar) == currentWeek }) {
-            return referenceDate
-        }
-
-        guard let latestPrayerDate = completedSessions.map(\.endedAt).max() else { return referenceDate }
-        let elapsed = referenceDate.timeIntervalSince(latestPrayerDate)
-        guard elapsed >= 0, elapsed <= weeklyGraceInterval else { return referenceDate }
-        return latestPrayerDate
     }
 
     private static func longestWeeklyStreak(in sessions: [PrayerSession], calendar: Calendar) -> Int {

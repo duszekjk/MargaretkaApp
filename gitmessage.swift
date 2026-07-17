@@ -1,4 +1,4 @@
-codex conversation [unknown] remove empty system images from priest menu
+codex conversation [unknown] revert to checkpoint labels baseline
 
-Replace empty `systemImage` values with a real selection row so SwiftUI no
-longer emits `No symbol named ''` warnings on the priest filter/menu entries.
+Revert every change after `4d4a24a clarify next and achieved checkpoint labels`
+so we can test from the last point the user believes was still working.
