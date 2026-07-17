@@ -120,7 +120,7 @@ struct PrayerFlowView: View {
     }
 
     var flattenedPrayerSymbols: [String] {
-        flattenedPrayerIds.map { allPrayers[$0]?.renderedSymbol ?? "questionmark" }
+        flattenedPrayerIds.map { allPrayers[$0]?.symbol ?? "questionmark" }
     }
 
     var flattenedPrayerNames: [String?] {
@@ -292,21 +292,21 @@ struct PrayerFlowView: View {
                                     userSelectedCategory = true
                                     selectedCategory = .priest
                                 } label: {
-                                    menuSelectionLabel("Księża", isSelected: selectedCategory == .priest)
+                                    Label("Księża", systemImage: selectedCategory == .priest ? "checkmark" : "")
                                 }
 
                                 Button {
                                     userSelectedCategory = true
                                     selectedCategory = .person
                                 } label: {
-                                    menuSelectionLabel("Osoby", isSelected: selectedCategory == .person)
+                                    Label("Osoby", systemImage: selectedCategory == .person ? "checkmark" : "")
                                 }
 
                                 Button {
                                     userSelectedCategory = true
                                     selectedCategory = .prayer
                                 } label: {
-                                    menuSelectionLabel("Modlitwy", isSelected: selectedCategory == .prayer)
+                                    Label("Modlitwy", systemImage: selectedCategory == .prayer ? "checkmark" : "")
                                 }
                             }
 
@@ -325,7 +325,7 @@ struct PrayerFlowView: View {
                                         selectedPriest = priest
                                     }
                                 }) {
-                                    menuSelectionLabel(priest.displayName, isSelected: selectedPriest?.id == priest.id)
+                                    Label(priest.displayName, systemImage: selectedPriest?.id == priest.id ? "checkmark" : "")
                                         .cornerRadius(16)
                                 }
                             }
@@ -775,15 +775,6 @@ struct PrayerFlowView: View {
                 return
             }
             selectedPriest = todayPriest
-        }
-    }
-
-    @ViewBuilder
-    private func menuSelectionLabel(_ title: String, isSelected: Bool) -> some View {
-        if isSelected {
-            Label(title, systemImage: "checkmark")
-        } else {
-            Text(title)
         }
     }
 

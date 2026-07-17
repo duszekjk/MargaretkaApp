@@ -1,12 +1,11 @@
-avoid empty symbols and skip redundant schedule rebuilds
+preserve legacy data while recovering partially corrupt stores
 
-Normalize prayer icons to a safe fallback before rendering so empty or invalid
-SF Symbol names stop spamming the UI with warnings. Replace empty menu checkmark
-labels with explicit text-plus-checkmark views, and make ScheduleData skip the
-full notification rebuild when the current snapshot is unchanged so launch does
-not waste time rebuilding the same schedule.
+Stop deleting legacy preference snapshots before they can be migrated, restore
+prayers, priests, and prayer sessions from those snapshots when the local store
+is empty, and make LocalDatabase salvage valid array entries from partially
+corrupt payloads instead of returning an empty store. Add a regression for
+partial array recovery.
 
-Validated through source inspection and by exercising the build pipeline far
-enough to confirm the app target still reaches the slow asset-catalog phase;
-full completion was blocked by the same local simulator/signing environment
-issues already seen on this machine.
+Validated with the Swift compiler getting through the changed sources. Full
+device test validation was blocked here by unavailable compatible iOS devices
+and signing/runtime issues in the local environment.

@@ -45,7 +45,7 @@ struct GroupEditorView: View {
                 case .prayer(let prayerId):
                     if let prayer = availablePrayers.first(where: { $0.id == prayerId }) {
                         HStack {
-                            Label(prayer.name, systemImage: prayer.renderedSymbol)
+                            Label(prayer.name, systemImage: prayer.symbol)
                             Spacer()
                             Button(role: .destructive) {
                                 if let index = group.items.firstIndex(of: item) {
@@ -74,7 +74,7 @@ struct GroupEditorView: View {
                     Button {
                         group.items.append(.prayer(prayer.id))
                     } label: {
-                        Label(prayer.name, systemImage: prayer.renderedSymbol)
+                        Label(prayer.name, systemImage: prayer.symbol)
                     }
                 }
             } label: {
