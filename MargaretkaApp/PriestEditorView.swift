@@ -65,29 +65,14 @@ struct PriestEditorView: View {
                 }
                 if let photo {
                     VStack(alignment: .leading, spacing: 12) {
-//                        Text("Podgląd w aplikacji")
-//                            .font(.headline)
-//                        GeometryReader { geo in
-//                            let screen = UIScreen.main.bounds
-//                            let scale = min(
-//                                geo.size.width / screen.width,
-//                                geo.size.height / screen.height
-//                            )
-//                            AdjustableBackgroundImage(
-//                                image: photo,
-//                                scale: photoScale,
-//                                offset: photoOffset,
-//                                size: screen.size
-//                            )
-//                            .frame(width: screen.width, height: screen.height)
-//                            .scaleEffect(scale, anchor: .topLeading)
-//                            .frame(width: screen.width * scale, height: screen.height * scale)
-//                            .clipShape(RoundedRectangle(cornerRadius: 18))
-//                        }
-//                        .aspectRatio(UIScreen.main.bounds.size, contentMode: .fit)
-//                        Slider(value: $photoScale, in: 1.0...3.0, step: 0.05) {
-//                            Text("Powiększenie")
-//                        }
+                        Text("Przeciągnij zdjęcie, żeby zmienić pozycję")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+
+                        PhotoAdjustmentView(image: photo, scale: $photoScale, offset: $photoOffset)
+                            .frame(height: 220)
+                            .clipShape(RoundedRectangle(cornerRadius: 18))
+
                         HStack {
                             Button("Wycentruj zdjęcie") {
                                 photoScale = 1.0
@@ -95,7 +80,7 @@ struct PriestEditorView: View {
                             }
                             .buttonStyle(.bordered)
 
-                            Button("Dopasuj") {
+                            Button("Pełny ekran") {
                                 showPhotoAdjuster = true
                             }
                             .buttonStyle(.borderedProminent)

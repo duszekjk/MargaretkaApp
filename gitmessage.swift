@@ -1,5 +1,5 @@
-codex conversation [unknown] restore priest photo quality
+codex conversation [unknown] restore photo position controls
 
-Stop shrinking priest photos down to unreadable thumbnails during storage, and
-render them with high interpolation so the selected priest image and photo
-preview keep usable detail.
+Bring back an always-visible interactive photo adjuster in the priest editor so
+users can drag the photo as well as zoom it, instead of relying only on the
+fullscreen sheet.
