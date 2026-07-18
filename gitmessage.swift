@@ -1,4 +1,5 @@
-codex conversation [unknown] revert to checkpoint labels baseline
+codex conversation [unknown] restore priest photo quality
 
-Revert every change after `4d4a24a clarify next and achieved checkpoint labels`
-so we can test from the last point the user believes was still working.
+Stop shrinking priest photos down to unreadable thumbnails during storage, and
+render them with high interpolation so the selected priest image and photo
+preview keep usable detail.

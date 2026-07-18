@@ -18,6 +18,7 @@ struct PhotoPickerView: View {
             if let photo {
                 Image(uiImage: photo)
                     .resizable()
+                    .interpolation(.high)
                     .scaledToFill()
                     .frame(width: 100, height: 100)
                     .clipShape(Circle())

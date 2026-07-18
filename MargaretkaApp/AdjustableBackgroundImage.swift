@@ -16,6 +16,7 @@ struct AdjustableBackgroundImage: View {
     var body: some View {
         Image(uiImage: image)
             .resizable()
+            .interpolation(.high)
             .scaledToFill()
             .scaleEffect(scale)
             .offset(x: offset.width, y: offset.height)
