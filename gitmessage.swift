@@ -1,10 +1,11 @@
-codex conversation [unknown] prefer and manage offline breviary offices
+codex conversation [unknown] generate distinct offline breviary backgrounds
 
-Use an imported office for the exact current Warsaw date before loading the
-online brewiarz.pl page, while retaining the website as an immediate fallback.
-Render semantic cards in a larger prayer area with explicit card navigation and
-preserved choir, rubric, leader, response, and antiphon presentation.
+Generate and cache a separate on-device Image Playground illustration for each
+dated office. Prefer an installed offline Polish-to-English Translation model,
+then ask Foundation Models for a concise English visual scene while retaining
+the translated feast, liturgical color, office name, and prayer themes.
 
-Add a manager for preferred variants and manual deletion by office, day, date
-range, or whole EPUB import. Keep orphan image cleanup connected to every delete
-path and expose the automatic third-day cleanup action and policy in the UI.
+Keep the original English prompt with short Polish quotations when translation
+or Apple Intelligence is unavailable, and display deterministic office-specific
+art instead of failing. Cache successful images lazily, export them in backups,
+and allow their independent removal from the offline manager.

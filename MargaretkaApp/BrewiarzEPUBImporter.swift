@@ -107,6 +107,11 @@ enum BrewiarzEPUBImporter {
                         celebration: parseCelebration(xhtml),
                         liturgicalColor: parseLiturgicalColor(xhtml),
                         lines: meaningful
+                    ),
+                    imageSourceText: imageSourceText(
+                        celebration: parseCelebration(xhtml),
+                        liturgicalColor: parseLiturgicalColor(xhtml),
+                        lines: meaningful
                     )
                 )
             )
@@ -319,6 +324,23 @@ enum BrewiarzEPUBImporter {
         Celebration in Polish: \(celebration ?? "none specified").
         Liturgical color: \(liturgicalColor ?? "not specified").
         Use the prayer themes below as visual inspiration. Do not put words or letters in the image:
+        \(excerpts)
+        """
+    }
+
+    private static func imageSourceText(
+        celebration: String?,
+        liturgicalColor: String?,
+        lines: [OfflineBreviaryLine]
+    ) -> String {
+        let excerpts = lines
+            .filter { [.antiphon, .body].contains($0.role) && $0.text.count > 35 }
+            .prefix(3)
+            .map(\.text)
+            .joined(separator: "\n")
+        return """
+        Święto: \(celebration ?? "brak określonego święta")
+        Kolor szat: \(liturgicalColor ?? "nieokreślony")
         \(excerpts)
         """
     }

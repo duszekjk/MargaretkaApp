@@ -4,9 +4,32 @@ struct OfflineBreviaryPrayerView: View {
     let office: OfflineBreviaryOffice
     var fullScreen: Bool = false
 
+    @EnvironmentObject private var store: OfflineBreviaryStore
     @State private var cardIndex = 0
 
     var body: some View {
+        ZStack {
+            background
+
+            LinearGradient(
+                colors: [.black.opacity(0.18), .black.opacity(0.5)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            content
+                .padding(fullScreen ? 22 : 14)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: fullScreen ? 0 : 18))
+        .task(id: office.id) {
+            await store.generateImageIfNeeded(for: office.id)
+        }
+        .onChange(of: office.id) {
+            cardIndex = 0
+        }
+    }
+
+    private var content: some View {
         VStack(spacing: 8) {
             HStack {
                 Text(office.title)
@@ -14,8 +37,9 @@ struct OfflineBreviaryPrayerView: View {
                 Spacer()
                 Label("Offline", systemImage: "iphone.and.arrow.forward")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.white.opacity(0.8))
             }
+            .foregroundStyle(.white)
 
             if let card = currentCard {
                 OfflineBreviaryCardView(card: card, fullScreen: fullScreen)
@@ -48,10 +72,21 @@ struct OfflineBreviaryPrayerView: View {
                 .disabled(cardIndex >= office.cards.count - 1)
             }
             .buttonStyle(.bordered)
+            .tint(.white)
         }
-        .padding(fullScreen ? 22 : 14)
-        .onChange(of: office.id) {
-            cardIndex = 0
+        .padding(12)
+        .background(.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    @ViewBuilder
+    private var background: some View {
+        if let filename = office.imageFilename,
+           let image = UIImage(contentsOfFile: OfflineBreviaryStore.imageDirectory.appendingPathComponent(filename).path) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+        } else {
+            BreviaryDefaultBackground(key: office.key)
         }
     }
 
@@ -101,10 +136,9 @@ private struct OfflineBreviaryCardView: View {
 
     private func color(for line: OfflineBreviaryLine) -> Color {
         switch line.role {
-        case .rubric, .leader, .response: return .red
-        case .antiphon: return .accentColor
-        case .prayerReference: return .accentColor
-        default: return .primary
+        case .rubric, .leader, .response: return .red.opacity(0.95)
+        case .antiphon, .prayerReference: return .yellow.opacity(0.95)
+        default: return .white
         }
     }
 
@@ -131,6 +165,39 @@ private struct OfflineBreviaryCardView: View {
         case .leader: return "Prowadzący. \(line.text)"
         case .response: return "Odpowiedź. \(line.text)"
         default: return line.text
+        }
+    }
+}
+
+private struct BreviaryDefaultBackground: View {
+    let key: BrewiarzPrayerKey
+
+    var body: some View {
+        ZStack {
+            LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+            Image(systemName: symbol)
+                .font(.system(size: 150, weight: .ultraLight))
+                .foregroundStyle(.white.opacity(0.18))
+        }
+    }
+
+    private var colors: [Color] {
+        switch key {
+        case .jutrznia, .wezwanie: return [.orange, .blue]
+        case .nieszpory: return [.indigo, .orange]
+        case .kompleta: return [.black, .indigo]
+        case .godzinaCzytan: return [.brown, .indigo]
+        default: return [.blue, .teal]
+        }
+    }
+
+    private var symbol: String {
+        switch key {
+        case .jutrznia, .wezwanie: return "sunrise.fill"
+        case .nieszpory: return "sunset.fill"
+        case .kompleta: return "moon.stars.fill"
+        case .godzinaCzytan: return "book.closed.fill"
+        default: return "sun.max.fill"
         }
     }
 }
@@ -174,6 +241,12 @@ struct OfflineBreviaryManagerView: View {
                             .swipeActions {
                                 Button("Usuń", role: .destructive) {
                                     store.delete(officeID: office.id)
+                                }
+                                if office.imageFilename != nil {
+                                    Button("Usuń obraz") {
+                                        store.deleteImage(for: office.id)
+                                    }
+                                    .tint(.orange)
                                 }
                             }
                         }

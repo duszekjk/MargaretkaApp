@@ -99,6 +99,7 @@ struct OfflineBreviaryOffice: Codable, Hashable, Identifiable, Sendable {
     var contentFingerprint: String
     var imageFilename: String?
     var imagePrompt: String?
+    var imageSourceText: String?
 
     init(
         id: UUID = UUID(),
@@ -107,7 +108,8 @@ struct OfflineBreviaryOffice: Codable, Hashable, Identifiable, Sendable {
         cards: [OfflineBreviaryCard],
         contentFingerprint: String,
         imageFilename: String? = nil,
-        imagePrompt: String? = nil
+        imagePrompt: String? = nil,
+        imageSourceText: String? = nil
     ) {
         self.id = id
         self.key = key
@@ -116,6 +118,7 @@ struct OfflineBreviaryOffice: Codable, Hashable, Identifiable, Sendable {
         self.contentFingerprint = contentFingerprint
         self.imageFilename = imageFilename
         self.imagePrompt = imagePrompt
+        self.imageSourceText = imageSourceText
     }
 }
 
@@ -169,6 +172,7 @@ final class OfflineBreviaryStore: ObservableObject {
     static let retentionDays = 3
 
     @Published private(set) var days: [OfflineBreviaryDay] = []
+    private var generatingOfficeIDs = Set<UUID>()
 
     init(referenceDate: Date = .now) {
         days = LocalDatabase.shared.load(from: Self.storageKey)
@@ -257,6 +261,43 @@ final class OfflineBreviaryStore: ObservableObject {
         guard !removed.isEmpty else { return }
         days.removeAll { $0.date >= start && $0.date <= end }
         removeOrphanedImages(from: removed.flatMap(\.offices))
+        sortAndSave()
+    }
+
+    func generateImageIfNeeded(for officeID: UUID) async {
+        guard !generatingOfficeIDs.contains(officeID),
+              let dayIndex = days.firstIndex(where: { $0.offices.contains { $0.id == officeID } }),
+              let officeIndex = days[dayIndex].offices.firstIndex(where: { $0.id == officeID }),
+              days[dayIndex].offices[officeIndex].imageFilename == nil else { return }
+        generatingOfficeIDs.insert(officeID)
+        let office = days[dayIndex].offices[officeIndex]
+        let date = days[dayIndex].date
+        defer { generatingOfficeIDs.remove(officeID) }
+
+        guard let data = await BreviaryImageGenerator.shared.generateImageData(for: office) else { return }
+        let filename = "\(date.id)-\(office.key.rawValue)-\(office.contentFingerprint).jpg"
+        let destination = Self.imageDirectory.appendingPathComponent(filename)
+        do {
+            try data.write(to: destination, options: .atomic)
+            guard days.indices.contains(dayIndex),
+                  days[dayIndex].offices.indices.contains(officeIndex),
+                  days[dayIndex].offices[officeIndex].id == officeID else {
+                try? FileManager.default.removeItem(at: destination)
+                return
+            }
+            days[dayIndex].offices[officeIndex].imageFilename = filename
+            sortAndSave()
+        } catch {
+            print("Failed to cache breviary image: \(error.localizedDescription)")
+        }
+    }
+
+    func deleteImage(for officeID: UUID) {
+        guard let dayIndex = days.firstIndex(where: { $0.offices.contains { $0.id == officeID } }),
+              let officeIndex = days[dayIndex].offices.firstIndex(where: { $0.id == officeID }),
+              let filename = days[dayIndex].offices[officeIndex].imageFilename else { return }
+        days[dayIndex].offices[officeIndex].imageFilename = nil
+        Self.removeImage(named: filename)
         sortAndSave()
     }
 
