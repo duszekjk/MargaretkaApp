@@ -1,4 +1,5 @@
-codex conversation [unknown] restore priest background photos
+codex conversation [unknown] add siri and nfc help to settings
 
-Resolve the main prayer background from the live priest store so priest and
-person photos still show even when the schedule snapshot is stale.
+Add a bottom-of-settings help block explaining Siri shortcuts and NFC usage,
+with concrete English voice examples, a simple flow diagram, and guidance on
+why NFC tags are useful for starting prayer quickly.
