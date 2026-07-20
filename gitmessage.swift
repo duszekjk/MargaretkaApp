@@ -1,9 +1,8 @@
-codex conversation [unknown] harden expiry and imported asset cleanup
+codex conversation [unknown] bump validated breviary feature build to 40
 
-Run the three-day expiry policy whenever the app becomes active, not only during
-a cold launch, so an app left installed or suspended for several days cannot
-retain stale offices.
+Bump the app build number from 39 to 40 after the complete offline breviary and
+portable backup feature compiled successfully and the supplied brewiarz.pl EPUB
+was parsed end to end with both variants and all eight offices.
 
-Remove audio and images restored from a backup when duplicate resolution or date
-expiry leaves them unreferenced. Classify emphasized uppercase EPUB section
-labels as headings before red rubrics so semantic card boundaries remain intact.
+Keep marketing version 1.0.3 unchanged and leave test-target build numbers
+untouched.
