@@ -109,17 +109,49 @@ private struct OfflineBreviaryCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: fullScreen ? 7 : 4) {
             ForEach(card.lines) { line in
-                Text(line.text)
-                    .font(font(for: line))
-                    .italic(line.italic)
-                    .foregroundStyle(color(for: line))
-                    .multilineTextAlignment(textAlignment(for: line))
-                    .frame(maxWidth: .infinity, alignment: frameAlignment(for: line))
-                    .accessibilityLabel(accessibilityLabel(for: line))
+                lineView(for: line)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .clipped()
+    }
+
+    @ViewBuilder
+    private func lineView(for line: OfflineBreviaryLine) -> some View {
+        if line.role == .choirLeft || line.role == .choirRight {
+            HStack(alignment: .top, spacing: 8) {
+                if line.role == .choirRight {
+                    Spacer(minLength: fullScreen ? 56 : 28)
+                }
+
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(choirBarColor(for: line.role))
+                    .frame(width: 4, height: fullScreen ? 24 : 20)
+                    .accessibilityHidden(true)
+
+                styledText(for: line)
+            }
+            .frame(maxWidth: .infinity, alignment: line.role == .choirRight ? .trailing : .leading)
+        } else {
+            styledText(for: line)
+        }
+    }
+
+    private func styledText(for line: OfflineBreviaryLine) -> some View {
+        Text(line.text)
+            .font(font(for: line))
+            .italic(line.italic)
+            .foregroundStyle(color(for: line))
+            .multilineTextAlignment(textAlignment(for: line))
+            .frame(maxWidth: .infinity, alignment: frameAlignment(for: line))
+            .accessibilityLabel(accessibilityLabel(for: line))
+    }
+
+    private func choirBarColor(for role: OfflineBreviaryLineRole) -> Color {
+        if role == .choirRight {
+            return Color(red: 27 / 255, green: 95 / 255, blue: 170 / 255)
+        }
+        return Color(red: 31 / 255, green: 138 / 255, blue: 59 / 255)
     }
 
     private func font(for line: OfflineBreviaryLine) -> Font {

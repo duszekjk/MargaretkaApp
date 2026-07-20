@@ -1,10 +1,8 @@
-codex conversation [unknown] add exact full backup beside merge import
+codex conversation [unknown] preserve choir color bars offline
 
-Keep the existing JSON and EPUB import/export workflow with duplicate-safe merge
-behavior. Add a separate full backup workflow that uses the same versioned
-archive engine without duplicating model serialization.
+Render the existing choir visualization in imported offline breviary cards as
+well as the online page: green bars identify left or non-indented choir lines,
+and blue bars identify right or indented choir lines.
 
-Include every prayer, person, priest, complex prayer, schedule, completion,
-statistics session, photo, audio file, offline office, generated image, and view
-preference. Restore by replacing app state after destructive confirmation and
-rebuild scheduled notifications from the restored schedules.
+Use the same RGB colors as the custom BrewiarzWebView CSS and keep the spoken
+accessibility labels for left and right choirs.
