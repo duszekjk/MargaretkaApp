@@ -1,13 +1,13 @@
-codex conversation [unknown] enlarge prayer cards and typography
+codex conversation [unknown] correct complex prayer typography
 
-Increase complex-prayer card typography to 1.8 times the previous size while
-retaining the larger complex-prayer card height.
+Reduce complex-prayer typography from 30.6 to 24 points after the larger size
+prevented longer prayers, including the reported Wierzę w Boga example, from
+fitting. Allow every long standalone prayer to scale down as one text block as
+far as the original 17-point size when required.
 
-Increase priest and person prayer cards by ten percent and raise their text by
-three points. Reduce offline breviary pagination limits proportionally so the
-larger complex-prayer type remains within the card.
+Do not apply independent fit scaling to breviary line views. Keep every line on
+a breviary card at the same 24-point size while preserving choir alignment and
+color bars.
 
-Build the app and test targets successfully. Validate the real weekly EPUB with
-7 dates, 31 office variants, zero skipped or incomplete imports, and a maximum
-of 310 characters per generated card. Device appearance still needs visual
-confirmation on an iPhone.
+Build the app, unit-test, and UI-test targets successfully. On-device visual
+confirmation is still required.

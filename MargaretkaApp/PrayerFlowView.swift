@@ -161,11 +161,11 @@ struct PrayerFlowView: View {
     }
 
     var currentPrayerCardFont: Font {
-        .system(size: isComplexPrayerCard ? 17 * 1.8 : 20, weight: .semibold)
+        .system(size: isComplexPrayerCard ? 24 : 20, weight: .semibold)
     }
 
     var currentPrayerMinimumScaleFactor: CGFloat {
-        isComplexPrayerCard ? 0.82 : 0.9
+        isComplexPrayerCard ? 17 / 24 : 0.9
     }
 
     private func moveToIndex(_ index: Int, animated: Bool) {
@@ -325,6 +325,18 @@ struct PrayerFlowView: View {
             Text(prayer.text + "\n\n" + prayer.name)
         } else {
             Text("Koniec 🙏")
+        }
+    }
+
+    @ViewBuilder
+    private var sizedPrayerCardText: some View {
+        if currentOfflineCard != nil {
+            prayerCardText
+                .font(currentPrayerCardFont)
+        } else {
+            prayerCardText
+                .font(currentPrayerCardFont)
+                .minimumScaleFactor(currentPrayerMinimumScaleFactor)
         }
     }
 
@@ -564,10 +576,8 @@ struct PrayerFlowView: View {
                                         .allowsHitTesting(!isFullscreen)
                                     } else {
                                         ZStack {
-                                            prayerCardText
+                                            sizedPrayerCardText
                                                 .lineLimit(30)
-                                                .font(currentPrayerCardFont)
-                                                .minimumScaleFactor(currentPrayerMinimumScaleFactor)
                                                 .multilineTextAlignment(.center)
                                                 .padding()
                                                 .offset(prayerSwipeTranslation)
