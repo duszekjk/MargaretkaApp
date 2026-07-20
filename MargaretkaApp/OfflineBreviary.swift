@@ -313,6 +313,17 @@ final class OfflineBreviaryStore: ObservableObject {
         }
     }
 
+    static func removeAllStoredImages() {
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: imageDirectory,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles]
+        ) else { return }
+        for file in files {
+            try? FileManager.default.removeItem(at: file)
+        }
+    }
+
     static func removingExpired(
         from days: [OfflineBreviaryDay],
         referenceDate: Date,

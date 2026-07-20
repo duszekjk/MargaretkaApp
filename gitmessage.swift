@@ -1,8 +1,10 @@
-codex conversation [unknown] bump validated breviary feature build to 40
+codex conversation [unknown] add exact full backup beside merge import
 
-Bump the app build number from 39 to 40 after the complete offline breviary and
-portable backup feature compiled successfully and the supplied brewiarz.pl EPUB
-was parsed end to end with both variants and all eight offices.
+Keep the existing JSON and EPUB import/export workflow with duplicate-safe merge
+behavior. Add a separate full backup workflow that uses the same versioned
+archive engine without duplicating model serialization.
 
-Keep marketing version 1.0.3 unchanged and leave test-target build numbers
-untouched.
+Include every prayer, person, priest, complex prayer, schedule, completion,
+statistics session, photo, audio file, offline office, generated image, and view
+preference. Restore by replacing app state after destructive confirmation and
+rebuild scheduled notifications from the restored schedules.

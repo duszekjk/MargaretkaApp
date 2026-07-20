@@ -4,15 +4,42 @@ internal import UniformTypeIdentifiers
 import UIKit
 
 struct MargaretkaBackup: Codable {
-    static let currentSchemaVersion = 1
+    static let currentSchemaVersion = 2
 
     var schemaVersion: Int
     var exportedAt: Date
+    var purpose: MargaretkaArchivePurpose?
+    var preferences: MargaretkaBackupPreferences?
     var prayers: [Prayer]
     var targets: [Priest]
     var sessions: [PrayerSession]
     var offlineBreviaryDays: [OfflineBreviaryDay]
     var assets: [MargaretkaBackupAsset]
+}
+
+enum MargaretkaArchivePurpose: String, Codable {
+    case dataTransfer
+    case fullBackup
+}
+
+struct MargaretkaBackupPreferences: Codable, Equatable {
+    var prayerSwipeMode: String
+    var prayerCompactView: Bool
+    var preferredBreviaryVariant: String
+
+    static func capture(from defaults: UserDefaults = .standard) -> Self {
+        Self(
+            prayerSwipeMode: defaults.string(forKey: "prayerSwipeMode") ?? PrayerSwipeMode.both.rawValue,
+            prayerCompactView: defaults.object(forKey: "prayerCompactView") as? Bool ?? true,
+            preferredBreviaryVariant: defaults.string(forKey: "preferredBreviaryVariant") ?? "p"
+        )
+    }
+
+    func restore(to defaults: UserDefaults = .standard) {
+        defaults.set(prayerSwipeMode, forKey: "prayerSwipeMode")
+        defaults.set(prayerCompactView, forKey: "prayerCompactView")
+        defaults.set(preferredBreviaryVariant, forKey: "preferredBreviaryVariant")
+    }
 }
 
 struct MargaretkaBackupAsset: Codable {
@@ -89,16 +116,32 @@ struct BackupImportReport {
     }
 }
 
+struct FullBackupRestoreReport {
+    let prayers: Int
+    let targets: Int
+    let sessions: Int
+    let breviaryDays: Int
+    let restoredPreferences: Bool
+
+    var summary: String {
+        let preferencesText = restoredPreferences ? " Ustawienia widoku również przywrócono." : ""
+        return "Przywrócono: \(prayers) modlitw, \(targets) osób lub modlitw złożonych, \(sessions) wpisów historii i \(breviaryDays) dni brewiarza.\(preferencesText)"
+    }
+}
+
 enum MargaretkaBackupService {
     static func export(
         prayers: [Prayer],
         targets: [Priest],
-        offlineDays: [OfflineBreviaryDay]
+        offlineDays: [OfflineBreviaryDay],
+        purpose: MargaretkaArchivePurpose = .dataTransfer
     ) throws -> URL {
         let sessions: [PrayerSession] = LocalDatabase.shared.load(from: PrayerSessionStore.saveKey)
         let backup = MargaretkaBackup(
             schemaVersion: MargaretkaBackup.currentSchemaVersion,
             exportedAt: .now,
+            purpose: purpose,
+            preferences: purpose == .fullBackup ? .capture() : nil,
             prayers: prayers,
             targets: targets,
             sessions: sessions,
@@ -113,7 +156,8 @@ enum MargaretkaBackupService {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd_HHmm"
-        let filename = "Margaretka_\(formatter.string(from: .now)).json"
+        let prefix = purpose == .fullBackup ? "Margaretka_backup" : "Margaretka_export"
+        let filename = "\(prefix)_\(formatter.string(from: .now)).json"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         try data.write(to: url, options: .atomic)
         return url
@@ -326,6 +370,59 @@ enum MargaretkaBackupService {
         )
     }
 
+    @MainActor
+    static func restoreExactly(
+        backup: MargaretkaBackup,
+        prayerStore: PrayerStore,
+        targetStore: PriestStore,
+        offlineStore: OfflineBreviaryStore,
+        scheduleData: ScheduleData<Priest>
+    ) throws -> FullBackupRestoreReport {
+        try validateAssetFilenames(backup.assets)
+        AudioStorage.removeAllStoredAudioFiles()
+        OfflineBreviaryStore.removeAllStoredImages()
+        let filenameMap = try restoreAssetsExactly(backup.assets)
+        let restoredPrayers = backup.prayers.map { source -> Prayer in
+            var prayer = source
+            if let filename = source.audioFilename {
+                prayer.audioFilename = filenameMap[assetMapKey(.audio, filename)] ?? filename
+            }
+            return prayer
+        }
+        let retainedDays = OfflineBreviaryStore.removingExpired(
+            from: backup.offlineBreviaryDays.map { remappingImages($0, filenameMap: filenameMap) },
+            referenceDate: .now
+        )
+        let restoredTargets = backup.targets.map { source -> Priest in
+            var target = source
+            // Pending notification identifiers belong to the device that made the backup.
+            // Completion identifiers remain part of the restored statistics state.
+            target.notificationIds = []
+            return target
+        }
+
+        prayerStore.prayers = restoredPrayers
+        targetStore.priests = restoredTargets
+        scheduleData.items = restoredTargets
+        scheduleData.save()
+        LocalDatabase.shared.save(backup.sessions, as: PrayerSessionStore.saveKey)
+        NotificationCenter.default.post(name: .prayerSessionsChanged, object: nil)
+        offlineStore.replaceAll(with: retainedDays)
+        backup.preferences?.restore()
+
+        AudioStorage.removeOrphanedFiles(referencedBy: restoredPrayers)
+        offlineStore.removeUnreferencedImages()
+        scheduleData.rescheduleAll()
+
+        return FullBackupRestoreReport(
+            prayers: restoredPrayers.count,
+            targets: restoredTargets.count,
+            sessions: backup.sessions.count,
+            breviaryDays: retainedDays.count,
+            restoredPreferences: backup.preferences != nil
+        )
+    }
+
     private static func collectAssets(prayers: [Prayer], offlineDays: [OfflineBreviaryDay]) -> [MargaretkaBackupAsset] {
         var assets: [MargaretkaBackupAsset] = []
         if let directory = try? AudioStorage.applicationSupportDirectory(create: false) {
@@ -370,6 +467,32 @@ enum MargaretkaBackupService {
             result[assetMapKey(asset.kind, asset.filename)] = filename
         }
         return result
+    }
+
+    private static func restoreAssetsExactly(_ assets: [MargaretkaBackupAsset]) throws -> [String: String] {
+        var result: [String: String] = [:]
+        for asset in assets {
+            guard asset.filename == URL(fileURLWithPath: asset.filename).lastPathComponent else {
+                throw MargaretkaBackupError.invalidFilename(asset.filename)
+            }
+            let directory: URL
+            switch asset.kind {
+            case .audio:
+                directory = try AudioStorage.applicationSupportDirectory(create: true)
+            case .offlineBreviaryImage:
+                directory = OfflineBreviaryStore.imageDirectory
+            }
+            let destination = directory.appendingPathComponent(asset.filename)
+            try asset.data.write(to: destination, options: .atomic)
+            result[assetMapKey(asset.kind, asset.filename)] = asset.filename
+        }
+        return result
+    }
+
+    private static func validateAssetFilenames(_ assets: [MargaretkaBackupAsset]) throws {
+        for asset in assets where asset.filename != URL(fileURLWithPath: asset.filename).lastPathComponent {
+            throw MargaretkaBackupError.invalidFilename(asset.filename)
+        }
     }
 
     private struct ConflictDecision {
@@ -535,13 +658,21 @@ enum MargaretkaBackupService {
 }
 
 struct DataTransferView: View {
+    private enum ImportIntent {
+        case mergeData
+        case restoreBackup
+    }
+
     @ObservedObject var targetStore: PriestStore
     @EnvironmentObject private var prayerStore: PrayerStore
     @EnvironmentObject private var offlineStore: OfflineBreviaryStore
+    @EnvironmentObject private var scheduleData: ScheduleData<Priest>
 
     @State private var isImporting = false
+    @State private var importIntent: ImportIntent = .mergeData
     @State private var shareURL: URL?
     @State private var importPlan: BackupImportPlan?
+    @State private var backupToRestore: MargaretkaBackup?
     @State private var resolutions: [UUID: BackupConflictResolution] = [:]
     @State private var message: String?
     @State private var errorMessage: String?
@@ -554,20 +685,40 @@ struct DataTransferView: View {
                 }
             }
 
-            Section("Pełna kopia JSON") {
+            Section("Import i eksport danych") {
                 Button {
-                    exportBackup()
+                    exportArchive(purpose: .dataTransfer)
                 } label: {
-                    Label("Eksportuj i udostępnij", systemImage: "square.and.arrow.up")
+                    Label("Eksportuj dane", systemImage: "square.and.arrow.up")
                 }
 
                 Button {
+                    importIntent = .mergeData
                     isImporting = true
                 } label: {
-                    Label("Importuj kopię", systemImage: "square.and.arrow.down")
+                    Label("Importuj i połącz dane", systemImage: "square.and.arrow.down")
                 }
 
-                Text("Import przyjmuje pełną kopię JSON albo eksport EPUB z brewiarz.pl. Kopia JSON obejmuje modlitwy pojedyncze i złożone, osoby i księży, harmonogramy, historię, zdjęcia, audio oraz zapisany brewiarz offline.")
+                Text("Import JSON zachowuje obecne dane, scala dokładne odpowiedniki i pyta o podejrzane podobieństwa. Można tu również importować EPUB z brewiarz.pl.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("Pełna kopia zapasowa") {
+                Button {
+                    exportArchive(purpose: .fullBackup)
+                } label: {
+                    Label("Utwórz i udostępnij kopię", systemImage: "externaldrive.badge.plus")
+                }
+
+                Button {
+                    importIntent = .restoreBackup
+                    isImporting = true
+                } label: {
+                    Label("Przywróć pełną kopię", systemImage: "arrow.counterclockwise.icloud")
+                }
+
+                Text("Kopia zawiera wszystkie modlitwy pojedyncze i złożone, osoby, księży, harmonogramy, wykonania i statystyki, zdjęcia, audio, brewiarz offline, jego obrazy oraz ustawienia widoku. Przywrócenie zastępuje aktualny stan aplikacji stanem z kopii.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -582,6 +733,9 @@ struct DataTransferView: View {
         .fileImporter(isPresented: $isImporting, allowedContentTypes: [.json, .epub]) { result in
             do {
                 let url = try result.get()
+                if importIntent == .restoreBackup, url.pathExtension.lowercased() != "json" {
+                    throw MargaretkaBackupError.notJSONBackup
+                }
                 let backup: MargaretkaBackup
                 if url.pathExtension.lowercased() == "epub" {
                     let imported = try BrewiarzEPUBImporter.importEPUB(from: url)
@@ -590,6 +744,8 @@ struct DataTransferView: View {
                     backup = MargaretkaBackup(
                         schemaVersion: MargaretkaBackup.currentSchemaVersion,
                         exportedAt: .now,
+                        purpose: .dataTransfer,
+                        preferences: nil,
                         prayers: [],
                         targets: [],
                         sessions: [],
@@ -602,6 +758,10 @@ struct DataTransferView: View {
                     }
                 } else {
                     backup = try MargaretkaBackupService.decode(from: url)
+                }
+                if importIntent == .restoreBackup {
+                    backupToRestore = backup
+                    return
                 }
                 let plan = MargaretkaBackupService.makeImportPlan(
                     backup: backup,
@@ -632,6 +792,25 @@ struct DataTransferView: View {
                 )
             }
         }
+        .confirmationDialog(
+            "Przywrócić pełną kopię?",
+            isPresented: Binding(
+                get: { backupToRestore != nil },
+                set: { if !$0 { backupToRestore = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Zastąp aktualny stan", role: .destructive) {
+                restoreFullBackup()
+            }
+            Button("Anuluj", role: .cancel) {
+                backupToRestore = nil
+            }
+        } message: {
+            if let backup = backupToRestore {
+                Text("Aktualne dane zostaną zastąpione stanem z \(backup.exportedAt.formatted(date: .abbreviated, time: .shortened)). Tej operacji nie można cofnąć bez innej kopii zapasowej.")
+            }
+        }
         .alert("Nie udało się", isPresented: Binding(
             get: { errorMessage != nil },
             set: { if !$0 { errorMessage = nil } }
@@ -642,13 +821,31 @@ struct DataTransferView: View {
         }
     }
 
-    private func exportBackup() {
+    private func exportArchive(purpose: MargaretkaArchivePurpose) {
         do {
             shareURL = try MargaretkaBackupService.export(
                 prayers: prayerStore.prayers,
                 targets: targetStore.priests,
-                offlineDays: offlineStore.days
+                offlineDays: offlineStore.days,
+                purpose: purpose
             )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func restoreFullBackup() {
+        guard let backup = backupToRestore else { return }
+        do {
+            let report = try MargaretkaBackupService.restoreExactly(
+                backup: backup,
+                prayerStore: prayerStore,
+                targetStore: targetStore,
+                offlineStore: offlineStore,
+                scheduleData: scheduleData
+            )
+            message = report.summary
+            backupToRestore = nil
         } catch {
             errorMessage = error.localizedDescription
         }

@@ -2,6 +2,22 @@ import Foundation
 internal import UniformTypeIdentifiers
 
 enum AudioStorage {
+    static func removeAllStoredAudioFiles() {
+        guard let directory = try? applicationSupportDirectory(create: false),
+              let files = try? FileManager.default.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: [.skipsHiddenFiles]
+              ) else { return }
+
+        for file in files {
+            guard (try? file.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true,
+                  let type = UTType(filenameExtension: file.pathExtension),
+                  type.conforms(to: .audio) else { continue }
+            try? FileManager.default.removeItem(at: file)
+        }
+    }
+
     static func removeOrphanedFiles(referencedBy prayers: [Prayer]) {
         let referencedNames = Set(prayers.compactMap(\.audioFilename).filter { !$0.isEmpty })
         guard let directory = try? applicationSupportDirectory(create: false),
