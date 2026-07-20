@@ -7,6 +7,16 @@
     "%@" : {
 
     },
+    "%@ — %@" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ — %2$@"
+          }
+        }
+      }
+    },
     "%@ %@" : {
       "localizations" : {
         "pl" : {
@@ -30,7 +40,13 @@
         }
       }
     },
+    "%lld kart" : {
+
+    },
     "%lld tyg" : {
+
+    },
+    "%lld wariantów dziennych" : {
 
     },
     "%lld/%lld" : {
@@ -74,7 +90,13 @@
         }
       }
     },
+    "Aktualne dane zostaną zastąpione stanem z %@. Tej operacji nie można cofnąć bez innej kopii zapasowej." : {
+
+    },
     "Anuluj" : {
+
+    },
+    "Aplikacja robi to automatycznie: wpis znika na początku trzeciego dnia po dacie modlitwy." : {
 
     },
     "At times" : {
@@ -109,7 +131,16 @@
     "Brak" : {
 
     },
+    "Brak brewiarza offline" : {
+
+    },
     "Brak dodatkowych modlitw w tym okresie." : {
+
+    },
+    "Brewiarz offline" : {
+
+    },
+    "Całe importy" : {
 
     },
     "Cancel" : {
@@ -179,6 +210,9 @@
         }
       }
     },
+    "Decyzja" : {
+
+    },
     "Deselect" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -197,6 +231,9 @@
 
     },
     "Dlaczego NFC jest przydatne" : {
+
+    },
+    "Do" : {
 
     },
     "Dodaj modlitwę" : {
@@ -225,6 +262,9 @@
 
     },
     "Edytuj modlitwę" : {
+
+    },
+    "Eksportuj dane" : {
 
     },
     "end date" : {
@@ -272,6 +312,21 @@
     "Imię" : {
 
     },
+    "Import i eksport" : {
+
+    },
+    "Import i eksport danych" : {
+
+    },
+    "Import JSON zachowuje obecne dane, scala dokładne odpowiedniki i pyta o podejrzane podobieństwa. Można tu również importować EPUB z brewiarz.pl." : {
+
+    },
+    "Importuj" : {
+
+    },
+    "Importuj i połącz dane" : {
+
+    },
     "Intencja: **konkretny kapłan** (imię i nazwisko)." : {
 
     },
@@ -300,6 +355,9 @@
 
     },
     "Kontynuuj" : {
+
+    },
+    "Kopia zawiera wszystkie modlitwy pojedyncze i złożone, osoby, księży, harmonogramy, wykonania i statystyki, zdjęcia, audio, brewiarz offline, jego obrazy oraz ustawienia widoku. Przywrócenie zastępuje aktualny stan aplikacji stanem z kopii." : {
 
     },
     "Kopiuj" : {
@@ -369,6 +427,9 @@
     "Nie ma jeszcze zmierzonego czasu modlitwy dla: %@." : {
 
     },
+    "Nie udało się" : {
+
+    },
     "Nieznana modlitwa" : {
 
     },
@@ -378,10 +439,19 @@
     "Nowa modlitwa" : {
 
     },
+    "Od" : {
+
+    },
     "Odblokowane" : {
 
     },
     "Odblokuj telefon i dotknij Kontynuuj, aby rozpoczac." : {
+
+    },
+    "Offline" : {
+
+    },
+    "OK" : {
 
     },
     "Opcjonalny czas trwania modlitwy. Pozostaw zero, jeśli nie był mierzony." : {
@@ -399,6 +469,9 @@
     "Otwieram modlitwę: %@." : {
 
     },
+    "Pełna kopia zapasowa" : {
+
+    },
     "Pełny ekran" : {
 
     },
@@ -409,6 +482,9 @@
 
     },
     "Podaje średni zmierzony czas ukończonej modlitwy za wybraną osobę lub dla wybranej modlitwy." : {
+
+    },
+    "Podejrzane podobieństwa wymagają decyzji. Porównaj obecną i importowaną wersję." : {
 
     },
     "Podstawowe informacje" : {
@@ -423,6 +499,9 @@
     "Pora dnia modlitwy" : {
 
     },
+    "Porównaj dane" : {
+
+    },
     "Powiedz do Siri gotowe zdanie, gdy chcesz zacząć bez klikania." : {
 
     },
@@ -435,6 +514,9 @@
     "Praktyka może się nieco różnić w poszczególnych wspólnotach/parafiach – dostosuj do lokalnych zwyczajów. Istota pozostaje ta sama: **stała modlitwa za kapłana**." : {
 
     },
+    "Preferowany wariant" : {
+
+    },
     "Przeciągnij zdjęcie, żeby zmienić pozycję" : {
 
     },
@@ -445,6 +527,12 @@
 
     },
     "Przyklej tag NFC do zdjęcia osoby albo do kartki z imieniem i dotknij go telefonem." : {
+
+    },
+    "Przywróć pełną kopię" : {
+
+    },
+    "Przywrócić pełną kopię?" : {
 
     },
     "Remove last" : {
@@ -538,6 +626,9 @@
 
     },
     "Tekst modlitwy" : {
+
+    },
+    "Tekst podstawowy" : {
 
     },
     "Testy UI uruchomione" : {
@@ -1003,6 +1094,33 @@
     "Ustawienia" : {
 
     },
+    "Usuń" : {
+
+    },
+    "Usuń cały dzień" : {
+
+    },
+    "Usuń dni z zakresu" : {
+
+    },
+    "Usuń obraz" : {
+
+    },
+    "Usuń wygasłe teraz" : {
+
+    },
+    "Usunąć cały import?" : {
+
+    },
+    "Usunąć wybrany zakres?" : {
+
+    },
+    "Usuwanie zakresu" : {
+
+    },
+    "Utwórz i udostępnij kopię" : {
+
+    },
     "Uwaga" : {
 
     },
@@ -1023,6 +1141,9 @@
 
     },
     "W toku" : {
+
+    },
+    "Wariant" : {
 
     },
     "weekly" : {
@@ -1050,6 +1171,9 @@
     "Wybierz zdjęcie" : {
 
     },
+    "Wybierz…" : {
+
+    },
     "Wybrano: %@" : {
 
     },
@@ -1063,6 +1187,9 @@
 
     },
     "Za kogo lub jaką modlitwę złożoną zapisać?" : {
+
+    },
+    "Zaimportuj eksport EPUB z brewiarz.pl." : {
 
     },
     "Zakres" : {
@@ -1096,6 +1223,12 @@
     "Zapisz ukończoną modlitwę" : {
 
     },
+    "Zarządzaj zapisanymi dniami" : {
+
+    },
+    "Zastąp aktualny stan" : {
+
+    },
     "Zastępstwo: jeśli nie możesz w danym dniu, postaraj się znaleźć zastępstwo lub odmów modlitwę wcześniej/później." : {
 
     },
@@ -1111,7 +1244,13 @@
     "Zmniejsza elementy listy modlitw" : {
 
     },
+    "Zostaną usunięte wszystkie dni i wygenerowane obrazy należące tylko do tego importu." : {
+
+    },
     "Źródło audio" : {
+
+    },
+    "Źródło: %@" : {
 
     }
   },

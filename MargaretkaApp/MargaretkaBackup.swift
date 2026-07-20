@@ -544,6 +544,10 @@ enum MargaretkaBackupService {
     private static func targetsAreEquivalent(_ lhs: Priest, _ rhs: Priest) -> Bool {
         lhs.category == rhs.category
             && normalized(lhs.displayName) == normalized(rhs.displayName)
+            && lhs.photoData == rhs.photoData
+            && lhs.photoScale == rhs.photoScale
+            && lhs.photoOffsetX == rhs.photoOffsetX
+            && lhs.photoOffsetY == rhs.photoOffsetY
             && lhs.assignedPrayerGroups == rhs.assignedPrayerGroups
             && lhs.schedule == rhs.schedule
     }
