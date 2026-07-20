@@ -148,10 +148,12 @@ nonisolated enum BrewiarzEPUBImporter {
         sourceIdentifier: String,
         sourceTitle: String
     ) -> OfflineBreviaryDay? {
-        let documentText = XHTMLPrayerLineParser.plainText(xhtml)
+        let documentLines = XHTMLPrayerLineParser.parse(xhtml)
+        let documentText = documentLines.map(\.text).joined(separator: "\n")
         guard let date = parseCivilDate(documentText) else { return nil }
         let celebration = parseCelebration(documentText)
         let liturgicalColor = parseLiturgicalColor(documentText)
+        let saintBiography = parseSaintBiography(documentLines, celebration: celebration)
         let variantIdentifier = parseVariantIdentifier(entryName)
         let anchorNamespace = dailyAnchorNamespace(entryName)
         var offices: [OfflineBreviaryOffice] = []
@@ -194,6 +196,7 @@ nonisolated enum BrewiarzEPUBImporter {
             variantName: variantName(identifier: variantIdentifier, xhtml: xhtml),
             celebrationName: celebration,
             liturgicalColor: liturgicalColor,
+            saintBiography: saintBiography,
             offices: offices,
             sourceImportID: importID,
             sourceIdentifier: sourceIdentifier,
@@ -285,6 +288,52 @@ nonisolated enum BrewiarzEPUBImporter {
               match.numberOfRanges > 1,
               let range = Range(match.range(at: 1), in: text) else { return nil }
         return String(text[range])
+    }
+
+    private static func parseSaintBiography(
+        _ lines: [OfflineBreviaryLine],
+        celebration: String?
+    ) -> OfflineSaintBiography? {
+        guard let markerIndex = lines.firstIndex(where: {
+            normalizedForComparison($0.text).hasPrefix("garsc informacji:")
+        }) else { return nil }
+
+        let stopPhrases = [
+            "teksty mszy", "propozycja spiewow", "wezwanie", "godzina czytan",
+            "jutrznia", "modlitwa przedpoludniowa", "modlitwa poludniowa",
+            "modlitwa popoludniowa", "nieszpory", "kompleta"
+        ]
+        var biographyLines: [OfflineBreviaryLine] = []
+        for line in lines.dropFirst(markerIndex + 1) {
+            let normalized = normalizedForComparison(line.text)
+            if stopPhrases.contains(where: normalized.hasPrefix) { break }
+            guard line.role != .rubric,
+                  !line.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
+            biographyLines.append(
+                OfflineBreviaryLine(
+                    role: .body,
+                    text: line.text,
+                    emphasized: false,
+                    italic: false
+                )
+            )
+        }
+
+        guard biographyLines.contains(where: { $0.text.count >= 80 }) else { return nil }
+        let trimmedCelebration = celebration?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let title = trimmedCelebration?.isEmpty == false ? trimmedCelebration! : "Święty dnia"
+        return OfflineSaintBiography(
+            title: title,
+            cards: paginate(biographyLines, initialTitle: title)
+        )
+    }
+
+    private static func normalizedForComparison(_ text: String) -> String {
+        text.folding(
+            options: [.caseInsensitive, .diacriticInsensitive],
+            locale: Locale(identifier: "pl_PL")
+        )
+        .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private static func section(
@@ -406,13 +455,16 @@ nonisolated enum BrewiarzEPUBImporter {
         ) != nil
     }
 
-    private static func paginate(_ lines: [OfflineBreviaryLine]) -> [OfflineBreviaryCard] {
+    private static func paginate(
+        _ lines: [OfflineBreviaryLine],
+        initialTitle: String? = nil
+    ) -> [OfflineBreviaryCard] {
         let maxCharacters = 310
         let maxLines = 7
         var cards: [OfflineBreviaryCard] = []
         var current: [OfflineBreviaryLine] = []
         var characterCount = 0
-        var sectionTitle: String?
+        var sectionTitle = initialTitle
         var awaitingNumberedAntiphonTitle = false
 
         func flush() {

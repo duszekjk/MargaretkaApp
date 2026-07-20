@@ -37,7 +37,8 @@ private let templatePrayerIds: [String: UUID] = [
     "Modlitwa południowa (Brewiarz)": UUID(uuidString: "5ba99cbf-2f0b-4ace-8986-9c83027e1515")!,
     "Modlitwa popołudniowa (Brewiarz)": UUID(uuidString: "c7f26387-2e8f-472f-aac6-eb2534292540")!,
     "Nieszpory (Brewiarz)": UUID(uuidString: "5ea91147-c605-47e2-8c43-f1813ba9c1a3")!,
-    "Kompleta (Brewiarz)": UUID(uuidString: "3e5f93dd-c1f7-46d7-85a4-5d62265329c4")!
+    "Kompleta (Brewiarz)": UUID(uuidString: "3e5f93dd-c1f7-46d7-85a4-5d62265329c4")!,
+    "Święty dnia (Brewiarz)": UUID(uuidString: "d62e0768-24c7-4ba8-ac3c-e7122365c9f1")!
 ]
 
 var prayersTemplate : [String:Prayer] = [
@@ -190,4 +191,6 @@ var prayersTemplate : [String:Prayer] = [
         Prayer(id: templatePrayerIds["Nieszpory (Brewiarz)"]!, name: "Nieszpory", text: "Modlitwa w brewiarz.pl", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .brewiarz(.nieszpory)),
     "Kompleta (Brewiarz)":
         Prayer(id: templatePrayerIds["Kompleta (Brewiarz)"]!, name: "Kompleta", text: "Modlitwa w brewiarz.pl", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .brewiarz(.kompleta)),
+    "Święty dnia (Brewiarz)":
+        Prayer(id: templatePrayerIds["Święty dnia (Brewiarz)"]!, name: "Święty dnia", text: "Życiorys świętego z brewiarz.pl", symbol: "person.crop.circle.badge.checkmark", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .saintBiography),
 ]

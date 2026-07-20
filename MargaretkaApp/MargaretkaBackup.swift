@@ -331,6 +331,7 @@ enum MargaretkaBackupService {
             sessionsAdded += 1
         }
         LocalDatabase.shared.save(sessions, as: PrayerSessionStore.saveKey)
+        MargaretkaWidgetDataWriter.updateStatistics(from: sessions)
         if sessionsAdded > 0 {
             NotificationCenter.default.post(name: .prayerSessionsChanged, object: nil)
         }
@@ -409,6 +410,7 @@ enum MargaretkaBackupService {
         scheduleData.items = restoredTargets
         scheduleData.save()
         LocalDatabase.shared.save(backup.sessions, as: PrayerSessionStore.saveKey)
+        MargaretkaWidgetDataWriter.updateStatistics(from: backup.sessions)
         NotificationCenter.default.post(name: .prayerSessionsChanged, object: nil)
         offlineStore.replaceAll(with: retainedDays)
         backup.preferences?.restore()
@@ -562,12 +564,17 @@ enum MargaretkaBackupService {
     }
 
     private static func officeFingerprints(_ day: OfflineBreviaryDay) -> [String] {
-        day.offices.map { "\($0.key.rawValue):\($0.contentFingerprint)" }.sorted()
+        var fingerprints = day.offices.map { "\($0.key.rawValue):\($0.contentFingerprint)" }
+        if let biography = day.saintBiography {
+            fingerprints.append("saint:\(biography.title):\(biography.text)")
+        }
+        return fingerprints.sorted()
     }
 
     private static func breviarySummary(_ day: OfflineBreviaryDay) -> String {
         let officeNames = day.offices.map(\.title).joined(separator: ", ")
-        return "\(day.celebrationName ?? day.sourceTitle)\n\(officeNames)"
+        let saint = day.saintBiography == nil ? "" : "\nŚwięty dnia"
+        return "\(day.celebrationName ?? day.sourceTitle)\n\(officeNames)\(saint)"
     }
 
     private static func prayer(_ source: Prayer, replacingIDWith id: UUID) -> Prayer {
@@ -651,6 +658,7 @@ enum MargaretkaBackupService {
             variantName: source.variantName + variantSuffix,
             celebrationName: source.celebrationName,
             liturgicalColor: source.liturgicalColor,
+            saintBiography: source.saintBiography,
             offices: source.offices,
             sourceImportID: source.sourceImportID,
             sourceIdentifier: source.sourceIdentifier,

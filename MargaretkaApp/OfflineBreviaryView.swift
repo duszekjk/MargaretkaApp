@@ -28,6 +28,15 @@ struct OfflineBreviaryManagerView: View {
 
                 ForEach(store.days) { day in
                     Section {
+                        if let biography = day.saintBiography {
+                            HStack {
+                                Label("Święty dnia", systemImage: "person.crop.circle.badge.checkmark")
+                                Spacer()
+                                Text("\(biography.cards.count) kart")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                         ForEach(day.offices) { office in
                             HStack {
                                 Label(office.title, systemImage: symbol(for: office.key))

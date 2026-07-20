@@ -6,7 +6,18 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		F1000000000000000000000D /* MargaretkaWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = F10000000000000000000001 /* MargaretkaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		F1000000000000000000000E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E07CA1A22E21619000AB58D7 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F10000000000000000000008;
+			remoteInfo = MargaretkaWidget;
+		};
 		E07CA1B82E21619600AB58D7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = E07CA1A22E21619000AB58D7 /* Project object */;
@@ -23,17 +34,41 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		F1000000000000000000000C /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				F1000000000000000000000D /* MargaretkaWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		F10000000000000000000001 /* MargaretkaWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MargaretkaWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		E07CA1AA2E21619000AB58D7 /* MargaretkaApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MargaretkaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E07CA1B72E21619600AB58D7 /* MargaretkaAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MargaretkaAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E07CA1C12E21619600AB58D7 /* MargaretkaAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MargaretkaAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		F10000000000000000000004 /* Exceptions for "MargaretkaWidget" folder in "MargaretkaWidget" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				MargaretkaWidget.entitlements,
+			);
+			target = F10000000000000000000008 /* MargaretkaWidget */;
+		};
 		E0546AB62E4F6E820084463A /* Exceptions for "MargaretkaApp" folder in "MargaretkaApp" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				MargaretkaApp.entitlements,
 				Margaretka_old.icon,
 				Margaretka_old2.icon,
 			);
@@ -42,6 +77,19 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		F10000000000000000000002 /* MargaretkaWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F10000000000000000000004 /* Exceptions for "MargaretkaWidget" folder in "MargaretkaWidget" target */,
+			);
+			path = MargaretkaWidget;
+			sourceTree = "<group>";
+		};
+		F10000000000000000000003 /* MargaretkaShared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MargaretkaShared;
+			sourceTree = "<group>";
+		};
 		E07CA1AC2E21619000AB58D7 /* MargaretkaApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -63,6 +111,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		F10000000000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E07CA1A72E21619000AB58D7 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -91,6 +146,8 @@
 			isa = PBXGroup;
 			children = (
 				E07CA1AC2E21619000AB58D7 /* MargaretkaApp */,
+				F10000000000000000000002 /* MargaretkaWidget */,
+				F10000000000000000000003 /* MargaretkaShared */,
 				E07CA1BA2E21619600AB58D7 /* MargaretkaAppTests */,
 				E07CA1C42E21619600AB58D7 /* MargaretkaAppUITests */,
 				E07CA1AB2E21619000AB58D7 /* Products */,
@@ -101,6 +158,7 @@
 			isa = PBXGroup;
 			children = (
 				E07CA1AA2E21619000AB58D7 /* MargaretkaApp.app */,
+				F10000000000000000000001 /* MargaretkaWidget.appex */,
 				E07CA1B72E21619600AB58D7 /* MargaretkaAppTests.xctest */,
 				E07CA1C12E21619600AB58D7 /* MargaretkaAppUITests.xctest */,
 			);
@@ -110,6 +168,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		F10000000000000000000008 /* MargaretkaWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F10000000000000000000009 /* Build configuration list for PBXNativeTarget "MargaretkaWidget" */;
+			buildPhases = (
+				F10000000000000000000006 /* Sources */,
+				F10000000000000000000005 /* Frameworks */,
+				F10000000000000000000007 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				F10000000000000000000002 /* MargaretkaWidget */,
+				F10000000000000000000003 /* MargaretkaShared */,
+			);
+			name = MargaretkaWidget;
+			packageProductDependencies = (
+			);
+			productName = MargaretkaWidget;
+			productReference = F10000000000000000000001 /* MargaretkaWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		E07CA1A92E21619000AB58D7 /* MargaretkaApp */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E07CA1CB2E21619700AB58D7 /* Build configuration list for PBXNativeTarget "MargaretkaApp" */;
@@ -117,13 +198,16 @@
 				E07CA1A62E21619000AB58D7 /* Sources */,
 				E07CA1A72E21619000AB58D7 /* Frameworks */,
 				E07CA1A82E21619000AB58D7 /* Resources */,
+				F1000000000000000000000C /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				F1000000000000000000000F /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				E07CA1AC2E21619000AB58D7 /* MargaretkaApp */,
+				F10000000000000000000003 /* MargaretkaShared */,
 			);
 			name = MargaretkaApp;
 			packageProductDependencies = (
@@ -188,6 +272,9 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					F10000000000000000000008 = {
+						CreatedOnToolsVersion = 26.0;
+					};
 					E07CA1A92E21619000AB58D7 = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -216,6 +303,7 @@
 			projectRoot = "";
 			targets = (
 				E07CA1A92E21619000AB58D7 /* MargaretkaApp */,
+				F10000000000000000000008 /* MargaretkaWidget */,
 				E07CA1B62E21619600AB58D7 /* MargaretkaAppTests */,
 				E07CA1C02E21619600AB58D7 /* MargaretkaAppUITests */,
 			);
@@ -223,6 +311,13 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		F10000000000000000000007 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E07CA1A82E21619000AB58D7 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -247,6 +342,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		F10000000000000000000006 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E07CA1A62E21619000AB58D7 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -271,6 +373,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		F1000000000000000000000F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F10000000000000000000008 /* MargaretkaWidget */;
+			targetProxy = F1000000000000000000000E /* PBXContainerItemProxy */;
+		};
 		E07CA1B92E21619600AB58D7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = E07CA1A92E21619000AB58D7 /* MargaretkaApp */;
@@ -409,6 +516,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = MargaretkaApp/MargaretkaApp.entitlements;
 				CURRENT_PROJECT_VERSION = 40;
 				DEVELOPMENT_TEAM = QASSY2FVRR;
 				ENABLE_APP_SANDBOX = YES;
@@ -458,6 +566,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = MargaretkaApp/MargaretkaApp.entitlements;
 				CURRENT_PROJECT_VERSION = 40;
 				DEVELOPMENT_TEAM = QASSY2FVRR;
 				ENABLE_APP_SANDBOX = YES;
@@ -598,9 +707,72 @@
 			};
 			name = Release;
 		};
+		F1000000000000000000000A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = MargaretkaWidget/MargaretkaWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 40;
+				DEVELOPMENT_TEAM = QASSY2FVRR;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MargaretkaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.3;
+				PRODUCT_BUNDLE_IDENTIFIER = com.duszekjk.MargaretkaApp.MargaretkaWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		F1000000000000000000000B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = MargaretkaWidget/MargaretkaWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 40;
+				DEVELOPMENT_TEAM = QASSY2FVRR;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MargaretkaWidget/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.3;
+				PRODUCT_BUNDLE_IDENTIFIER = com.duszekjk.MargaretkaApp.MargaretkaWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		F10000000000000000000009 /* Build configuration list for PBXNativeTarget "MargaretkaWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F1000000000000000000000A /* Debug */,
+				F1000000000000000000000B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		E07CA1A52E21619000AB58D7 /* Build configuration list for PBXProject "MargaretkaApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

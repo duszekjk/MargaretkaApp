@@ -53,10 +53,12 @@ final class PrayerSessionStore: ObservableObject {
 
     private func load() {
         sessions = LocalDatabase.shared.load(from: Self.saveKey)
+        MargaretkaWidgetDataWriter.updateStatistics(from: sessions)
     }
 
     private func save() {
         LocalDatabase.shared.save(sessions, as: Self.saveKey)
+        MargaretkaWidgetDataWriter.updateStatistics(from: sessions)
     }
 
 }

@@ -44,6 +44,7 @@ enum BrewiarzPrayerKey: String, Codable, CaseIterable, Identifiable {
 enum PrayerContent: Hashable, Codable {
     case text
     case brewiarz(BrewiarzPrayerKey)
+    case saintBiography
 
     enum CodingKeys: String, CodingKey {
         case type
@@ -53,6 +54,7 @@ enum PrayerContent: Hashable, Codable {
     enum ContentType: String, Codable {
         case text
         case brewiarz
+        case saintBiography
     }
 
     init(from decoder: Decoder) throws {
@@ -64,6 +66,8 @@ enum PrayerContent: Hashable, Codable {
         case .brewiarz:
             let key = try container.decode(BrewiarzPrayerKey.self, forKey: .key)
             self = .brewiarz(key)
+        case .saintBiography:
+            self = .saintBiography
         }
     }
 
@@ -75,6 +79,8 @@ enum PrayerContent: Hashable, Codable {
         case .brewiarz(let key):
             try container.encode(ContentType.brewiarz, forKey: .type)
             try container.encode(key, forKey: .key)
+        case .saintBiography:
+            try container.encode(ContentType.saintBiography, forKey: .type)
         }
     }
 }

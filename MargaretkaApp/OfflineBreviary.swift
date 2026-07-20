@@ -122,6 +122,18 @@ nonisolated struct OfflineBreviaryOffice: Codable, Hashable, Identifiable, Senda
     }
 }
 
+nonisolated struct OfflineSaintBiography: Codable, Hashable, Sendable {
+    var title: String
+    var cards: [OfflineBreviaryCard]
+
+    var text: String {
+        cards
+            .flatMap(\.lines)
+            .map(\.text)
+            .joined(separator: "\n")
+    }
+}
+
 nonisolated struct OfflineBreviaryDay: Codable, Hashable, Identifiable, Sendable {
     let id: UUID
     var date: BreviaryCivilDate
@@ -129,6 +141,7 @@ nonisolated struct OfflineBreviaryDay: Codable, Hashable, Identifiable, Sendable
     var variantName: String
     var celebrationName: String?
     var liturgicalColor: String?
+    var saintBiography: OfflineSaintBiography?
     var offices: [OfflineBreviaryOffice]
     var sourceImportID: UUID
     var sourceIdentifier: String
@@ -142,6 +155,7 @@ nonisolated struct OfflineBreviaryDay: Codable, Hashable, Identifiable, Sendable
         variantName: String,
         celebrationName: String? = nil,
         liturgicalColor: String? = nil,
+        saintBiography: OfflineSaintBiography? = nil,
         offices: [OfflineBreviaryOffice],
         sourceImportID: UUID,
         sourceIdentifier: String,
@@ -154,6 +168,7 @@ nonisolated struct OfflineBreviaryDay: Codable, Hashable, Identifiable, Sendable
         self.variantName = variantName
         self.celebrationName = celebrationName
         self.liturgicalColor = liturgicalColor
+        self.saintBiography = saintBiography
         self.offices = offices
         self.sourceImportID = sourceImportID
         self.sourceIdentifier = sourceIdentifier
@@ -174,7 +189,7 @@ enum BreviaryPrayerTargetFactory {
         existingTargets: [Priest]
     ) -> [Priest] {
         let importedKeys = Set(days.flatMap(\.offices).map(\.key))
-        return BrewiarzPrayerKey.allCases.compactMap { key in
+        var targets: [Priest] = BrewiarzPrayerKey.allCases.compactMap { key -> Priest? in
             guard importedKeys.contains(key),
                   let prayer = prayers.first(where: {
                       if case .brewiarz(let prayerKey) = $0.content { return prayerKey == key }
@@ -201,6 +216,33 @@ enum BreviaryPrayerTargetFactory {
                 notificationMessage: ""
             )
         }
+
+        if days.contains(where: { $0.saintBiography != nil }),
+           let prayer = prayers.first(where: { $0.content == .saintBiography }),
+           !existingTargets.contains(where: {
+               $0.category == .prayer
+                   && (normalized($0.displayName) == normalized("Święty dnia")
+                       || assignedPrayerIDs(in: $0).contains(prayer.id))
+           }) {
+            targets.append(
+                Priest(
+                    id: UUID(uuidString: "7c2a9e34-50da-4b92-9000-000000000009")!,
+                    firstName: "Święty dnia",
+                    lastName: "",
+                    title: "",
+                    category: .prayer,
+                    assignedPrayerGroups: [
+                        AssignedPrayerGroup(id: UUID(), prayerIds: [prayer.id], repeatCount: 1)
+                    ],
+                    schedule: .suggested(forPrayerName: "Święty dnia"),
+                    lastModified: .now,
+                    notificationTitle: "Święty dnia",
+                    notificationMessage: ""
+                )
+            )
+        }
+
+        return targets
     }
 
     private static func assignedPrayerIDs(in target: Priest) -> Set<UUID> {
@@ -252,6 +294,7 @@ final class OfflineBreviaryStore: ObservableObject {
     init(referenceDate: Date = .now) {
         days = LocalDatabase.shared.load(from: Self.storageKey)
         removeExpired(referenceDate: referenceDate)
+        MargaretkaWidgetDataWriter.updateSaints(from: days)
     }
 
     func matchingDays(for date: Date) -> [OfflineBreviaryDay] {
@@ -266,11 +309,14 @@ final class OfflineBreviaryStore: ObservableObject {
     }
 
     func office(for key: BrewiarzPrayerKey, date: Date, preferredVariant: String? = nil) -> OfflineBreviaryOffice? {
+        day(for: date, preferredVariant: preferredVariant)?.offices.first { $0.key == key }
+    }
+
+    func day(for date: Date, preferredVariant: String? = nil) -> OfflineBreviaryDay? {
         let candidates = matchingDays(for: date)
-        let selectedDay = preferredVariant.flatMap { preferred in
+        return preferredVariant.flatMap { preferred in
             candidates.first { $0.variantIdentifier == preferred }
         } ?? candidates.first
-        return selectedDay?.offices.first { $0.key == key }
     }
 
     func day(containing officeID: UUID) -> OfflineBreviaryDay? {
@@ -425,6 +471,7 @@ final class OfflineBreviaryStore: ObservableObject {
             return $0.variantName.localizedCaseInsensitiveCompare($1.variantName) == .orderedAscending
         }
         LocalDatabase.shared.save(days, as: Self.storageKey)
+        MargaretkaWidgetDataWriter.updateSaints(from: days)
     }
 
     private func removeOrphanedImages(from offices: [OfflineBreviaryOffice]) {

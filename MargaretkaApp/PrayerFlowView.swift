@@ -27,11 +27,23 @@ enum PrayerFlowStepBuilder {
     static func makeSteps(
         assignedPrayerIDs: [UUID],
         prayersByID: [UUID: Prayer],
-        offlineOffices: [BrewiarzPrayerKey: OfflineBreviaryOffice]
+        offlineOffices: [BrewiarzPrayerKey: OfflineBreviaryOffice],
+        saintBiography: OfflineSaintBiography? = nil
     ) -> [PrayerFlowStep] {
         assignedPrayerIDs.flatMap { prayerID -> [PrayerFlowStep] in
-            guard let prayer = prayersByID[prayerID],
-                  case .brewiarz(let key) = prayer.content,
+            guard let prayer = prayersByID[prayerID] else {
+                return [PrayerFlowStep(prayerID: prayerID)]
+            }
+
+            if case .saintBiography = prayer.content,
+               let saintBiography,
+               !saintBiography.cards.isEmpty {
+                return saintBiography.cards.map {
+                    PrayerFlowStep(prayerID: prayerID, offlineCard: $0)
+                }
+            }
+
+            guard case .brewiarz(let key) = prayer.content,
                   let office = offlineOffices[key],
                   !office.cards.isEmpty else {
                 return [PrayerFlowStep(prayerID: prayerID)]
@@ -206,17 +218,18 @@ struct PrayerFlowView: View {
     }
 
     var prayerSteps: [PrayerFlowStep] {
+        let selectedDay = offlineBreviaryStore.day(
+            for: .now,
+            preferredVariant: preferredBreviaryVariant
+        )
         let offices = Dictionary(uniqueKeysWithValues: BrewiarzPrayerKey.allCases.compactMap { key in
-            offlineBreviaryStore.office(
-                for: key,
-                date: .now,
-                preferredVariant: preferredBreviaryVariant
-            ).map { (key, $0) }
+            selectedDay?.offices.first(where: { $0.key == key }).map { (key, $0) }
         })
         return PrayerFlowStepBuilder.makeSteps(
             assignedPrayerIDs: assignedPrayerIds,
             prayersByID: allPrayers,
-            offlineOffices: offices
+            offlineOffices: offices,
+            saintBiography: selectedDay?.saintBiography
         )
     }
 

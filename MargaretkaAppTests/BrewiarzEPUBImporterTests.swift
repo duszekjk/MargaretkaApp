@@ -209,6 +209,88 @@ struct BrewiarzEPUBImporterTests {
         #expect(lines.contains { $0.italic && $0.text == "Wysłuchaj nas, Panie." })
     }
 
+    @Test func importsSaintBiographyAsDatedPaginatedContent() throws {
+        let biography = Array(repeating: "Jacek podejmował wyprawy misyjne i wiernie służył Kościołowi.", count: 12)
+            .joined(separator: " ")
+        let xhtml = """
+        <html xmlns="http://www.w3.org/1999/xhtml"><body>
+        <div>Poniedziałek, 17 sierpnia 2026</div>
+        <div>ŚW. JACKA, PREZBITERA</div>
+        <div><b>Garść informacji:</b><br/><br/>
+        \(biography)<br/><br/><br/></div>
+        <div><b>Teksty Mszy św.</b></div>
+        <a id="d1708p_jt"></a><div><b>Jutrznia</b></div><div>Treść modlitwy.</div>
+        <a id="d1708p_m1"></a>
+        </body></html>
+        """
+
+        let day = try #require(BrewiarzEPUBImporter.parseDailyDocument(
+            xhtml,
+            entryName: "OEBPS/Text/1708p.xhtml",
+            importID: UUID(),
+            sourceIdentifier: "fixture.epub",
+            sourceTitle: "fixture"
+        ))
+        let saint = try #require(day.saintBiography)
+
+        #expect(saint.title == "ŚW. JACKA, PREZBITERA")
+        #expect(saint.cards.count > 1)
+        #expect(saint.text.contains("wyprawy misyjne"))
+        #expect(!saint.text.contains("Garść informacji"))
+        #expect(!saint.text.contains("Teksty Mszy"))
+        #expect(saint.cards.allSatisfy { card in
+            card.lines.reduce(0) { $0 + $1.text.count } <= 310
+        })
+    }
+
+    @Test @MainActor func saintBiographyCreatesOneComplexPrayerAndNativeCards() throws {
+        let prayer = Prayer(
+            name: "Święty dnia",
+            text: "Życiorys świętego z brewiarz.pl",
+            symbol: "person.crop.circle.badge.checkmark",
+            audioFilename: nil,
+            audioSource: nil,
+            timestampedLines: nil,
+            content: .saintBiography
+        )
+        let biography = OfflineSaintBiography(
+            title: "ŚW. JACKA, PREZBITERA",
+            cards: [
+                OfflineBreviaryCard(
+                    title: "ŚW. JACKA, PREZBITERA",
+                    lines: [.init(role: .body, text: "Jacek urodził się w Kamieniu na Śląsku.")]
+                )
+            ]
+        )
+        let day = OfflineBreviaryDay(
+            date: .init(year: 2026, month: 8, day: 17),
+            variantIdentifier: "p",
+            variantName: "Tekst podstawowy",
+            saintBiography: biography,
+            offices: [],
+            sourceImportID: UUID(),
+            sourceIdentifier: "fixture.epub",
+            sourceTitle: "fixture"
+        )
+
+        let targets = BreviaryPrayerTargetFactory.missingTargets(
+            for: [day],
+            prayers: [prayer],
+            existingTargets: []
+        )
+        let target = try #require(targets.first(where: { $0.displayName == "Święty dnia" }))
+        let steps = PrayerFlowStepBuilder.makeSteps(
+            assignedPrayerIDs: [prayer.id],
+            prayersByID: [prayer.id: prayer],
+            offlineOffices: [:],
+            saintBiography: biography
+        )
+
+        #expect(target.category == .prayer)
+        #expect(steps.count == 1)
+        #expect(steps[0].offlineCard?.lines.first?.text.contains("Jacek urodził się") == true)
+    }
+
     @Test @MainActor func offlineCardsBecomeExistingPrayerFlowSteps() throws {
         let breviaryID = UUID()
         let ourFatherID = UUID()
