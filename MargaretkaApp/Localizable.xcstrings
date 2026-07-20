@@ -20,8 +20,15 @@
     "%lld" : {
 
     },
-    "%lld osoby lub modlitwy" : {
-
+    "%lld kapłani, osoby lub modlitwy złożone / %lld priests, people, or complex prayers" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld kapłani, osoby lub modlitwy złożone / %2$lld priests, people, or complex prayers"
+          }
+        }
+      }
     },
     "%lld tyg" : {
 
@@ -189,6 +196,9 @@
     "Dla kogo sprawdzić średni czas modlitwy?" : {
 
     },
+    "Dlaczego NFC jest przydatne" : {
+
+    },
     "Dodaj modlitwę" : {
 
     },
@@ -274,7 +284,16 @@
     "Jak to działa (w skrócie)" : {
 
     },
+    "Jeśli chcesz, możesz uruchamiać modlitwę głosem albo przez dotknięcie telefonu do taga NFC. Nie musisz znać technicznych ustawień — wystarczy gotowe zdanie albo zwykłe dotknięcie telefonu." : {
+
+    },
     "Kapłan" : {
+
+    },
+    "Kapłan, osoba lub modlitwa złożona" : {
+
+    },
+    "Kapłan, osoba lub modlitwa złożona / priest, person, or complex prayer" : {
 
     },
     "Koniec 🙏" : {
@@ -292,7 +311,7 @@
     "Księża" : {
 
     },
-    "Którą osobę lub modlitwę masz na myśli?" : {
+    "Którego kapłana, jaką osobę lub modlitwę złożoną masz na myśli?" : {
 
     },
     "Ładowanie..." : {
@@ -327,6 +346,9 @@
 
     },
     "Najdłuższa: %lld tyg" : {
+
+    },
+    "Najlepiej działa przy ikonie, obrazie, zdjęciu osoby albo przy kartce z imieniem. Dotykasz taga i od razu startuje właściwa modlitwa dla tej osoby." : {
 
     },
     "Najmocniejszy miesiąc: %@" : {
@@ -365,9 +387,6 @@
     "Opcjonalny czas trwania modlitwy. Pozostaw zero, jeśli nie był mierzony." : {
 
     },
-    "Osoba lub modlitwa" : {
-
-    },
     "Osoby" : {
 
     },
@@ -398,7 +417,13 @@
     "Pokaż" : {
 
     },
+    "Pomoc" : {
+
+    },
     "Pora dnia modlitwy" : {
+
+    },
+    "Powiedz do Siri gotowe zdanie, gdy chcesz zacząć bez klikania." : {
 
     },
     "Powtórz %lldx" : {
@@ -414,6 +439,12 @@
 
     },
     "Przesuwanie modlitw" : {
+
+    },
+    "Przykładowe komendy" : {
+
+    },
+    "Przyklej tag NFC do zdjęcia osoby albo do kartki z imieniem i dotknij go telefonem." : {
 
     },
     "Remove last" : {
@@ -466,6 +497,9 @@
 
     },
     "Sesje: %lld" : {
+
+    },
+    "Siri, Skróty i NFC" : {
 
     },
     "Skopiowano" : {
@@ -932,6 +966,12 @@
     "To modlitwa siedmiu osób za **jednego konkretnego kapłana** – każda osoba obejmuje go modlitwą w wybrany dzień tygodnia. Razem tworzą „stokrotkę” (7 płatków) z kapłanem w środku. Zobowiązanie ma charakter **stały** (długoterminowy)." : {
 
     },
+    "To są gotowe zdania. Siri podstawia nazwę kapłana, osoby albo modlitwy, które masz zapisane." : {
+
+    },
+    "To wygodne, gdy:\n• chcesz uruchomić modlitwę przy konkretnej osobie,\n• chcesz mieć jedną prostą czynność zamiast szukania w telefonie,\n• modlisz się zawsze w tym samym miejscu." : {
+
+    },
     "Tryb" : {
 
     },
@@ -1019,10 +1059,10 @@
     "Wycentruj zdjęcie" : {
 
     },
-    "Za kogo lub jaką modlitwę rozpocząć?" : {
+    "Za kogo lub jaką modlitwę złożoną rozpocząć?" : {
 
     },
-    "Za kogo lub jaką modlitwę zapisać?" : {
+    "Za kogo lub jaką modlitwę złożoną zapisać?" : {
 
     },
     "Zakres" : {

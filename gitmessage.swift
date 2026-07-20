@@ -1,8 +1,6 @@
-codex conversation [unknown] use complex prayer targets in siri stats examples
+codex conversation [unknown] checkpoint existing Siri and NFC localization updates
 
-Rewrite the Siri and NFC help in plain Polish for users who do not know the
-technical terms. Pull the Siri examples from the saved priests, people, and
-prayers so the help shows real names instead of invented ones, and describe NFC
-as a tag attached to an icon, image, photo, or name card. Use the saved complex
-prayer targets for streak and duration examples so the help does not point at
-simple prayer fragments that are not tracked by these stats.
+Preserve the uncommitted localization catalog changes that were already present
+at the start of this conversation. The catalog adds and revises Polish strings for
+Siri, NFC help, and complex-prayer terminology; no app implementation changes are
+included in this checkpoint.
