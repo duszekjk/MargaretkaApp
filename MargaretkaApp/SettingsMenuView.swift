@@ -107,7 +107,7 @@ struct SettingsMenuView: View {
 
             GroupBox {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Iskra — Siri, Skróty i NFC")
+                    Text("Siri, Skróty i NFC")
                         .font(.headline)
 
                     Text("Iskra to szybki sposób na uruchamianie modlitwy głosem albo jednym dotknięciem telefonu do znacznika NFC.")

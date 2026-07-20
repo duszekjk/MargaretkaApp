@@ -1,5 +1,4 @@
-codex conversation [unknown] add siri and nfc help to settings
+codex conversation [unknown] rename settings help to siri shortcuts and nfc
 
-Add a bottom-of-settings help block explaining Siri shortcuts and NFC usage,
-with concrete English voice examples, a simple flow diagram, and guidance on
-why NFC tags are useful for starting prayer quickly.
+Rename the settings help card to the literal Siri/Shortcuts/NFC wording the
+app uses for this feature, keeping the examples and NFC guidance intact.
