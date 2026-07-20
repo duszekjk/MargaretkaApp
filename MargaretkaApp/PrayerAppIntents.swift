@@ -8,8 +8,8 @@ import Foundation
 
 struct PrayerTargetEntity: AppEntity {
     static var typeDisplayRepresentation = TypeDisplayRepresentation(
-        name: "Osoba lub modlitwa / person or prayer",
-        numericFormat: "\(placeholder: .int) osoby lub modlitwy / \(placeholder: .int) people or prayers"
+        name: "Kapłan, osoba lub modlitwa złożona / priest, person, or complex prayer",
+        numericFormat: "\(placeholder: .int) kapłani, osoby lub modlitwy złożone / \(placeholder: .int) priests, people, or complex prayers"
     )
     static var defaultQuery = PrayerTargetQuery()
 
@@ -37,7 +37,7 @@ struct PrayerTargetEntity: AppEntity {
         case .person:
             return "Osoba / Person"
         case .prayer:
-            return "Modlitwa / Prayer"
+            return "Modlitwa złożona / Complex prayer"
         case nil:
             return "Cel modlitwy / Prayer target"
         }
@@ -75,9 +75,9 @@ struct StartPrayerIntent: AppIntent {
     static var supportedModes: IntentModes { .foreground(.immediate) }
 
     @Parameter(
-        title: "Osoba lub modlitwa",
-        requestValueDialog: "Za kogo lub jaką modlitwę rozpocząć?",
-        requestDisambiguationDialog: "Którą osobę lub modlitwę masz na myśli?"
+        title: "Kapłan, osoba lub modlitwa złożona",
+        requestValueDialog: "Za kogo lub jaką modlitwę złożoną rozpocząć?",
+        requestDisambiguationDialog: "Którego kapłana, jaką osobę lub modlitwę złożoną masz na myśli?"
     )
     var target: PrayerTargetEntity
 
@@ -97,9 +97,9 @@ struct LogCompletedPrayerIntent: AppIntent {
     static var supportedModes: IntentModes { .background }
 
     @Parameter(
-        title: "Osoba lub modlitwa",
-        requestValueDialog: "Za kogo lub jaką modlitwę zapisać?",
-        requestDisambiguationDialog: "Którą osobę lub modlitwę masz na myśli?"
+        title: "Kapłan, osoba lub modlitwa złożona",
+        requestValueDialog: "Za kogo lub jaką modlitwę złożoną zapisać?",
+        requestDisambiguationDialog: "Którego kapłana, jaką osobę lub modlitwę złożoną masz na myśli?"
     )
     var target: PrayerTargetEntity
 
@@ -134,9 +134,9 @@ struct PrayerStreakIntent: AppIntent {
     static var supportedModes: IntentModes { .background }
 
     @Parameter(
-        title: "Osoba lub modlitwa",
+        title: "Kapłan, osoba lub modlitwa złożona",
         requestValueDialog: "Czyją serię modlitwy sprawdzić?",
-        requestDisambiguationDialog: "Którą osobę lub modlitwę masz na myśli?"
+        requestDisambiguationDialog: "Którego kapłana, jaką osobę lub modlitwę złożoną masz na myśli?"
     )
     var target: PrayerTargetEntity
 
@@ -165,9 +165,9 @@ struct AveragePrayerDurationIntent: AppIntent {
     static var supportedModes: IntentModes { .background }
 
     @Parameter(
-        title: "Osoba lub modlitwa",
+        title: "Kapłan, osoba lub modlitwa złożona",
         requestValueDialog: "Dla kogo sprawdzić średni czas modlitwy?",
-        requestDisambiguationDialog: "Którą osobę lub modlitwę masz na myśli?"
+        requestDisambiguationDialog: "Którego kapłana, jaką osobę lub modlitwę złożoną masz na myśli?"
     )
     var target: PrayerTargetEntity
 
