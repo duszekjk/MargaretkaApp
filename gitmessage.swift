@@ -1,5 +1,4 @@
-codex conversation [unknown] make siri phrases more natural
+codex conversation [unknown] restore priest background photos
 
-Add more conversational Polish and English shortcut variants so Siri can match
-requests like "I prayed for..." or "How long do I pray for..." instead of only
-robotic command-style wording.
+Resolve the main prayer background from the live priest store so priest and
+person photos still show even when the schedule snapshot is stale.

@@ -104,6 +104,7 @@ struct HomeView: View {
 
     var body: some View {
         PrayerFlowView(showSettings: $showSettings, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie)
+            .environmentObject(priestStore)
             .toolbar {
                 NavigationLink(destination: SettingsMenuView(priestStore: priestStore, availablePrayers: $prayerStore.prayers, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie),
                                isActive: $showSettings) {

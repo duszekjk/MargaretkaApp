@@ -9,6 +9,7 @@ import SwiftUI
 
 struct PrayerFlowView: View {
     @EnvironmentObject var prayerStore: PrayerStore
+    @EnvironmentObject var priestStore: PriestStore
     @State var selectedPriest: Priest?
     @State var finished: Bool = false
     @State var priestLast: Priest?
@@ -183,7 +184,11 @@ struct PrayerFlowView: View {
     }
 
     var backgroundImage: UIImage? {
-        selectedPriest?.displayPhoto
+        guard let selectedPriest else { return nil }
+        if let livePriest = priestStore.priests.first(where: { $0.id == selectedPriest.id }) {
+            return livePriest.displayPhoto ?? selectedPriest.displayPhoto
+        }
+        return selectedPriest.displayPhoto
     }
 
     private var prayerSwipeMode: PrayerSwipeMode {
