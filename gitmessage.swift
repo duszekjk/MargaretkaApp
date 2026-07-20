@@ -1,8 +1,10 @@
-codex conversation [unknown] add dated offline breviary library
+codex conversation [unknown] add full JSON backup and safe merge import
 
-Add semantic offline office, card, and choir-line models with exact Warsaw civil
-dates and source provenance. Add an observable local library that resolves dated
-offices, supports manual deletion, removes orphaned images, and automatically
-deletes content at the start of the third day after it was intended for use.
+Export prayers, people, priests, complex prayers, schedules, history, photos,
+audio, dated offline offices, and their generated images in a versioned archive.
+Reuse the app's existing Codable model implementations instead of adding parallel
+serializers, and present the system share sheet after export.
 
-Cover civil dates and the three-day retention boundary with unit tests.
+Merge exact matches without duplication, remap imported relationships, preserve
+local identities, and show probable overlaps side by side for an explicit keep,
+replace, or keep-both decision. Ignore expired dated offices during restore.

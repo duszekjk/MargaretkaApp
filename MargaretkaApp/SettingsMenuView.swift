@@ -110,6 +110,12 @@ struct SettingsMenuView: View {
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("Statystyki")
                     .accessibilityIdentifier("settings_stats_link")
+
+                NavigationLink(
+                    destination: DataTransferView(targetStore: priestStore)
+                ) {
+                    Label("Import i eksport", systemImage: "arrow.up.arrow.down.circle")
+                }
                 
                     Section("Przesuwanie modlitw") {
                         Picker("Tryb", selection: $prayerSwipeModeRaw) {
