@@ -22,6 +22,31 @@ struct SettingsMenuView: View {
         let hasPerson = priestStore.priests.contains { $0.category == .person }
         return hasPriest && hasPerson
     }
+
+    private var examplePriestName: String {
+        priestStore.priests.first(where: { $0.category == .priest })?.displayName ?? "wybrany kapłan"
+    }
+
+    private var examplePersonName: String {
+        priestStore.priests.first(where: { $0.category == .person })?.displayName ?? "wybrana osoba"
+    }
+
+    private var examplePrayerNames: [String] {
+        let names = availablePrayers.map(\.displayName).filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        return names.isEmpty ? ["Różaniec", "Koronka do Miłosierdzia Bożego"] : names
+    }
+
+    private var exampleSiriCommands: [String] {
+        let prayers = examplePrayerNames
+        let firstPrayer = prayers.first ?? "Różaniec"
+        let secondPrayer = prayers.dropFirst().first ?? firstPrayer
+        return [
+            "• Siri, start prayer for \(examplePriestName) in Heptadaisy",
+            "• Siri, start prayer for \(examplePersonName) in Heptadaisy",
+            "• Siri, check prayer streak for \(firstPrayer) in Heptadaisy",
+            "• Siri, check average prayer duration for \(secondPrayer) in Heptadaisy"
+        ]
+    }
     
     var body: some View {
         List {
@@ -143,16 +168,15 @@ struct SettingsMenuView: View {
                                         .font(.subheadline.bold())
 
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text("• Siri, rozpocznij modlitwę za wybranego kapłana")
-                                        Text("• Siri, zapisz modlitwę dla wybranej osoby")
-                                        Text("• Siri, sprawdź serię modlitwy dla Różańca")
-                                        Text("• Siri, jaki jest średni czas modlitwy dla Koronki do Miłosierdzia Bożego")
+                                        ForEach(exampleSiriCommands, id: \.self) { command in
+                                            Text(command)
+                                        }
                                     }
                                     .font(.footnote)
                                     .fixedSize(horizontal: false, vertical: true)
                                 }
 
-                                Text("Te zdania możesz powiedzieć prawie tak samo. Nie musisz umieć dobrze angielskiego — wystarczy powtórzyć je po swojemu, a Siri i tak spróbuje zrozumieć, o co chodzi.")
+                                Text("To są gotowe zdania. Siri podstawia nazwę kapłana, osoby albo modlitwy, które masz zapisane.")
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                                     .fixedSize(horizontal: false, vertical: true)
