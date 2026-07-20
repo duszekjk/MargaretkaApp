@@ -2,10 +2,9 @@ import SwiftUI
 
 struct OfflineBreviaryPrayerView: View {
     let office: OfflineBreviaryOffice
-    var fullScreen: Bool = false
+    let card: OfflineBreviaryCard
 
     @EnvironmentObject private var store: OfflineBreviaryStore
-    @State private var cardIndex = 0
 
     var body: some View {
         ZStack {
@@ -17,65 +16,13 @@ struct OfflineBreviaryPrayerView: View {
                 endPoint: .bottom
             )
 
-            content
-                .padding(fullScreen ? 22 : 14)
+            OfflineBreviaryCardView(card: card)
+                .padding(12)
         }
-        .clipShape(RoundedRectangle(cornerRadius: fullScreen ? 0 : 18))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
         .task(id: office.id) {
             await store.generateImageIfNeeded(for: office.id)
         }
-        .onChange(of: office.id) {
-            cardIndex = 0
-        }
-    }
-
-    private var content: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text(office.title)
-                    .font(fullScreen ? .title2.bold() : .headline)
-                Spacer()
-                Label("Offline", systemImage: "iphone.and.arrow.forward")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.8))
-            }
-            .foregroundStyle(.white)
-
-            if let card = currentCard {
-                OfflineBreviaryCardView(card: card, fullScreen: fullScreen)
-                    .id(card.id)
-                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-
-            HStack {
-                Button {
-                    move(by: -1)
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .frame(width: 42, height: 34)
-                }
-                .disabled(cardIndex == 0)
-
-                Spacer()
-                Text("\(min(cardIndex + 1, max(office.cards.count, 1)))/\(max(office.cards.count, 1))")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                Spacer()
-
-                Button {
-                    move(by: 1)
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .frame(width: 42, height: 34)
-                }
-                .disabled(cardIndex >= office.cards.count - 1)
-            }
-            .buttonStyle(.bordered)
-            .tint(.white)
-        }
-        .padding(12)
-        .background(.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 16))
     }
 
     @ViewBuilder
@@ -90,24 +37,13 @@ struct OfflineBreviaryPrayerView: View {
         }
     }
 
-    private var currentCard: OfflineBreviaryCard? {
-        guard office.cards.indices.contains(cardIndex) else { return office.cards.first }
-        return office.cards[cardIndex]
-    }
-
-    private func move(by delta: Int) {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            cardIndex = min(max(cardIndex + delta, 0), max(office.cards.count - 1, 0))
-        }
-    }
 }
 
 private struct OfflineBreviaryCardView: View {
     let card: OfflineBreviaryCard
-    let fullScreen: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: fullScreen ? 7 : 4) {
+        VStack(alignment: .leading, spacing: 4) {
             ForEach(card.lines) { line in
                 lineView(for: line)
             }
@@ -121,12 +57,12 @@ private struct OfflineBreviaryCardView: View {
         if line.role == .choirLeft || line.role == .choirRight {
             HStack(alignment: .top, spacing: 8) {
                 if line.role == .choirRight {
-                    Spacer(minLength: fullScreen ? 56 : 28)
+                    Spacer(minLength: 28)
                 }
 
                 RoundedRectangle(cornerRadius: 2)
                     .fill(choirBarColor(for: line.role))
-                    .frame(width: 4, height: fullScreen ? 24 : 20)
+                    .frame(width: 4, height: 20)
                     .accessibilityHidden(true)
 
                 styledText(for: line)
@@ -155,7 +91,7 @@ private struct OfflineBreviaryCardView: View {
     }
 
     private func font(for line: OfflineBreviaryLine) -> Font {
-        let size: CGFloat = fullScreen ? 20 : 16
+        let size: CGFloat = 16
         switch line.role {
         case .heading:
             return .system(size: size + 2, weight: .bold)

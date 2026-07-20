@@ -48,7 +48,7 @@ struct BrewiarzEPUBImportProgress: Equatable, Sendable {
     }
 }
 
-enum BrewiarzEPUBImporter {
+nonisolated enum BrewiarzEPUBImporter {
     private static let officeAnchors: [(anchor: String, key: BrewiarzPrayerKey)] = [
         ("wezw", .wezwanie),
         ("gc", .godzinaCzytan),
@@ -60,10 +60,10 @@ enum BrewiarzEPUBImporter {
         ("k", .kompleta)
     ]
 
-    static func importEPUB(
+    nonisolated static func importEPUB(
         from url: URL,
-        progress: (@Sendable (BrewiarzEPUBImportProgress) -> Void)? = nil
-    ) throws -> BrewiarzEPUBImportResult {
+        progress: (@MainActor @Sendable (BrewiarzEPUBImportProgress) -> Void)? = nil
+    ) async throws -> BrewiarzEPUBImportResult {
         let access = url.startAccessingSecurityScopedResource()
         defer { if access { url.stopAccessingSecurityScopedResource() } }
         let archive = try SimpleZIPArchive(data: Data(contentsOf: url))
@@ -71,34 +71,68 @@ enum BrewiarzEPUBImporter {
         guard !candidates.isEmpty else { throw BrewiarzEPUBImportError.noBreviaryDocuments }
 
         let startedAt = Date()
-        progress?(BrewiarzEPUBImportProgress(
-            completedDocuments: 0,
-            totalDocuments: candidates.count,
-            elapsed: 0
-        ))
-        let importID = UUID()
-        var days: [OfflineBreviaryDay] = []
-        var skipped = 0
-        for (index, name) in candidates.sorted().enumerated() {
-            if let data = try? archive.data(for: name),
-               let xhtml = String(data: data, encoding: .utf8),
-               let day = parseDailyDocument(
-                    xhtml,
-                    entryName: name,
-                    importID: importID,
-                    sourceIdentifier: url.lastPathComponent,
-                    sourceTitle: url.deletingPathExtension().lastPathComponent
-               ) {
-                days.append(day)
-            } else {
-                skipped += 1
-            }
-            progress?(BrewiarzEPUBImportProgress(
-                completedDocuments: index + 1,
+        if let progress {
+            await progress(BrewiarzEPUBImportProgress(
+                completedDocuments: 0,
                 totalDocuments: candidates.count,
-                elapsed: Date().timeIntervalSince(startedAt)
+                elapsed: 0
             ))
         }
+        let importID = UUID()
+        let sortedCandidates = candidates.sorted()
+        let sourceIdentifier = url.lastPathComponent
+        let sourceTitle = url.deletingPathExtension().lastPathComponent
+        let processorCount = ProcessInfo.processInfo.activeProcessorCount
+        let concurrentDocumentLimit = min(4, max(2, processorCount - 1), sortedCandidates.count)
+        var parsedDays = Array<OfflineBreviaryDay?>(repeating: nil, count: sortedCandidates.count)
+        var completedDocuments = 0
+
+        await withTaskGroup(of: (Int, OfflineBreviaryDay?).self) { group in
+            var nextCandidateIndex = 0
+
+            func enqueueCandidate(at index: Int) {
+                let name = sortedCandidates[index]
+                group.addTask {
+                    guard let data = try? archive.data(for: name),
+                          let xhtml = String(data: data, encoding: .utf8) else {
+                        return (index, nil)
+                    }
+                    return (
+                        index,
+                        parseDailyDocument(
+                            xhtml,
+                            entryName: name,
+                            importID: importID,
+                            sourceIdentifier: sourceIdentifier,
+                            sourceTitle: sourceTitle
+                        )
+                    )
+                }
+            }
+
+            while nextCandidateIndex < concurrentDocumentLimit {
+                enqueueCandidate(at: nextCandidateIndex)
+                nextCandidateIndex += 1
+            }
+
+            while let (index, day) = await group.next() {
+                parsedDays[index] = day
+                completedDocuments += 1
+                if let progress {
+                    await progress(BrewiarzEPUBImportProgress(
+                        completedDocuments: completedDocuments,
+                        totalDocuments: sortedCandidates.count,
+                        elapsed: Date().timeIntervalSince(startedAt)
+                    ))
+                }
+                if nextCandidateIndex < sortedCandidates.count {
+                    enqueueCandidate(at: nextCandidateIndex)
+                    nextCandidateIndex += 1
+                }
+            }
+        }
+        let days = parsedDays.compactMap { $0 }
+        let skipped = sortedCandidates.count - days.count
         guard !days.isEmpty else { throw BrewiarzEPUBImportError.noOffices }
         return BrewiarzEPUBImportResult(
             days: days,
@@ -290,10 +324,21 @@ enum BrewiarzEPUBImporter {
             "wczoraj", "dzisiaj", "copyright by", "opracowanie i edycja"
         ]
         var didFindOfficeTitle = false
+        var discardingCanonicalPrayer = false
         var result: [OfflineBreviaryLine] = []
         for var line in lines {
             let lower = line.text.lowercased()
             if navigationPhrases.contains(where: lower.contains) { continue }
+            if discardingCanonicalPrayer {
+                if line.role == .heading {
+                    discardingCanonicalPrayer = false
+                } else {
+                    if lower.contains("ale nas zbaw ode złego") {
+                        discardingCanonicalPrayer = false
+                    }
+                    continue
+                }
+            }
             if lower == officeTitle.lowercased() {
                 didFindOfficeTitle = true
                 line.role = .heading
@@ -305,9 +350,11 @@ enum BrewiarzEPUBImporter {
                     continue
                 }
             }
-            if lower == "ojcze nasz..." || lower == "ojcze nasz…" {
+            if lower == "ojcze nasz..." || lower == "ojcze nasz…" || lower.hasPrefix("ojcze nasz,") {
                 line.role = .prayerReference
                 line.canonicalPrayerName = "Ojcze nasz"
+                line.text = "Ojcze nasz"
+                discardingCanonicalPrayer = lower.hasPrefix("ojcze nasz,")
             }
             result.append(line)
         }
@@ -318,8 +365,8 @@ enum BrewiarzEPUBImporter {
     }
 
     private static func paginate(_ lines: [OfflineBreviaryLine]) -> [OfflineBreviaryCard] {
-        let maxCharacters = 760
-        let maxLines = 15
+        let maxCharacters = 560
+        let maxLines = 12
         var cards: [OfflineBreviaryCard] = []
         var current: [OfflineBreviaryLine] = []
         var characterCount = 0
@@ -331,7 +378,12 @@ enum BrewiarzEPUBImporter {
             characterCount = 0
         }
 
-        for line in lines {
+        for line in lines.flatMap({ splitForPagination($0, maximumCharacters: maxCharacters) }) {
+            if line.role == .prayerReference {
+                flush()
+                cards.append(OfflineBreviaryCard(title: line.canonicalPrayerName, lines: [line]))
+                continue
+            }
             let startsSection = line.role == .heading && !current.isEmpty
             let wouldOverflow = !current.isEmpty
                 && (characterCount + line.text.count > maxCharacters || current.count >= maxLines)
@@ -341,6 +393,38 @@ enum BrewiarzEPUBImporter {
         }
         flush()
         return cards
+    }
+
+    private static func splitForPagination(
+        _ line: OfflineBreviaryLine,
+        maximumCharacters: Int
+    ) -> [OfflineBreviaryLine] {
+        guard line.role != .heading,
+              line.role != .prayerReference,
+              line.text.count > maximumCharacters else { return [line] }
+
+        var chunks: [String] = []
+        var current = ""
+        for word in line.text.split(whereSeparator: { $0.isWhitespace }) {
+            let candidate = current.isEmpty ? String(word) : "\(current) \(word)"
+            if candidate.count <= maximumCharacters {
+                current = candidate
+            } else {
+                if !current.isEmpty { chunks.append(current) }
+                current = String(word)
+            }
+        }
+        if !current.isEmpty { chunks.append(current) }
+
+        return chunks.map {
+            OfflineBreviaryLine(
+                role: line.role,
+                text: $0,
+                canonicalPrayerName: line.canonicalPrayerName,
+                emphasized: line.emphasized,
+                italic: line.italic
+            )
+        }
     }
 
     private static func stableFingerprint(_ lines: [OfflineBreviaryLine]) -> String {
@@ -404,12 +488,13 @@ enum BrewiarzEPUBImporter {
     }
 }
 
-private final class XHTMLPrayerLineParser: NSObject, XMLParserDelegate {
+nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelegate {
     private struct Style {
         var emphasized = false
         var italic = false
         var rubric = false
         var leftAligned = false
+        var navigationLink = false
     }
 
     private var styleStack: [Style] = [Style()]
@@ -457,6 +542,7 @@ private final class XHTMLPrayerLineParser: NSObject, XMLParserDelegate {
         var style = styleStack.last ?? Style()
         if name == "b" || name == "strong" { style.emphasized = true }
         if name == "i" || name == "em" { style.italic = true }
+        if name == "a", attributeDict["href"] != nil { style.navigationLink = true }
         let inlineStyle = attributeDict["style"]?.lowercased() ?? ""
         if inlineStyle.contains("font-weight:bold") || inlineStyle.contains("font-weight: bold") {
             style.emphasized = true
@@ -481,6 +567,7 @@ private final class XHTMLPrayerLineParser: NSObject, XMLParserDelegate {
         bufferStyle.italic = bufferStyle.italic || style.italic
         bufferStyle.rubric = bufferStyle.rubric || style.rubric
         bufferStyle.leftAligned = bufferStyle.leftAligned || style.leftAligned
+        bufferStyle.navigationLink = bufferStyle.navigationLink || style.navigationLink
     }
 
     func parser(
@@ -499,6 +586,7 @@ private final class XHTMLPrayerLineParser: NSObject, XMLParserDelegate {
         buffer = ""
         let style = bufferStyle
         bufferStyle = Style()
+        guard !style.navigationLink else { return }
         for rawLine in raw.split(separator: "\n", omittingEmptySubsequences: false) {
             let leadingChoirIndent = rawLine.prefix { $0 == "\u{00A0}" || $0 == " " }.count >= 4
             let text = rawLine
@@ -516,7 +604,7 @@ private final class XHTMLPrayerLineParser: NSObject, XMLParserDelegate {
             else if folded.hasPrefix("ant.") { role = .antiphon }
             else if leadingChoirIndent { role = .choirRight }
             else if style.leftAligned { role = .choirLeft }
-            else if isUppercaseHeading { role = .heading }
+            else if isUppercaseHeading || Self.isSemanticPrayerHeading(text) { role = .heading }
             else if style.rubric { role = .rubric }
             else if style.emphasized && text.count < 100 { role = .heading }
             else { role = .body }
@@ -530,10 +618,17 @@ private final class XHTMLPrayerLineParser: NSObject, XMLParserDelegate {
             )
         }
     }
+
+    private static func isSemanticPrayerHeading(_ text: String) -> Bool {
+        text.range(
+            of: #"(?i)^(psalm|pieśń|kantyk)(\s|$)"#,
+            options: [.regularExpression, .diacriticInsensitive]
+        ) != nil
+    }
 }
 
-private struct SimpleZIPArchive {
-    private struct Entry {
+nonisolated private struct SimpleZIPArchive: Sendable {
+    private struct Entry: Sendable {
         var name: String
         var compressionMethod: UInt16
         var compressedSize: Int
@@ -635,7 +730,7 @@ private struct SimpleZIPArchive {
 }
 
 private extension Data {
-    func uint16LE(at offset: Int) -> UInt16 {
+    nonisolated func uint16LE(at offset: Int) -> UInt16 {
         guard offset >= 0, offset + 2 <= count else { return 0 }
         return withUnsafeBytes { raw in
             let bytes = raw.bindMemory(to: UInt8.self)
@@ -643,7 +738,7 @@ private extension Data {
         }
     }
 
-    func uint32LE(at offset: Int) -> UInt32 {
+    nonisolated func uint32LE(at offset: Int) -> UInt32 {
         guard offset >= 0, offset + 4 <= count else { return 0 }
         return withUnsafeBytes { raw in
             let bytes = raw.bindMemory(to: UInt8.self)
@@ -654,7 +749,7 @@ private extension Data {
         }
     }
 
-    func lastOffset(of signature: UInt32, searchWindow: Int) -> Int? {
+    nonisolated func lastOffset(of signature: UInt32, searchWindow: Int) -> Int? {
         guard count >= 4 else { return nil }
         let lowerBound = Swift.max(0, count - searchWindow)
         var offset = count - 4

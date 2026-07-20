@@ -17,9 +17,9 @@ enum BrewiarzPrayerKey: String, Codable, CaseIterable, Identifiable {
     case nieszpory
     case kompleta
 
-    var id: String { rawValue }
+    nonisolated var id: String { rawValue }
 
-    var displayName: String {
+    nonisolated var displayName: String {
         switch self {
         case .wezwanie:
             return "Wezwanie"

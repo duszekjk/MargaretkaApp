@@ -7,6 +7,63 @@
 
 import SwiftUI
 
+struct PrayerFlowStep: Hashable {
+    let prayerID: UUID
+    let offlineOffice: OfflineBreviaryOffice?
+    let offlineCard: OfflineBreviaryCard?
+
+    init(
+        prayerID: UUID,
+        offlineOffice: OfflineBreviaryOffice? = nil,
+        offlineCard: OfflineBreviaryCard? = nil
+    ) {
+        self.prayerID = prayerID
+        self.offlineOffice = offlineOffice
+        self.offlineCard = offlineCard
+    }
+}
+
+enum PrayerFlowStepBuilder {
+    static func makeSteps(
+        assignedPrayerIDs: [UUID],
+        prayersByID: [UUID: Prayer],
+        offlineOffices: [BrewiarzPrayerKey: OfflineBreviaryOffice]
+    ) -> [PrayerFlowStep] {
+        assignedPrayerIDs.flatMap { prayerID -> [PrayerFlowStep] in
+            guard let prayer = prayersByID[prayerID],
+                  case .brewiarz(let key) = prayer.content,
+                  let office = offlineOffices[key],
+                  !office.cards.isEmpty else {
+                return [PrayerFlowStep(prayerID: prayerID)]
+            }
+
+            return office.cards.map { card in
+                if let canonicalName = card.lines.first?.canonicalPrayerName,
+                   card.lines.allSatisfy({ $0.role == .prayerReference }),
+                   let canonicalPrayer = prayersByID.values.first(where: {
+                       normalized($0.name) == normalized(canonicalName)
+                   }) {
+                    return PrayerFlowStep(prayerID: canonicalPrayer.id)
+                }
+                return PrayerFlowStep(
+                    prayerID: prayerID,
+                    offlineOffice: office,
+                    offlineCard: card
+                )
+            }
+        }
+    }
+
+    private static func normalized(_ text: String) -> String {
+        text.folding(
+            options: [.caseInsensitive, .diacriticInsensitive],
+            locale: Locale(identifier: "pl_PL")
+        )
+        .split(whereSeparator: \.isWhitespace)
+        .joined(separator: " ")
+    }
+}
+
 struct PrayerFlowView: View {
     @EnvironmentObject var prayerStore: PrayerStore
     @EnvironmentObject var priestStore: PriestStore
@@ -63,14 +120,14 @@ struct PrayerFlowView: View {
     }
 
     var currentPrayer: Prayer? {
-        guard let index = currentPrayerIndex else { return nil }
-        return allPrayers[flattenedPrayerIds[index]]
+        guard let step = currentPrayerStep else { return nil }
+        return allPrayers[step.prayerID]
     }
 
-    var currentPrayerIndex: Int? {
+    var currentPrayerStep: PrayerFlowStep? {
         let index = activeIndex - 1
-        guard index >= 0, index < flattenedPrayerIds.count else { return nil }
-        return index
+        guard prayerSteps.indices.contains(index) else { return nil }
+        return prayerSteps[index]
     }
 
     var currentBrewiarzKey: BrewiarzPrayerKey? {
@@ -82,20 +139,19 @@ struct PrayerFlowView: View {
     }
 
     var isCurrentPrayerWeb: Bool {
-        currentBrewiarzKey != nil && currentOfflineOffice == nil
+        currentBrewiarzKey != nil && currentOfflineCard == nil
     }
 
     var currentOfflineOffice: OfflineBreviaryOffice? {
-        guard let key = currentBrewiarzKey else { return nil }
-        return offlineBreviaryStore.office(
-            for: key,
-            date: .now,
-            preferredVariant: preferredBreviaryVariant
-        )
+        currentPrayerStep?.offlineOffice
+    }
+
+    var currentOfflineCard: OfflineBreviaryCard? {
+        currentPrayerStep?.offlineCard
     }
 
     var currentPrayerCardHeight: CGFloat {
-        currentOfflineOffice == nil ? 400 : min(UIScreen.main.bounds.height * 0.68, 650)
+        currentOfflineCard == nil ? 400 : min(UIScreen.main.bounds.height * 0.72, 680)
     }
 
     private func moveToIndex(_ index: Int, animated: Bool) {
@@ -110,7 +166,7 @@ struct PrayerFlowView: View {
         }
     }
 
-    var flattenedPrayerIds: [UUID] {
+    var assignedPrayerIds: [UUID] {
         guard let priest = selectedPriest else { return [] }
 
         func extractPrayerIds(from group: AssignedPrayerGroup) -> [UUID] {
@@ -135,12 +191,33 @@ struct PrayerFlowView: View {
         return priest.assignedPrayerGroups.flatMap { extractPrayerIds(from: $0) }
     }
 
+    var prayerSteps: [PrayerFlowStep] {
+        let offices = Dictionary(uniqueKeysWithValues: BrewiarzPrayerKey.allCases.compactMap { key in
+            offlineBreviaryStore.office(
+                for: key,
+                date: .now,
+                preferredVariant: preferredBreviaryVariant
+            ).map { (key, $0) }
+        })
+        return PrayerFlowStepBuilder.makeSteps(
+            assignedPrayerIDs: assignedPrayerIds,
+            prayersByID: allPrayers,
+            offlineOffices: offices
+        )
+    }
+
+    var flattenedPrayerIds: [UUID] {
+        prayerSteps.map(\.prayerID)
+    }
+
     var flattenedPrayerSymbols: [String] {
         flattenedPrayerIds.map { allPrayers[$0]?.symbol ?? "questionmark" }
     }
 
     var flattenedPrayerNames: [String?] {
-        flattenedPrayerIds.map { allPrayers[$0]?.name }
+        prayerSteps.map { step in
+            step.offlineCard?.title ?? allPrayers[step.prayerID]?.name
+        }
     }
 
     var displayPrayerSymbols: [String] {
@@ -412,7 +489,7 @@ struct PrayerFlowView: View {
                             }
                         }
 
-                        if currentBrewiarzKey != nil {
+                        if isCurrentPrayerWeb {
                             GlassEffectContainer(spacing: 0) {
                                 Button(action: {
                                     withAnimation(.easeInOut(duration: 0.25)) {
@@ -446,14 +523,11 @@ struct PrayerFlowView: View {
                             .frame(width:UIScreen.main.bounds.width-8, height: currentPrayerCardHeight)
                             .overlay(
                                 Group {
-                                    if let key = currentBrewiarzKey {
-                                        Group {
-                                            if let offlineOffice = currentOfflineOffice {
-                                                OfflineBreviaryPrayerView(office: offlineOffice)
-                                            } else {
-                                                BrewiarzPrayerView(key: key, fullScreen: $isFullscreen)
-                                            }
-                                        }
+                                    if let offlineOffice = currentOfflineOffice,
+                                       let offlineCard = currentOfflineCard {
+                                        OfflineBreviaryPrayerView(office: offlineOffice, card: offlineCard)
+                                    } else if let key = currentBrewiarzKey {
+                                        BrewiarzPrayerView(key: key, fullScreen: $isFullscreen)
                                         .matchedGeometryEffect(id: "brewiarzWeb", in: brewiarzNamespace, isSource: !isFullscreen)
                                         .allowsHitTesting(!isFullscreen)
                                     } else {
@@ -633,7 +707,6 @@ struct PrayerFlowView: View {
             if isFullscreen, let key = currentBrewiarzKey {
                 BrewiarzFullScreenView(
                     key: key,
-                    offlineOffice: currentOfflineOffice,
                     activeIndex: $activeIndex,
                     maxIndex: lastDisplayIndex,
                     isPresented: $isFullscreen,
@@ -860,7 +933,6 @@ struct PrayerFlowView: View {
 
 struct BrewiarzFullScreenView: View {
     let key: BrewiarzPrayerKey
-    let offlineOffice: OfflineBreviaryOffice?
     @Binding var activeIndex: Int
     let maxIndex: Int
     @Binding var isPresented: Bool
@@ -869,14 +941,7 @@ struct BrewiarzFullScreenView: View {
 
     var body: some View {
         ZStack {
-            Group {
-                if let offlineOffice {
-                    OfflineBreviaryPrayerView(office: offlineOffice, fullScreen: true)
-                        .background(.ultraThinMaterial)
-                } else {
-                    BrewiarzPrayerView(key: key, fullScreen: .constant(true))
-                }
-            }
+            BrewiarzPrayerView(key: key, fullScreen: .constant(true))
                 .matchedGeometryEffect(id: "brewiarzWeb", in: namespace, isSource: isPresented)
                 .zIndex(0)
                 .ignoresSafeArea()

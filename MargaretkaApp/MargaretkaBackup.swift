@@ -109,10 +109,11 @@ struct BackupImportReport {
     let prayersAdded: Int
     let targetsAdded: Int
     let sessionsAdded: Int
-    let breviaryDaysAdded: Int
+    let breviaryDatesAdded: Int
+    let breviaryVariantsAdded: Int
 
     var summary: String {
-        "Dodano: \(prayersAdded) modlitw, \(targetsAdded) osób lub modlitw złożonych, \(sessionsAdded) wpisów historii i \(breviaryDaysAdded) dni brewiarza."
+        "Dodano: \(prayersAdded) modlitw, \(targetsAdded) osób lub modlitw złożonych, \(sessionsAdded) wpisów historii oraz brewiarz: \(breviaryDatesAdded) dni kalendarzowych (\(breviaryVariantsAdded) wariantów dziennych)."
     }
 }
 
@@ -336,6 +337,7 @@ enum MargaretkaBackupService {
 
         var days = offlineStore.days
         let initialDayCount = days.count
+        let initialBreviaryDates = Set(days.map(\.date))
         for original in plan.backup.offlineBreviaryDays {
             var imported = remappingImages(original, filenameMap: filenameMap)
             if OfflineBreviaryStore.isExpired(imported.date, referenceDate: .now) { continue }
@@ -366,7 +368,8 @@ enum MargaretkaBackupService {
             prayersAdded: prayersAdded,
             targetsAdded: targetsAdded,
             sessionsAdded: sessionsAdded,
-            breviaryDaysAdded: max(0, offlineStore.days.count - initialDayCount)
+            breviaryDatesAdded: Set(offlineStore.days.map(\.date)).subtracting(initialBreviaryDates).count,
+            breviaryVariantsAdded: max(0, offlineStore.days.count - initialDayCount)
         )
     }
 
@@ -821,38 +824,35 @@ struct DataTransferView: View {
             totalDocuments: 0,
             elapsed: 0
         )
-        Task.detached(priority: .userInitiated) {
+        message = nil
+        Task { @MainActor in
             do {
-                let imported = try BrewiarzEPUBImporter.importEPUB(from: url) { progress in
-                    Task { @MainActor in
+                let imported = try await BrewiarzEPUBImporter.importEPUB(from: url) { progress in
+                    withAnimation(.linear(duration: 0.2)) {
                         epubProgress = progress
                     }
                 }
-                await MainActor.run {
-                    epubProgress = nil
-                    let retained = OfflineBreviaryStore.removingExpired(from: imported.days, referenceDate: .now)
-                    let expiredCount = imported.days.count - retained.count
-                    guard !retained.isEmpty else {
-                        message = "EPUB zawiera tylko wygasłe dni (pominięto: \(expiredCount))."
-                        return
-                    }
-                    prepareImport(MargaretkaBackup(
-                        schemaVersion: MargaretkaBackup.currentSchemaVersion,
-                        exportedAt: .now,
-                        purpose: .dataTransfer,
-                        preferences: nil,
-                        prayers: [],
-                        targets: [],
-                        sessions: [],
-                        offlineBreviaryDays: retained,
-                        assets: []
-                    ))
+                epubProgress = nil
+                let retained = OfflineBreviaryStore.removingExpired(from: imported.days, referenceDate: .now)
+                let expiredCount = imported.days.count - retained.count
+                guard !retained.isEmpty else {
+                    message = "EPUB zawiera tylko wygasłe dni (pominięto: \(expiredCount))."
+                    return
                 }
+                prepareImport(MargaretkaBackup(
+                    schemaVersion: MargaretkaBackup.currentSchemaVersion,
+                    exportedAt: .now,
+                    purpose: .dataTransfer,
+                    preferences: nil,
+                    prayers: [],
+                    targets: [],
+                    sessions: [],
+                    offlineBreviaryDays: retained,
+                    assets: []
+                ))
             } catch {
-                await MainActor.run {
-                    epubProgress = nil
-                    errorMessage = error.localizedDescription
-                }
+                epubProgress = nil
+                errorMessage = error.localizedDescription
             }
         }
     }
@@ -912,32 +912,42 @@ private struct EPUBImportProgressView: View {
     let progress: BrewiarzEPUBImportProgress
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Importowanie brewiarza")
-                .font(.headline)
-            if progress.totalDocuments > 0 {
-                ProgressView(value: progress.fractionCompleted)
-                Text("Dokument \(progress.completedDocuments) z \(progress.totalDocuments)")
-                    .font(.subheadline.monospacedDigit())
-                if let remaining = progress.estimatedRemaining, remaining > 0 {
-                    Text("Pozostało około \(formattedDuration(remaining))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else if progress.completedDocuments == 0 {
-                    Text("Obliczanie czasu…")
+        ZStack {
+            Color.black.opacity(0.18)
+                .ignoresSafeArea()
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 10) {
+                    ProgressView()
+                    Text("Importowanie brewiarza")
+                        .font(.headline)
+                }
+                if progress.totalDocuments > 0 {
+                    ProgressView(value: progress.fractionCompleted)
+                        .animation(.linear(duration: 0.2), value: progress.fractionCompleted)
+                    Text("Dokument \(progress.completedDocuments) z \(progress.totalDocuments)")
+                        .font(.subheadline.monospacedDigit())
+                    if let remaining = progress.estimatedRemaining, remaining > 0 {
+                        Text("Pozostało około \(formattedDuration(remaining))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else if progress.completedDocuments == 0 {
+                        Text("Obliczanie czasu…")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    Text("Odczytywanie archiwum…")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-            } else {
-                ProgressView()
-                Text("Odczytywanie archiwum…")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
+            .padding(20)
+            .frame(maxWidth: 360)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
+            .shadow(radius: 18)
         }
-        .padding(20)
-        .frame(maxWidth: 360)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
+        .transition(.opacity)
         .shadow(radius: 18)
         .padding()
         .accessibilityElement(children: .combine)

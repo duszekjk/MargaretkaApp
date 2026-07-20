@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 internal import Combine
 
-struct BreviaryCivilDate: Codable, Hashable, Comparable, Identifiable, Sendable {
+nonisolated struct BreviaryCivilDate: Codable, Hashable, Comparable, Identifiable, Sendable {
     let year: Int
     let month: Int
     let day: Int
@@ -34,7 +34,7 @@ struct BreviaryCivilDate: Codable, Hashable, Comparable, Identifiable, Sendable 
 }
 
 extension Calendar {
-    static var brewiarzWarsaw: Calendar {
+    nonisolated static var brewiarzWarsaw: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.locale = Locale(identifier: "pl_PL")
         calendar.timeZone = TimeZone(identifier: "Europe/Warsaw") ?? .current
@@ -42,7 +42,7 @@ extension Calendar {
     }
 }
 
-enum OfflineBreviaryLineRole: String, Codable, Hashable, Sendable {
+nonisolated enum OfflineBreviaryLineRole: String, Codable, Hashable, Sendable {
     case heading
     case rubric
     case antiphon
@@ -54,7 +54,7 @@ enum OfflineBreviaryLineRole: String, Codable, Hashable, Sendable {
     case prayerReference
 }
 
-struct OfflineBreviaryLine: Codable, Hashable, Identifiable, Sendable {
+nonisolated struct OfflineBreviaryLine: Codable, Hashable, Identifiable, Sendable {
     let id: UUID
     var role: OfflineBreviaryLineRole
     var text: String
@@ -79,7 +79,7 @@ struct OfflineBreviaryLine: Codable, Hashable, Identifiable, Sendable {
     }
 }
 
-struct OfflineBreviaryCard: Codable, Hashable, Identifiable, Sendable {
+nonisolated struct OfflineBreviaryCard: Codable, Hashable, Identifiable, Sendable {
     let id: UUID
     var title: String?
     var lines: [OfflineBreviaryLine]
@@ -91,7 +91,7 @@ struct OfflineBreviaryCard: Codable, Hashable, Identifiable, Sendable {
     }
 }
 
-struct OfflineBreviaryOffice: Codable, Hashable, Identifiable, Sendable {
+nonisolated struct OfflineBreviaryOffice: Codable, Hashable, Identifiable, Sendable {
     let id: UUID
     var key: BrewiarzPrayerKey
     var title: String
@@ -122,7 +122,7 @@ struct OfflineBreviaryOffice: Codable, Hashable, Identifiable, Sendable {
     }
 }
 
-struct OfflineBreviaryDay: Codable, Hashable, Identifiable, Sendable {
+nonisolated struct OfflineBreviaryDay: Codable, Hashable, Identifiable, Sendable {
     let id: UUID
     var date: BreviaryCivilDate
     var variantIdentifier: String

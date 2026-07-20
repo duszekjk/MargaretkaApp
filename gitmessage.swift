@@ -1,20 +1,22 @@
-codex conversation [unknown] support current weekly brewiarz EPUB structures
+codex conversation [unknown] checkpoint broken offline brewiarz flow attempt
 
-Recognize current brewiarz.pl office anchors that are namespaced with their
-document key while retaining the plain anchors used by the February demo.
+Attempt to move EPUB parsing into a non-main async operation and present import
+progress with an ETA. The importer compiles and parses the supplied weekly file,
+but the resulting application flow does not work as expected on device.
 
-Import four-digit default-day documents and numbered variants such as w10,
-mapping suffix-free documents to the primary variant. Add regression coverage
-for namespaced anchors, modern filenames, exclusions, and primary mapping.
+Expand each imported office into semantic prayer-flow steps. Separate psalms
+and other liturgical sections, split only oversized sections into consecutive
+parts, and reuse canonical simple prayers such as Ojcze nasz.
 
-Parse shared date, celebration, and liturgical-color metadata once per daily
-document instead of repeatedly reparsing the full XHTML for every office.
+The attempted flow still uses a separate OfflineBreviaryPrayerView with its own
+background, fonts, and visual behavior instead of the existing prayerCardText
+path. It can replace a user-selected Jutrznia background and only Jutrznia is
+available, so this checkpoint is not a usable breviary implementation.
 
-Add document-progress and ETA calculation plus its intended progress overlay.
-The importer remained implicitly main-actor isolated, however, so device use
-could freeze the UI and prevent the overlay from visibly updating. The summary
-also counted imported variants as days. Preserve the generated localization
-catalog entries for that interface pending a follow-up correction.
+Discard all EPUB hyperlinks and site navigation text because they are dead after
+offline import. Report unique calendar dates separately from daily variants so
+a one-week archive is no longer described as 31 days.
 
-Validate all seven supplied weekly EPUBs: 185 daily variants imported, none
-skipped, all eight offices present in every variant, with choir lines retained.
+Add partial parser regressions for semantic psalm boundaries, canonical-prayer
+reuse, dead-link removal, progress estimates, and accurate date counting. These
+tests do not validate the failed on-device rendering and assignment behavior.
