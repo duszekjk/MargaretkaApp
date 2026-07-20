@@ -143,10 +143,10 @@ struct SettingsMenuView: View {
                                         .font(.subheadline.bold())
 
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text("• Siri, start the prayer for Father Jan")
-                                        Text("• Siri, log the prayer for Anna Kowalska")
-                                        Text("• Siri, check the prayer streak for Modlitwa św. Jana Pawła II za kapłanów")
-                                        Text("• Siri, what is the average prayer duration for Modlitwa Apostolatu Margaretka")
+                                        Text("• Siri, rozpocznij modlitwę za wybranego kapłana")
+                                        Text("• Siri, zapisz modlitwę dla wybranej osoby")
+                                        Text("• Siri, sprawdź serię modlitwy dla Różańca")
+                                        Text("• Siri, jaki jest średni czas modlitwy dla Koronki do Miłosierdzia Bożego")
                                     }
                                     .font(.footnote)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -163,7 +163,7 @@ struct SettingsMenuView: View {
                                     Text("Dlaczego NFC jest przydatne")
                                         .font(.subheadline.bold())
 
-                                    Text("Najlepiej działa przy zdjęciu osoby, przy kartce z imieniem, przy ołtarzyku albo przy łóżku. Dotykasz taga i od razu startuje właściwa modlitwa dla tej osoby.")
+                                    Text("Najlepiej działa przy ikonie, obrazie, zdjęciu osoby albo przy kartce z imieniem. Dotykasz taga i od razu startuje właściwa modlitwa dla tej osoby.")
                                         .font(.footnote)
                                         .foregroundStyle(.secondary)
                                         .fixedSize(horizontal: false, vertical: true)
