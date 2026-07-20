@@ -10,6 +10,7 @@ import SwiftUI
 struct PrayerFlowView: View {
     @EnvironmentObject var prayerStore: PrayerStore
     @EnvironmentObject var priestStore: PriestStore
+    @EnvironmentObject var offlineBreviaryStore: OfflineBreviaryStore
     @State var selectedPriest: Priest?
     @State var finished: Bool = false
     @State var priestLast: Priest?
@@ -44,6 +45,7 @@ struct PrayerFlowView: View {
     @State private var didLogAppear = false
     @AppStorage("prayerSwipeMode") private var prayerSwipeModeRaw: String = PrayerSwipeMode.both.rawValue
     @AppStorage("prayerCompactView") private var prayerCompactView: Bool = false
+    @AppStorage("preferredBreviaryVariant") private var preferredBreviaryVariant = "p"
     @GestureState private var prayerSwipeTranslation: CGSize = .zero
     var priestsAndPrayers: [Priest] {
         scheduleData.items.filter { $0.category == selectedCategory }
@@ -80,7 +82,20 @@ struct PrayerFlowView: View {
     }
 
     var isCurrentPrayerWeb: Bool {
-        currentBrewiarzKey != nil
+        currentBrewiarzKey != nil && currentOfflineOffice == nil
+    }
+
+    var currentOfflineOffice: OfflineBreviaryOffice? {
+        guard let key = currentBrewiarzKey else { return nil }
+        return offlineBreviaryStore.office(
+            for: key,
+            date: .now,
+            preferredVariant: preferredBreviaryVariant
+        )
+    }
+
+    var currentPrayerCardHeight: CGFloat {
+        currentOfflineOffice == nil ? 400 : min(UIScreen.main.bounds.height * 0.68, 650)
     }
 
     private func moveToIndex(_ index: Int, animated: Bool) {
@@ -397,7 +412,7 @@ struct PrayerFlowView: View {
                             }
                         }
 
-                        if isCurrentPrayerWeb {
+                        if currentBrewiarzKey != nil {
                             GlassEffectContainer(spacing: 0) {
                                 Button(action: {
                                     withAnimation(.easeInOut(duration: 0.25)) {
@@ -428,14 +443,19 @@ struct PrayerFlowView: View {
                 {
                         RoundedRectangle(cornerRadius: 20)
                             .fill(.ultraThinMaterial)
-                            .frame(width:UIScreen.main.bounds.width-8, height: 400)
+                            .frame(width:UIScreen.main.bounds.width-8, height: currentPrayerCardHeight)
                             .overlay(
                                 Group {
                                     if let key = currentBrewiarzKey {
-                                        BrewiarzPrayerView(key: key, fullScreen: $isFullscreen)
-                                            .matchedGeometryEffect(id: "brewiarzWeb", in: brewiarzNamespace, isSource: !isFullscreen)
-//                                            .opacity(isFullscreen ? 0 : 1)
-                                            .allowsHitTesting(!isFullscreen)
+                                        Group {
+                                            if let offlineOffice = currentOfflineOffice {
+                                                OfflineBreviaryPrayerView(office: offlineOffice)
+                                            } else {
+                                                BrewiarzPrayerView(key: key, fullScreen: $isFullscreen)
+                                            }
+                                        }
+                                        .matchedGeometryEffect(id: "brewiarzWeb", in: brewiarzNamespace, isSource: !isFullscreen)
+                                        .allowsHitTesting(!isFullscreen)
                                     } else {
                                         ZStack {
                                             prayerCardText
@@ -456,7 +476,7 @@ struct PrayerFlowView: View {
                                     }
                                 }
                                 .gesture(prayerSwipeGesture)
-                                    .frame(width:UIScreen.main.bounds.width-10, height: 400)
+                                    .frame(width:UIScreen.main.bounds.width-10, height: currentPrayerCardHeight)
                                 
                             )
                             .padding(.horizontal)
@@ -613,6 +633,7 @@ struct PrayerFlowView: View {
             if isFullscreen, let key = currentBrewiarzKey {
                 BrewiarzFullScreenView(
                     key: key,
+                    offlineOffice: currentOfflineOffice,
                     activeIndex: $activeIndex,
                     maxIndex: lastDisplayIndex,
                     isPresented: $isFullscreen,
@@ -839,6 +860,7 @@ struct PrayerFlowView: View {
 
 struct BrewiarzFullScreenView: View {
     let key: BrewiarzPrayerKey
+    let offlineOffice: OfflineBreviaryOffice?
     @Binding var activeIndex: Int
     let maxIndex: Int
     @Binding var isPresented: Bool
@@ -847,7 +869,14 @@ struct BrewiarzFullScreenView: View {
 
     var body: some View {
         ZStack {
-            BrewiarzPrayerView(key: key, fullScreen: .constant(true))
+            Group {
+                if let offlineOffice {
+                    OfflineBreviaryPrayerView(office: offlineOffice, fullScreen: true)
+                        .background(.ultraThinMaterial)
+                } else {
+                    BrewiarzPrayerView(key: key, fullScreen: .constant(true))
+                }
+            }
                 .matchedGeometryEffect(id: "brewiarzWeb", in: namespace, isSource: isPresented)
                 .zIndex(0)
                 .ignoresSafeArea()

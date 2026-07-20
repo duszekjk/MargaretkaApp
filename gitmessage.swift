@@ -1,10 +1,10 @@
-codex conversation [unknown] import dated brewiarz.pl EPUB offices
+codex conversation [unknown] prefer and manage offline breviary offices
 
-Read brewiarz.pl EPUB ZIP and XHTML locally without a network connection or a
-third-party package. Discover each dated variant and extract the eight Liturgy of
-the Hours offices while leaving Mass and devotional extras outside the library.
+Use an imported office for the exact current Warsaw date before loading the
+online brewiarz.pl page, while retaining the website as an immediate fallback.
+Render semantic cards in a larger prayer area with explicit card navigation and
+preserved choir, rubric, leader, response, and antiphon presentation.
 
-Preserve headings, rubrics, leader and response lines, and left/right choir
-indentation. Split long offices into bounded semantic cards, reference Ojcze nasz
-without duplicating it in simple prayers, seed English image prompts with Polish
-context, reject expired dates, and reuse the existing overlap review flow.
+Add a manager for preferred variants and manual deletion by office, day, date
+range, or whole EPUB import. Keep orphan image cleanup connected to every delete
+path and expose the automatic third-day cleanup action and policy in the UI.

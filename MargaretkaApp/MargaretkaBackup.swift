@@ -546,6 +546,12 @@ struct DataTransferView: View {
 
     var body: some View {
         List {
+            Section("Brewiarz offline") {
+                NavigationLink("Zarządzaj zapisanymi dniami") {
+                    OfflineBreviaryManagerView()
+                }
+            }
+
             Section("Pełna kopia JSON") {
                 Button {
                     exportBackup()

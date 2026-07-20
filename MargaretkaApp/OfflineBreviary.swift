@@ -250,6 +250,16 @@ final class OfflineBreviaryStore: ObservableObject {
         sortAndSave()
     }
 
+    func delete(from startDate: Date, through endDate: Date) {
+        let start = BreviaryCivilDate(date: min(startDate, endDate))
+        let end = BreviaryCivilDate(date: max(startDate, endDate))
+        let removed = days.filter { $0.date >= start && $0.date <= end }
+        guard !removed.isEmpty else { return }
+        days.removeAll { $0.date >= start && $0.date <= end }
+        removeOrphanedImages(from: removed.flatMap(\.offices))
+        sortAndSave()
+    }
+
     static func removingExpired(
         from days: [OfflineBreviaryDay],
         referenceDate: Date,
