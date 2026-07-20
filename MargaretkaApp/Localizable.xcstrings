@@ -201,9 +201,6 @@
     "Dodaj nową podgrupę" : {
 
     },
-    "Dopasuj" : {
-
-    },
     "Edit" : {
       "localizations" : {
         "pl" : {
@@ -368,19 +365,22 @@
     "Opcjonalny czas trwania modlitwy. Pozostaw zero, jeśli nie był mierzony." : {
 
     },
-    "Osiągnięto: %@" : {
-
-    },
     "Osoba lub modlitwa" : {
 
     },
     "Osoby" : {
 
     },
+    "Ostatni osiągnięty: %@" : {
+
+    },
     "Otwiera wybraną osobę, kapłana lub modlitwę i przechodzi do początku modlitwy." : {
 
     },
     "Otwieram modlitwę: %@." : {
+
+    },
+    "Pełny ekran" : {
 
     },
     "Po co?" : {
@@ -408,6 +408,9 @@
 
     },
     "Praktyka może się nieco różnić w poszczególnych wspólnotach/parafiach – dostosuj do lokalnych zwyczajów. Istota pozostaje ta sama: **stała modlitwa za kapłana**." : {
+
+    },
+    "Przeciągnij zdjęcie, żeby zmienić pozycję" : {
 
     },
     "Przesuwanie modlitw" : {

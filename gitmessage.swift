@@ -1,5 +1,4 @@
-codex conversation [unknown] restore photo position controls
+codex conversation [unknown] preserve localization snapshot
 
-Bring back an always-visible interactive photo adjuster in the priest editor so
-users can drag the photo as well as zoom it, instead of relying only on the
-fullscreen sheet.
+Keep the current localization edits as a separate committed unit before adding
+the Siri shortcut language support.
