@@ -323,12 +323,28 @@ nonisolated enum BrewiarzEPUBImporter {
             "kartka z kalendarza", "inne oficja", "wykaz obchodów", "teksty mszy",
             "wczoraj", "dzisiaj", "copyright by", "opracowanie i edycja"
         ]
-        var didFindOfficeTitle = false
+        let normalizedOfficeTitle = officeTitle.lowercased()
+        let otherOfficeTitles = Set(
+            BrewiarzPrayerKey.allCases
+                .map { $0.displayName.lowercased() }
+                .filter { $0 != normalizedOfficeTitle }
+        )
+        var didFindOfficeTitle = !lines.contains { $0.text.lowercased() == normalizedOfficeTitle }
         var discardingCanonicalPrayer = false
         var result: [OfflineBreviaryLine] = []
         for var line in lines {
             let lower = line.text.lowercased()
             if navigationPhrases.contains(where: lower.contains) { continue }
+            if otherOfficeTitles.contains(lower) { continue }
+            if lower.hasPrefix("kolor szat:")
+                || lower.range(of: #"\d{1,2}\s+\p{L}+\s+\d{4}"#, options: .regularExpression) != nil {
+                continue
+            }
+            let folded = lower.folding(
+                options: [.diacriticInsensitive],
+                locale: Locale(identifier: "pl_PL")
+            )
+            if line.role == .heading && folded.hasPrefix("psalmodia") { continue }
             if discardingCanonicalPrayer {
                 if line.role == .heading {
                     discardingCanonicalPrayer = false
@@ -339,16 +355,12 @@ nonisolated enum BrewiarzEPUBImporter {
                     continue
                 }
             }
-            if lower == officeTitle.lowercased() {
+            if !didFindOfficeTitle {
+                guard lower == normalizedOfficeTitle else { continue }
                 didFindOfficeTitle = true
                 line.role = .heading
                 result.append(line)
                 continue
-            }
-            if !didFindOfficeTitle {
-                if lower.hasPrefix("kolor szat:") || lower.range(of: #"\d{1,2}\s+\p{L}+\s+\d{4}"#, options: .regularExpression) != nil {
-                    continue
-                }
             }
             if lower == "ojcze nasz..." || lower == "ojcze nasz…" || lower.hasPrefix("ojcze nasz,") {
                 line.role = .prayerReference
@@ -370,10 +382,12 @@ nonisolated enum BrewiarzEPUBImporter {
         var cards: [OfflineBreviaryCard] = []
         var current: [OfflineBreviaryLine] = []
         var characterCount = 0
+        var sectionTitle: String?
+        var awaitingNumberedAntiphonTitle = false
 
         func flush() {
             guard !current.isEmpty else { return }
-            cards.append(OfflineBreviaryCard(title: current.first(where: { $0.role == .heading })?.text, lines: current))
+            cards.append(OfflineBreviaryCard(title: sectionTitle, lines: current))
             current = []
             characterCount = 0
         }
@@ -382,17 +396,55 @@ nonisolated enum BrewiarzEPUBImporter {
             if line.role == .prayerReference {
                 flush()
                 cards.append(OfflineBreviaryCard(title: line.canonicalPrayerName, lines: [line]))
+                sectionTitle = nil
+                awaitingNumberedAntiphonTitle = false
                 continue
             }
-            let startsSection = line.role == .heading && !current.isEmpty
+            let numberedAntiphon = isNumberedAntiphon(line.text)
+            if numberedAntiphon {
+                flush()
+                sectionTitle = nil
+                awaitingNumberedAntiphonTitle = true
+            }
+            if line.role == .heading {
+                if awaitingNumberedAntiphonTitle {
+                    sectionTitle = line.text
+                    awaitingNumberedAntiphonTitle = false
+                } else {
+                    flush()
+                    sectionTitle = line.text
+                }
+            }
             let wouldOverflow = !current.isEmpty
                 && (characterCount + line.text.count > maxCharacters || current.count >= maxLines)
-            if startsSection || wouldOverflow { flush() }
+            if wouldOverflow { flush() }
             current.append(line)
             characterCount += line.text.count
         }
         flush()
-        return cards
+        return numberedContinuationTitles(in: cards)
+    }
+
+    private static func isNumberedAntiphon(_ text: String) -> Bool {
+        text.range(
+            of: #"^\s*\d+\s+ant\."#,
+            options: [.regularExpression, .caseInsensitive]
+        ) != nil
+    }
+
+    private static func numberedContinuationTitles(
+        in cards: [OfflineBreviaryCard]
+    ) -> [OfflineBreviaryCard] {
+        let totals = Dictionary(grouping: cards.compactMap(\.title), by: { $0 })
+            .mapValues(\.count)
+        var occurrences: [String: Int] = [:]
+        return cards.map { card in
+            guard let title = card.title, totals[title, default: 0] > 1 else { return card }
+            occurrences[title, default: 0] += 1
+            var numbered = card
+            numbered.title = "\(title) (\(occurrences[title, default: 1])/\(totals[title, default: 1]))"
+            return numbered
+        }
     }
 
     private static func splitForPagination(
@@ -555,6 +607,13 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         }
         if inlineStyle.contains("text-align:left") || inlineStyle.contains("text-align: left") {
             style.leftAligned = true
+        } else if inlineStyle.contains("text-align:center")
+                    || inlineStyle.contains("text-align: center")
+                    || inlineStyle.contains("text-align:right")
+                    || inlineStyle.contains("text-align: right")
+                    || inlineStyle.contains("text-align:justify")
+                    || inlineStyle.contains("text-align: justify") {
+            style.leftAligned = false
         }
         styleStack.append(style)
     }
@@ -601,10 +660,10 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
             let role: OfflineBreviaryLineRole
             if folded.hasPrefix("k.") { role = .leader }
             else if folded.hasPrefix("w.") { role = .response }
-            else if folded.hasPrefix("ant.") { role = .antiphon }
+            else if folded.hasPrefix("ant.") || Self.isNumberedAntiphon(text) { role = .antiphon }
             else if leadingChoirIndent { role = .choirRight }
-            else if style.leftAligned { role = .choirLeft }
             else if isUppercaseHeading || Self.isSemanticPrayerHeading(text) { role = .heading }
+            else if style.leftAligned { role = .choirLeft }
             else if style.rubric { role = .rubric }
             else if style.emphasized && text.count < 100 { role = .heading }
             else { role = .body }
@@ -621,8 +680,15 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
 
     private static func isSemanticPrayerHeading(_ text: String) -> Bool {
         text.range(
-            of: #"(?i)^(psalm|pieśń|kantyk)(\s|$)"#,
+            of: #"(?i)^(psalm|pieśń|kantyk|hymn|czytanie|responsorium|prośby|modlitwa|te deum)(\s|$)"#,
             options: [.regularExpression, .diacriticInsensitive]
+        ) != nil
+    }
+
+    private static func isNumberedAntiphon(_ text: String) -> Bool {
+        text.range(
+            of: #"^\s*\d+\s+ant\."#,
+            options: [.regularExpression, .caseInsensitive]
         ) != nil
     }
 }

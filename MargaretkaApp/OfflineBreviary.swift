@@ -167,6 +167,81 @@ nonisolated struct OfflineBreviaryDay: Codable, Hashable, Identifiable, Sendable
 }
 
 @MainActor
+enum BreviaryPrayerTargetFactory {
+    static func missingTargets(
+        for days: [OfflineBreviaryDay],
+        prayers: [Prayer],
+        existingTargets: [Priest]
+    ) -> [Priest] {
+        let importedKeys = Set(days.flatMap(\.offices).map(\.key))
+        return BrewiarzPrayerKey.allCases.compactMap { key in
+            guard importedKeys.contains(key),
+                  let prayer = prayers.first(where: {
+                      if case .brewiarz(let prayerKey) = $0.content { return prayerKey == key }
+                      return false
+                  }),
+                  !existingTargets.contains(where: {
+                      $0.category == .prayer
+                          && (normalized($0.displayName) == normalized(key.displayName)
+                              || assignedPrayerIDs(in: $0).contains(prayer.id))
+                  }) else { return nil }
+
+            return Priest(
+                id: targetID(for: key),
+                firstName: key.displayName,
+                lastName: "",
+                title: "",
+                category: .prayer,
+                assignedPrayerGroups: [
+                    AssignedPrayerGroup(id: UUID(), prayerIds: [prayer.id], repeatCount: 1)
+                ],
+                schedule: .suggested(forPrayerName: key.displayName),
+                lastModified: .now,
+                notificationTitle: key.displayName,
+                notificationMessage: ""
+            )
+        }
+    }
+
+    private static func assignedPrayerIDs(in target: Priest) -> Set<UUID> {
+        func ids(in group: AssignedPrayerGroup) -> [UUID] {
+            group.items.flatMap { item in
+                switch item {
+                case .prayer(let id): return [id]
+                case .subgroup(let index):
+                    guard group.subgroups.indices.contains(index) else { return [] }
+                    return ids(in: group.subgroups[index])
+                }
+            }
+        }
+        return Set(target.assignedPrayerGroups.flatMap(ids(in:)))
+    }
+
+    private static func normalized(_ text: String) -> String {
+        text.folding(
+            options: [.caseInsensitive, .diacriticInsensitive],
+            locale: Locale(identifier: "pl_PL")
+        )
+        .split(whereSeparator: \.isWhitespace)
+        .joined(separator: " ")
+    }
+
+    private static func targetID(for key: BrewiarzPrayerKey) -> UUID {
+        let ids: [BrewiarzPrayerKey: UUID] = [
+            .wezwanie: UUID(uuidString: "7c2a9e34-50da-4b92-9000-000000000001")!,
+            .godzinaCzytan: UUID(uuidString: "7c2a9e34-50da-4b92-9000-000000000002")!,
+            .jutrznia: UUID(uuidString: "7c2a9e34-50da-4b92-9000-000000000003")!,
+            .modlitwaPrzedpoludniowa: UUID(uuidString: "7c2a9e34-50da-4b92-9000-000000000004")!,
+            .modlitwaPoludniowa: UUID(uuidString: "7c2a9e34-50da-4b92-9000-000000000005")!,
+            .modlitwaPopoludniowa: UUID(uuidString: "7c2a9e34-50da-4b92-9000-000000000006")!,
+            .nieszpory: UUID(uuidString: "7c2a9e34-50da-4b92-9000-000000000007")!,
+            .kompleta: UUID(uuidString: "7c2a9e34-50da-4b92-9000-000000000008")!
+        ]
+        return ids[key]!
+    }
+}
+
+@MainActor
 final class OfflineBreviaryStore: ObservableObject {
     static let storageKey = "offline_breviary_v1"
     static let retentionDays = 3

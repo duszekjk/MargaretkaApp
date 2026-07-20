@@ -839,13 +839,18 @@ struct DataTransferView: View {
                     message = "EPUB zawiera tylko wygasłe dni (pominięto: \(expiredCount))."
                     return
                 }
+                let breviaryTargets = BreviaryPrayerTargetFactory.missingTargets(
+                    for: retained,
+                    prayers: prayerStore.prayers,
+                    existingTargets: targetStore.priests
+                )
                 prepareImport(MargaretkaBackup(
                     schemaVersion: MargaretkaBackup.currentSchemaVersion,
                     exportedAt: .now,
                     purpose: .dataTransfer,
                     preferences: nil,
                     prayers: [],
-                    targets: [],
+                    targets: breviaryTargets,
                     sessions: [],
                     offlineBreviaryDays: retained,
                     assets: []
@@ -902,6 +907,8 @@ struct DataTransferView: View {
             )
             message = report.summary
             importPlan = nil
+            scheduleData.items = targetStore.priests
+            scheduleData.save()
         } catch {
             errorMessage = error.localizedDescription
         }

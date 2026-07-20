@@ -115,15 +115,28 @@ struct BrewiarzEPUBImporterTests {
         <div>Poniedziałek, 20 lipca 2026</div>
         <a id="d2007p_jt"></a>
         <div><b>Jutrznia</b></div>
+        <div style="text-align:left">
         <div><a href="kartka.xhtml">KARTKA Z KALENDARZA NA DZISIAJ</a></div>
         <div><span style="color:red"><b>PSALMODIA</b></span></div>
-        <div><span style="color:red">Ant. </span>Wysławiajcie Pana.</div>
+        <div><span style="color:red">1 ant. </span>Wysławiajcie Pana.</div>
         <div style="text-align:center"><span style="color:red"><b>Psalm 135, 1-12</b><br/><b>Chwała Boga, który czyni cuda</b></span></div>
         <div>Pierwsza część psalmu.<br/>Drugi werset psalmu.</div>
+        <div><span style="color:red">Ant. </span>Wysławiajcie Pana.</div>
+        <div><span style="color:red">2 ant. </span>Miłosierdzie Pana trwa na wieki.</div>
         <div style="text-align:center"><span style="color:red"><b>Psalm 136</b><br/><b>Hymn paschalny</b></span></div>
         <div>Treść następnego psalmu.</div>
+        <div><span style="color:red"><b>CZYTANIE (Rz 8, 1)</b></span></div>
+        <div>Treść czytania.</div>
+        <div><span style="color:red"><b>RESPONSORIUM KRÓTKIE</b></span></div>
+        <div>Treść responsorium.</div>
+        <div><span style="color:red"><b>PROŚBY</b></span></div>
+        <div>Treść próśb.</div>
         <div>Ojcze nasz, któryś jest w niebie,<br/>święć się imię Twoje;<br/>ale nas zbaw ode złego. Amen.</div>
+        <div><span style="color:red"><b>MODLITWA</b></span></div>
+        <div>Treść modlitwy końcowej.</div>
+        <div>Modlitwa przedpołudniowa</div>
         <div><a href="#d2007p_m1">MODL. PRZEDPOŁUDNIOWA | DZISIAJ | JUTRO</a></div>
+        </div>
         <a id="d2007p_m1"></a>
         </body></html>
         """
@@ -138,9 +151,18 @@ struct BrewiarzEPUBImporterTests {
         let office = try #require(day.offices.first(where: { $0.key == .jutrznia }))
         let psalm135 = try #require(office.cards.first(where: { $0.title == "Psalm 135, 1-12" }))
         let psalm136 = try #require(office.cards.first(where: { $0.title == "Psalm 136" }))
+        #expect(psalm135.lines.contains { $0.text.hasPrefix("1 ant.") })
+        #expect(psalm135.lines.contains { $0.text == "Chwała Boga, który czyni cuda" })
+        #expect(!office.cards.contains { $0.title == "Chwała Boga, który czyni cuda" })
         #expect(psalm135.lines.contains { $0.text == "Pierwsza część psalmu." })
         #expect(!psalm135.lines.contains { $0.text == "Treść następnego psalmu." })
+        #expect(psalm136.lines.contains { $0.text.hasPrefix("2 ant.") })
         #expect(psalm136.lines.contains { $0.text == "Treść następnego psalmu." })
+        #expect(office.cards.contains { $0.title == "CZYTANIE (Rz 8, 1)" })
+        #expect(office.cards.contains { $0.title == "RESPONSORIUM KRÓTKIE" })
+        #expect(office.cards.contains { $0.title == "PROŚBY" })
+        #expect(office.cards.contains { $0.title == "MODLITWA" })
+        #expect(!office.cards.flatMap(\.lines).contains { $0.text == "Modlitwa przedpołudniowa" })
         #expect(office.cards.contains { card in
             card.lines.count == 1 && card.lines[0].canonicalPrayerName == "Ojcze nasz"
         })
@@ -237,5 +259,66 @@ struct BrewiarzEPUBImporterTests {
         #expect(cards.allSatisfy { card in
             card.lines.reduce(0) { $0 + $1.text.count } <= 560
         })
+        #expect(cards.dropFirst().allSatisfy { $0.title?.hasPrefix("Jutrznia (") == true })
+    }
+
+    @Test @MainActor func createsEveryImportedOfficeAsAComplexPrayerWithoutReplacingExistingJutrznia() throws {
+        let prayers = BrewiarzPrayerKey.allCases.map { key in
+            Prayer(
+                name: key.displayName,
+                text: "Modlitwa w brewiarz.pl",
+                symbol: "globe.europe.africa",
+                audioFilename: nil,
+                audioSource: nil,
+                timestampedLines: nil,
+                content: .brewiarz(key)
+            )
+        }
+        let jutrzniaPrayer = try #require(prayers.first(where: {
+            if case .brewiarz(.jutrznia) = $0.content { return true }
+            return false
+        }))
+        let existingJutrznia = Priest(
+            id: UUID(),
+            firstName: "Moja Jutrznia",
+            lastName: "",
+            title: "",
+            category: .prayer,
+            photoData: Data([1, 2, 3]),
+            assignedPrayerGroups: [
+                AssignedPrayerGroup(id: UUID(), prayerIds: [jutrzniaPrayer.id], repeatCount: 1)
+            ],
+            schedule: .suggested(forPrayerName: "Jutrznia"),
+            lastModified: .now,
+            notificationTitle: "Jutrznia",
+            notificationMessage: ""
+        )
+        let offices = BrewiarzPrayerKey.allCases.map {
+            OfflineBreviaryOffice(
+                key: $0,
+                cards: [.init(lines: [.init(role: .body, text: "Treść")])],
+                contentFingerprint: $0.id
+            )
+        }
+        let day = OfflineBreviaryDay(
+            date: BreviaryCivilDate(year: 2026, month: 7, day: 20),
+            variantIdentifier: "p",
+            variantName: "Tekst podstawowy",
+            offices: offices,
+            sourceImportID: UUID(),
+            sourceIdentifier: "fixture.epub",
+            sourceTitle: "fixture"
+        )
+
+        let missing = BreviaryPrayerTargetFactory.missingTargets(
+            for: [day],
+            prayers: prayers,
+            existingTargets: [existingJutrznia]
+        )
+
+        #expect(missing.count == BrewiarzPrayerKey.allCases.count - 1)
+        #expect(!missing.contains { $0.displayName == "Jutrznia" })
+        #expect(Set(missing.map(\.displayName)).contains("Kompleta"))
+        #expect(Set(missing.map(\.displayName)).contains("Nieszpory"))
     }
 }

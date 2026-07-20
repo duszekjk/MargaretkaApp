@@ -275,7 +275,20 @@ struct PrayerFlowView: View {
         return total / Double(sessions.count)
     }
 
+    var generatedBreviaryBackgroundImage: UIImage? {
+        if let filename = currentOfflineOffice?.imageFilename,
+           let generated = UIImage(
+               contentsOfFile: OfflineBreviaryStore.imageDirectory
+                   .appendingPathComponent(filename)
+                   .path
+           ) {
+            return generated
+        }
+        return nil
+    }
+
     var backgroundImage: UIImage? {
+        if let generatedBreviaryBackgroundImage { return generatedBreviaryBackgroundImage }
         guard let selectedPriest else { return nil }
         if let livePriest = priestStore.priests.first(where: { $0.id == selectedPriest.id }) {
             return livePriest.displayPhoto ?? selectedPriest.displayPhoto
@@ -287,17 +300,18 @@ struct PrayerFlowView: View {
         PrayerSwipeMode(rawValue: prayerSwipeModeRaw) ?? .both
     }
 
-    private var prayerCardText: Text {
+    @ViewBuilder
+    private var prayerCardText: some View {
         if activeIndex == 0 {
-            return Text(startPageText)
+            Text(startPageText)
+        } else if let card = currentOfflineCard {
+            BreviaryPrayerCardText(card: card)
+        } else if activeIndex <= flattenedPrayerSymbols.count,
+                  let prayer = allPrayers[flattenedPrayerIds[activeIndex - 1]] {
+            Text(prayer.text + "\n\n" + prayer.name)
+        } else {
+            Text("Koniec 🙏")
         }
-
-        if activeIndex <= flattenedPrayerSymbols.count,
-           let prayer = allPrayers[flattenedPrayerIds[activeIndex - 1]] {
-            return Text(prayer.text + "\n\n" + prayer.name)
-        }
-
-        return Text("Koniec 🙏")
     }
 
     private func prayerSwipeTarget(for translation: CGSize) -> Int? {
@@ -354,10 +368,16 @@ struct PrayerFlowView: View {
             if let bg = backgroundImage {
                 AdjustableBackgroundImage(
                     image: bg,
-                    scale: selectedPriest?.photoScale ?? 1.0,
+                    scale: generatedBreviaryBackgroundImage == nil
+                        ? (selectedPriest?.photoScale ?? 1.0)
+                        : 1.0,
                     offset: CGSize(
-                        width: selectedPriest?.photoOffsetX ?? 0.0,
-                        height: selectedPriest?.photoOffsetY ?? 0.0
+                        width: generatedBreviaryBackgroundImage == nil
+                            ? (selectedPriest?.photoOffsetX ?? 0.0)
+                            : 0.0,
+                        height: generatedBreviaryBackgroundImage == nil
+                            ? (selectedPriest?.photoOffsetY ?? 0.0)
+                            : 0.0
                     ),
                     size: UIScreen.main.bounds.size
                 )
@@ -523,10 +543,8 @@ struct PrayerFlowView: View {
                             .frame(width:UIScreen.main.bounds.width-8, height: currentPrayerCardHeight)
                             .overlay(
                                 Group {
-                                    if let offlineOffice = currentOfflineOffice,
-                                       let offlineCard = currentOfflineCard {
-                                        OfflineBreviaryPrayerView(office: offlineOffice, card: offlineCard)
-                                    } else if let key = currentBrewiarzKey {
+                                    if let key = currentBrewiarzKey,
+                                       currentOfflineCard == nil {
                                         BrewiarzPrayerView(key: key, fullScreen: $isFullscreen)
                                         .matchedGeometryEffect(id: "brewiarzWeb", in: brewiarzNamespace, isSource: !isFullscreen)
                                         .allowsHitTesting(!isFullscreen)
@@ -577,6 +595,10 @@ struct PrayerFlowView: View {
             .padding(.vertical, 35)
         }
         .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+        .task(id: currentOfflineOffice?.id) {
+            guard let officeID = currentOfflineOffice?.id else { return }
+            await offlineBreviaryStore.generateImageIfNeeded(for: officeID)
+        }
         .onAppear()
         {
             if !didLogAppear {
@@ -587,6 +609,7 @@ struct PrayerFlowView: View {
 
             let templatesStart = CFAbsoluteTimeGetCurrent()
             Priest.ensureTemplates(using: prayerStore.prayers)
+            ensureOfflineBreviaryPrayerTargets()
             let templatesDuration = CFAbsoluteTimeGetCurrent() - templatesStart
             print("PrayerFlowView ensureTemplates in \(String(format: "%.3f", templatesDuration))s")
 
@@ -913,6 +936,25 @@ struct PrayerFlowView: View {
         return items.first { $0.category == .prayer && $0.displayName == name }
     }
 
+    private func ensureOfflineBreviaryPrayerTargets() {
+        let knownTargets = Dictionary(
+            (priestStore.priests + scheduleData.items).map { ($0.id, $0) },
+            uniquingKeysWith: { current, _ in current }
+        ).map(\.value)
+        let missing = BreviaryPrayerTargetFactory.missingTargets(
+            for: offlineBreviaryStore.days,
+            prayers: prayerStore.prayers,
+            existingTargets: knownTargets
+        )
+        guard !missing.isEmpty else { return }
+
+        missing.forEach(priestStore.addOrUpdate)
+        for target in missing where !scheduleData.items.contains(where: { $0.id == target.id }) {
+            scheduleData.items.append(target)
+        }
+        scheduleData.save()
+    }
+
     private func completedSubprayerCount(for index: Int) -> Int {
         let adjusted = max(index - 1, 0)
         return min(adjusted, flattenedPrayerIds.count)
@@ -927,6 +969,63 @@ struct PrayerFlowView: View {
             return "\(hours)h \(minutes)m"
         }
         return "\(minutes)m"
+    }
+}
+
+private struct BreviaryPrayerCardText: View {
+    let card: OfflineBreviaryCard
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(card.lines) { line in
+                if line.role == .choirLeft || line.role == .choirRight {
+                    choirLine(line)
+                } else {
+                    Text(line.text)
+                        .bold(line.emphasized)
+                        .italic(line.italic)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+    }
+
+    private func choirLine(_ line: OfflineBreviaryLine) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            if line.role == .choirRight {
+                Spacer(minLength: 28)
+            }
+
+            RoundedRectangle(cornerRadius: 2)
+                .fill(line.role == .choirRight ? choirRightColor : choirLeftColor)
+                .frame(width: 4, height: 20)
+                .accessibilityHidden(true)
+
+            Text(line.text)
+                .bold(line.emphasized)
+                .italic(line.italic)
+                .multilineTextAlignment(line.role == .choirRight ? .trailing : .leading)
+        }
+        .frame(
+            maxWidth: .infinity,
+            alignment: line.role == .choirRight ? .trailing : .leading
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            line.role == .choirRight
+                ? "Chór prawy. \(line.text)"
+                : "Chór lewy. \(line.text)"
+        )
+    }
+
+    private var choirLeftColor: Color {
+        Color(red: 31 / 255, green: 138 / 255, blue: 59 / 255)
+    }
+
+    private var choirRightColor: Color {
+        Color(red: 27 / 255, green: 95 / 255, blue: 170 / 255)
     }
 }
 
