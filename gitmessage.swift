@@ -1,4 +1,4 @@
-codex conversation [unknown] clarify siri commands and nfc tagging
+codex conversation [unknown] remove redundant nfc help sentence
 
 Clarify that Siri targets are priests, people, and complex prayers, not
 standalone prayer fragments. Update the help examples so they start with Siri,

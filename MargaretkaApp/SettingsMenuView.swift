@@ -152,13 +152,6 @@ struct SettingsMenuView: View {
                                     .fixedSize(horizontal: false, vertical: true)
                                 }
 
-                                Text("NFC najlepiej działa, gdy przypiszesz tag do konkretnej osoby, na przykład do zdjęcia na ścianie albo do kartki z jej imieniem. Przyłożenie telefonu do takiego taga od razu uruchamia właściwy skrót.")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-
-                                Divider()
-
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Dlaczego NFC jest przydatne")
                                         .font(.subheadline.bold())
