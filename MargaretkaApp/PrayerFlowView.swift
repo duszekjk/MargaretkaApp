@@ -150,8 +150,22 @@ struct PrayerFlowView: View {
         currentPrayerStep?.offlineCard
     }
 
+    var isComplexPrayerCard: Bool {
+        selectedPriest?.category == .prayer || currentOfflineCard != nil
+    }
+
     var currentPrayerCardHeight: CGFloat {
-        currentOfflineCard == nil ? 400 : min(UIScreen.main.bounds.height * 0.72, 680)
+        isComplexPrayerCard
+            ? min(UIScreen.main.bounds.height * 0.72, 680)
+            : 440
+    }
+
+    var currentPrayerCardFont: Font {
+        .system(size: isComplexPrayerCard ? 17 * 1.8 : 20, weight: .semibold)
+    }
+
+    var currentPrayerMinimumScaleFactor: CGFloat {
+        isComplexPrayerCard ? 0.82 : 0.9
     }
 
     private func moveToIndex(_ index: Int, animated: Bool) {
@@ -552,7 +566,8 @@ struct PrayerFlowView: View {
                                         ZStack {
                                             prayerCardText
                                                 .lineLimit(30)
-                                                .font(.headline)
+                                                .font(currentPrayerCardFont)
+                                                .minimumScaleFactor(currentPrayerMinimumScaleFactor)
                                                 .multilineTextAlignment(.center)
                                                 .padding()
                                                 .offset(prayerSwipeTranslation)

@@ -377,8 +377,8 @@ nonisolated enum BrewiarzEPUBImporter {
     }
 
     private static func paginate(_ lines: [OfflineBreviaryLine]) -> [OfflineBreviaryCard] {
-        let maxCharacters = 560
-        let maxLines = 12
+        let maxCharacters = 310
+        let maxLines = 7
         var cards: [OfflineBreviaryCard] = []
         var current: [OfflineBreviaryLine] = []
         var characterCount = 0

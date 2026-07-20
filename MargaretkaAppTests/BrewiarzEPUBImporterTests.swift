@@ -257,7 +257,7 @@ struct BrewiarzEPUBImporterTests {
 
         #expect(cards.count > 2)
         #expect(cards.allSatisfy { card in
-            card.lines.reduce(0) { $0 + $1.text.count } <= 560
+            card.lines.reduce(0) { $0 + $1.text.count } <= 310
         })
         #expect(cards.dropFirst().allSatisfy { $0.title?.hasPrefix("Jutrznia (") == true })
     }
