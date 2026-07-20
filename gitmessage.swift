@@ -1,6 +1,6 @@
-codex conversation [unknown] remove redundant nfc help sentence
+codex conversation [unknown] simplify siri and nfc help for nontechnical users
 
-Clarify that Siri targets are priests, people, and complex prayers, not
-standalone prayer fragments. Update the help examples so they start with Siri,
-use natural English, and explain NFC as a tag attached to a person's photo or
-name card.
+Rewrite the Siri and NFC help in plain Polish for users who do not know the
+technical terms. Explain the feature as a simple voice command or a tap on a
+tag attached to a person's photo or name card, and keep the examples short and
+approachable.

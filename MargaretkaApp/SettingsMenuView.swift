@@ -111,7 +111,7 @@ struct SettingsMenuView: View {
                                     .font(.headline)
                                     .fixedSize(horizontal: false, vertical: true)
 
-                                Text("Siri uruchamia modlitwę głosem. NFC uruchamia ją po dotknięciu telefonu do taga przy stałym miejscu.")
+                                Text("Jeśli chcesz, możesz uruchamiać modlitwę głosem albo przez dotknięcie telefonu do taga NFC. Nie musisz znać technicznych ustawień — wystarczy gotowe zdanie albo zwykłe dotknięcie telefonu.")
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -120,14 +120,14 @@ struct SettingsMenuView: View {
 
                                 VStack(alignment: .leading, spacing: 10) {
                                     Label {
-                                        Text("Użyj Siri, gdy masz zajęte ręce lub chcesz start bez dotykania ekranu.")
+                                        Text("Powiedz do Siri gotowe zdanie, gdy chcesz zacząć bez klikania.")
                                             .fixedSize(horizontal: false, vertical: true)
                                     } icon: {
                                         Image(systemName: "mic.fill")
                                     }
 
                                     Label {
-                                        Text("Użyj NFC, gdy chcesz jedno pewne uruchomienie w konkretnym miejscu.")
+                                        Text("Przyklej tag NFC do zdjęcia osoby albo do kartki z imieniem i dotknij go telefonem.")
                                             .fixedSize(horizontal: false, vertical: true)
                                     } icon: {
                                         Image(systemName: "nfc")
@@ -152,31 +152,26 @@ struct SettingsMenuView: View {
                                     .fixedSize(horizontal: false, vertical: true)
                                 }
 
+                                Text("Te zdania możesz powiedzieć prawie tak samo. Nie musisz umieć dobrze angielskiego — wystarczy powtórzyć je po swojemu, a Siri i tak spróbuje zrozumieć, o co chodzi.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+
+                                Divider()
+
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Dlaczego NFC jest przydatne")
                                         .font(.subheadline.bold())
 
-                                    Text("Sprawdza się przy zdjęciu osoby, przy ołtarzyku, przy łóżku albo w samochodzie. Dotykasz taga i od razu startuje właściwy skrót dla tej osoby lub modlitwy złożonej.")
+                                    Text("Najlepiej działa przy zdjęciu osoby, przy kartce z imieniem, przy ołtarzyku albo przy łóżku. Dotykasz taga i od razu startuje właściwa modlitwa dla tej osoby.")
                                         .font(.footnote)
                                         .foregroundStyle(.secondary)
                                         .fixedSize(horizontal: false, vertical: true)
 
-                                    Text("To wygodne, gdy:\n• chcesz uruchomić modlitwę przy konkretnej osobie,\n• nie chcesz mówić do telefonu,\n• masz zawsze to samo miejsce modlitwy.")
+                                    Text("To wygodne, gdy:\n• chcesz uruchomić modlitwę przy konkretnej osobie,\n• chcesz mieć jedną prostą czynność zamiast szukania w telefonie,\n• modlisz się zawsze w tym samym miejscu.")
                                         .font(.footnote)
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
-
-                                Divider()
-
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text("Flow")
-                                        .font(.subheadline.bold())
-                                    Text("Siri → skrót → modlitwa")
-                                        .font(.system(.body, design: .monospaced))
-                                    Text("NFC → tag → skrót → modlitwa")
-                                        .font(.system(.body, design: .monospaced))
-                                }
-                                .fixedSize(horizontal: false, vertical: true)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.vertical, 6)
