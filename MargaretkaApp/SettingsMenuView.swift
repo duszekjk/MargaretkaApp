@@ -32,13 +32,16 @@ struct SettingsMenuView: View {
         priestStore.priests.first(where: { $0.category == .person })?.displayName ?? "wybrana osoba"
     }
 
-    private var examplePrayerNames: [String] {
-        let names = availablePrayers.map(\.name).filter { !$0.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).isEmpty }
+    private var exampleComplexPrayerNames: [String] {
+        let names = priestStore.priests
+            .filter { $0.category == .prayer }
+            .map(\.displayName)
+            .filter { !$0.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).isEmpty }
         return names.isEmpty ? ["Różaniec", "Koronka do Miłosierdzia Bożego"] : names
     }
 
     private var exampleSiriCommands: [String] {
-        let prayers = examplePrayerNames
+        let prayers = exampleComplexPrayerNames
         let firstPrayer = prayers.first ?? "Różaniec"
         let secondPrayer = prayers.dropFirst().first ?? firstPrayer
         return [
