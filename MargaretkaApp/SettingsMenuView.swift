@@ -143,16 +143,16 @@ struct SettingsMenuView: View {
                                         .font(.subheadline.bold())
 
                                     VStack(alignment: .leading, spacing: 4) {
-                                        Text("• Start prayer for Różaniec")
-                                        Text("• Log prayer for Koronka do Miłosierdzia Bożego")
-                                        Text("• Check prayer streak for Modlitwa Apostolatu Margaretka")
-                                        Text("• What is the average prayer duration for Modlitwa św. Jana Pawła II za kapłanów")
+                                        Text("• Siri, start the prayer for Father Jan")
+                                        Text("• Siri, log the prayer for Anna Kowalska")
+                                        Text("• Siri, check the prayer streak for Modlitwa św. Jana Pawła II za kapłanów")
+                                        Text("• Siri, what is the average prayer duration for Modlitwa Apostolatu Margaretka")
                                     }
                                     .font(.footnote)
                                     .fixedSize(horizontal: false, vertical: true)
                                 }
 
-                                Text("Nazwa aplikacji jest dopasowywana automatycznie, więc w codziennym użyciu nie musisz jej powtarzać w każdej frazie.")
+                                Text("NFC najlepiej działa, gdy przypiszesz tag do konkretnej osoby, na przykład do zdjęcia na ścianie albo do kartki z jej imieniem. Przyłożenie telefonu do takiego taga od razu uruchamia właściwy skrót.")
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -163,12 +163,12 @@ struct SettingsMenuView: View {
                                     Text("Dlaczego NFC jest przydatne")
                                         .font(.subheadline.bold())
 
-                                    Text("Sprawdza się przy różańcu, przy łóżku, przy biurku albo w samochodzie. Dotykasz taga i od razu startuje właściwy skrót.")
+                                    Text("Sprawdza się przy zdjęciu osoby, przy ołtarzyku, przy łóżku albo w samochodzie. Dotykasz taga i od razu startuje właściwy skrót dla tej osoby lub modlitwy złożonej.")
                                         .font(.footnote)
                                         .foregroundStyle(.secondary)
                                         .fixedSize(horizontal: false, vertical: true)
 
-                                    Text("To wygodne, gdy:\n• chcesz oszczędzić czas,\n• nie chcesz mówić do telefonu,\n• masz zawsze to samo miejsce modlitwy.")
+                                    Text("To wygodne, gdy:\n• chcesz uruchomić modlitwę przy konkretnej osobie,\n• nie chcesz mówić do telefonu,\n• masz zawsze to samo miejsce modlitwy.")
                                         .font(.footnote)
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
