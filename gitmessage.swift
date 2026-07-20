@@ -1,10 +1,10 @@
-codex conversation [unknown] add full JSON backup and safe merge import
+codex conversation [unknown] import dated brewiarz.pl EPUB offices
 
-Export prayers, people, priests, complex prayers, schedules, history, photos,
-audio, dated offline offices, and their generated images in a versioned archive.
-Reuse the app's existing Codable model implementations instead of adding parallel
-serializers, and present the system share sheet after export.
+Read brewiarz.pl EPUB ZIP and XHTML locally without a network connection or a
+third-party package. Discover each dated variant and extract the eight Liturgy of
+the Hours offices while leaving Mass and devotional extras outside the library.
 
-Merge exact matches without duplication, remap imported relationships, preserve
-local identities, and show probable overlaps side by side for an explicit keep,
-replace, or keep-both decision. Ignore expired dated offices during restore.
+Preserve headings, rubrics, leader and response lines, and left/right choir
+indentation. Split long offices into bounded semantic cards, reference Ojcze nasz
+without duplicating it in simple prayers, seed English image prompts with Polish
+context, reject expired dates, and reuse the existing overlap review flow.

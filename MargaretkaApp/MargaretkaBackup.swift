@@ -559,7 +559,7 @@ struct DataTransferView: View {
                     Label("Importuj kopię", systemImage: "square.and.arrow.down")
                 }
 
-                Text("Kopia obejmuje modlitwy pojedyncze i złożone, osoby i księży, harmonogramy, historię, zdjęcia, audio oraz zapisany brewiarz offline.")
+                Text("Import przyjmuje pełną kopię JSON albo eksport EPUB z brewiarz.pl. Kopia JSON obejmuje modlitwy pojedyncze i złożone, osoby i księży, harmonogramy, historię, zdjęcia, audio oraz zapisany brewiarz offline.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -571,10 +571,30 @@ struct DataTransferView: View {
             }
         }
         .navigationTitle("Import i eksport")
-        .fileImporter(isPresented: $isImporting, allowedContentTypes: [.json]) { result in
+        .fileImporter(isPresented: $isImporting, allowedContentTypes: [.json, .epub]) { result in
             do {
                 let url = try result.get()
-                let backup = try MargaretkaBackupService.decode(from: url)
+                let backup: MargaretkaBackup
+                if url.pathExtension.lowercased() == "epub" {
+                    let imported = try BrewiarzEPUBImporter.importEPUB(from: url)
+                    let retained = OfflineBreviaryStore.removingExpired(from: imported.days, referenceDate: .now)
+                    let expiredCount = imported.days.count - retained.count
+                    backup = MargaretkaBackup(
+                        schemaVersion: MargaretkaBackup.currentSchemaVersion,
+                        exportedAt: .now,
+                        prayers: [],
+                        targets: [],
+                        sessions: [],
+                        offlineBreviaryDays: retained,
+                        assets: []
+                    )
+                    if retained.isEmpty {
+                        message = "EPUB zawiera tylko wygasłe dni (pominięto: \(expiredCount))."
+                        return
+                    }
+                } else {
+                    backup = try MargaretkaBackupService.decode(from: url)
+                }
                 let plan = MargaretkaBackupService.makeImportPlan(
                     backup: backup,
                     prayers: prayerStore.prayers,
