@@ -16,11 +16,15 @@ struct SettingsMenuView: View {
     @Binding var showJakSie: Bool
     @AppStorage("prayerSwipeMode") private var prayerSwipeModeRaw: String = PrayerSwipeMode.both.rawValue
     @AppStorage("prayerCompactView") private var prayerCompactView: Bool = true
+
+    private var hasPriestAndPerson: Bool {
+        let hasPriest = priestStore.priests.contains { $0.category == .priest }
+        let hasPerson = priestStore.priests.contains { $0.category == .person }
+        return hasPriest && hasPerson
+    }
     
     var body: some View {
-        VStack
-        {
-            List {
+        List {
                 NavigationLink("Modlitwy (pojedyncze)", destination: PrayerListSettingsView())
 
                 NavigationLink(
@@ -99,89 +103,104 @@ struct SettingsMenuView: View {
                             .foregroundStyle(.secondary)
                     }
 
-            }
-            .navigationTitle("Ustawienia")
-            Text("© 2025\nDUSZEKJK Jacek Kałużny\nSoftware Development.\nAll rights reserved.")
-                .multilineTextAlignment(.center)
-            .padding(4)
+                if hasPriestAndPerson {
+                    Section {
+                        GroupBox {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Siri, Skróty i NFC")
+                                    .font(.headline)
+                                    .fixedSize(horizontal: false, vertical: true)
 
-            GroupBox {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Siri, Skróty i NFC")
-                        .font(.headline)
+                                Text("Siri uruchamia modlitwę głosem. NFC uruchamia ją po dotknięciu telefonu do taga przy stałym miejscu.")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
 
-                    Text("Iskra to szybki sposób na uruchamianie modlitwy głosem albo jednym dotknięciem telefonu do znacznika NFC.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                                Divider()
 
-                    Divider()
+                                VStack(alignment: .leading, spacing: 10) {
+                                    Label {
+                                        Text("Użyj Siri, gdy masz zajęte ręce lub chcesz start bez dotykania ekranu.")
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    } icon: {
+                                        Image(systemName: "mic.fill")
+                                    }
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Jak to działa")
-                            .font(.subheadline.bold())
+                                    Label {
+                                        Text("Użyj NFC, gdy chcesz jedno pewne uruchomienie w konkretnym miejscu.")
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    } icon: {
+                                        Image(systemName: "nfc")
+                                    }
+                                }
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
 
-                        Text("1. Otwórz aplikację Skróty na iPhonie.")
-                        Text("2. Dodaj skrót z akcji Margaretki.")
-                        Text("3. Powiedz Siri gotową frazę albo uruchom skrót z NFC.")
-                    }
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                                Divider()
 
-                    Divider()
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Przykładowe komendy")
+                                        .font(.subheadline.bold())
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Przykładowe komendy")
-                            .font(.subheadline.bold())
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("• Start prayer for Różaniec")
+                                        Text("• Log prayer for Koronka do Miłosierdzia Bożego")
+                                        Text("• Check prayer streak for Modlitwa Apostolatu Margaretka")
+                                        Text("• What is the average prayer duration for Modlitwa św. Jana Pawła II za kapłanów")
+                                    }
+                                    .font(.footnote)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                }
 
-                        HStack(alignment: .top, spacing: 12) {
-                            Text("•")
-                            Text("Start prayer for Anna in Margaretka")
+                                Text("Nazwa aplikacji jest dopasowywana automatycznie, więc w codziennym użyciu nie musisz jej powtarzać w każdej frazie.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+
+                                Divider()
+
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Dlaczego NFC jest przydatne")
+                                        .font(.subheadline.bold())
+
+                                    Text("Sprawdza się przy różańcu, przy łóżku, przy biurku albo w samochodzie. Dotykasz taga i od razu startuje właściwy skrót.")
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+
+                                    Text("To wygodne, gdy:\n• chcesz oszczędzić czas,\n• nie chcesz mówić do telefonu,\n• masz zawsze to samo miejsce modlitwy.")
+                                        .font(.footnote)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+
+                                Divider()
+
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("Flow")
+                                        .font(.subheadline.bold())
+                                    Text("Siri → skrót → modlitwa")
+                                        .font(.system(.body, design: .monospaced))
+                                    Text("NFC → tag → skrót → modlitwa")
+                                        .font(.system(.body, design: .monospaced))
+                                }
+                                .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 6)
+                            .fixedSize(horizontal: false, vertical: true)
                         }
-                        HStack(alignment: .top, spacing: 12) {
-                            Text("•")
-                            Text("Log prayer for Father Piotr in Margaretka")
-                        }
-                        HStack(alignment: .top, spacing: 12) {
-                            Text("•")
-                            Text("Check prayer streak for Maria in Margaretka")
-                        }
-                        HStack(alignment: .top, spacing: 12) {
-                            Text("•")
-                            Text("What is the average prayer duration for Jan in Margaretka")
-                        }
-                    }
-                    .font(.footnote)
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("NFC — po co to?")
-                            .font(.subheadline.bold())
-
-                        Text("Możesz przykleić znacznik NFC w miejscu modlitwy, przy różańcu, na biurku albo w samochodzie. Po dotknięciu iPhone'a tag uruchomi wybrany skrót, więc nie musisz szukać aplikacji ani mówić do Siri.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-
-                        Text("To dobre rozwiązanie, jeśli chcesz:\n• uruchamiać modlitwę jednym ruchem,\n• mieć jeden stały skrót przy konkretnym miejscu,\n• nie wpisywać nic ręcznie, gdy masz zajęte ręce.")
-                            .font(.footnote)
-                    }
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Skrót w skrócie")
-                            .font(.subheadline.bold())
-                        Text("Siri → skrót → modlitwa")
-                            .font(.system(.body, design: .monospaced))
-                        Text("NFC → dotknięcie taga → skrót → modlitwa")
-                            .font(.system(.body, design: .monospaced))
+                        .listRowBackground(Color.clear)
+                    } header: {
+                        Text("Pomoc")
                     }
                 }
-                .padding(.vertical, 6)
-            } label: {
-                Text("Pomoc")
-            }
 
+                Section {
+                    Text("© 2025\nDUSZEKJK Jacek Kałużny\nSoftware Development.\nAll rights reserved.")
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                }
         }
+        .navigationTitle("Ustawienia")
     }
 }
