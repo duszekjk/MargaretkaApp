@@ -5,6 +5,7 @@
 //  Created by Jacek Kałużny on 11/07/2025.
 //
 
+import Foundation
 import SwiftUI
 
 struct SettingsMenuView: View {
@@ -32,7 +33,7 @@ struct SettingsMenuView: View {
     }
 
     private var examplePrayerNames: [String] {
-        let names = availablePrayers.map(\.displayName).filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        let names = availablePrayers.map(\.name).filter { !$0.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).isEmpty }
         return names.isEmpty ? ["Różaniec", "Koronka do Miłosierdzia Bożego"] : names
     }
 
