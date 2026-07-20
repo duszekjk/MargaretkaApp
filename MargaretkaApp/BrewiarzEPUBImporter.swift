@@ -448,12 +448,17 @@ private final class XHTMLPrayerLineParser: NSObject, XMLParserDelegate {
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             guard !text.isEmpty else { continue }
             let folded = text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            let isUppercaseHeading = style.emphasized
+                && text.count < 100
+                && text == text.uppercased()
+                && text.rangeOfCharacter(from: .letters) != nil
             let role: OfflineBreviaryLineRole
             if folded.hasPrefix("k.") { role = .leader }
             else if folded.hasPrefix("w.") { role = .response }
             else if folded.hasPrefix("ant.") { role = .antiphon }
             else if leadingChoirIndent { role = .choirRight }
             else if style.leftAligned { role = .choirLeft }
+            else if isUppercaseHeading { role = .heading }
             else if style.rubric { role = .rubric }
             else if style.emphasized && text.count < 100 { role = .heading }
             else { role = .body }

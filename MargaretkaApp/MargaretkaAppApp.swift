@@ -16,6 +16,7 @@ struct MargaretkaAppApp: App {
     @StateObject var offlineBreviaryStore = OfflineBreviaryStore()
     @State private var didScheduleNotificationRefresh = false
     @State private var showUiTestGate = ProcessInfo.processInfo.arguments.contains("--ui-tests")
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -32,6 +33,11 @@ struct MargaretkaAppApp: App {
             .overlay {
                 if showUiTestGate {
                     UiTestGateView(isPresented: $showUiTestGate)
+                }
+            }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active {
+                    offlineBreviaryStore.removeExpired()
                 }
             }
         }

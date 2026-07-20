@@ -242,6 +242,7 @@ enum MargaretkaBackupService {
             prayersAdded += 1
         }
         prayerStore.prayers = prayers
+        AudioStorage.removeOrphanedFiles(referencedBy: prayers)
 
         var targets = targetStore.priests
         var targetIDMap: [UUID: UUID] = [:]
@@ -315,6 +316,7 @@ enum MargaretkaBackupService {
             }
         }
         offlineStore.replaceAll(with: days)
+        offlineStore.removeUnreferencedImages()
 
         return BackupImportReport(
             prayersAdded: prayersAdded,

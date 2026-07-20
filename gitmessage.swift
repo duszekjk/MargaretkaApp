@@ -1,11 +1,9 @@
-codex conversation [unknown] generate distinct offline breviary backgrounds
+codex conversation [unknown] harden expiry and imported asset cleanup
 
-Generate and cache a separate on-device Image Playground illustration for each
-dated office. Prefer an installed offline Polish-to-English Translation model,
-then ask Foundation Models for a concise English visual scene while retaining
-the translated feast, liturgical color, office name, and prayer themes.
+Run the three-day expiry policy whenever the app becomes active, not only during
+a cold launch, so an app left installed or suspended for several days cannot
+retain stale offices.
 
-Keep the original English prompt with short Polish quotations when translation
-or Apple Intelligence is unavailable, and display deterministic office-specific
-art instead of failing. Cache successful images lazily, export them in backups,
-and allow their independent removal from the offline manager.
+Remove audio and images restored from a backup when duplicate resolution or date
+expiry leaves them unreferenced. Classify emphasized uppercase EPUB section
+labels as headings before red rubrics so semantic card boundaries remain intact.

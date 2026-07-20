@@ -301,6 +301,18 @@ final class OfflineBreviaryStore: ObservableObject {
         sortAndSave()
     }
 
+    func removeUnreferencedImages() {
+        let referenced = Set(days.flatMap(\.offices).compactMap(\.imageFilename))
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: Self.imageDirectory,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles]
+        ) else { return }
+        for file in files where !referenced.contains(file.lastPathComponent) {
+            try? FileManager.default.removeItem(at: file)
+        }
+    }
+
     static func removingExpired(
         from days: [OfflineBreviaryDay],
         referenceDate: Date,
