@@ -1,4 +1,4 @@
-codex conversation [unknown] preserve localization snapshot
+codex conversation [unknown] add english siri shortcut phrases
 
-Keep the current localization edits as a separate committed unit before adding
-the Siri shortcut language support.
+Keep the Polish shortcut wording, but add English phrase variants and bilingual
+entity labels so Siri can match the app in English too.

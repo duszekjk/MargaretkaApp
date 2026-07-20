@@ -8,8 +8,8 @@ import Foundation
 
 struct PrayerTargetEntity: AppEntity {
     static var typeDisplayRepresentation = TypeDisplayRepresentation(
-        name: "Osoba lub modlitwa",
-        numericFormat: "\(placeholder: .int) osoby lub modlitwy"
+        name: "Osoba lub modlitwa / person or prayer",
+        numericFormat: "\(placeholder: .int) osoby lub modlitwy / \(placeholder: .int) people or prayers"
     )
     static var defaultQuery = PrayerTargetQuery()
 
@@ -33,13 +33,13 @@ struct PrayerTargetEntity: AppEntity {
     private var categoryTitle: String {
         switch PrayerTargetCategory(rawValue: categoryRawValue) {
         case .priest:
-            return "Ksiądz"
+            return "Ksiądz / Priest"
         case .person:
-            return "Osoba"
+            return "Osoba / Person"
         case .prayer:
-            return "Modlitwa"
+            return "Modlitwa / Prayer"
         case nil:
-            return "Cel modlitwy"
+            return "Cel modlitwy / Prayer target"
         }
     }
 }
@@ -199,7 +199,9 @@ struct MargaretkaAppShortcuts: AppShortcutsProvider {
             intent: StartPrayerIntent(),
             phrases: [
                 "Rozpocznij \(\.$target) w \(.applicationName)",
-                "Start \(\.$target) in \(.applicationName)"
+                "Start \(\.$target) in \(.applicationName)",
+                "Start prayer for \(\.$target) in \(.applicationName)",
+                "Begin prayer for \(\.$target) in \(.applicationName)"
             ],
             shortTitle: "Rozpocznij modlitwę",
             systemImageName: "hands.sparkles"
@@ -208,7 +210,9 @@ struct MargaretkaAppShortcuts: AppShortcutsProvider {
             intent: LogCompletedPrayerIntent(),
             phrases: [
                 "Zapisz modlitwę w \(.applicationName)",
-                "Log prayer in \(.applicationName)"
+                "Log prayer in \(.applicationName)",
+                "Log completed prayer for \(\.$target) in \(.applicationName)",
+                "Mark prayer for \(\.$target) as completed in \(.applicationName)"
             ],
             shortTitle: "Zapisz modlitwę",
             systemImageName: "checkmark.circle"
@@ -217,7 +221,8 @@ struct MargaretkaAppShortcuts: AppShortcutsProvider {
             intent: PrayerStreakIntent(),
             phrases: [
                 "Sprawdź serię modlitwy w \(.applicationName)",
-                "Prayer streak in \(.applicationName)"
+                "Prayer streak in \(.applicationName)",
+                "Check prayer streak for \(\.$target) in \(.applicationName)"
             ],
             shortTitle: "Seria modlitwy",
             systemImageName: "flame"
@@ -226,7 +231,8 @@ struct MargaretkaAppShortcuts: AppShortcutsProvider {
             intent: AveragePrayerDurationIntent(),
             phrases: [
                 "Sprawdź średni czas modlitwy w \(.applicationName)",
-                "Average prayer time in \(.applicationName)"
+                "Average prayer time in \(.applicationName)",
+                "Check average prayer duration for \(\.$target) in \(.applicationName)"
             ],
             shortTitle: "Średni czas modlitwy",
             systemImageName: "clock"
