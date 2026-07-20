@@ -199,9 +199,14 @@ struct MargaretkaAppShortcuts: AppShortcutsProvider {
             intent: StartPrayerIntent(),
             phrases: [
                 "Rozpocznij \(\.$target) w \(.applicationName)",
+                "Otwórz modlitwę za \(\.$target) w \(.applicationName)",
+                "Zacznij modlitwę za \(\.$target) w \(.applicationName)",
+                "I want to pray for \(\.$target) in \(.applicationName)",
+                "Open prayer for \(\.$target) in \(.applicationName)",
                 "Start \(\.$target) in \(.applicationName)",
                 "Start prayer for \(\.$target) in \(.applicationName)",
-                "Begin prayer for \(\.$target) in \(.applicationName)"
+                "Begin prayer for \(\.$target) in \(.applicationName)",
+                "Begin praying for \(\.$target) in \(.applicationName)"
             ],
             shortTitle: "Rozpocznij modlitwę",
             systemImageName: "hands.sparkles"
@@ -210,9 +215,14 @@ struct MargaretkaAppShortcuts: AppShortcutsProvider {
             intent: LogCompletedPrayerIntent(),
             phrases: [
                 "Zapisz modlitwę w \(.applicationName)",
+                "Zaznacz modlitwę za \(\.$target) jako ukończoną w \(.applicationName)",
+                "Dodałem modlitwę za \(\.$target) w \(.applicationName)",
+                "I prayed for \(\.$target) in \(.applicationName)",
+                "I finished prayer for \(\.$target) in \(.applicationName)",
                 "Log prayer in \(.applicationName)",
                 "Log completed prayer for \(\.$target) in \(.applicationName)",
-                "Mark prayer for \(\.$target) as completed in \(.applicationName)"
+                "Mark prayer for \(\.$target) as completed in \(.applicationName)",
+                "Mark that I prayed for \(\.$target) in \(.applicationName)"
             ],
             shortTitle: "Zapisz modlitwę",
             systemImageName: "checkmark.circle"
@@ -221,8 +231,13 @@ struct MargaretkaAppShortcuts: AppShortcutsProvider {
             intent: PrayerStreakIntent(),
             phrases: [
                 "Sprawdź serię modlitwy w \(.applicationName)",
+                "Jak długa jest moja seria dla \(\.$target) w \(.applicationName)",
+                "Pokaż serię modlitwy za \(\.$target) w \(.applicationName)",
+                "How many weeks have I prayed for \(\.$target) in \(.applicationName)",
                 "Prayer streak in \(.applicationName)",
-                "Check prayer streak for \(\.$target) in \(.applicationName)"
+                "Check prayer streak for \(\.$target) in \(.applicationName)",
+                "How long is my prayer streak for \(\.$target) in \(.applicationName)",
+                "What is my streak for \(\.$target) in \(.applicationName)"
             ],
             shortTitle: "Seria modlitwy",
             systemImageName: "flame"
@@ -231,8 +246,13 @@ struct MargaretkaAppShortcuts: AppShortcutsProvider {
             intent: AveragePrayerDurationIntent(),
             phrases: [
                 "Sprawdź średni czas modlitwy w \(.applicationName)",
+                "Jak długo zwykle modlę się za \(\.$target) w \(.applicationName)",
+                "Pokaż średni czas dla \(\.$target) w \(.applicationName)",
+                "How long do I usually pray for \(\.$target) in \(.applicationName)",
                 "Average prayer time in \(.applicationName)",
-                "Check average prayer duration for \(\.$target) in \(.applicationName)"
+                "Check average prayer duration for \(\.$target) in \(.applicationName)",
+                "What is the average prayer duration for \(\.$target) in \(.applicationName)",
+                "Tell me the average prayer time for \(\.$target) in \(.applicationName)"
             ],
             shortTitle: "Średni czas modlitwy",
             systemImageName: "clock"

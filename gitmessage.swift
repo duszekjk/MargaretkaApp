@@ -1,4 +1,5 @@
-codex conversation [unknown] add english siri shortcut phrases
+codex conversation [unknown] make siri phrases more natural
 
-Keep the Polish shortcut wording, but add English phrase variants and bilingual
-entity labels so Siri can match the app in English too.
+Add more conversational Polish and English shortcut variants so Siri can match
+requests like "I prayed for..." or "How long do I pray for..." instead of only
+robotic command-style wording.
