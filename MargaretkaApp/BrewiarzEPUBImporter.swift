@@ -331,10 +331,16 @@ nonisolated enum BrewiarzEPUBImporter {
         )
         var didFindOfficeTitle = !lines.contains { $0.text.lowercased() == normalizedOfficeTitle }
         var discardingCanonicalPrayer = false
+        var discardingPsalmComment = false
         var result: [OfflineBreviaryLine] = []
         for var line in lines {
             let lower = line.text.lowercased()
             if navigationPhrases.contains(where: lower.contains) { continue }
+            if line.role == .rubric
+                || lower.hasPrefix("excerpt from")
+                || lower == "brewiarz.pl" {
+                continue
+            }
             if otherOfficeTitles.contains(lower) { continue }
             if lower.hasPrefix("kolor szat:")
                 || lower.range(of: #"\d{1,2}\s+\p{L}+\s+\d{4}"#, options: .regularExpression) != nil {
@@ -345,6 +351,16 @@ nonisolated enum BrewiarzEPUBImporter {
                 locale: Locale(identifier: "pl_PL")
             )
             if line.role == .heading && folded.hasPrefix("psalmodia") { continue }
+            if line.role == .heading {
+                if isPsalmOrCanticleHeading(line.text) {
+                    discardingPsalmComment = true
+                } else if discardingPsalmComment && isSemanticSectionHeading(line.text) {
+                    discardingPsalmComment = false
+                }
+            } else if discardingPsalmComment {
+                if line.italic { continue }
+                discardingPsalmComment = false
+            }
             if discardingCanonicalPrayer {
                 if line.role == .heading {
                     discardingCanonicalPrayer = false
@@ -374,6 +390,20 @@ nonisolated enum BrewiarzEPUBImporter {
             result.removeFirst()
         }
         return result
+    }
+
+    private static func isPsalmOrCanticleHeading(_ text: String) -> Bool {
+        text.range(
+            of: #"(?i)^(psalm|pieśń|kantyk)(\s|$)"#,
+            options: [.regularExpression, .diacriticInsensitive]
+        ) != nil
+    }
+
+    private static func isSemanticSectionHeading(_ text: String) -> Bool {
+        text.range(
+            of: #"(?i)^(psalm|pieśń|kantyk|hymn|czytanie|responsorium|prośby|modlitwa|te deum)(\s|$)"#,
+            options: [.regularExpression, .diacriticInsensitive]
+        ) != nil
     }
 
     private static func paginate(_ lines: [OfflineBreviaryLine]) -> [OfflineBreviaryCard] {
@@ -552,6 +582,8 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
     private var styleStack: [Style] = [Style()]
     private var bufferStyle = Style()
     private var buffer = ""
+    private var bufferHasRubricText = false
+    private var bufferHasPrayerText = false
     private var lines: [OfflineBreviaryLine] = []
 
     static func parse(_ xhtml: String) -> [OfflineBreviaryLine] {
@@ -622,6 +654,11 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         buffer.append(string)
         guard string.rangeOfCharacter(from: .whitespacesAndNewlines.inverted) != nil else { return }
         let style = styleStack.last ?? Style()
+        if style.rubric {
+            bufferHasRubricText = true
+        } else {
+            bufferHasPrayerText = true
+        }
         bufferStyle.emphasized = bufferStyle.emphasized || style.emphasized
         bufferStyle.italic = bufferStyle.italic || style.italic
         bufferStyle.rubric = bufferStyle.rubric || style.rubric
@@ -644,7 +681,10 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         let raw = buffer.replacingOccurrences(of: "\r", with: "")
         buffer = ""
         let style = bufferStyle
+        let isRubricOnly = bufferHasRubricText && !bufferHasPrayerText
         bufferStyle = Style()
+        bufferHasRubricText = false
+        bufferHasPrayerText = false
         guard !style.navigationLink else { return }
         for rawLine in raw.split(separator: "\n", omittingEmptySubsequences: false) {
             let leadingChoirIndent = rawLine.prefix { $0 == "\u{00A0}" || $0 == " " }.count >= 4
@@ -663,8 +703,8 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
             else if folded.hasPrefix("ant.") || Self.isNumberedAntiphon(text) { role = .antiphon }
             else if leadingChoirIndent { role = .choirRight }
             else if isUppercaseHeading || Self.isSemanticPrayerHeading(text) { role = .heading }
+            else if isRubricOnly { role = .rubric }
             else if style.leftAligned { role = .choirLeft }
-            else if style.rubric { role = .rubric }
             else if style.emphasized && text.count < 100 { role = .heading }
             else { role = .body }
             lines.append(

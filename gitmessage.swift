@@ -1,13 +1,13 @@
-codex conversation [unknown] correct complex prayer typography
+codex conversation [unknown] remove non-prayer breviary commentary
 
-Reduce complex-prayer typography from 30.6 to 24 points after the larger size
-prevented longer prayers, including the reported Wierzę w Boga example, from
-fitting. Allow every long standalone prayer to scale down as one text block as
-far as the original 17-point size when required.
+Exclude fully styled rubrics and conditional directions from imported breviary
+cards while retaining mixed-color prayer content such as leader and response
+lines, antiphons, and verse markers.
 
-Do not apply independent fit scaling to breviary line views. Keep every line on
-a breviary card at the same 24-point size while preserving choir alignment and
-color bars.
+Exclude italic psalm and canticle commentary immediately following their source
+headings, along with leaked ebook excerpt metadata, without removing italic
+responses elsewhere in an office.
 
-Build the app, unit-test, and UI-test targets successfully. On-device visual
-confirmation is still required.
+Compile the app, unit-test, and UI-test targets successfully. Validate the real
+17-23 August EPUB with 7 dates, 28 variants, no skipped documents, and no
+incomplete offices.

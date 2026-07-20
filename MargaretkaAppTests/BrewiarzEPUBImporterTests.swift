@@ -172,6 +172,43 @@ struct BrewiarzEPUBImporterTests {
         })
     }
 
+    @Test func dropsRubricsAndPsalmCommentaryWithoutDroppingPrayerResponses() throws {
+        let xhtml = """
+        <html xmlns="http://www.w3.org/1999/xhtml"><body>
+        <div>Poniedziałek, 17 sierpnia 2026</div>
+        <a id="d1708p_jt"></a>
+        <div><b>Jutrznia</b></div>
+        <div style="text-align:left">
+        <span style="color:red">Powyższe teksty opuszcza się, jeśli tę Godzinę poprzedza Wezwanie.</span><br/>
+        <span style="color:red">K. </span>Panie, wysłuchaj.<br/>
+        </div>
+        <div style="text-align:center"><span style="color:red"><b>Psalm 90</b><br/><b>Bóg nadzieją człowieka</b></span></div>
+        <div><i>Jeden dzień u Pana jest jak tysiąc lat, a tysiąc lat jak jeden dzień</i> (2 P 3, 8)<br/></div>
+        <div style="text-align:left">Kto mieszka pod osłoną Najwyższego, *<br/>mówi do Pana: Tyś moją ucieczką.</div>
+        <div><b>PROŚBY</b></div>
+        <div><i>Wysłuchaj nas, Panie.</i><br/>Otaczaj opieką swój lud.</div>
+        <a id="d1708p_m1"></a>
+        </body></html>
+        """
+
+        let day = try #require(BrewiarzEPUBImporter.parseDailyDocument(
+            xhtml,
+            entryName: "OEBPS/Text/1708p.xhtml",
+            importID: UUID(),
+            sourceIdentifier: "fixture.epub",
+            sourceTitle: "fixture"
+        ))
+        let lines = try #require(day.offices.first(where: { $0.key == .jutrznia }))
+            .cards.flatMap(\.lines)
+
+        #expect(!lines.contains { $0.text.contains("Powyższe teksty") })
+        #expect(!lines.contains { $0.text.contains("Jeden dzień u Pana") })
+        #expect(!lines.contains { $0.text == "Bóg nadzieją człowieka" })
+        #expect(lines.contains { $0.role == .leader && $0.text == "K. Panie, wysłuchaj." })
+        #expect(lines.contains { $0.text == "Kto mieszka pod osłoną Najwyższego, *" })
+        #expect(lines.contains { $0.italic && $0.text == "Wysłuchaj nas, Panie." })
+    }
+
     @Test @MainActor func offlineCardsBecomeExistingPrayerFlowSteps() throws {
         let breviaryID = UUID()
         let ourFatherID = UUID()
