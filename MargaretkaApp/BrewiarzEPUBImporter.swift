@@ -30,6 +30,24 @@ struct BrewiarzEPUBImportResult {
     var skippedDocumentCount: Int
 }
 
+struct BrewiarzEPUBImportProgress: Equatable, Sendable {
+    var completedDocuments: Int
+    var totalDocuments: Int
+    var elapsed: TimeInterval
+
+    var fractionCompleted: Double {
+        guard totalDocuments > 0 else { return 0 }
+        return min(1, Double(completedDocuments) / Double(totalDocuments))
+    }
+
+    var estimatedRemaining: TimeInterval? {
+        guard completedDocuments > 0, completedDocuments < totalDocuments else {
+            return completedDocuments == totalDocuments ? 0 : nil
+        }
+        return elapsed / Double(completedDocuments) * Double(totalDocuments - completedDocuments)
+    }
+}
+
 enum BrewiarzEPUBImporter {
     private static let officeAnchors: [(anchor: String, key: BrewiarzPrayerKey)] = [
         ("wezw", .wezwanie),
@@ -42,30 +60,44 @@ enum BrewiarzEPUBImporter {
         ("k", .kompleta)
     ]
 
-    static func importEPUB(from url: URL) throws -> BrewiarzEPUBImportResult {
+    static func importEPUB(
+        from url: URL,
+        progress: (@Sendable (BrewiarzEPUBImportProgress) -> Void)? = nil
+    ) throws -> BrewiarzEPUBImportResult {
         let access = url.startAccessingSecurityScopedResource()
         defer { if access { url.stopAccessingSecurityScopedResource() } }
         let archive = try SimpleZIPArchive(data: Data(contentsOf: url))
         let candidates = archive.entryNames.filter(isDailyBreviaryDocument)
         guard !candidates.isEmpty else { throw BrewiarzEPUBImportError.noBreviaryDocuments }
 
+        let startedAt = Date()
+        progress?(BrewiarzEPUBImportProgress(
+            completedDocuments: 0,
+            totalDocuments: candidates.count,
+            elapsed: 0
+        ))
         let importID = UUID()
         var days: [OfflineBreviaryDay] = []
         var skipped = 0
-        for name in candidates.sorted() {
-            guard let data = try? archive.data(for: name),
-                  let xhtml = String(data: data, encoding: .utf8),
-                  let day = parseDailyDocument(
+        for (index, name) in candidates.sorted().enumerated() {
+            if let data = try? archive.data(for: name),
+               let xhtml = String(data: data, encoding: .utf8),
+               let day = parseDailyDocument(
                     xhtml,
                     entryName: name,
                     importID: importID,
                     sourceIdentifier: url.lastPathComponent,
                     sourceTitle: url.deletingPathExtension().lastPathComponent
-                  ) else {
+               ) {
+                days.append(day)
+            } else {
                 skipped += 1
-                continue
             }
-            days.append(day)
+            progress?(BrewiarzEPUBImportProgress(
+                completedDocuments: index + 1,
+                totalDocuments: candidates.count,
+                elapsed: Date().timeIntervalSince(startedAt)
+            ))
         }
         guard !days.isEmpty else { throw BrewiarzEPUBImportError.noOffices }
         return BrewiarzEPUBImportResult(
@@ -82,15 +114,20 @@ enum BrewiarzEPUBImporter {
         sourceIdentifier: String,
         sourceTitle: String
     ) -> OfflineBreviaryDay? {
-        guard let date = parseCivilDate(xhtml) else { return nil }
+        let documentText = XHTMLPrayerLineParser.plainText(xhtml)
+        guard let date = parseCivilDate(documentText) else { return nil }
+        let celebration = parseCelebration(documentText)
+        let liturgicalColor = parseLiturgicalColor(documentText)
         let variantIdentifier = parseVariantIdentifier(entryName)
+        let anchorNamespace = dailyAnchorNamespace(entryName)
         var offices: [OfflineBreviaryOffice] = []
 
         for (index, definition) in officeAnchors.enumerated() {
             guard let section = section(
                 in: xhtml,
                 startingAt: definition.anchor,
-                endingAt: Array(officeAnchors.dropFirst(index + 1).map(\.anchor))
+                endingAt: Array(officeAnchors.dropFirst(index + 1).map(\.anchor)),
+                anchorNamespace: anchorNamespace
             ) else { continue }
             let parsedLines = XHTMLPrayerLineParser.parse(section)
             let meaningful = discardNavigationAndMetadata(parsedLines, officeTitle: definition.key.displayName)
@@ -104,13 +141,13 @@ enum BrewiarzEPUBImporter {
                     imagePrompt: promptSeed(
                         office: definition.key,
                         date: date,
-                        celebration: parseCelebration(xhtml),
-                        liturgicalColor: parseLiturgicalColor(xhtml),
+                        celebration: celebration,
+                        liturgicalColor: liturgicalColor,
                         lines: meaningful
                     ),
                     imageSourceText: imageSourceText(
-                        celebration: parseCelebration(xhtml),
-                        liturgicalColor: parseLiturgicalColor(xhtml),
+                        celebration: celebration,
+                        liturgicalColor: liturgicalColor,
                         lines: meaningful
                     )
                 )
@@ -121,8 +158,8 @@ enum BrewiarzEPUBImporter {
             date: date,
             variantIdentifier: variantIdentifier,
             variantName: variantName(identifier: variantIdentifier, xhtml: xhtml),
-            celebrationName: parseCelebration(xhtml),
-            liturgicalColor: parseLiturgicalColor(xhtml),
+            celebrationName: celebration,
+            liturgicalColor: liturgicalColor,
             offices: offices,
             sourceImportID: importID,
             sourceIdentifier: sourceIdentifier,
@@ -130,18 +167,24 @@ enum BrewiarzEPUBImporter {
         )
     }
 
-    private static func isDailyBreviaryDocument(_ name: String) -> Bool {
+    static func isDailyBreviaryDocument(_ name: String) -> Bool {
         let filename = URL(fileURLWithPath: name).lastPathComponent.lowercased()
         guard filename.hasSuffix(".xhtml") else { return false }
         let stem = String(filename.dropLast(6))
-        guard stem.count >= 5 else { return false }
+        guard stem.count >= 4 else { return false }
         return stem.prefix(4).allSatisfy(\.isNumber)
-            && stem.dropFirst(4).allSatisfy(\.isLetter)
+            && stem.dropFirst(4).allSatisfy { $0.isLetter || $0.isNumber }
     }
 
     private static func parseVariantIdentifier(_ entryName: String) -> String {
         let stem = URL(fileURLWithPath: entryName).deletingPathExtension().lastPathComponent.lowercased()
-        return String(stem.dropFirst(min(4, stem.count)))
+        let identifier = String(stem.dropFirst(min(4, stem.count)))
+        return identifier.isEmpty ? "p" : identifier
+    }
+
+    private static func dailyAnchorNamespace(_ entryName: String) -> String {
+        let stem = URL(fileURLWithPath: entryName).deletingPathExtension().lastPathComponent.lowercased()
+        return "d\(stem)_"
     }
 
     private static func variantName(identifier: String, xhtml: String) -> String {
@@ -155,8 +198,7 @@ enum BrewiarzEPUBImporter {
         }
     }
 
-    private static func parseCivilDate(_ xhtml: String) -> BreviaryCivilDate? {
-        let plain = XHTMLPrayerLineParser.plainText(xhtml)
+    private static func parseCivilDate(_ plain: String) -> BreviaryCivilDate? {
         let pattern = #"(?i)(\d{1,2})\s+(stycznia|lutego|marca|kwietnia|maja|czerwca|lipca|sierpnia|września|wrzesnia|października|pazdziernika|listopada|grudnia)\s+(\d{4})"#
         guard let regex = try? NSRegularExpression(pattern: pattern),
               let match = regex.firstMatch(in: plain, range: NSRange(plain.startIndex..., in: plain)),
@@ -178,13 +220,13 @@ enum BrewiarzEPUBImporter {
         return BreviaryCivilDate(year: year, month: month, day: day)
     }
 
-    private static func parseLiturgicalColor(_ xhtml: String) -> String? {
-        firstCapture(in: XHTMLPrayerLineParser.plainText(xhtml), pattern: #"(?i)Kolor\s+szat:\s*([^\n]+)"#)?
+    private static func parseLiturgicalColor(_ plain: String) -> String? {
+        firstCapture(in: plain, pattern: #"(?i)Kolor\s+szat:\s*([^\n]+)"#)?
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private static func parseCelebration(_ xhtml: String) -> String? {
-        let lines = XHTMLPrayerLineParser.plainText(xhtml)
+    private static func parseCelebration(_ plain: String) -> String? {
+        let lines = plain
             .split(separator: "\n")
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
@@ -211,16 +253,32 @@ enum BrewiarzEPUBImporter {
         return String(text[range])
     }
 
-    private static func section(in xhtml: String, startingAt anchor: String, endingAt laterAnchors: [String]) -> String? {
-        let startPatterns = ["<a id=\"\(anchor)\"", "<a name=\"\(anchor)\""]
+    private static func section(
+        in xhtml: String,
+        startingAt anchor: String,
+        endingAt laterAnchors: [String],
+        anchorNamespace: String
+    ) -> String? {
+        let startPatterns = anchorPatterns(for: anchor, namespace: anchorNamespace)
         guard let start = startPatterns.compactMap({ xhtml.range(of: $0, options: .caseInsensitive)?.lowerBound }).min() else {
             return nil
         }
         let tail = xhtml[start...]
         let end = laterAnchors.flatMap { next in
-            ["<a id=\"\(next)\"", "<a name=\"\(next)\""]
+            anchorPatterns(for: next, namespace: anchorNamespace)
         }.compactMap { tail.range(of: $0, options: .caseInsensitive)?.lowerBound }.min() ?? xhtml.endIndex
         return String(xhtml[start..<end])
+    }
+
+    private static func anchorPatterns(for anchor: String, namespace: String) -> [String] {
+        [namespace + anchor, anchor].flatMap { candidate in
+            [
+                "<a id=\"\(candidate)\"",
+                "<a name=\"\(candidate)\"",
+                "<a id='\(candidate)'",
+                "<a name='\(candidate)'"
+            ]
+        }
     }
 
     private static func discardNavigationAndMetadata(

@@ -680,6 +680,7 @@ struct DataTransferView: View {
     @State private var resolutions: [UUID: BackupConflictResolution] = [:]
     @State private var message: String?
     @State private var errorMessage: String?
+    @State private var epubProgress: BrewiarzEPUBImportProgress?
 
     var body: some View {
         List {
@@ -734,48 +735,24 @@ struct DataTransferView: View {
             }
         }
         .navigationTitle("Import i eksport")
+        .disabled(epubProgress != nil)
+        .overlay {
+            if let progress = epubProgress {
+                EPUBImportProgressView(progress: progress)
+            }
+        }
         .fileImporter(isPresented: $isImporting, allowedContentTypes: [.json, .epub]) { result in
             do {
                 let url = try result.get()
                 if importIntent == .restoreBackup, url.pathExtension.lowercased() != "json" {
                     throw MargaretkaBackupError.notJSONBackup
                 }
-                let backup: MargaretkaBackup
                 if url.pathExtension.lowercased() == "epub" {
-                    let imported = try BrewiarzEPUBImporter.importEPUB(from: url)
-                    let retained = OfflineBreviaryStore.removingExpired(from: imported.days, referenceDate: .now)
-                    let expiredCount = imported.days.count - retained.count
-                    backup = MargaretkaBackup(
-                        schemaVersion: MargaretkaBackup.currentSchemaVersion,
-                        exportedAt: .now,
-                        purpose: .dataTransfer,
-                        preferences: nil,
-                        prayers: [],
-                        targets: [],
-                        sessions: [],
-                        offlineBreviaryDays: retained,
-                        assets: []
-                    )
-                    if retained.isEmpty {
-                        message = "EPUB zawiera tylko wygasłe dni (pominięto: \(expiredCount))."
-                        return
-                    }
-                } else {
-                    backup = try MargaretkaBackupService.decode(from: url)
-                }
-                if importIntent == .restoreBackup {
-                    backupToRestore = backup
+                    importEPUB(url)
                     return
+                } else {
+                    prepareImport(try MargaretkaBackupService.decode(from: url))
                 }
-                let plan = MargaretkaBackupService.makeImportPlan(
-                    backup: backup,
-                    prayers: prayerStore.prayers,
-                    targets: targetStore.priests,
-                    offlineDays: offlineStore.days
-                )
-                importPlan = plan
-                resolutions = [:]
-                if plan.conflicts.isEmpty { applyImport(plan) }
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -838,6 +815,64 @@ struct DataTransferView: View {
         }
     }
 
+    private func importEPUB(_ url: URL) {
+        epubProgress = BrewiarzEPUBImportProgress(
+            completedDocuments: 0,
+            totalDocuments: 0,
+            elapsed: 0
+        )
+        Task.detached(priority: .userInitiated) {
+            do {
+                let imported = try BrewiarzEPUBImporter.importEPUB(from: url) { progress in
+                    Task { @MainActor in
+                        epubProgress = progress
+                    }
+                }
+                await MainActor.run {
+                    epubProgress = nil
+                    let retained = OfflineBreviaryStore.removingExpired(from: imported.days, referenceDate: .now)
+                    let expiredCount = imported.days.count - retained.count
+                    guard !retained.isEmpty else {
+                        message = "EPUB zawiera tylko wygasłe dni (pominięto: \(expiredCount))."
+                        return
+                    }
+                    prepareImport(MargaretkaBackup(
+                        schemaVersion: MargaretkaBackup.currentSchemaVersion,
+                        exportedAt: .now,
+                        purpose: .dataTransfer,
+                        preferences: nil,
+                        prayers: [],
+                        targets: [],
+                        sessions: [],
+                        offlineBreviaryDays: retained,
+                        assets: []
+                    ))
+                }
+            } catch {
+                await MainActor.run {
+                    epubProgress = nil
+                    errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+
+    private func prepareImport(_ backup: MargaretkaBackup) {
+        if importIntent == .restoreBackup {
+            backupToRestore = backup
+            return
+        }
+        let plan = MargaretkaBackupService.makeImportPlan(
+            backup: backup,
+            prayers: prayerStore.prayers,
+            targets: targetStore.priests,
+            offlineDays: offlineStore.days
+        )
+        importPlan = plan
+        resolutions = [:]
+        if plan.conflicts.isEmpty { applyImport(plan) }
+    }
+
     private func restoreFullBackup() {
         guard let backup = backupToRestore else { return }
         do {
@@ -870,6 +905,50 @@ struct DataTransferView: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+}
+
+private struct EPUBImportProgressView: View {
+    let progress: BrewiarzEPUBImportProgress
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Importowanie brewiarza")
+                .font(.headline)
+            if progress.totalDocuments > 0 {
+                ProgressView(value: progress.fractionCompleted)
+                Text("Dokument \(progress.completedDocuments) z \(progress.totalDocuments)")
+                    .font(.subheadline.monospacedDigit())
+                if let remaining = progress.estimatedRemaining, remaining > 0 {
+                    Text("Pozostało około \(formattedDuration(remaining))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else if progress.completedDocuments == 0 {
+                    Text("Obliczanie czasu…")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                ProgressView()
+                Text("Odczytywanie archiwum…")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: 360)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
+        .shadow(radius: 18)
+        .padding()
+        .accessibilityElement(children: .combine)
+    }
+
+    private func formattedDuration(_ duration: TimeInterval) -> String {
+        let seconds = max(1, Int(duration.rounded(.up)))
+        if seconds < 60 { return "\(seconds) s" }
+        let minutes = seconds / 60
+        let remainder = seconds % 60
+        return remainder == 0 ? "\(minutes) min" : "\(minutes) min \(remainder) s"
     }
 }
 

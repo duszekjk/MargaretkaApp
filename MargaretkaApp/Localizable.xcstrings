@@ -248,6 +248,16 @@
     "Dodaj nową podgrupę" : {
 
     },
+    "Dokument %lld z %lld" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Dokument %1$lld z %2$lld"
+          }
+        }
+      }
+    },
     "Edit" : {
       "localizations" : {
         "pl" : {
@@ -319,6 +329,9 @@
 
     },
     "Import JSON zachowuje obecne dane, scala dokładne odpowiedniki i pyta o podejrzane podobieństwa. Można tu również importować EPUB z brewiarz.pl." : {
+
+    },
+    "Importowanie brewiarza" : {
 
     },
     "Importuj" : {
@@ -439,6 +452,9 @@
     "Nowa modlitwa" : {
 
     },
+    "Obliczanie czasu…" : {
+
+    },
     "Od" : {
 
     },
@@ -446,6 +462,9 @@
 
     },
     "Odblokuj telefon i dotknij Kontynuuj, aby rozpoczac." : {
+
+    },
+    "Odczytywanie archiwum…" : {
 
     },
     "Offline" : {
@@ -506,6 +525,9 @@
 
     },
     "Powtórz %lldx" : {
+
+    },
+    "Pozostało około %@" : {
 
     },
     "Praktyczne wskazówki" : {
