@@ -1,16 +1,12 @@
-codex conversation [unknown] add ranked breviary import and selective export
+codex conversation [unknown] normalize Xcode project target membership
 
-Select one breviary document per date before parsing, using the first available
-identifier from the user's ordered variant preferences. Add a reorderable
-preference list and compile coverage for per-date fallback selection.
+Replace direct ownership of the MargaretkaShared synchronized folder by both
+targets with an Xcode-style build-file exception that exposes only
+WidgetSharedData.swift to MargaretkaWidget. Keep MargaretkaApp as the folder's
+single owner and retain the shared source in both target compile lists.
 
-Separate selective data transfer from full backup while keeping one JSON model
-and encoder. Selective export can include one prayer, one person or priest, one
-complex prayer, one breviary office, all saint biographies, or all current data;
-it deliberately excludes sessions, statistics, and preferences. Full backup
-keeps all prayers, targets, sessions, offline days, assets, and preferences.
-
-The app, widget, unit-test, and UI-test targets compile successfully. However,
-the Xcode project editor is reported unusable: selecting the project displays
-the raw project.pbxproj instead of project settings. This commit records the
-pre-fix state and must not be described as a working project-file solution.
+Preserve Xcode's updated widget scheme order. Validate the project plist,
+project and scheme discovery, generated widget source list, and a complete
+unsigned iOS build-for-testing of the app, widget, unit-test, and UI-test
+targets. The command-line project model and build now succeed; the already-open
+Xcode editor window may still need to reload its cached presentation state.

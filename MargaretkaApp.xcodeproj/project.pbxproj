@@ -56,6 +56,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		F10000000000000000000010 /* Exceptions for "MargaretkaShared" folder in "MargaretkaWidget" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				WidgetSharedData.swift,
+			);
+			target = F10000000000000000000008 /* MargaretkaWidget */;
+		};
 		F10000000000000000000004 /* Exceptions for "MargaretkaWidget" folder in "MargaretkaWidget" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -87,6 +94,9 @@
 		};
 		F10000000000000000000003 /* MargaretkaShared */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F10000000000000000000010 /* Exceptions for "MargaretkaShared" folder in "MargaretkaWidget" target */,
+			);
 			path = MargaretkaShared;
 			sourceTree = "<group>";
 		};
@@ -182,7 +192,6 @@
 			);
 			fileSystemSynchronizedGroups = (
 				F10000000000000000000002 /* MargaretkaWidget */,
-				F10000000000000000000003 /* MargaretkaShared */,
 			);
 			name = MargaretkaWidget;
 			packageProductDependencies = (
