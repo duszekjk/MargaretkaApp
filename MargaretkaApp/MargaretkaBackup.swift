@@ -22,23 +22,36 @@ enum MargaretkaArchivePurpose: String, Codable {
     case fullBackup
 }
 
+enum MargaretkaExportSelection: Hashable {
+    case allCurrentData
+    case prayer(UUID)
+    case target(UUID)
+    case breviaryOffice(BrewiarzPrayerKey)
+    case saintBiographies
+}
+
 struct MargaretkaBackupPreferences: Codable, Equatable {
     var prayerSwipeMode: String
     var prayerCompactView: Bool
     var preferredBreviaryVariant: String
+    var preferredBreviaryVariantOrder: [String]? = nil
 
     static func capture(from defaults: UserDefaults = .standard) -> Self {
         Self(
             prayerSwipeMode: defaults.string(forKey: "prayerSwipeMode") ?? PrayerSwipeMode.both.rawValue,
             prayerCompactView: defaults.object(forKey: "prayerCompactView") as? Bool ?? true,
-            preferredBreviaryVariant: defaults.string(forKey: "preferredBreviaryVariant") ?? "p"
+            preferredBreviaryVariant: defaults.string(forKey: BreviaryVariantPreferences.legacyStorageKey) ?? "p",
+            preferredBreviaryVariantOrder: BreviaryVariantPreferences.load(from: defaults)
         )
     }
 
     func restore(to defaults: UserDefaults = .standard) {
         defaults.set(prayerSwipeMode, forKey: "prayerSwipeMode")
         defaults.set(prayerCompactView, forKey: "prayerCompactView")
-        defaults.set(preferredBreviaryVariant, forKey: "preferredBreviaryVariant")
+        BreviaryVariantPreferences.save(
+            preferredBreviaryVariantOrder ?? [preferredBreviaryVariant],
+            to: defaults
+        )
     }
 }
 
@@ -135,21 +148,53 @@ enum MargaretkaBackupService {
         prayers: [Prayer],
         targets: [Priest],
         offlineDays: [OfflineBreviaryDay],
-        purpose: MargaretkaArchivePurpose = .dataTransfer
+        purpose: MargaretkaArchivePurpose = .dataTransfer,
+        selection: MargaretkaExportSelection = .allCurrentData
     ) throws -> URL {
-        let sessions: [PrayerSession] = LocalDatabase.shared.load(from: PrayerSessionStore.saveKey)
-        let backup = MargaretkaBackup(
+        let sessions: [PrayerSession] = purpose == .fullBackup
+            ? LocalDatabase.shared.load(from: PrayerSessionStore.saveKey)
+            : []
+        let backup = archive(
+            prayers: prayers,
+            targets: targets,
+            sessions: sessions,
+            offlineDays: offlineDays,
+            purpose: purpose,
+            selection: selection
+        )
+        return try write(backup)
+    }
+
+    static func archive(
+        prayers: [Prayer],
+        targets: [Priest],
+        sessions: [PrayerSession],
+        offlineDays: [OfflineBreviaryDay],
+        purpose: MargaretkaArchivePurpose,
+        selection: MargaretkaExportSelection = .allCurrentData
+    ) -> MargaretkaBackup {
+        let content = purpose == .fullBackup
+            ? (prayers: prayers, targets: targets, days: offlineDays)
+            : selectedContent(
+                prayers: prayers,
+                targets: targets,
+                offlineDays: offlineDays,
+                selection: selection
+            )
+        return MargaretkaBackup(
             schemaVersion: MargaretkaBackup.currentSchemaVersion,
             exportedAt: .now,
             purpose: purpose,
             preferences: purpose == .fullBackup ? .capture() : nil,
-            prayers: prayers,
-            targets: targets,
-            sessions: sessions,
-            offlineBreviaryDays: offlineDays,
-            assets: collectAssets(prayers: prayers, offlineDays: offlineDays)
+            prayers: content.prayers,
+            targets: content.targets,
+            sessions: purpose == .fullBackup ? sessions : [],
+            offlineBreviaryDays: content.days,
+            assets: collectAssets(prayers: content.prayers, offlineDays: content.days)
         )
+    }
 
+    private static func write(_ backup: MargaretkaBackup) throws -> URL {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
@@ -157,7 +202,7 @@ enum MargaretkaBackupService {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd_HHmm"
-        let prefix = purpose == .fullBackup ? "Margaretka_backup" : "Margaretka_export"
+        let prefix = backup.purpose == .fullBackup ? "Margaretka_backup" : "Margaretka_export"
         let filename = "\(prefix)_\(formatter.string(from: .now)).json"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         try data.write(to: url, options: .atomic)
@@ -428,6 +473,71 @@ enum MargaretkaBackupService {
         )
     }
 
+    private static func selectedContent(
+        prayers: [Prayer],
+        targets: [Priest],
+        offlineDays: [OfflineBreviaryDay],
+        selection: MargaretkaExportSelection
+    ) -> (prayers: [Prayer], targets: [Priest], days: [OfflineBreviaryDay]) {
+        switch selection {
+        case .allCurrentData:
+            return (prayers, targets, offlineDays)
+
+        case .prayer(let prayerID):
+            return (prayers.filter { $0.id == prayerID }, [], [])
+
+        case .target(let targetID):
+            let selectedTargets = targets.filter { $0.id == targetID }
+            let prayerIDs = Set(selectedTargets.flatMap(assignedPrayerIDs))
+            return (prayers.filter { prayerIDs.contains($0.id) }, selectedTargets, [])
+
+        case .breviaryOffice(let key):
+            let templateIDs = Set(prayers.compactMap { prayer -> UUID? in
+                guard case .brewiarz(let prayerKey) = prayer.content, prayerKey == key else { return nil }
+                return prayer.id
+            })
+            let selectedTargets = targets.filter {
+                !$0.assignedPrayerGroups.flatMap(assignedPrayerIDs).filter(templateIDs.contains).isEmpty
+            }
+            let dependencyIDs = templateIDs.union(selectedTargets.flatMap(assignedPrayerIDs))
+            let days = offlineDays.compactMap { source -> OfflineBreviaryDay? in
+                var day = source
+                day.offices = source.offices.filter { $0.key == key }
+                day.saintBiography = nil
+                return day.offices.isEmpty ? nil : day
+            }
+            return (prayers.filter { dependencyIDs.contains($0.id) }, selectedTargets, days)
+
+        case .saintBiographies:
+            let templateIDs = Set(prayers.compactMap { prayer -> UUID? in
+                guard case .saintBiography = prayer.content else { return nil }
+                return prayer.id
+            })
+            let selectedTargets = targets.filter {
+                !$0.assignedPrayerGroups.flatMap(assignedPrayerIDs).filter(templateIDs.contains).isEmpty
+            }
+            let dependencyIDs = templateIDs.union(selectedTargets.flatMap(assignedPrayerIDs))
+            let days = offlineDays.compactMap { source -> OfflineBreviaryDay? in
+                guard source.saintBiography != nil else { return nil }
+                var day = source
+                day.offices = []
+                return day
+            }
+            return (prayers.filter { dependencyIDs.contains($0.id) }, selectedTargets, days)
+        }
+    }
+
+    private static func assignedPrayerIDs(in target: Priest) -> [UUID] {
+        target.assignedPrayerGroups.flatMap(assignedPrayerIDs)
+    }
+
+    private static func assignedPrayerIDs(in group: AssignedPrayerGroup) -> [UUID] {
+        group.items.compactMap { item in
+            if case .prayer(let id) = item { return id }
+            return nil
+        } + group.subgroups.flatMap(assignedPrayerIDs)
+    }
+
     private static func collectAssets(prayers: [Prayer], offlineDays: [OfflineBreviaryDay]) -> [MargaretkaBackupAsset] {
         var assets: [MargaretkaBackupAsset] = []
         if let directory = try? AudioStorage.applicationSupportDirectory(create: false) {
@@ -685,6 +795,7 @@ struct DataTransferView: View {
 
     @State private var isImporting = false
     @State private var importIntent: ImportIntent = .mergeData
+    @State private var showingExportSelection = false
     @State private var shareURL: URL?
     @State private var importPlan: BackupImportPlan?
     @State private var backupToRestore: MargaretkaBackup?
@@ -703,9 +814,9 @@ struct DataTransferView: View {
 
             Section("Import i eksport danych") {
                 Button {
-                    exportArchive(purpose: .dataTransfer)
+                    showingExportSelection = true
                 } label: {
-                    Label("Eksportuj dane", systemImage: "square.and.arrow.up")
+                    Label("Eksportuj wybrane dane", systemImage: "square.and.arrow.up")
                 }
 
                 Button {
@@ -715,7 +826,7 @@ struct DataTransferView: View {
                     Label("Importuj i połącz dane", systemImage: "square.and.arrow.down")
                 }
 
-                Text("Import JSON zachowuje obecne dane, scala dokładne odpowiedniki i pyta o podejrzane podobieństwa. Można tu również importować EPUB z brewiarz.pl.")
+                Text("Eksport może zawierać pojedynczą modlitwę, konkretną osobę lub księdza albo wybraną godzinę brewiarza. Nie zawiera historii, statystyk ani ustawień. Import JSON zachowuje obecne dane, scala dokładne odpowiedniki i pyta o podejrzane podobieństwa. Można tu również importować EPUB z brewiarz.pl.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -768,6 +879,16 @@ struct DataTransferView: View {
                 errorMessage = error.localizedDescription
             }
         }
+        .sheet(isPresented: $showingExportSelection) {
+            ExportSelectionView(
+                prayers: prayerStore.prayers,
+                targets: targetStore.priests,
+                offlineDays: offlineStore.days
+            ) { selection in
+                showingExportSelection = false
+                exportArchive(purpose: .dataTransfer, selection: selection)
+            }
+        }
         .sheet(item: $shareURL) { url in
             ActivityShareView(items: [url])
         }
@@ -813,13 +934,17 @@ struct DataTransferView: View {
         }
     }
 
-    private func exportArchive(purpose: MargaretkaArchivePurpose) {
+    private func exportArchive(
+        purpose: MargaretkaArchivePurpose,
+        selection: MargaretkaExportSelection = .allCurrentData
+    ) {
         do {
             shareURL = try MargaretkaBackupService.export(
                 prayers: prayerStore.prayers,
                 targets: targetStore.priests,
                 offlineDays: offlineStore.days,
-                purpose: purpose
+                purpose: purpose,
+                selection: selection
             )
         } catch {
             errorMessage = error.localizedDescription
@@ -835,7 +960,10 @@ struct DataTransferView: View {
         message = nil
         Task { @MainActor in
             do {
-                let imported = try await BrewiarzEPUBImporter.importEPUB(from: url) { progress in
+                let imported = try await BrewiarzEPUBImporter.importEPUB(
+                    from: url,
+                    preferredVariantOrder: BreviaryVariantPreferences.load()
+                ) { progress in
                     withAnimation(.linear(duration: 0.2)) {
                         epubProgress = progress
                     }
@@ -919,6 +1047,129 @@ struct DataTransferView: View {
             scheduleData.save()
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+}
+
+private struct ExportSelectionView: View {
+    let prayers: [Prayer]
+    let targets: [Priest]
+    let offlineDays: [OfflineBreviaryDay]
+    let onSelect: (MargaretkaExportSelection) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    exportButton("Wszystkie dane bieżące", symbol: "tray.full", selection: .allCurrentData)
+                } footer: {
+                    Text("Obejmuje modlitwy, osoby, księży, modlitwy złożone i brewiarz offline, ale bez historii, statystyk i ustawień.")
+                }
+
+                if !availableOfficeKeys.isEmpty || offlineDays.contains(where: { $0.saintBiography != nil }) {
+                    Section("Brewiarz offline") {
+                        ForEach(availableOfficeKeys) { key in
+                            exportButton(
+                                "Wszystkie: \(key.displayName)",
+                                symbol: symbol(for: key),
+                                selection: .breviaryOffice(key)
+                            )
+                        }
+                        if offlineDays.contains(where: { $0.saintBiography != nil }) {
+                            exportButton(
+                                "Wszystkie życiorysy świętych",
+                                symbol: "person.crop.circle.badge.checkmark",
+                                selection: .saintBiographies
+                            )
+                        }
+                    }
+                }
+
+                ForEach(PrayerTargetCategory.allCases) { category in
+                    let categoryTargets = sortedTargets.filter { $0.category == category }
+                    if !categoryTargets.isEmpty {
+                        Section(category.displayName) {
+                            ForEach(categoryTargets) { target in
+                                exportButton(
+                                    target.displayName,
+                                    symbol: targetSymbol(for: category),
+                                    selection: .target(target.id)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if !textPrayers.isEmpty {
+                    Section("Modlitwy pojedyncze") {
+                        ForEach(textPrayers) { prayer in
+                            exportButton(
+                                prayer.name,
+                                symbol: prayer.symbol,
+                                selection: .prayer(prayer.id)
+                            )
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Co wyeksportować?")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Anuluj") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private var availableOfficeKeys: [BrewiarzPrayerKey] {
+        let keys = Set(offlineDays.flatMap(\.offices).map(\.key))
+        return BrewiarzPrayerKey.allCases.filter(keys.contains)
+    }
+
+    private var sortedTargets: [Priest] {
+        targets.sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
+    }
+
+    private var textPrayers: [Prayer] {
+        prayers.filter {
+            if case .text = $0.content { return true }
+            return false
+        }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    private func exportButton(
+        _ title: String,
+        symbol: String,
+        selection: MargaretkaExportSelection
+    ) -> some View {
+        Button {
+            onSelect(selection)
+        } label: {
+            Label(title, systemImage: symbol)
+        }
+    }
+
+    private func targetSymbol(for category: PrayerTargetCategory) -> String {
+        switch category {
+        case .priest: return "person.crop.rectangle.stack"
+        case .person: return "person.crop.circle"
+        case .prayer: return "square.stack.3d.up"
+        }
+    }
+
+    private func symbol(for key: BrewiarzPrayerKey) -> String {
+        switch key {
+        case .wezwanie: return "bell"
+        case .godzinaCzytan: return "book.pages"
+        case .jutrznia: return "sunrise"
+        case .modlitwaPrzedpoludniowa: return "sun.min"
+        case .modlitwaPoludniowa: return "sun.max"
+        case .modlitwaPopoludniowa: return "sun.haze"
+        case .nieszpory: return "sunset"
+        case .kompleta: return "moon.stars"
         }
     }
 }

@@ -42,6 +42,54 @@ extension Calendar {
     }
 }
 
+nonisolated enum BreviaryVariantPreferences {
+    static let storageKey = "preferredBreviaryVariantOrder"
+    static let legacyStorageKey = "preferredBreviaryVariant"
+    static let defaultOrder = ["p"] + (1...12).map { "w\($0)" }
+
+    static func load(from defaults: UserDefaults = .standard) -> [String] {
+        let stored = defaults.stringArray(forKey: storageKey) ?? []
+        let legacy = defaults.string(forKey: legacyStorageKey)
+        if !stored.isEmpty { return normalizedOrder(stored) }
+        return normalizedOrder([legacy ?? "p"] + defaultOrder)
+    }
+
+    static func save(_ order: [String], to defaults: UserDefaults = .standard) {
+        let normalized = normalizedOrder(order)
+        defaults.set(normalized, forKey: storageKey)
+        defaults.set(normalized.first ?? "p", forKey: legacyStorageKey)
+    }
+
+    static func normalizedOrder(_ order: [String], including available: [String] = []) -> [String] {
+        var seen = Set<String>()
+        let requested = order + available
+        return requested.compactMap { raw in
+            let identifier = raw.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !identifier.isEmpty, seen.insert(identifier).inserted else { return nil }
+            return identifier
+        }
+    }
+
+    static func displayName(for identifier: String, knownDays: [OfflineBreviaryDay] = []) -> String {
+        if let name = knownDays.first(where: { $0.variantIdentifier == identifier })?.variantName {
+            return "\(name) (\(identifier.uppercased()))"
+        }
+        if identifier == "p" { return "Tekst podstawowy (P)" }
+        if identifier.hasPrefix("w"), let number = Int(identifier.dropFirst()) {
+            return "Wariant własny \(number) (\(identifier.uppercased()))"
+        }
+        return identifier.uppercased()
+    }
+
+    static func preferredDay(from days: [OfflineBreviaryDay], order: [String]) -> OfflineBreviaryDay? {
+        let ranked = normalizedOrder(order, including: days.map(\.variantIdentifier))
+        for identifier in ranked {
+            if let day = days.first(where: { $0.variantIdentifier == identifier }) { return day }
+        }
+        return days.first
+    }
+}
+
 nonisolated enum OfflineBreviaryLineRole: String, Codable, Hashable, Sendable {
     case heading
     case rubric
@@ -308,15 +356,16 @@ final class OfflineBreviaryStore: ObservableObject {
             }
     }
 
-    func office(for key: BrewiarzPrayerKey, date: Date, preferredVariant: String? = nil) -> OfflineBreviaryOffice? {
-        day(for: date, preferredVariant: preferredVariant)?.offices.first { $0.key == key }
+    func office(for key: BrewiarzPrayerKey, date: Date, preferredVariants: [String]? = nil) -> OfflineBreviaryOffice? {
+        day(for: date, preferredVariants: preferredVariants)?.offices.first { $0.key == key }
     }
 
-    func day(for date: Date, preferredVariant: String? = nil) -> OfflineBreviaryDay? {
+    func day(for date: Date, preferredVariants: [String]? = nil) -> OfflineBreviaryDay? {
         let candidates = matchingDays(for: date)
-        return preferredVariant.flatMap { preferred in
-            candidates.first { $0.variantIdentifier == preferred }
-        } ?? candidates.first
+        return BreviaryVariantPreferences.preferredDay(
+            from: candidates,
+            order: preferredVariants ?? BreviaryVariantPreferences.load()
+        )
     }
 
     func day(containing officeID: UUID) -> OfflineBreviaryDay? {

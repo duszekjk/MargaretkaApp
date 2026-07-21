@@ -114,7 +114,6 @@ struct PrayerFlowView: View {
     @State private var didLogAppear = false
     @AppStorage("prayerSwipeMode") private var prayerSwipeModeRaw: String = PrayerSwipeMode.both.rawValue
     @AppStorage("prayerCompactView") private var prayerCompactView: Bool = false
-    @AppStorage("preferredBreviaryVariant") private var preferredBreviaryVariant = "p"
     @GestureState private var prayerSwipeTranslation: CGSize = .zero
     var priestsAndPrayers: [Priest] {
         scheduleData.items.filter { $0.category == selectedCategory }
@@ -218,10 +217,7 @@ struct PrayerFlowView: View {
     }
 
     var prayerSteps: [PrayerFlowStep] {
-        let selectedDay = offlineBreviaryStore.day(
-            for: .now,
-            preferredVariant: preferredBreviaryVariant
-        )
+        let selectedDay = offlineBreviaryStore.day(for: .now)
         let offices = Dictionary(uniqueKeysWithValues: BrewiarzPrayerKey.allCases.compactMap { key in
             selectedDay?.offices.first(where: { $0.key == key }).map { (key, $0) }
         })

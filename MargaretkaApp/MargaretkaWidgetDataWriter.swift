@@ -7,7 +7,10 @@ enum MargaretkaWidgetDataWriter {
         var payload = MargaretkaWidgetSharedStore.load()
         payload.saints = Dictionary(grouping: days.filter { $0.saintBiography != nil }, by: \.date)
             .compactMap { date, variants -> MargaretkaWidgetSaint? in
-                let selected = variants.first { $0.variantIdentifier == "p" } ?? variants.first
+                let selected = BreviaryVariantPreferences.preferredDay(
+                    from: variants,
+                    order: BreviaryVariantPreferences.load()
+                )
                 guard let biography = selected?.saintBiography else { return nil }
                 return MargaretkaWidgetSaint(
                     dateID: date.id,

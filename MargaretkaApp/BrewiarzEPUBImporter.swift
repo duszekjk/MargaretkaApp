@@ -62,13 +62,17 @@ nonisolated enum BrewiarzEPUBImporter {
 
     nonisolated static func importEPUB(
         from url: URL,
+        preferredVariantOrder: [String]? = nil,
         progress: (@MainActor @Sendable (BrewiarzEPUBImportProgress) -> Void)? = nil
     ) async throws -> BrewiarzEPUBImportResult {
         let access = url.startAccessingSecurityScopedResource()
         defer { if access { url.stopAccessingSecurityScopedResource() } }
         let archive = try SimpleZIPArchive(data: Data(contentsOf: url))
-        let candidates = archive.entryNames.filter(isDailyBreviaryDocument)
-        guard !candidates.isEmpty else { throw BrewiarzEPUBImportError.noBreviaryDocuments }
+        let allCandidates = archive.entryNames.filter(isDailyBreviaryDocument)
+        guard !allCandidates.isEmpty else { throw BrewiarzEPUBImportError.noBreviaryDocuments }
+        let candidates = preferredVariantOrder.map {
+            selectedDailyDocuments(from: allCandidates, preferenceOrder: $0)
+        } ?? allCandidates
 
         let startedAt = Date()
         if let progress {
@@ -211,6 +215,27 @@ nonisolated enum BrewiarzEPUBImporter {
         guard stem.count >= 4 else { return false }
         return stem.prefix(4).allSatisfy(\.isNumber)
             && stem.dropFirst(4).allSatisfy { $0.isLetter || $0.isNumber }
+    }
+
+    static func selectedDailyDocuments(from names: [String], preferenceOrder: [String]) -> [String] {
+        let daily = names.filter(isDailyBreviaryDocument)
+        let grouped = Dictionary(grouping: daily) { name in
+            let stem = URL(fileURLWithPath: name).deletingPathExtension().lastPathComponent.lowercased()
+            return String(stem.prefix(4))
+        }
+        let order = BreviaryVariantPreferences.normalizedOrder(
+            preferenceOrder,
+            including: daily.map(parseVariantIdentifier)
+        )
+        return grouped.keys.sorted().compactMap { dateKey in
+            let documents = grouped[dateKey, default: []].sorted()
+            for identifier in order {
+                if let document = documents.first(where: { parseVariantIdentifier($0) == identifier }) {
+                    return document
+                }
+            }
+            return documents.first
+        }
     }
 
     private static func parseVariantIdentifier(_ entryName: String) -> String {

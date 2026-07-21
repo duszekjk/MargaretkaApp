@@ -162,6 +162,9 @@
     "Chór prawy. %@" : {
 
     },
+    "Co wyeksportować?" : {
+
+    },
     "Codzienna propozycja (minimum)" : {
 
     },
@@ -233,6 +236,9 @@
     "Diagram Margaretki: siedem płatków – dni tygodnia – wokół kapłana." : {
 
     },
+    "Dla każdej daty podczas importu zostanie zapisany tylko pierwszy dostępny wariant z tej listy. Przeciągnij warianty w trybie edycji, aby ustawić priorytety." : {
+
+    },
     "Dla kogo sprawdzić średni czas modlitwy?" : {
 
     },
@@ -280,7 +286,10 @@
     "Edytuj modlitwę" : {
 
     },
-    "Eksportuj dane" : {
+    "Eksport może zawierać pojedynczą modlitwę, konkretną osobę lub księdza albo wybraną godzinę brewiarza. Nie zawiera historii, statystyk ani ustawień. Import JSON zachowuje obecne dane, scala dokładne odpowiedniki i pyta o podejrzane podobieństwa. Można tu również importować EPUB z brewiarz.pl." : {
+
+    },
+    "Eksportuj wybrane dane" : {
 
     },
     "end date" : {
@@ -334,9 +343,6 @@
     "Import i eksport danych" : {
 
     },
-    "Import JSON zachowuje obecne dane, scala dokładne odpowiedniki i pyta o podejrzane podobieństwa. Można tu również importować EPUB z brewiarz.pl." : {
-
-    },
     "Importowanie brewiarza" : {
 
     },
@@ -368,6 +374,9 @@
 
     },
     "Kapłan, osoba lub modlitwa złożona / priest, person, or complex prayer" : {
+
+    },
+    "Kolejność wariantów" : {
 
     },
     "Koniec 🙏" : {
@@ -404,6 +413,9 @@
 
     },
     "Modlitwy (pojedyncze)" : {
+
+    },
+    "Modlitwy pojedyncze" : {
 
     },
     "Modlitwy złożone" : {
@@ -456,6 +468,9 @@
 
     },
     "Nowa modlitwa" : {
+
+    },
+    "Obejmuje modlitwy, osoby, księży, modlitwy złożone i brewiarz offline, ale bez historii, statystyk i ustawień." : {
 
     },
     "Obliczanie czasu…" : {
@@ -537,9 +552,6 @@
 
     },
     "Praktyka może się nieco różnić w poszczególnych wspólnotach/parafiach – dostosuj do lokalnych zwyczajów. Istota pozostaje ta sama: **stała modlitwa za kapłana**." : {
-
-    },
-    "Preferowany wariant" : {
 
     },
     "Przeciągnij zdjęcie, żeby zmienić pozycję" : {
@@ -650,10 +662,10 @@
     "Statystyki" : {
 
     },
-    "Tekst modlitwy" : {
+    "Święty dnia" : {
 
     },
-    "Tekst podstawowy" : {
+    "Tekst modlitwy" : {
 
     },
     "Testy UI uruchomione" : {
@@ -1166,9 +1178,6 @@
 
     },
     "W toku" : {
-
-    },
-    "Wariant" : {
 
     },
     "weekly" : {

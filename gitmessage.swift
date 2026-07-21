@@ -1,20 +1,16 @@
-codex conversation [unknown] add saint biography prayer and widget
+codex conversation [unknown] add ranked breviary import and selective export
 
-Import the Garść informacji saint biography as dated, paginated breviary content
-and expose it through one native complex-prayer target named Święty dnia without
-creating dated duplicates in the simple-prayer list.
+Select one breviary document per date before parsing, using the first available
+identifier from the user's ordered variant preferences. Add a reorderable
+preference list and compile coverage for per-date fallback selection.
 
-Add a WidgetKit extension backed by one App Group payload. Show today's imported
-saint biography when available and otherwise show current prayer statistics.
+Separate selective data transfer from full backup while keeping one JSON model
+and encoder. Selective export can include one prayer, one person or priest, one
+complex prayer, one breviary office, all saint biographies, or all current data;
+it deliberately excludes sessions, statistics, and preferences. Full backup
+keeps all prayers, targets, sessions, offline days, assets, and preferences.
 
-Keep saint biographies in offline breviary import, conflict detection, cleanup,
-export, and full backup data. Refresh widget data after breviary or session
-changes.
-
-Validate the real 17–23 August EPUB with 7 dates, 28 variants, 20
-biography-bearing variants, no skipped or incomplete offices, and a maximum
-card length of 310 characters. Build the app, widget, unit-test, and UI-test
-targets successfully and verify that the widget is embedded in the app.
-
-Device presentation and signed App Group operation remain unverified because
-CoreSimulator is unavailable in this environment.
+The app, widget, unit-test, and UI-test targets compile successfully. However,
+the Xcode project editor is reported unusable: selecting the project displays
+the raw project.pbxproj instead of project settings. This commit records the
+pre-fix state and must not be described as a working project-file solution.

@@ -93,6 +93,38 @@ struct BrewiarzEPUBImporterTests {
         #expect(day.variantName == "Tekst podstawowy")
     }
 
+    @Test func selectsFirstAvailableVariantForEachDateBeforeParsing() {
+        let documents = [
+            "OEBPS/Text/1708p.xhtml",
+            "OEBPS/Text/1708w1.xhtml",
+            "OEBPS/Text/1708w2.xhtml",
+            "OEBPS/Text/1808p.xhtml",
+            "OEBPS/Text/1808w2.xhtml",
+            "OEBPS/Text/1908w2.xhtml",
+            "OEBPS/Text/kartka_170826.xhtml"
+        ]
+
+        let ownFirst = BrewiarzEPUBImporter.selectedDailyDocuments(
+            from: documents,
+            preferenceOrder: ["w2", "w1", "p"]
+        )
+        let primaryFallback = BrewiarzEPUBImporter.selectedDailyDocuments(
+            from: documents,
+            preferenceOrder: ["w1", "p", "w2"]
+        )
+
+        #expect(ownFirst == [
+            "OEBPS/Text/1708w2.xhtml",
+            "OEBPS/Text/1808w2.xhtml",
+            "OEBPS/Text/1908w2.xhtml"
+        ])
+        #expect(primaryFallback == [
+            "OEBPS/Text/1708w1.xhtml",
+            "OEBPS/Text/1808p.xhtml",
+            "OEBPS/Text/1908w2.xhtml"
+        ])
+    }
+
     @Test func progressEstimatesRemainingDocumentsFromMeasuredAverage() {
         let progress = BrewiarzEPUBImportProgress(
             completedDocuments: 3,

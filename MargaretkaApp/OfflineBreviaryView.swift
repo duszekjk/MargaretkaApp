@@ -2,7 +2,7 @@ import SwiftUI
 
 struct OfflineBreviaryManagerView: View {
     @EnvironmentObject private var store: OfflineBreviaryStore
-    @AppStorage("preferredBreviaryVariant") private var preferredVariant = "p"
+    @State private var variantOrder = BreviaryVariantPreferences.load()
     @State private var rangeStart = Date.now
     @State private var rangeEnd = Date.now
     @State private var importToDelete: UUID?
@@ -10,6 +10,23 @@ struct OfflineBreviaryManagerView: View {
 
     var body: some View {
         List {
+            Section("Kolejność wariantów") {
+                ForEach(variantOrder, id: \.self) { identifier in
+                    Label(
+                        BreviaryVariantPreferences.displayName(for: identifier),
+                        systemImage: "line.3.horizontal"
+                    )
+                }
+                .onMove { source, destination in
+                    variantOrder.move(fromOffsets: source, toOffset: destination)
+                    BreviaryVariantPreferences.save(variantOrder)
+                }
+
+                Text("Dla każdej daty podczas importu zostanie zapisany tylko pierwszy dostępny wariant z tej listy. Przeciągnij warianty w trybie edycji, aby ustawić priorytety.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
             if store.days.isEmpty {
                 ContentUnavailableView(
                     "Brak brewiarza offline",
@@ -17,15 +34,6 @@ struct OfflineBreviaryManagerView: View {
                     description: Text("Zaimportuj eksport EPUB z brewiarz.pl.")
                 )
             } else {
-                Section("Preferowany wariant") {
-                    Picker("Wariant", selection: $preferredVariant) {
-                        Text("Tekst podstawowy").tag("p")
-                        ForEach(additionalVariants, id: \.identifier) { variant in
-                            Text(variant.name).tag(variant.identifier)
-                        }
-                    }
-                }
-
                 ForEach(store.days) { day in
                     Section {
                         if let biography = day.saintBiography {
@@ -107,6 +115,14 @@ struct OfflineBreviaryManagerView: View {
             }
         }
         .navigationTitle("Brewiarz offline")
+        .toolbar { EditButton() }
+        .onAppear {
+            variantOrder = BreviaryVariantPreferences.normalizedOrder(
+                BreviaryVariantPreferences.load(),
+                including: store.days.map(\.variantIdentifier)
+            )
+            BreviaryVariantPreferences.save(variantOrder)
+        }
         .alert("Usunąć cały import?", isPresented: Binding(
             get: { importToDelete != nil },
             set: { if !$0 { importToDelete = nil } }
@@ -124,14 +140,6 @@ struct OfflineBreviaryManagerView: View {
             Button("Usuń", role: .destructive) {
                 store.delete(from: rangeStart, through: rangeEnd)
             }
-        }
-    }
-
-    private var additionalVariants: [(identifier: String, name: String)] {
-        var seen = Set<String>()
-        return store.days.compactMap { day in
-            guard day.variantIdentifier != "p", seen.insert(day.variantIdentifier).inserted else { return nil }
-            return (day.variantIdentifier, day.variantName)
         }
     }
 
