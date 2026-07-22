@@ -494,10 +494,15 @@ nonisolated enum BrewiarzEPUBImporter {
         var intercessionsOnCard = 0
         var inIntercessions = false
         var intercessionResponse: String?
+        var contentGroupID: UUID?
 
         func flush() {
             guard !current.isEmpty else { return }
-            cards.append(OfflineBreviaryCard(title: sectionTitle, lines: current))
+            cards.append(OfflineBreviaryCard(
+                title: sectionTitle,
+                lines: current,
+                contentGroupID: contentGroupID
+            ))
             current = []
             characterCount = 0
             intercessionsOnCard = 0
@@ -514,6 +519,7 @@ nonisolated enum BrewiarzEPUBImporter {
                 awaitingNumberedAntiphonTitle = false
                 inIntercessions = false
                 intercessionResponse = nil
+                contentGroupID = nil
                 lineIndex += 1
                 continue
             }
@@ -526,6 +532,7 @@ nonisolated enum BrewiarzEPUBImporter {
             if numberedAntiphon {
                 flush()
                 sectionTitle = nil
+                contentGroupID = nil
                 awaitingNumberedAntiphonTitle = true
                 nextFlush = true
             }
@@ -542,9 +549,15 @@ nonisolated enum BrewiarzEPUBImporter {
                 } else if awaitingNumberedAntiphonTitle {
                     sectionTitle = line.text
                     awaitingNumberedAntiphonTitle = false
+                    if isSemanticSectionHeading(line.text) {
+                        contentGroupID = UUID()
+                    }
                 } else {
                     flush()
                     sectionTitle = line.text
+                    if isSemanticSectionHeading(line.text) {
+                        contentGroupID = UUID()
+                    }
                     inIntercessions = isIntercessionsHeading(line.text)
                     intercessionResponse = nil
                 }
@@ -593,7 +606,7 @@ nonisolated enum BrewiarzEPUBImporter {
             lineIndex += 1
         }
         flush()
-        return numberedContinuationTitles(in: cards)
+        return annotatedContentGroups(in: cards)
     }
 
     private static func isIntercessionsHeading(_ text: String) -> Bool {
@@ -620,19 +633,38 @@ nonisolated enum BrewiarzEPUBImporter {
         ) != nil
     }
 
-    private static func numberedContinuationTitles(
+    private static func annotatedContentGroups(
         in cards: [OfflineBreviaryCard]
     ) -> [OfflineBreviaryCard] {
-        let totals = Dictionary(grouping: cards.compactMap(\.title), by: { $0 })
-            .mapValues(\.count)
-        var occurrences: [String: Int] = [:]
-        return cards.map { card in
-            guard let title = card.title, totals[title, default: 0] > 1 else { return card }
-            occurrences[title, default: 0] += 1
-            var numbered = card
-            numbered.title = "\(title) (\(occurrences[title, default: 1])/\(totals[title, default: 1]))"
-            return numbered
+        var result = cards
+        var startIndex = 0
+
+        while startIndex < result.count {
+            guard let groupID = result[startIndex].contentGroupID else {
+                startIndex += 1
+                continue
+            }
+
+            var endIndex = startIndex + 1
+            while endIndex < result.count,
+                  result[endIndex].contentGroupID == groupID {
+                endIndex += 1
+            }
+
+            let partCount = endIndex - startIndex
+            let groupTitle = result[startIndex].title
+            for index in startIndex..<endIndex {
+                let partIndex = index - startIndex + 1
+                result[index].partIndex = partIndex
+                result[index].partCount = partCount
+                if partCount > 1, let groupTitle {
+                    result[index].title = "\(groupTitle) (\(partIndex)/\(partCount))"
+                }
+            }
+            startIndex = endIndex
         }
+
+        return result
     }
 
     private static func splitForPagination(

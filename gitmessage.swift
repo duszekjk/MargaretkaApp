@@ -1,9 +1,9 @@
-codex conversation [unknown] add prayer continuation metadata
+codex conversation [unknown] identify imported prayer continuations
 
-Add optional content group, part index, and part count fields to offline
-breviary cards. The fields allow an iPad layout to distinguish continuation
-pages of one prayer from adjacent pages belonging to different prayers.
+Assign a new content group when the EPUB importer reaches a semantic prayer
+heading such as a psalm, canticle, intercessions, or final prayer. Preserve the
+group across subtitles and pagination boundaries, then record part positions.
 
-Keep the fields optional so existing persisted imports remain decodable and
-are never paired without explicit grouping metadata. Full validation follows
-after the importer and iPad presentation changes.
+Number multi-card titles from their logical group instead of globally matching
+title text. Equal titles in separate prayers therefore never imply that their
+cards belong together. Validation follows with importer and iPad layout tests.
