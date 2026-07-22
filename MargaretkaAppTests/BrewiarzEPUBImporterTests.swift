@@ -278,8 +278,8 @@ struct BrewiarzEPUBImporterTests {
             sourceIdentifier: "fixture.epub",
             sourceTitle: "fixture"
         ))
-        let cards = try #require(day.offices.first(where: { $0.key == .jutrznia }))
-            .cards
+        let office = try #require(day.offices.first(where: { $0.key == .jutrznia }))
+        let cards = office.cards
             .filter { $0.title?.folding(
                 options: [.caseInsensitive, .diacriticInsensitive],
                 locale: Locale(identifier: "pl_PL")
@@ -292,6 +292,17 @@ struct BrewiarzEPUBImporterTests {
         #expect(cards.allSatisfy { card in
             !card.lines.contains { $0.text.hasPrefix("-") && $0.role == .heading }
         })
+        let intercessionGroupID = try #require(cards.first?.contentGroupID)
+        #expect(cards.allSatisfy { $0.contentGroupID == intercessionGroupID })
+        #expect(cards.map(\.partIndex) == [1, 2])
+        #expect(cards.allSatisfy { $0.partCount == 2 })
+        let finalPrayer = try #require(office.cards.first { card in
+            card.title?.folding(
+                options: [.caseInsensitive, .diacriticInsensitive],
+                locale: Locale(identifier: "pl_PL")
+            ) == "modlitwa"
+        })
+        #expect(finalPrayer.contentGroupID != intercessionGroupID)
 
         let expectedPairs = [
             (lead: "Pierwsza", continuation: "pierwsze"),
@@ -316,6 +327,110 @@ struct BrewiarzEPUBImporterTests {
                 ))
             })
         }
+    }
+
+    @Test func pairsOnlySequentialPartsOfTheSamePrayerOnIPad() {
+        let prayerID = UUID()
+        let otherPrayerID = UUID()
+        let firstGroupID = UUID()
+        let secondGroupID = UUID()
+        let steps = [
+            PrayerFlowStep(
+                prayerID: prayerID,
+                offlineCard: OfflineBreviaryCard(
+                    lines: [.init(role: .body, text: "1")],
+                    contentGroupID: firstGroupID,
+                    partIndex: 1,
+                    partCount: 3
+                )
+            ),
+            PrayerFlowStep(
+                prayerID: prayerID,
+                offlineCard: OfflineBreviaryCard(
+                    lines: [.init(role: .body, text: "2")],
+                    contentGroupID: firstGroupID,
+                    partIndex: 2,
+                    partCount: 3
+                )
+            ),
+            PrayerFlowStep(
+                prayerID: prayerID,
+                offlineCard: OfflineBreviaryCard(
+                    lines: [.init(role: .body, text: "3")],
+                    contentGroupID: firstGroupID,
+                    partIndex: 3,
+                    partCount: 3
+                )
+            ),
+            PrayerFlowStep(
+                prayerID: prayerID,
+                offlineCard: OfflineBreviaryCard(
+                    lines: [.init(role: .body, text: "A")],
+                    contentGroupID: secondGroupID,
+                    partIndex: 1,
+                    partCount: 2
+                )
+            ),
+            PrayerFlowStep(
+                prayerID: otherPrayerID,
+                offlineCard: OfflineBreviaryCard(
+                    lines: [.init(role: .body, text: "B")],
+                    contentGroupID: secondGroupID,
+                    partIndex: 2,
+                    partCount: 2
+                )
+            )
+        ]
+
+        #expect(PrayerFlowPagePairing.visibleStepIndices(
+            activeStepIndex: 0,
+            steps: steps,
+            enabled: true
+        ) == [0, 1])
+        #expect(PrayerFlowPagePairing.visibleStepIndices(
+            activeStepIndex: 1,
+            steps: steps,
+            enabled: true
+        ) == [0, 1])
+        #expect(PrayerFlowPagePairing.visibleStepIndices(
+            activeStepIndex: 2,
+            steps: steps,
+            enabled: true
+        ) == [2])
+        #expect(PrayerFlowPagePairing.visibleStepIndices(
+            activeStepIndex: 3,
+            steps: steps,
+            enabled: true
+        ) == [3])
+        #expect(PrayerFlowPagePairing.visibleStepIndices(
+            activeStepIndex: 0,
+            steps: steps,
+            enabled: false
+        ) == [0])
+    }
+
+    @Test func decodesCardsStoredBeforeContinuationMetadataWasAdded() throws {
+        let json = """
+        {
+          "id": "00000000-0000-0000-0000-000000000001",
+          "title": "Psalm 1",
+          "lines": [{
+            "id": "00000000-0000-0000-0000-000000000002",
+            "role": "body",
+            "text": "Treść",
+            "emphasized": false,
+            "italic": false
+          }]
+        }
+        """
+
+        let card = try JSONDecoder().decode(
+            OfflineBreviaryCard.self,
+            from: try #require(json.data(using: .utf8))
+        )
+        #expect(card.contentGroupID == nil)
+        #expect(card.partIndex == nil)
+        #expect(card.partCount == nil)
     }
 
     @Test func importsSaintBiographyAsDatedPaginatedContent() throws {

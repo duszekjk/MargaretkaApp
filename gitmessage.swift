@@ -1,9 +1,9 @@
-codex conversation [unknown] enable iPad application targets
+codex conversation [unknown] test iPad prayer page grouping
 
-Add iPad to the supported device family for both Debug and Release builds of
-the main application and its widget extension. Preserve the existing iPhone
-support and the already configured iPad orientation set.
+Extend the EPUB importer regression fixture to verify shared group metadata,
+sequential part numbers, and separation from the following final prayer.
 
-No build number change is made yet. The completed iPad feature will be built
-and tested before deciding whether it meets the requested significant-change
-threshold for a validated build-number increment.
+Test that iPad pairing requires adjacent sequential parts with both the same
+content group and prayer identifier. Also verify that cards persisted before
+the optional continuation fields were added remain decodable. Build validation
+is still pending.
