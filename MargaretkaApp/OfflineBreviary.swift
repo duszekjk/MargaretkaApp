@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import UIKit
 internal import Combine
 
 nonisolated struct BreviaryCivilDate: Codable, Hashable, Comparable, Identifiable, Sendable {
@@ -448,31 +449,86 @@ final class OfflineBreviaryStore: ObservableObject {
         sortAndSave()
     }
 
-    func generateImageIfNeeded(for officeID: UUID) async {
-        guard !generatingOfficeIDs.contains(officeID),
-              let dayIndex = days.firstIndex(where: { $0.offices.contains { $0.id == officeID } }),
-              let officeIndex = days[dayIndex].offices.firstIndex(where: { $0.id == officeID }),
-              days[dayIndex].offices[officeIndex].imageFilename == nil else { return }
+    func generateImageIfNeeded(for officeID: UUID) async -> Bool {
+        guard let dayIndex = days.firstIndex(where: { $0.offices.contains { $0.id == officeID } }),
+              let officeIndex = days[dayIndex].offices.firstIndex(where: { $0.id == officeID }) else {
+            return false
+        }
+        if days[dayIndex].offices[officeIndex].imageFilename != nil { return true }
+        guard !generatingOfficeIDs.contains(officeID) else { return false }
         generatingOfficeIDs.insert(officeID)
         let office = days[dayIndex].offices[officeIndex]
-        let date = days[dayIndex].date
         defer { generatingOfficeIDs.remove(officeID) }
 
-        guard let data = await BreviaryImageGenerator.shared.generateImageData(for: office) else { return }
+        guard let data = await BreviaryImageGenerator.shared.generateImageData(for: office) else {
+            return false
+        }
+        return cacheImageData(data, for: officeID)
+    }
+
+    @discardableResult
+    func saveImagePlaygroundResult(at sourceURL: URL, for officeID: UUID) -> Bool {
+        do {
+            let sourceData = try Data(contentsOf: sourceURL)
+            guard let data = Self.normalizedBackgroundJPEGData(from: sourceData) else {
+                return false
+            }
+            return cacheImageData(data, for: officeID)
+        } catch {
+            print("Failed to read Image Playground result: \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    static func normalizedBackgroundJPEGData(
+        from sourceData: Data,
+        pixelSize: CGFloat = 1024
+    ) -> Data? {
+        guard pixelSize > 0, let image = UIImage(data: sourceData) else { return nil }
+        let targetSize = CGSize(width: pixelSize, height: pixelSize)
+        let widthScale = targetSize.width / image.size.width
+        let heightScale = targetSize.height / image.size.height
+        let scale = max(widthScale, heightScale)
+        let drawSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        let drawOrigin = CGPoint(
+            x: (targetSize.width - drawSize.width) / 2,
+            y: (targetSize.height - drawSize.height) / 2
+        )
+        let format = UIGraphicsImageRendererFormat()
+        format.opaque = true
+        format.scale = 1
+        let normalized = UIGraphicsImageRenderer(size: targetSize, format: format).image { _ in
+            image.draw(in: CGRect(origin: drawOrigin, size: drawSize))
+        }
+        return normalized.jpegData(compressionQuality: 0.88)
+    }
+
+    private func cacheImageData(_ data: Data, for officeID: UUID) -> Bool {
+        guard let dayIndex = days.firstIndex(where: { $0.offices.contains { $0.id == officeID } }),
+              let officeIndex = days[dayIndex].offices.firstIndex(where: { $0.id == officeID }) else {
+            return false
+        }
+        let office = days[dayIndex].offices[officeIndex]
+        let date = days[dayIndex].date
         let filename = "\(date.id)-\(office.key.rawValue)-\(office.contentFingerprint).jpg"
         let destination = Self.imageDirectory.appendingPathComponent(filename)
         do {
             try data.write(to: destination, options: .atomic)
-            guard days.indices.contains(dayIndex),
-                  days[dayIndex].offices.indices.contains(officeIndex),
-                  days[dayIndex].offices[officeIndex].id == officeID else {
+            guard let currentDayIndex = days.firstIndex(where: {
+                $0.offices.contains { $0.id == officeID }
+            }),
+            let currentOfficeIndex = days[currentDayIndex].offices.firstIndex(where: {
+                $0.id == officeID
+            }) else {
                 try? FileManager.default.removeItem(at: destination)
-                return
+                return false
             }
-            days[dayIndex].offices[officeIndex].imageFilename = filename
+            days[currentDayIndex].offices[currentOfficeIndex].imageFilename = filename
             sortAndSave()
+            return true
         } catch {
             print("Failed to cache breviary image: \(error.localizedDescription)")
+            return false
         }
     }
 

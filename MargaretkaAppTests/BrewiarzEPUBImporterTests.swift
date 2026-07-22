@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import UIKit
 @testable import MargaretkaApp
 
 struct BrewiarzEPUBImporterTests {
@@ -905,5 +906,19 @@ struct BrewiarzEPUBImporterTests {
         #expect(migrated.contains { $0.id == plainMass.id })
         #expect(breviaryMasses.count == 1)
         #expect(breviaryMasses.first?.id == UUID(uuidString: "927a98de-7ae4-4f93-b173-b040318de111"))
+    }
+
+    @Test @MainActor func normalizesImagePlaygroundResultForPrayerBackground() throws {
+        let source = UIGraphicsImageRenderer(size: CGSize(width: 300, height: 500)).image { context in
+            UIColor.systemBlue.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 300, height: 500))
+        }
+        let sourceData = try #require(source.pngData())
+        let normalizedData = try #require(
+            OfflineBreviaryStore.normalizedBackgroundJPEGData(from: sourceData)
+        )
+        let normalized = try #require(UIImage(data: normalizedData))
+
+        #expect(normalized.size == CGSize(width: 1024, height: 1024))
     }
 }

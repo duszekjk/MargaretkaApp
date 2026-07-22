@@ -8,17 +8,13 @@ actor BreviaryImageGenerator {
     static let shared = BreviaryImageGenerator()
 
     private var attemptedFingerprints = Set<String>()
+    private var preparedPrompts: [String: String] = [:]
 
     func generateImageData(for office: OfflineBreviaryOffice) async -> Data? {
         guard attemptedFingerprints.insert(office.contentFingerprint).inserted else { return nil }
 
         do {
-            var prompt = office.imagePrompt ?? defaultPrompt(for: office.key)
-            if let source = office.imageSourceText, !source.isEmpty,
-               let translation = try? await translateInstalledPolishToEnglish(source) {
-                prompt += "\nOffline Polish-to-English translation of the prayer themes:\n\(translation)"
-            }
-            prompt = await refinePromptWhenAvailable(prompt)
+            let prompt = await preparedPrompt(for: office)
 
             let creator = try await ImageCreator()
             let style = creator.availableStyles.contains(.illustration)
@@ -35,6 +31,18 @@ actor BreviaryImageGenerator {
             print("Breviary image generation unavailable: \(error.localizedDescription)")
         }
         return nil
+    }
+
+    func preparedPrompt(for office: OfflineBreviaryOffice) async -> String {
+        if let cached = preparedPrompts[office.contentFingerprint] { return cached }
+        var prompt = office.imagePrompt ?? defaultPrompt(for: office.key)
+        if let source = office.imageSourceText, !source.isEmpty,
+           let translation = try? await translateInstalledPolishToEnglish(source) {
+            prompt += "\nOffline Polish-to-English translation of the prayer themes:\n\(translation)"
+        }
+        prompt = await refinePromptWhenAvailable(prompt)
+        preparedPrompts[office.contentFingerprint] = prompt
+        return prompt
     }
 
     private func translateInstalledPolishToEnglish(_ text: String) async throws -> String {

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ImagePlayground
 
 struct PrayerFlowStep: Hashable {
     let prayerID: UUID
@@ -167,6 +168,7 @@ struct PrayerFlowView: View {
     @Binding var showJakSie: Bool
 
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.supportsImagePlayground) private var supportsImagePlayground
     @Namespace private var namespace
     @Namespace private var brewiarzNamespace
     @State private var didLogAppear = false
@@ -175,6 +177,10 @@ struct PrayerFlowView: View {
     @GestureState private var prayerSwipeTranslation: CGSize = .zero
     @State private var isIPadPortrait = false
     @State private var hasMeasuredIPadOrientation = false
+    @State private var isImagePlaygroundPresented = false
+    @State private var imagePlaygroundOfficeID: UUID?
+    @State private var imagePlaygroundConcepts: [ImagePlaygroundConcept] = []
+    @State private var promptedImagePlaygroundOfficeIDs = Set<UUID>()
     var priestsAndPrayers: [Priest] {
         scheduleData.items.filter { $0.category == selectedCategory }
     }
@@ -723,6 +729,26 @@ struct PrayerFlowView: View {
             .padding(.vertical, 35)
         }
         .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+        .imagePlaygroundSheet(
+            isPresented: $isImagePlaygroundPresented,
+            concepts: imagePlaygroundConcepts,
+            onCompletion: { resultURL in
+                guard let officeID = imagePlaygroundOfficeID else { return }
+                _ = offlineBreviaryStore.saveImagePlaygroundResult(
+                    at: resultURL,
+                    for: officeID
+                )
+                imagePlaygroundOfficeID = nil
+            },
+            onCancellation: {
+                imagePlaygroundOfficeID = nil
+            }
+        )
+        .imagePlaygroundGenerationStyle(
+            .illustration,
+            in: [.illustration, .animation, .sketch]
+        )
+        .imagePlaygroundPersonalizationPolicy(.disabled)
         .onGeometryChange(for: Bool.self) { geometry in
             geometry.size.height > geometry.size.width
         } action: { isPortrait in
@@ -737,8 +763,20 @@ struct PrayerFlowView: View {
             }
         }
         .task(id: currentOfflineOffice?.id) {
-            guard let officeID = currentOfflineOffice?.id else { return }
-            await offlineBreviaryStore.generateImageIfNeeded(for: officeID)
+            guard let office = currentOfflineOffice else { return }
+            let hasImage = await offlineBreviaryStore.generateImageIfNeeded(for: office.id)
+            guard !hasImage,
+                  supportsImagePlayground,
+                  currentOfflineOffice?.id == office.id,
+                  promptedImagePlaygroundOfficeIDs.insert(office.id).inserted else { return }
+            let prompt = await BreviaryImageGenerator.shared.preparedPrompt(for: office)
+            guard currentOfflineOffice?.id == office.id else { return }
+            imagePlaygroundOfficeID = office.id
+            imagePlaygroundConcepts = [
+                .text(prompt),
+                .text("Catholic sacred art, contemplative, no visible text or lettering")
+            ]
+            isImagePlaygroundPresented = true
         }
         .onAppear()
         {

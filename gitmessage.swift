@@ -1,13 +1,13 @@
-codex conversation [unknown] restore the missing visible Mass prayer
+codex conversation [unknown] offer Image Playground for missing backgrounds
 
-Merge typed breviary templates by their content key instead of display name and
-ensure templates immediately before creating targets during EPUB import. This
-restores the missing Msza template and lets the already-imported seven Mass
-offices become a visible complex-prayer target without another EPUB import.
+Keep automatic background creation where ImageCreator still works and present
+the system Image Playground sheet when an offline prayer still has no image.
+Prefill it with the translated and refined prayer prompt, disable person
+personalization, and avoid reopening it repeatedly for the same office during a
+single app session.
 
-Add regression coverage for migration when a plain prayer has the same name.
-
-Validated on the physical iPad: all 21 importer tests passed, the device data
-contains one Msza template, one linked complex-prayer target and Mass offices
-for all seven imported days. The normal app target built without errors, was
-installed, and launched successfully while preserving the imported data.
+Save an accepted result immediately and add initial regression coverage. The
+complete importer suite passed all 22 tests and the app built on the physical
+iPhone 15 Pro running iOS 27, but review then exposed that the forced 1024 by
+1024 output is the wrong aspect ratio for an iPhone wallpaper. Do not treat this
+revision as ready for installation until that output defect is corrected.
