@@ -749,6 +749,7 @@ struct PrayerFlowView: View {
             in: [.illustration, .animation, .sketch]
         )
         .imagePlaygroundPersonalizationPolicy(.disabled)
+        .breviaryWallpaperImagePlaygroundOptions()
         .onGeometryChange(for: Bool.self) { geometry in
             geometry.size.height > geometry.size.width
         } action: { isPortrait in
@@ -774,7 +775,7 @@ struct PrayerFlowView: View {
             imagePlaygroundOfficeID = office.id
             imagePlaygroundConcepts = [
                 .text(prompt),
-                .text("Catholic sacred art, contemplative, no visible text or lettering")
+                .text("Vertical portrait iPhone wallpaper composition, Catholic sacred art, contemplative, no visible text or lettering")
             ]
             isImagePlaygroundPresented = true
         }
@@ -1148,6 +1149,26 @@ struct PrayerFlowView: View {
             return "\(hours)h \(minutes)m"
         }
         return "\(minutes)m"
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func breviaryWallpaperImagePlaygroundOptions() -> some View {
+#if compiler(>=6.3)
+        if #available(iOS 27.0, *) {
+            var options = ImagePlaygroundOptions()
+            let nativeSize = OfflineBreviaryStore.portraitWallpaperPixelSize(
+                for: UIScreen.main.nativeBounds.size
+            )
+            options.sizeSpecification = .closest(to: nativeSize)
+            imagePlaygroundOptions(options)
+        } else {
+            self
+        }
+#else
+        self
+#endif
     }
 }
 

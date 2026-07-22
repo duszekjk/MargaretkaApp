@@ -470,7 +470,7 @@ final class OfflineBreviaryStore: ObservableObject {
     func saveImagePlaygroundResult(at sourceURL: URL, for officeID: UUID) -> Bool {
         do {
             let sourceData = try Data(contentsOf: sourceURL)
-            guard let data = Self.normalizedBackgroundJPEGData(from: sourceData) else {
+            guard let data = Self.backgroundJPEGDataPreservingDimensions(from: sourceData) else {
                 return false
             }
             return cacheImageData(data, for: officeID)
@@ -480,27 +480,16 @@ final class OfflineBreviaryStore: ObservableObject {
         }
     }
 
-    static func normalizedBackgroundJPEGData(
-        from sourceData: Data,
-        pixelSize: CGFloat = 1024
-    ) -> Data? {
-        guard pixelSize > 0, let image = UIImage(data: sourceData) else { return nil }
-        let targetSize = CGSize(width: pixelSize, height: pixelSize)
-        let widthScale = targetSize.width / image.size.width
-        let heightScale = targetSize.height / image.size.height
-        let scale = max(widthScale, heightScale)
-        let drawSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
-        let drawOrigin = CGPoint(
-            x: (targetSize.width - drawSize.width) / 2,
-            y: (targetSize.height - drawSize.height) / 2
+    static func backgroundJPEGDataPreservingDimensions(from sourceData: Data) -> Data? {
+        guard let image = UIImage(data: sourceData) else { return nil }
+        return image.jpegData(compressionQuality: 0.88)
+    }
+
+    static func portraitWallpaperPixelSize(for nativeScreenSize: CGSize) -> CGSize {
+        CGSize(
+            width: min(nativeScreenSize.width, nativeScreenSize.height),
+            height: max(nativeScreenSize.width, nativeScreenSize.height)
         )
-        let format = UIGraphicsImageRendererFormat()
-        format.opaque = true
-        format.scale = 1
-        let normalized = UIGraphicsImageRenderer(size: targetSize, format: format).image { _ in
-            image.draw(in: CGRect(origin: drawOrigin, size: drawSize))
-        }
-        return normalized.jpegData(compressionQuality: 0.88)
     }
 
     private func cacheImageData(_ data: Data, for officeID: UUID) -> Bool {
