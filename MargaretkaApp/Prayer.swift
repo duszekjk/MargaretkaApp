@@ -8,6 +8,7 @@
 import SwiftUI
 
 enum BrewiarzPrayerKey: String, Codable, CaseIterable, Identifiable {
+    case msza
     case wezwanie
     case godzinaCzytan
     case jutrznia
@@ -21,6 +22,8 @@ enum BrewiarzPrayerKey: String, Codable, CaseIterable, Identifiable {
 
     nonisolated var displayName: String {
         switch self {
+        case .msza:
+            return "Msza"
         case .wezwanie:
             return "Wezwanie"
         case .godzinaCzytan:

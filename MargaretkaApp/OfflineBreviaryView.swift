@@ -151,6 +151,7 @@ struct OfflineBreviaryManagerView: View {
 
     private func symbol(for key: BrewiarzPrayerKey) -> String {
         switch key {
+        case .msza: return "cross.case"
         case .jutrznia: return "sunrise"
         case .nieszpory: return "sunset"
         case .kompleta: return "moon.stars"

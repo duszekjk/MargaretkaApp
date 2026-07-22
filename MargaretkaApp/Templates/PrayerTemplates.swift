@@ -30,6 +30,7 @@ private let templatePrayerIds: [String: UUID] = [
     "Modlitwa św. Piusa X za kapłanów": UUID(uuidString: "6eb9e98e-3036-4019-8977-620738eba535")!,
     "Modlitwa św. Jana Pawła II za kapłanów": UUID(uuidString: "a9f0fcee-1734-4945-ba1b-6ee5b0abb57a")!,
     "Modlitwa św. Urszuli Ledóchowskiej za kapłanów": UUID(uuidString: "2e38befb-046b-49d6-afcd-621bee8cf5db")!,
+    "Msza (Brewiarz)": UUID(uuidString: "927a98de-7ae4-4f93-b173-b040318de111")!,
     "Wezwanie (Brewiarz)": UUID(uuidString: "5bb86df2-6625-4e5e-9afb-ad66a662df9c")!,
     "Godzina Czytań (Brewiarz)": UUID(uuidString: "92ca4c07-c16c-4053-825f-e67939bc7f98")!,
     "Jutrznia (Brewiarz)": UUID(uuidString: "c828488b-85ad-4b80-ae01-97c105ad802a")!,
@@ -175,6 +176,8 @@ var prayersTemplate : [String:Prayer] = [
         Żyj w nich, o Panie, przeistaczaj ich w siebie, uczyń ich mocą łaski swojej narzędziami swego miłosierdzia. Działaj w nich i przez nich i spraw, by przyoblekłszy się zupełnie w Ciebie przez wierne naśladowanie Twych godnych uwielbienia cnót, wykonywali mocą Twego imienia i Twego ducha uczynki, któreś sam zdziałał dla zbawienia świata.
         Boski Odkupicielu dusz, spojrzyj, jak wielu jest jeszcze pogrążonych w ciemnościach błędu. Policz owieczki zbłąkane, krążące nad przepaścią, wejrzyj na tłumy ubogich, głodnych, nieświadomych i słabych, jęczących w opuszczeniu. Wracaj do nas, o Jezu, przez Twych kapłanów. Ożyj w nich rzeczywiście, działaj przez nich i przejdź znowu przez świat ucząc, przebaczając, pocieszając, poświęcając się i nawiązując na nowo święte więzy miłości łączące Serce Boże z sercem człowieczym. Amen
         """, symbol: "hands.and.sparkles", audioFilename: nil, audioSource: nil, timestampedLines: nil),
+    "Msza (Brewiarz)":
+        Prayer(id: templatePrayerIds["Msza (Brewiarz)"]!, name: "Msza", text: "Teksty Mszy z brewiarz.pl", symbol: "cross.case", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .brewiarz(.msza)),
     "Wezwanie (Brewiarz)":
         Prayer(id: templatePrayerIds["Wezwanie (Brewiarz)"]!, name: "Wezwanie", text: "Modlitwa w brewiarz.pl", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .brewiarz(.wezwanie)),
     "Godzina Czytań (Brewiarz)":

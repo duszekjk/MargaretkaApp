@@ -34,7 +34,7 @@ actor BrewiarzURLResolver {
 
     static let shared = BrewiarzURLResolver()
 
-    private let cacheKey = "brewiarz_daily_links_v2"
+    private let cacheKey = "brewiarz_daily_links_v3"
     private var cachedLinks: BrewiarzDailyLinks?
 
     func resolveURL(for key: BrewiarzPrayerKey, date: Date = .now) async -> URL? {
@@ -312,6 +312,8 @@ actor BrewiarzURLResolver {
     private func mapKey(for url: URL, anchorText: String) -> BrewiarzPrayerKey? {
         let filename = url.lastPathComponent.lowercased()
         switch filename {
+        case "czyt.php3", "czyt2.php3":
+            return .msza
         case "wezwanie.php3":
             return .wezwanie
         case "godzczyt.php3":
@@ -335,6 +337,9 @@ actor BrewiarzURLResolver {
         }
 
         let normalized = normalize(anchorText)
+        if normalized.contains("teksty mszy") || normalized == "msza" {
+            return .msza
+        }
         if normalized.contains("wezwanie") {
             return .wezwanie
         }

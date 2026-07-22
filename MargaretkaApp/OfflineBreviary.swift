@@ -331,6 +331,7 @@ enum BreviaryPrayerTargetFactory {
 
     private static func targetID(for key: BrewiarzPrayerKey) -> UUID {
         let ids: [BrewiarzPrayerKey: UUID] = [
+            .msza: UUID(uuidString: "7c2a9e34-50da-4b92-9000-000000000010")!,
             .wezwanie: UUID(uuidString: "7c2a9e34-50da-4b92-9000-000000000001")!,
             .godzinaCzytan: UUID(uuidString: "7c2a9e34-50da-4b92-9000-000000000002")!,
             .jutrznia: UUID(uuidString: "7c2a9e34-50da-4b92-9000-000000000003")!,

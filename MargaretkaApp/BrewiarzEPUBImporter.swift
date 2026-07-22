@@ -50,6 +50,7 @@ struct BrewiarzEPUBImportProgress: Equatable, Sendable {
 
 nonisolated enum BrewiarzEPUBImporter {
     private static let officeAnchors: [(anchor: String, key: BrewiarzPrayerKey)] = [
+        ("czyt", .msza),
         ("wezw", .wezwanie),
         ("gc", .godzinaCzytan),
         ("jt", .jutrznia),
@@ -170,7 +171,10 @@ nonisolated enum BrewiarzEPUBImporter {
                 anchorNamespace: anchorNamespace
             ) else { continue }
             let parsedLines = XHTMLPrayerLineParser.parse(section)
-            let meaningful = discardNavigationAndMetadata(parsedLines, officeTitle: definition.key.displayName)
+            let sourceOfficeTitle = definition.key == .msza
+                ? "Teksty Mszy św."
+                : definition.key.displayName
+            let meaningful = discardNavigationAndMetadata(parsedLines, officeTitle: sourceOfficeTitle)
             guard !meaningful.isEmpty else { continue }
             let cards = paginate(meaningful)
             offices.append(
@@ -394,28 +398,31 @@ nonisolated enum BrewiarzEPUBImporter {
         officeTitle: String
     ) -> [OfflineBreviaryLine] {
         let navigationPhrases = [
-            "kartka z kalendarza", "inne oficja", "wykaz obchodów", "teksty mszy",
+            "kartka z kalendarza", "inne oficja", "wykaz obchodów",
             "wczoraj", "dzisiaj", "copyright by", "opracowanie i edycja", "Na końcu tej pieśni nie mówi się Chwała Ojcu."
         ]
-        let normalizedOfficeTitle = officeTitle.lowercased()
+        let normalizedOfficeTitle = normalizedForComparison(officeTitle)
         let otherOfficeTitles = Set(
             BrewiarzPrayerKey.allCases
-                .map { $0.displayName.lowercased() }
+                .map { normalizedForComparison($0.displayName) }
                 .filter { $0 != normalizedOfficeTitle }
         )
-        var didFindOfficeTitle = !lines.contains { $0.text.lowercased() == normalizedOfficeTitle }
+        var didFindOfficeTitle = !lines.contains {
+            normalizedForComparison($0.text) == normalizedOfficeTitle
+        }
         var discardingCanonicalPrayer = false
         var discardingPsalmComment = false
         var result: [OfflineBreviaryLine] = []
         for var line in lines {
             let lower = line.text.lowercased()
+            let normalizedLine = normalizedForComparison(line.text)
             if navigationPhrases.contains(where: lower.contains) { continue }
             if line.role == .rubric
                 || lower.hasPrefix("excerpt from")
                 || lower == "brewiarz.pl" {
                 continue
             }
-            if otherOfficeTitles.contains(lower) { continue }
+            if otherOfficeTitles.contains(normalizedLine) { continue }
             if lower.hasPrefix("kolor szat:")
                 || lower.range(of: #"\d{1,2}\s+\p{L}+\s+\d{4}"#, options: .regularExpression) != nil {
                 continue
@@ -446,10 +453,14 @@ nonisolated enum BrewiarzEPUBImporter {
                 }
             }
             if !didFindOfficeTitle {
-                guard lower == normalizedOfficeTitle else { continue }
+                guard normalizedLine == normalizedOfficeTitle else { continue }
                 didFindOfficeTitle = true
                 line.role = .heading
                 result.append(line)
+                continue
+            }
+            if normalizedLine == normalizedOfficeTitle,
+               result.last.map({ normalizedForComparison($0.text) }) == normalizedLine {
                 continue
             }
             if lower == "ojcze nasz..." || lower == "ojcze nasz…" || lower.hasPrefix("ojcze nasz,") {
@@ -475,7 +486,7 @@ nonisolated enum BrewiarzEPUBImporter {
 
     private static func isSemanticSectionHeading(_ text: String) -> Bool {
         text.range(
-            of: #"(?i)^((pierwsze|drugie|trzecie|[123]\.?|i{1,3}\.?)\s+czytanie|psalm|pieśń|kantyk|hymn|czytanie|responsorium|prośby|modlitwa|te deum)(\s|$)"#,
+            of: #"(?i)^((pierwsze|drugie|trzecie|[123]\.?|i{1,3}\.?)\s+czytanie|antyfona|wprowadzenie|akt pokuty|kolekta|psalm|pieśń|kantyk|hymn|czytanie|aklamacja|ewangelia|responsorium|prośby|modlitwa|prefacja|przed błogosławieństwem|propozycja śpiewów|te deum)(\s|$)"#,
             options: [.regularExpression, .diacriticInsensitive]
         ) != nil
     }
@@ -866,6 +877,7 @@ nonisolated enum BrewiarzEPUBImporter {
     ) -> String {
         let englishOffice: String
         switch office {
+        case .msza: englishOffice = "Mass"
         case .wezwanie: englishOffice = "Invitatory"
         case .godzinaCzytan: englishOffice = "Office of Readings"
         case .jutrznia: englishOffice = "Morning Prayer"
@@ -1058,7 +1070,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
 
     private static func isSemanticPrayerHeading(_ text: String) -> Bool {
         text.range(
-            of: #"(?i)^((pierwsze|drugie|trzecie|[123]\.?|i{1,3}\.?)\s+czytanie|psalm|pieśń|kantyk|hymn|czytanie|responsorium|prośby|modlitwa|te deum)(\s|$)"#,
+            of: #"(?i)^((pierwsze|drugie|trzecie|[123]\.?|i{1,3}\.?)\s+czytanie|antyfona|wprowadzenie|akt pokuty|kolekta|psalm|pieśń|kantyk|hymn|czytanie|aklamacja|ewangelia|responsorium|prośby|modlitwa|prefacja|przed błogosławieństwem|propozycja śpiewów|te deum)(\s|$)"#,
             options: [.regularExpression, .diacriticInsensitive]
         ) != nil
     }

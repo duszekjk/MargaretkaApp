@@ -1162,6 +1162,7 @@ private struct ExportSelectionView: View {
 
     private func symbol(for key: BrewiarzPrayerKey) -> String {
         switch key {
+        case .msza: return "cross.case"
         case .wezwanie: return "bell"
         case .godzinaCzytan: return "book.pages"
         case .jutrznia: return "sunrise"

@@ -764,6 +764,61 @@ struct BrewiarzEPUBImporterTests {
         ) == [2, 3])
     }
 
+    @Test func importsMassAsASeparateComplexPrayerFromRealEPUBAnchors() throws {
+        let xhtml = """
+        <html xmlns="http://www.w3.org/1999/xhtml"><body>
+        <a id="d2007p_czyt"></a>
+        <div>Poniedziałek, 20 lipca 2026</div>
+        <div>IV tydzień psałterza</div>
+        <div class="spis3" style="display:none">Teksty Mszy św.</div>
+        <div style="text-align:center"><b>Teksty Mszy św.</b></div>
+        <div><a href="#d2007p_wezw">WEZWANIE</a></div>
+        <div><span style="color:red"><b>ANTYFONA NA WEJŚCIE</b></span></div>
+        <div>Oto mi Bóg dopomaga.</div>
+        <div><span style="color:red"><b>PIERWSZE CZYTANIE</b></span></div>
+        <div>Czytanie z Księgi proroka Micheasza.</div>
+        <div><span style="color:red"><b>PSALM RESPONSORYJNY</b></span></div>
+        <div>Temu, kto prawy, ukażę zbawienie.</div>
+        <div><span style="color:red"><b>EWANGELIA</b></span></div>
+        <div>Słowa Ewangelii według Świętego Mateusza.</div>
+        <div><span style="color:red"><b>MODLITWA PO KOMUNII</b></span></div>
+        <div>Boże nasz Ojcze, przybądź z pomocą swojemu ludowi.</div>
+        <a id="d2007p_wezw"></a>
+        <div><b>Wezwanie</b></div>
+        <div>Otwórz, Panie, wargi moje.</div>
+        <a id="d2007p_gc"></a>
+        </body></html>
+        """
+
+        let day = try #require(BrewiarzEPUBImporter.parseDailyDocument(
+            xhtml,
+            entryName: "OEBPS/Text/2007p.xhtml",
+            importID: UUID(),
+            sourceIdentifier: "fixture.epub",
+            sourceTitle: "fixture"
+        ))
+        let mass = try #require(day.offices.first(where: { $0.key == .msza }))
+        let massLines = mass.cards.flatMap(\.lines)
+
+        #expect(mass.title == "Msza")
+        #expect(massLines.count(where: { $0.text == "Teksty Mszy św." }) == 1)
+        #expect(massLines.contains { $0.text == "Oto mi Bóg dopomaga." })
+        #expect(massLines.contains { $0.text == "Słowa Ewangelii według Świętego Mateusza." })
+        #expect(!massLines.contains { $0.text == "Otwórz, Panie, wargi moje." })
+
+        let sectionGroupIDs = [
+            "ANTYFONA NA WEJŚCIE",
+            "PIERWSZE CZYTANIE",
+            "PSALM RESPONSORYJNY",
+            "EWANGELIA",
+            "MODLITWA PO KOMUNII"
+        ].compactMap { title in
+            mass.cards.first(where: { $0.title?.hasPrefix(title) == true })?.contentGroupID
+        }
+        #expect(sectionGroupIDs.count == 5)
+        #expect(Set(sectionGroupIDs).count == 5)
+    }
+
     @Test @MainActor func createsEveryImportedOfficeAsAComplexPrayerWithoutReplacingExistingJutrznia() throws {
         let prayers = BrewiarzPrayerKey.allCases.map { key in
             Prayer(
@@ -822,5 +877,6 @@ struct BrewiarzEPUBImporterTests {
         #expect(!missing.contains { $0.displayName == "Jutrznia" })
         #expect(Set(missing.map(\.displayName)).contains("Kompleta"))
         #expect(Set(missing.map(\.displayName)).contains("Nieszpory"))
+        #expect(Set(missing.map(\.displayName)).contains("Msza"))
     }
 }
