@@ -205,9 +205,12 @@ struct PrayerFlowView: View {
     }
 
     var currentPrayerCardHeight: CGFloat {
-        isComplexPrayerCard
-            ? min(UIScreen.main.bounds.height * 0.72, 680)
-            : 440
+        guard isComplexPrayerCard else { return 440 }
+        let screenHeight = UIScreen.main.bounds.height
+        if isIPad {
+            return max(520, min(screenHeight - 250, 920))
+        }
+        return min(screenHeight * 0.72, 680)
     }
 
     var currentPrayerCardFontSize: CGFloat {
@@ -386,16 +389,7 @@ struct PrayerFlowView: View {
             Text(startPageText)
         } else if let card = currentOfflineCard {
             let cards = visibleOfflineCards.isEmpty ? [card] : visibleOfflineCards
-            HStack(spacing: 0) {
-                ForEach(Array(cards.enumerated()), id: \.element.id) { index, visibleCard in
-                    BreviaryPrayerCardText(card: visibleCard)
-                        .frame(maxWidth: .infinity)
-                    if index < cards.count - 1 {
-                        Divider()
-                            .padding(.vertical)
-                    }
-                }
-            }
+            BreviaryPrayerCardText(cards: cards)
         } else if activeIndex <= flattenedPrayerSymbols.count,
                   let prayer = allPrayers[flattenedPrayerIds[activeIndex - 1]] {
             Text(prayer.text + "\n\n" + prayer.name)
@@ -503,7 +497,12 @@ struct PrayerFlowView: View {
                             .padding(3)
                             .glassEffect()
 //                    }
-                    Spacer()
+                    if isIPad {
+                        Spacer()
+                            .frame(height: 12)
+                    } else {
+                        Spacer()
+                    }
                 }
                 HStack(spacing: 14) {
                     
@@ -1104,11 +1103,19 @@ private struct AnimatedPrayerFont: AnimatableModifier {
 }
 
 private struct BreviaryPrayerCardText: View {
-    let card: OfflineBreviaryCard
+    let lines: [OfflineBreviaryLine]
+
+    init(card: OfflineBreviaryCard) {
+        lines = card.lines
+    }
+
+    init(cards: [OfflineBreviaryCard]) {
+        lines = cards.flatMap(\.lines)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            ForEach(card.lines) { line in
+            ForEach(lines) { line in
                 if line.role == .choirLeft || line.role == .choirRight {
                     choirLine(line)
                 } else {
