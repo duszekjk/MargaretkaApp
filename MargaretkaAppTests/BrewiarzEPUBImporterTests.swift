@@ -936,4 +936,40 @@ struct BrewiarzEPUBImporterTests {
         #expect(portrait == CGSize(width: 1179, height: 2556))
         #expect(landscape == portrait)
     }
+
+    @Test func usesFirstOfflineOfficeForBackgroundOnPrayerStartPage() throws {
+        let firstOffice = OfflineBreviaryOffice(
+            key: .jutrznia,
+            cards: [],
+            contentFingerprint: "morning"
+        )
+        let currentOffice = OfflineBreviaryOffice(
+            key: .nieszpory,
+            cards: [],
+            contentFingerprint: "evening"
+        )
+        let steps = [
+            PrayerFlowStep(prayerID: UUID()),
+            PrayerFlowStep(
+                prayerID: UUID(),
+                offlineOffice: firstOffice
+            )
+        ]
+
+        let startPageOffice = try #require(
+            PrayerFlowBackgroundOfficeResolver.resolve(
+                currentOffice: nil,
+                steps: steps
+            )
+        )
+        let activePageOffice = try #require(
+            PrayerFlowBackgroundOfficeResolver.resolve(
+                currentOffice: currentOffice,
+                steps: steps
+            )
+        )
+
+        #expect(startPageOffice.id == firstOffice.id)
+        #expect(activePageOffice.id == currentOffice.id)
+    }
 }

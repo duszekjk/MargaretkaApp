@@ -135,6 +135,15 @@ enum PrayerFlowPagePairing {
     }
 }
 
+enum PrayerFlowBackgroundOfficeResolver {
+    static func resolve(
+        currentOffice: OfflineBreviaryOffice?,
+        steps: [PrayerFlowStep]
+    ) -> OfflineBreviaryOffice? {
+        currentOffice ?? steps.lazy.compactMap(\.offlineOffice).first
+    }
+}
+
 struct PrayerFlowView: View {
     @EnvironmentObject var prayerStore: PrayerStore
     @EnvironmentObject var priestStore: PriestStore
@@ -223,6 +232,13 @@ struct PrayerFlowView: View {
         currentPrayerStep?.offlineOffice
     }
 
+    var backgroundOfflineOffice: OfflineBreviaryOffice? {
+        PrayerFlowBackgroundOfficeResolver.resolve(
+            currentOffice: currentOfflineOffice,
+            steps: prayerSteps
+        )
+    }
+
     var currentOfflineCard: OfflineBreviaryCard? {
         currentPrayerStep?.offlineCard
     }
@@ -262,6 +278,29 @@ struct PrayerFlowView: View {
         } else {
             activeIndex = index
         }
+    }
+
+    private func presentImagePlayground(
+        for office: OfflineBreviaryOffice,
+        onlyOnce: Bool
+    ) async {
+        guard backgroundOfflineOffice?.id == office.id,
+              !isImagePlaygroundPresented else { return }
+        if onlyOnce,
+           !promptedImagePlaygroundOfficeIDs.insert(office.id).inserted {
+            return
+        }
+
+        let prompt = await BreviaryImageGenerator.shared.preparedPrompt(for: office)
+        guard backgroundOfflineOffice?.id == office.id else { return }
+        imagePlaygroundOfficeID = office.id
+        imagePlaygroundConcepts = [
+            .text(prompt),
+            .text("Vertical portrait iPhone wallpaper composition, Catholic sacred art, contemplative, no visible text or lettering")
+        ]
+        print("Presenting Image Playground; environment support: \(supportsImagePlayground)")
+        await Task.yield()
+        isImagePlaygroundPresented = true
     }
 
     var assignedPrayerIds: [UUID] {
@@ -389,7 +428,7 @@ struct PrayerFlowView: View {
     }
 
     var generatedBreviaryBackgroundImage: UIImage? {
-        if let filename = currentOfflineOffice?.imageFilename,
+        if let filename = backgroundOfflineOffice?.imageFilename,
            let generated = UIImage(
                contentsOfFile: OfflineBreviaryStore.imageDirectory
                    .appendingPathComponent(filename)
@@ -526,6 +565,21 @@ struct PrayerFlowView: View {
                             .lineLimit(4)
                             .padding(3)
                             .glassEffect()
+                        if let office = backgroundOfflineOffice,
+                           office.imageFilename == nil {
+                            Button {
+                                Task {
+                                    await presentImagePlayground(
+                                        for: office,
+                                        onlyOnce: false
+                                    )
+                                }
+                            } label: {
+                                Label("Utwórz tło", systemImage: "photo.badge.plus")
+                            }
+                            .padding(8)
+                            .glassEffect()
+                        }
 //                    }
                     if isIPad {
                         Spacer()
@@ -763,21 +817,17 @@ struct PrayerFlowView: View {
                 hasMeasuredIPadOrientation = true
             }
         }
-        .task(id: currentOfflineOffice?.id) {
-            guard let office = currentOfflineOffice else { return }
-            let hasImage = await offlineBreviaryStore.generateImageIfNeeded(for: office.id)
+        .task(id: backgroundOfflineOffice?.id) {
+            guard let office = backgroundOfflineOffice else { return }
+            let hasImage: Bool
+            if #available(iOS 27.0, *) {
+                hasImage = office.imageFilename != nil
+            } else {
+                hasImage = await offlineBreviaryStore.generateImageIfNeeded(for: office.id)
+            }
             guard !hasImage,
-                  supportsImagePlayground,
-                  currentOfflineOffice?.id == office.id,
-                  promptedImagePlaygroundOfficeIDs.insert(office.id).inserted else { return }
-            let prompt = await BreviaryImageGenerator.shared.preparedPrompt(for: office)
-            guard currentOfflineOffice?.id == office.id else { return }
-            imagePlaygroundOfficeID = office.id
-            imagePlaygroundConcepts = [
-                .text(prompt),
-                .text("Vertical portrait iPhone wallpaper composition, Catholic sacred art, contemplative, no visible text or lettering")
-            ]
-            isImagePlaygroundPresented = true
+                  backgroundOfflineOffice?.id == office.id else { return }
+            await presentImagePlayground(for: office, onlyOnce: true)
         }
         .onAppear()
         {
