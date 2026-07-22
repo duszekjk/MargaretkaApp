@@ -679,7 +679,7 @@ struct BrewiarzEPUBImporterTests {
     }
 
     @Test func splitsReadingsAtSentenceBoundariesAndAvoidsOneWordLastCard() throws {
-        let longSentence = Array(repeating: "słowo", count: 87).joined(separator: " ") + "."
+        let longSentence = Array(repeating: "słowo", count: 171).joined(separator: " ") + "."
         let secondSentence = Array(repeating: "drugie", count: 60).joined(separator: " ") + "."
         let xhtml = """
         <html xmlns="http://www.w3.org/1999/xhtml"><body>
