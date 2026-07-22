@@ -1,11 +1,7 @@
-codex conversation [unknown] make sentence boundaries deterministic
+codex conversation [unknown] bump build after validating prayer pagination
 
-Replace platform sentence tokenization with deterministic punctuation scanning,
-while preserving common Polish abbreviations. Sentence boundaries no longer
-depend on whether the next synthetic or imported sentence begins in uppercase.
-
-Correct the existing Psalm assertions for a separately indexed part-zero heading
-and make the four-part fixture fill four actual content cards. These changes
-address all nine issues found by the first test run. The repeated importer suite
-passed all 18 tests on a physical iPhone, including the new Psalm pairing,
-sentence-boundary, and one-word-orphan regressions.
+Increase the app and widget build number from 41 to 42 after the revised Psalm
+pairing and sentence-aware EPUB pagination passed all 18 importer tests. The
+regular iPad target also compiled, installed, and launched successfully on the
+connected physical iPad Air. Final build 42 also compiled without regenerating
+assets, then installed and launched successfully on that iPad.
