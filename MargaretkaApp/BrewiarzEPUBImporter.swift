@@ -661,14 +661,26 @@ nonisolated enum BrewiarzEPUBImporter {
                 endIndex += 1
             }
 
-            let partCount = endIndex - startIndex
             let groupTitle = result[startIndex].title
-            for index in startIndex..<endIndex {
-                let partIndex = index - startIndex + 1
+            var firstContentIndex = startIndex
+            while firstContentIndex < endIndex,
+                  !result[firstContentIndex].lines.isEmpty,
+                  result[firstContentIndex].lines.allSatisfy({ $0.role == .heading }) {
+                firstContentIndex += 1
+            }
+
+            let contentPartCount = endIndex - firstContentIndex
+            for index in startIndex..<firstContentIndex {
+                result[index].partIndex = 0
+                result[index].partCount = contentPartCount
+                result[index].title = groupTitle
+            }
+            for index in firstContentIndex..<endIndex {
+                let partIndex = index - firstContentIndex + 1
                 result[index].partIndex = partIndex
-                result[index].partCount = partCount
-                if partCount > 1, let groupTitle {
-                    result[index].title = "\(groupTitle) (\(partIndex)/\(partCount))"
+                result[index].partCount = contentPartCount
+                if contentPartCount > 1, let groupTitle {
+                    result[index].title = "\(groupTitle) (\(partIndex)/\(contentPartCount))"
                 }
             }
             startIndex = endIndex
@@ -710,17 +722,30 @@ nonisolated enum BrewiarzEPUBImporter {
               line.text.count > maximumCharacters else { return [line] }
 
         var chunks: [String] = []
-        var current = ""
-        for word in line.text.split(whereSeparator: { $0.isWhitespace }) {
-            let candidate = current.isEmpty ? String(word) : "\(current) \(word)"
+        var currentChunk = ""
+
+        for sentence in sentenceSegments(in: line.text) {
+            if sentence.count > maximumCharacters {
+                if !currentChunk.isEmpty {
+                    chunks.append(currentChunk)
+                    currentChunk = ""
+                }
+                chunks.append(contentsOf: balancedWordChunks(
+                    sentence,
+                    maximumCharacters: maximumCharacters
+                ))
+                continue
+            }
+
+            let candidate = currentChunk.isEmpty ? sentence : "\(currentChunk) \(sentence)"
             if candidate.count <= maximumCharacters {
-                current = candidate
+                currentChunk = candidate
             } else {
-                if !current.isEmpty { chunks.append(current) }
-                current = String(word)
+                if !currentChunk.isEmpty { chunks.append(currentChunk) }
+                currentChunk = sentence
             }
         }
-        if !current.isEmpty { chunks.append(current) }
+        if !currentChunk.isEmpty { chunks.append(currentChunk) }
 
         return chunks.map {
             OfflineBreviaryLine(
@@ -731,6 +756,59 @@ nonisolated enum BrewiarzEPUBImporter {
                 italic: line.italic
             )
         }
+    }
+
+    private static func sentenceSegments(in text: String) -> [String] {
+        var sentences: [String] = []
+        text.enumerateSubstrings(
+            in: text.startIndex..<text.endIndex,
+            options: [.bySentences, .substringNotRequired]
+        ) { _, range, _, _ in
+            let sentence = text[range]
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !sentence.isEmpty {
+                sentences.append(sentence)
+            }
+        }
+        return sentences.isEmpty ? [text] : sentences
+    }
+
+    private static func balancedWordChunks(
+        _ text: String,
+        maximumCharacters: Int
+    ) -> [String] {
+        var chunks: [[String]] = []
+        var currentWords: [String] = []
+        var currentCharacterCount = 0
+
+        for word in text.split(whereSeparator: { $0.isWhitespace }).map(String.init) {
+            let separatorCount = currentWords.isEmpty ? 0 : 1
+            if !currentWords.isEmpty,
+               currentCharacterCount + separatorCount + word.count > maximumCharacters {
+                chunks.append(currentWords)
+                currentWords = [word]
+                currentCharacterCount = word.count
+            } else {
+                currentWords.append(word)
+                currentCharacterCount += separatorCount + word.count
+            }
+        }
+        if !currentWords.isEmpty { chunks.append(currentWords) }
+
+        if chunks.count >= 2,
+           chunks[chunks.count - 1].count == 1,
+           chunks[chunks.count - 2].count > 2 {
+            let movedWord = chunks[chunks.count - 2].removeLast()
+            let rebalancedLastChunk = ([movedWord] + chunks[chunks.count - 1])
+                .joined(separator: " ")
+            if rebalancedLastChunk.count <= maximumCharacters {
+                chunks[chunks.count - 1].insert(movedWord, at: 0)
+            } else {
+                chunks[chunks.count - 2].append(movedWord)
+            }
+        }
+
+        return chunks.map { $0.joined(separator: " ") }
     }
 
     private static func stableFingerprint(_ lines: [OfflineBreviaryLine]) -> String {

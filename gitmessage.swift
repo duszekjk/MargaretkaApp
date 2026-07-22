@@ -1,11 +1,16 @@
-codex conversation [unknown] tune iPad prayer box for each orientation
+codex conversation [unknown] pair prayer content without consuming its heading
 
-Increase the prayer text box by 15 percent in iPad portrait and 4 percent in
-landscape, while retaining a safety margin for the surrounding controls. Reduce
-the landscape prayer font by 8 percent so more of the combined prayer fits on
-screen. The existing animated orientation state drives both adjustments.
+Keep a section heading as its own card on iPhone, but mark it as part zero rather
+than counting it as one of the prayer's content parts. On iPad, include that
+heading alongside content parts 1-2, followed by the normal 3-4 pair.
 
-This focused layout correction keeps build number 41. The full app target
-compiled without errors, and the resulting build was installed and launched
-successfully on the connected physical iPad Air; visual fit remains for review
-on the device.
+Split oversized paragraphs on complete sentence boundaries before falling back
+to word splitting for a single oversized sentence. Rebalance that fallback so
+one trailing word cannot become its own card. Add regressions for a four-part
+Psalm with a separately preserved heading, sentence boundaries in the Office of
+Readings, and the former one-word final card.
+
+The first 18-test run compiled but failed three pagination expectations: the
+legacy Psalm assertions still counted headings as content, the four-part fixture
+only produced three content cards, and sentence tokenization did not split the
+lowercase synthetic boundary. Further correction is required.

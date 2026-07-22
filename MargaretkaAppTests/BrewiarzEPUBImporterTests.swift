@@ -615,6 +615,98 @@ struct BrewiarzEPUBImporterTests {
         #expect(cards.dropFirst().allSatisfy { $0.title?.hasPrefix("Jutrznia (") == true })
     }
 
+    @Test func keepsPsalmHeadingWithFirstPartAndPairsAllFourContentParts() throws {
+        let sentences = (1...4).map { number in
+            Array(repeating: "fragment\(number)", count: 35).joined(separator: " ") + "."
+        }
+        let xhtml = """
+        <html xmlns="http://www.w3.org/1999/xhtml"><body>
+        <div>Poniedziałek, 20 lipca 2026</div>
+        <a id="d2007p_jt"></a>
+        <div><b>Jutrznia</b></div>
+        <div><span style="color:red">1 ant. </span>Pan jest blisko.</div>
+        <div style="text-align:center"><span style="color:red"><b>Psalm 1</b></span></div>
+        <div>\(sentences.joined(separator: " "))</div>
+        <a id="d2007p_m1"></a>
+        </body></html>
+        """
+
+        let day = try #require(BrewiarzEPUBImporter.parseDailyDocument(
+            xhtml,
+            entryName: "OEBPS/Text/2007p.xhtml",
+            importID: UUID(),
+            sourceIdentifier: "fixture.epub",
+            sourceTitle: "fixture"
+        ))
+        let office = try #require(day.offices.first(where: { $0.key == .jutrznia }))
+        let cards = office.cards.filter { $0.contentGroupID != nil && $0.title?.hasPrefix("Psalm 1") == true }
+        let headingCard = try #require(cards.first)
+        let contentCards = cards.filter { ($0.partIndex ?? 0) > 0 }
+
+        #expect(cards.count == 5)
+        #expect(headingCard.lines.map(\.text) == ["Psalm 1"])
+        #expect(headingCard.partIndex == 0)
+        #expect(contentCards.count == 4)
+        #expect(contentCards.first?.lines.contains { $0.text.hasPrefix("fragment1") } == true)
+        #expect(contentCards.map(\.partIndex) == [1, 2, 3, 4])
+
+        let prayerID = UUID()
+        let steps = cards.map { PrayerFlowStep(prayerID: prayerID, offlineCard: $0) }
+        #expect(PrayerFlowPagePairing.visibleStepIndices(
+            activeStepIndex: 0,
+            steps: steps,
+            enabled: true
+        ) == [0, 1, 2])
+        #expect(PrayerFlowPagePairing.visibleStepIndices(
+            activeStepIndex: 1,
+            steps: steps,
+            enabled: true
+        ) == [0, 1, 2])
+        #expect(PrayerFlowPagePairing.visibleStepIndices(
+            activeStepIndex: 3,
+            steps: steps,
+            enabled: true
+        ) == [3, 4])
+        #expect(PrayerFlowPagePairing.visibleStepIndices(
+            activeStepIndex: 0,
+            steps: steps,
+            enabled: false
+        ) == [0])
+    }
+
+    @Test func splitsReadingsAtSentenceBoundariesAndAvoidsOneWordLastCard() throws {
+        let longSentence = Array(repeating: "słowo", count: 87).joined(separator: " ") + "."
+        let secondSentence = Array(repeating: "drugie", count: 60).joined(separator: " ") + "."
+        let xhtml = """
+        <html xmlns="http://www.w3.org/1999/xhtml"><body>
+        <div>Poniedziałek, 20 lipca 2026</div>
+        <a id="d2007p_gc"></a>
+        <div><b>Godzina Czytań</b></div>
+        <div><b>CZYTANIE PIERWSZE</b></div>
+        <div>\(longSentence) \(secondSentence)</div>
+        <a id="d2007p_jt"></a>
+        </body></html>
+        """
+
+        let day = try #require(BrewiarzEPUBImporter.parseDailyDocument(
+            xhtml,
+            entryName: "OEBPS/Text/2007p.xhtml",
+            importID: UUID(),
+            sourceIdentifier: "fixture.epub",
+            sourceTitle: "fixture"
+        ))
+        let office = try #require(day.offices.first(where: { $0.key == .godzinaCzytan }))
+        let readingCards = office.cards.filter { $0.title?.hasPrefix("CZYTANIE PIERWSZE") == true }
+        let bodyLines = readingCards.flatMap(\.lines).filter { $0.role != .heading }
+
+        #expect(readingCards.count >= 3)
+        #expect(bodyLines.last?.text == secondSentence)
+        #expect(bodyLines.allSatisfy { line in
+            line.text.split(whereSeparator: { $0.isWhitespace }).count > 1
+        })
+        #expect(bodyLines.filter { $0.text.hasSuffix(".") }.count >= 2)
+    }
+
     @Test @MainActor func createsEveryImportedOfficeAsAComplexPrayerWithoutReplacingExistingJutrznia() throws {
         let prayers = BrewiarzPrayerKey.allCases.map { key in
             Prayer(

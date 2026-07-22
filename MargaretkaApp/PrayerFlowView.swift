@@ -88,28 +88,49 @@ enum PrayerFlowPagePairing {
               let groupID = activeCard.contentGroupID,
               let partIndex = activeCard.partIndex,
               let partCount = activeCard.partCount,
-              partCount > 1 else {
+              partCount > 0 else {
             return [activeStepIndex]
         }
 
-        let firstPartIndex = ((partIndex - 1) / 2) * 2 + 1
-        let firstStepIndex = activeStepIndex + firstPartIndex - partIndex
-        let secondStepIndex = firstStepIndex + 1
-        guard steps.indices.contains(firstStepIndex),
-              steps.indices.contains(secondStepIndex),
-              let firstCard = steps[firstStepIndex].offlineCard,
-              let secondCard = steps[secondStepIndex].offlineCard,
-              steps[firstStepIndex].prayerID == steps[secondStepIndex].prayerID,
-              firstCard.contentGroupID == groupID,
-              secondCard.contentGroupID == groupID,
-              firstCard.partIndex == firstPartIndex,
-              secondCard.partIndex == firstPartIndex + 1,
-              firstCard.partCount == partCount,
-              secondCard.partCount == partCount else {
+        let prayerID = steps[activeStepIndex].prayerID
+        var groupStartIndex = activeStepIndex
+        while groupStartIndex > steps.startIndex,
+              steps[groupStartIndex - 1].prayerID == prayerID,
+              steps[groupStartIndex - 1].offlineCard?.contentGroupID == groupID {
+            groupStartIndex -= 1
+        }
+        var groupEndIndex = activeStepIndex + 1
+        while groupEndIndex < steps.endIndex,
+              steps[groupEndIndex].prayerID == prayerID,
+              steps[groupEndIndex].offlineCard?.contentGroupID == groupID {
+            groupEndIndex += 1
+        }
+
+        let effectivePartIndex = max(partIndex, 1)
+        let firstPartIndex = ((effectivePartIndex - 1) / 2) * 2 + 1
+        let groupIndices = Array(groupStartIndex..<groupEndIndex)
+        guard let firstStepIndex = groupIndices.first(where: { index in
+            guard let card = steps[index].offlineCard else { return false }
+            return card.partIndex == firstPartIndex && card.partCount == partCount
+        }) else {
             return [activeStepIndex]
         }
 
-        return [firstStepIndex, secondStepIndex]
+        var visibleIndices: [Int] = []
+        if firstPartIndex == 1 {
+            visibleIndices.append(contentsOf: groupIndices.filter { index in
+                steps[index].offlineCard?.partIndex == 0
+            })
+        }
+        visibleIndices.append(firstStepIndex)
+
+        if let secondStepIndex = groupIndices.first(where: { index in
+            guard let card = steps[index].offlineCard else { return false }
+            return card.partIndex == firstPartIndex + 1 && card.partCount == partCount
+        }) {
+            visibleIndices.append(secondStepIndex)
+        }
+        return visibleIndices
     }
 }
 
