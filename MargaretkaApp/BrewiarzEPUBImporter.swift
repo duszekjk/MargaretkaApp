@@ -475,7 +475,7 @@ nonisolated enum BrewiarzEPUBImporter {
 
     private static func isSemanticSectionHeading(_ text: String) -> Bool {
         text.range(
-            of: #"(?i)^(psalm|pieśń|kantyk|hymn|czytanie|responsorium|prośby|modlitwa|te deum)(\s|$)"#,
+            of: #"(?i)^((pierwsze|drugie|trzecie|[123]\.?|i{1,3}\.?)\s+czytanie|psalm|pieśń|kantyk|hymn|czytanie|responsorium|prośby|modlitwa|te deum)(\s|$)"#,
             options: [.regularExpression, .diacriticInsensitive]
         ) != nil
     }
@@ -1058,7 +1058,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
 
     private static func isSemanticPrayerHeading(_ text: String) -> Bool {
         text.range(
-            of: #"(?i)^(psalm|pieśń|kantyk|hymn|czytanie|responsorium|prośby|modlitwa|te deum)(\s|$)"#,
+            of: #"(?i)^((pierwsze|drugie|trzecie|[123]\.?|i{1,3}\.?)\s+czytanie|psalm|pieśń|kantyk|hymn|czytanie|responsorium|prośby|modlitwa|te deum)(\s|$)"#,
             options: [.regularExpression, .diacriticInsensitive]
         ) != nil
     }

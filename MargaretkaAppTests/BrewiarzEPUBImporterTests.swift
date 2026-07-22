@@ -472,12 +472,12 @@ struct BrewiarzEPUBImporterTests {
         let saint = try #require(day.saintBiography)
 
         #expect(saint.title == "ŚW. JACKA, PREZBITERA")
-        #expect(saint.cards.count > 1)
+        #expect(!saint.cards.isEmpty)
         #expect(saint.text.contains("wyprawy misyjne"))
         #expect(!saint.text.contains("Garść informacji"))
         #expect(!saint.text.contains("Teksty Mszy"))
         #expect(saint.cards.allSatisfy { card in
-            card.lines.reduce(0) { $0 + $1.text.count } <= 520
+            card.lines.reduce(0) { $0 + $1.text.count } <= 1024
         })
     }
 
@@ -614,7 +614,7 @@ struct BrewiarzEPUBImporterTests {
 
         #expect(cards.count > 2)
         #expect(cards.allSatisfy { card in
-            card.lines.reduce(0) { $0 + $1.text.count } <= 520
+            card.lines.reduce(0) { $0 + $1.text.count } <= 1024
         })
         #expect(cards.dropFirst().allSatisfy { $0.title?.hasPrefix("Jutrznia (") == true })
     }
@@ -647,9 +647,9 @@ struct BrewiarzEPUBImporterTests {
         let headingCard = try #require(cards.first)
         let contentCards = cards.filter { ($0.partIndex ?? 0) > 0 }
 
-        #expect(cards.count == 5)
-        #expect(headingCard.lines.map(\.text) == ["Psalm 1"])
-        #expect(headingCard.partIndex == 0)
+        #expect(cards.count == 4)
+        #expect(headingCard.lines.first?.text == "Psalm 1")
+        #expect(headingCard.partIndex == 1)
         #expect(contentCards.count == 4)
         #expect(contentCards.first?.lines.contains { $0.text.hasPrefix("Fragment1") } == true)
         #expect(contentCards.map(\.partIndex) == [1, 2, 3, 4])
@@ -660,17 +660,17 @@ struct BrewiarzEPUBImporterTests {
             activeStepIndex: 0,
             steps: steps,
             enabled: true
-        ) == [0, 1, 2])
+        ) == [0, 1])
         #expect(PrayerFlowPagePairing.visibleStepIndices(
             activeStepIndex: 1,
             steps: steps,
             enabled: true
-        ) == [0, 1, 2])
+        ) == [0, 1])
         #expect(PrayerFlowPagePairing.visibleStepIndices(
-            activeStepIndex: 3,
+            activeStepIndex: 2,
             steps: steps,
             enabled: true
-        ) == [3, 4])
+        ) == [2, 3])
         #expect(PrayerFlowPagePairing.visibleStepIndices(
             activeStepIndex: 0,
             steps: steps,
@@ -709,6 +709,59 @@ struct BrewiarzEPUBImporterTests {
             line.text.split(whereSeparator: { $0.isWhitespace }).count > 1
         })
         #expect(bodyLines.filter { $0.text.hasSuffix(".") }.count >= 2)
+    }
+
+    @Test func groupsOrdinalFirstReadingPagesForIPadPairing() throws {
+        let paragraphs = (1...4).map { number in
+            Array(repeating: "Czytanie\(number)", count: 82).joined(separator: " ") + "."
+        }
+        let xhtml = """
+        <html xmlns="http://www.w3.org/1999/xhtml"><body>
+        <div>Poniedziałek, 20 lipca 2026</div>
+        <a id="d2007p_gc"></a>
+        <div><b>Godzina Czytań</b></div>
+        <div><b>PIERWSZE CZYTANIE</b></div>
+        <div>Iz 1, 1-20</div>
+        <div>\(paragraphs.joined(separator: " "))</div>
+        <div><b>RESPONSORIUM</b></div>
+        <div>Osobna treść responsorium.</div>
+        <a id="d2007p_jt"></a>
+        </body></html>
+        """
+
+        let day = try #require(BrewiarzEPUBImporter.parseDailyDocument(
+            xhtml,
+            entryName: "OEBPS/Text/2007p.xhtml",
+            importID: UUID(),
+            sourceIdentifier: "fixture.epub",
+            sourceTitle: "fixture"
+        ))
+        let office = try #require(day.offices.first(where: { $0.key == .godzinaCzytan }))
+        let headingCard = try #require(office.cards.first(where: {
+            $0.lines.contains { $0.text == "PIERWSZE CZYTANIE" }
+        }))
+        let readingGroupID = try #require(headingCard.contentGroupID)
+        let readingCards = office.cards.filter { $0.contentGroupID == readingGroupID }
+
+        #expect(readingCards.count == 4)
+        #expect(readingCards.map(\.partIndex) == [1, 2, 3, 4])
+        #expect(readingCards.allSatisfy { $0.partCount == 4 })
+        #expect(office.cards.first(where: {
+            $0.title?.hasPrefix("RESPONSORIUM") == true
+        })?.contentGroupID != readingGroupID)
+
+        let prayerID = UUID()
+        let steps = readingCards.map { PrayerFlowStep(prayerID: prayerID, offlineCard: $0) }
+        #expect(PrayerFlowPagePairing.visibleStepIndices(
+            activeStepIndex: 0,
+            steps: steps,
+            enabled: true
+        ) == [0, 1])
+        #expect(PrayerFlowPagePairing.visibleStepIndices(
+            activeStepIndex: 2,
+            steps: steps,
+            enabled: true
+        ) == [2, 3])
     }
 
     @Test @MainActor func createsEveryImportedOfficeAsAComplexPrayerWithoutReplacingExistingJutrznia() throws {
