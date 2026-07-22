@@ -296,7 +296,7 @@ struct PrayerFlowView: View {
         imagePlaygroundOfficeID = office.id
         imagePlaygroundConcepts = [
             .text(prompt),
-            .text("Vertical portrait iPhone wallpaper composition, Catholic sacred art, contemplative, no visible text or lettering")
+            .text("Use a vertical portrait composition. Show only the specified physical location, objects, weather, light, and colors. No people, text, letters, logos, signs, or abstract symbols.")
         ]
         print("Presenting Image Playground; environment support: \(supportsImagePlayground)")
         await Task.yield()

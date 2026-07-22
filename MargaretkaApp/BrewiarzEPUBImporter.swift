@@ -893,11 +893,11 @@ nonisolated enum BrewiarzEPUBImporter {
             .map { "“\($0.text.prefix(220))”" }
             .joined(separator: "\n")
         return """
-        Create a calm, reverent background image for the Catholic Liturgy of the Hours.
-        Office: \(office.displayName) (\(englishOffice)). Date: \(date.id).
-        Celebration in Polish: \(celebration ?? "none specified").
-        Liturgical color: \(liturgicalColor ?? "not specified").
-        Use the prayer themes below as visual inspiration. Do not put words or letters in the image:
+        Date: \(date.id).
+        Time slot: \(office.displayName) (\(englishOffice)).
+        Name found in the Polish source: \(celebration ?? "none specified").
+        Color found in the source: \(liturgicalColor ?? "not specified").
+        Source excerpts:
         \(excerpts)
         """
     }

@@ -22,7 +22,7 @@ actor BreviaryImageGenerator {
                 : (creator.availableStyles.first ?? .animation)
             let concepts: [ImagePlaygroundConcept] = [
                 .text(prompt),
-                .text("Catholic sacred art, contemplative, no visible text or lettering")
+                .text("Show only the specified physical location, objects, weather, light, and colors. No text, letters, logos, signs, or abstract symbols.")
             ]
             for try await created in creator.images(for: concepts, style: style, limit: 1) {
                 return UIImage(cgImage: created.cgImage).jpegData(compressionQuality: 0.88)
@@ -35,12 +35,16 @@ actor BreviaryImageGenerator {
 
     func preparedPrompt(for office: OfflineBreviaryOffice) async -> String {
         if let cached = preparedPrompts[office.contentFingerprint] { return cached }
-        var prompt = office.imagePrompt ?? defaultPrompt(for: office.key)
+        let fallback = Self.concreteFallbackPrompt(for: office.key)
+        var sourceContext = office.imagePrompt ?? ""
         if let source = office.imageSourceText, !source.isEmpty,
            let translation = try? await translateInstalledPolishToEnglish(source) {
-            prompt += "\nOffline Polish-to-English translation of the prayer themes:\n\(translation)"
+            sourceContext += "\nEnglish translation of the source excerpt:\n\(translation)"
         }
-        prompt = await refinePromptWhenAvailable(prompt)
+        let prompt = await concretePromptWhenAvailable(
+            sourceContext: sourceContext,
+            fallback: fallback
+        )
         preparedPrompts[office.contentFingerprint] = prompt
         return prompt
     }
@@ -52,22 +56,83 @@ actor BreviaryImageGenerator {
         return try await session.translate(text).targetText
     }
 
-    private func refinePromptWhenAvailable(_ source: String) async -> String {
-        guard SystemLanguageModel.default.isAvailable else { return source }
+    private func concretePromptWhenAvailable(
+        sourceContext: String,
+        fallback: String
+    ) async -> String {
+        guard SystemLanguageModel.default.isAvailable else { return fallback }
         do {
             let session = LanguageModelSession(instructions: """
-                You turn Catholic prayer metadata and short quotations into one concise English visual scene prompt.
-                Preserve the named office, translated feast, and liturgical color. Polish may appear only as quoted input.
-                Return visual description only. Never request writing, lettering, captions, or words inside the image.
+                Write one English prompt for a vertical wallpaper image.
+                Describe only things a camera could see: one exact location, the foreground surface, three to six named physical objects, the background, time of day, weather, direction of light, and a small color palette.
+                Use source names and excerpts only to choose fitting physical objects. Do not summarize or name the source material.
+                Never use abstract religious, emotional, or artistic labels. Never use words including Catholic, sacred, prayer, liturgy, spiritual, symbolic, contemplative, reverent, holy, faith, devotional, or theme.
+                Do not mention writing, captions, logos, signs, letters, or abstract symbols except in the final prohibition sentence.
+                Write 60 to 100 words. Start immediately with the location. End with: No people, text, letters, logos, or signs.
                 """)
-            let response = try await session.respond(to: source)
-            return response.content
+            let response = try await session.respond(to: sourceContext)
+            let candidate = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !Self.containsAbstractLanguage(candidate),
+                  candidate.split(whereSeparator: \.isWhitespace).count >= 35 else {
+                return fallback
+            }
+            return candidate
         } catch {
-            return source
+            return fallback
         }
     }
 
-    private func defaultPrompt(for key: BrewiarzPrayerKey) -> String {
-        "A calm Catholic \(key.displayName) prayer scene, sacred light, symbolic landscape, no text or letters."
+    nonisolated static func containsAbstractLanguage(_ prompt: String) -> Bool {
+        let normalized = prompt.folding(
+            options: [.caseInsensitive, .diacriticInsensitive],
+            locale: Locale(identifier: "en_US_POSIX")
+        )
+        let forbidden = [
+            "catholic", "sacred", "prayer", "liturgy", "spiritual",
+            "symbolic", "contemplative", "reverent", "holy", "faith",
+            "devotional", "theme"
+        ]
+        return forbidden.contains { normalized.contains($0) }
+    }
+
+    nonisolated static func concreteFallbackPrompt(for key: BrewiarzPrayerKey) -> String {
+        switch key {
+        case .msza:
+            return """
+            Inside a small stone church, a white linen cloth covers a wooden altar in the foreground. A gold chalice and a round paten stand between two burning beeswax candles. Three narrow stained-glass windows and a plain semicircular apse fill the background. Warm morning light enters from the left, making long amber shadows across the pale floor. Use cream, dark wood, muted red, and gold. Vertical wallpaper composition. No people, text, letters, logos, or signs.
+            """
+        case .wezwanie:
+            return """
+            On a rocky hillside before sunrise, an open wooden gate stands beside a narrow path in the foreground. Dew covers the grass, and three old olive trees frame the path as it climbs toward distant blue mountains. A clay water jug rests against one gatepost. A thin orange band of light appears along the horizon beneath a deep blue sky. Use slate blue, olive green, clay brown, and pale orange. Vertical wallpaper composition. No people, text, letters, logos, or signs.
+            """
+        case .godzinaCzytan:
+            return """
+            Inside a stone monastery library at night, a heavy wooden reading desk fills the foreground. An open old book, a brass oil lamp, a pair of round spectacles, and a folded linen cloth rest on the desk. Tall shelves of dark leather-bound books recede toward an arched window showing a starry sky. The lamp casts a small pool of warm light and deep shadows. Use walnut brown, brass, charcoal, and amber. Vertical wallpaper composition. No people, text, letters, logos, or signs.
+            """
+        case .jutrznia:
+            return """
+            In a walled monastery garden at sunrise, a round stone fountain stands in the foreground beside white lilies wet with dew. A gravel path crosses between trimmed rosemary bushes and leads to a simple arched doorway in the far wall. Two swallows fly above terracotta roof tiles. Low sunlight enters through the arch and makes long shadows across the path. Use pale gold, leaf green, white, and warm stone. Vertical wallpaper composition. No people, text, letters, logos, or signs.
+            """
+        case .modlitwaPrzedpoludniowa:
+            return """
+            In a sunlit cloister courtyard during midmorning, a terracotta pot with a small lemon tree stands on worn stone paving in the foreground. A wooden bench, a shallow water basin, and a coiled garden rope sit beneath the surrounding arches. Beyond the arcade, a square bell tower rises into a clear blue sky. Crisp sunlight falls from the upper right and creates striped shadows. Use limestone, lemon yellow, leaf green, and sky blue. Vertical wallpaper composition. No people, text, letters, logos, or signs.
+            """
+        case .modlitwaPoludniowa:
+            return """
+            At the edge of a wheat field at noon, a circular stone well occupies the foreground. A wooden bucket, a length of rope, and a clay cup rest on its sun-warmed rim. Straight rows of golden wheat lead toward a low farmhouse and a line of cypress trees on the horizon. The cloudless sky is bright blue, and short shadows fall directly beneath every object. Use wheat gold, dusty beige, cypress green, and blue. Vertical wallpaper composition. No people, text, letters, logos, or signs.
+            """
+        case .modlitwaPopoludniowa:
+            return """
+            In an olive grove during late afternoon, a low dry-stone wall crosses the foreground beside a wicker basket holding green olives. A folded ochre cloth, a pruning knife, and a small ceramic flask lie on the wall. Gnarled olive trunks continue down a gentle slope toward distant vineyards. Warm sunlight comes from the right and catches silver leaves moving in a light breeze. Use olive green, silver, ochre, and warm gray. Vertical wallpaper composition. No people, text, letters, logos, or signs.
+            """
+        case .nieszpory:
+            return """
+            Beside a slow river at sunset, a weathered stone landing fills the foreground with a brass lantern, a folded blue cloth, and a small wooden boat tied to an iron ring. A single-arch bridge spans the water in the middle distance, with dark cypress trees and low hills beyond it. The orange sky reflects in long bands across the water while the lantern begins to glow. Use burnt orange, deep blue, charcoal, and brass. Vertical wallpaper composition. No people, text, letters, logos, or signs.
+            """
+        case .kompleta:
+            return """
+            Inside a small whitewashed chapel at night, a narrow wooden table stands in the foreground beneath an arched window. A closed book, a brass oil lamp, a glass of water, and a sprig of lavender rest on the table. The window reveals a crescent moon and scattered stars above dark hills. The lamp produces a soft amber circle surrounded by cool blue shadows. Use midnight blue, chalk white, lavender gray, and amber. Vertical wallpaper composition. No people, text, letters, logos, or signs.
+            """
+        }
     }
 }

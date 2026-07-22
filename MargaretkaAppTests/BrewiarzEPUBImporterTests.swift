@@ -972,4 +972,16 @@ struct BrewiarzEPUBImporterTests {
         #expect(startPageOffice.id == firstOffice.id)
         #expect(activePageOffice.id == currentOffice.id)
     }
+
+    @Test func fallbackBackgroundPromptsContainOnlyConcreteSceneDescriptions() {
+        for key in BrewiarzPrayerKey.allCases {
+            let prompt = BreviaryImageGenerator.concreteFallbackPrompt(for: key)
+            let wordCount = prompt.split(whereSeparator: \.isWhitespace).count
+
+            #expect(prompt.contains("Vertical wallpaper composition"))
+            #expect(prompt.contains("No people, text, letters, logos, or signs."))
+            #expect(wordCount >= 60)
+            #expect(!BreviaryImageGenerator.containsAbstractLanguage(prompt))
+        }
+    }
 }
