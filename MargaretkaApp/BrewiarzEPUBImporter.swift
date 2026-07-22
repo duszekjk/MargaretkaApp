@@ -759,18 +759,54 @@ nonisolated enum BrewiarzEPUBImporter {
     }
 
     private static func sentenceSegments(in text: String) -> [String] {
+        let normalizedText = text
+            .split(whereSeparator: { $0.isWhitespace })
+            .joined(separator: " ")
+        guard !normalizedText.isEmpty else { return [] }
+
+        let characters = Array(normalizedText)
         var sentences: [String] = []
-        text.enumerateSubstrings(
-            in: text.startIndex..<text.endIndex,
-            options: [.bySentences, .substringNotRequired]
-        ) { _, range, _, _ in
-            let sentence = text[range]
-                .trimmingCharacters(in: .whitespacesAndNewlines)
+        var current = ""
+        let terminators: Set<Character> = [".", "!", "?", "…"]
+
+        for index in characters.indices {
+            let character = characters[index]
+            current.append(character)
+            guard terminators.contains(character) else { continue }
+
+            let nextIndex = characters.index(after: index)
+            guard nextIndex == characters.endIndex || characters[nextIndex].isWhitespace else {
+                continue
+            }
+            if character == ".", isKnownSentenceAbbreviation(current) {
+                continue
+            }
+
+            let sentence = current.trimmingCharacters(in: .whitespacesAndNewlines)
             if !sentence.isEmpty {
                 sentences.append(sentence)
             }
+            current = ""
         }
-        return sentences.isEmpty ? [text] : sentences
+
+        let remainder = current.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !remainder.isEmpty { sentences.append(remainder) }
+        return sentences
+    }
+
+    private static func isKnownSentenceAbbreviation(_ text: String) -> Bool {
+        let token = text
+            .split(whereSeparator: { $0.isWhitespace })
+            .last
+            .map(String.init)?
+            .lowercased()
+            .trimmingCharacters(in: CharacterSet(charactersIn: "„”\"'()[]{}")) ?? ""
+        let abbreviations: Set<String> = [
+            "św.", "np.", "itd.", "itp.", "por.", "zob.", "ks.", "bp.",
+            "o.", "nr.", "r.", "w.", "ww.", "tzn.", "tj.", "dr.", "prof."
+        ]
+        if abbreviations.contains(token) { return true }
+        return token.hasSuffix(".") && token.dropLast().count == 1
     }
 
     private static func balancedWordChunks(

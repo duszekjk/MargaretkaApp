@@ -1,16 +1,11 @@
-codex conversation [unknown] pair prayer content without consuming its heading
+codex conversation [unknown] make sentence boundaries deterministic
 
-Keep a section heading as its own card on iPhone, but mark it as part zero rather
-than counting it as one of the prayer's content parts. On iPad, include that
-heading alongside content parts 1-2, followed by the normal 3-4 pair.
+Replace platform sentence tokenization with deterministic punctuation scanning,
+while preserving common Polish abbreviations. Sentence boundaries no longer
+depend on whether the next synthetic or imported sentence begins in uppercase.
 
-Split oversized paragraphs on complete sentence boundaries before falling back
-to word splitting for a single oversized sentence. Rebalance that fallback so
-one trailing word cannot become its own card. Add regressions for a four-part
-Psalm with a separately preserved heading, sentence boundaries in the Office of
-Readings, and the former one-word final card.
-
-The first 18-test run compiled but failed three pagination expectations: the
-legacy Psalm assertions still counted headings as content, the four-part fixture
-only produced three content cards, and sentence tokenization did not split the
-lowercase synthetic boundary. Further correction is required.
+Correct the existing Psalm assertions for a separately indexed part-zero heading
+and make the four-part fixture fill four actual content cards. These changes
+address all nine issues found by the first test run. The repeated importer suite
+passed all 18 tests on a physical iPhone, including the new Psalm pairing,
+sentence-boundary, and one-word-orphan regressions.

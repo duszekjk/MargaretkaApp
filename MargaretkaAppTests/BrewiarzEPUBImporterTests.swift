@@ -181,17 +181,21 @@ struct BrewiarzEPUBImporterTests {
             sourceTitle: "fixture"
         ))
         let office = try #require(day.offices.first(where: { $0.key == .jutrznia }))
-        let psalm135Cards = office.cards.filter { $0.title?.hasPrefix("Psalm 135, 1-12 (") == true }
-        let psalm136Cards = office.cards.filter { $0.title?.hasPrefix("Psalm 136 (") == true }
+        let psalm135GroupID = try #require(office.cards.first(where: {
+            $0.title == "Psalm 135, 1-12"
+        })?.contentGroupID)
+        let psalm136GroupID = try #require(office.cards.first(where: {
+            $0.title == "Psalm 136"
+        })?.contentGroupID)
+        let psalm135Cards = office.cards.filter { $0.contentGroupID == psalm135GroupID }
+        let psalm136Cards = office.cards.filter { $0.contentGroupID == psalm136GroupID }
         #expect(psalm135Cards.count == 2)
         #expect(psalm136Cards.count == 2)
-        let psalm135GroupID = try #require(psalm135Cards.first?.contentGroupID)
-        let psalm136GroupID = try #require(psalm136Cards.first?.contentGroupID)
         #expect(psalm135GroupID != psalm136GroupID)
         #expect(psalm135Cards.allSatisfy { $0.contentGroupID == psalm135GroupID })
         #expect(psalm136Cards.allSatisfy { $0.contentGroupID == psalm136GroupID })
-        #expect(psalm135Cards.map(\.partIndex) == [1, 2])
-        #expect(psalm136Cards.map(\.partIndex) == [1, 2])
+        #expect(psalm135Cards.map(\.partIndex) == [0, 1])
+        #expect(psalm136Cards.map(\.partIndex) == [0, 1])
         let psalm135Lines = psalm135Cards.flatMap(\.lines)
         let psalm136Lines = psalm136Cards.flatMap(\.lines)
         #expect(office.cards.flatMap(\.lines).contains { $0.text.hasPrefix("1 ant.") })
@@ -617,7 +621,7 @@ struct BrewiarzEPUBImporterTests {
 
     @Test func keepsPsalmHeadingWithFirstPartAndPairsAllFourContentParts() throws {
         let sentences = (1...4).map { number in
-            Array(repeating: "fragment\(number)", count: 35).joined(separator: " ") + "."
+            Array(repeating: "Fragment\(number)", count: 52).joined(separator: " ") + "."
         }
         let xhtml = """
         <html xmlns="http://www.w3.org/1999/xhtml"><body>
@@ -647,7 +651,7 @@ struct BrewiarzEPUBImporterTests {
         #expect(headingCard.lines.map(\.text) == ["Psalm 1"])
         #expect(headingCard.partIndex == 0)
         #expect(contentCards.count == 4)
-        #expect(contentCards.first?.lines.contains { $0.text.hasPrefix("fragment1") } == true)
+        #expect(contentCards.first?.lines.contains { $0.text.hasPrefix("Fragment1") } == true)
         #expect(contentCards.map(\.partIndex) == [1, 2, 3, 4])
 
         let prayerID = UUID()
