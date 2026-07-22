@@ -334,6 +334,9 @@
     "Ikona" : {
 
     },
+    "Image Playground może potrzebować kilkunastu sekund." : {
+
+    },
     "Imię" : {
 
     },
@@ -558,6 +561,18 @@
 
     },
     "Przesuwanie modlitw" : {
+
+    },
+    "Przygotowuję generator…" : {
+
+    },
+    "Przygotowuję tło…" : {
+
+    },
+    "Przygotowuję tworzenie obrazu" : {
+
+    },
+    "Przygotowuję tworzenie obrazu…" : {
 
     },
     "Przykładowe komendy" : {
@@ -1158,6 +1173,9 @@
     "Utwórz i udostępnij kopię" : {
 
     },
+    "Utwórz tło" : {
+
+    },
     "Uwaga" : {
 
     },
@@ -1215,6 +1233,9 @@
 
     },
     "Wycentruj zdjęcie" : {
+
+    },
+    "Wygeneruj obraz" : {
 
     },
     "Za kogo lub jaką modlitwę złożoną rozpocząć?" : {
