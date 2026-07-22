@@ -485,7 +485,7 @@ final class OfflineBreviaryStore: ObservableObject {
         return image.jpegData(compressionQuality: 0.88)
     }
 
-    static func portraitWallpaperPixelSize(for nativeScreenSize: CGSize) -> CGSize {
+    nonisolated static func portraitWallpaperPixelSize(for nativeScreenSize: CGSize) -> CGSize {
         CGSize(
             width: min(nativeScreenSize.width, nativeScreenSize.height),
             height: max(nativeScreenSize.width, nativeScreenSize.height)
