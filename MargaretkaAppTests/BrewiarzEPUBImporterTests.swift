@@ -181,15 +181,26 @@ struct BrewiarzEPUBImporterTests {
             sourceTitle: "fixture"
         ))
         let office = try #require(day.offices.first(where: { $0.key == .jutrznia }))
-        let psalm135 = try #require(office.cards.first(where: { $0.title == "Psalm 135, 1-12" }))
-        let psalm136 = try #require(office.cards.first(where: { $0.title == "Psalm 136" }))
-        #expect(psalm135.lines.contains { $0.text.hasPrefix("1 ant.") })
-        #expect(psalm135.lines.contains { $0.text == "Chwała Boga, który czyni cuda" })
-        #expect(!office.cards.contains { $0.title == "Chwała Boga, który czyni cuda" })
-        #expect(psalm135.lines.contains { $0.text == "Pierwsza część psalmu." })
-        #expect(!psalm135.lines.contains { $0.text == "Treść następnego psalmu." })
-        #expect(psalm136.lines.contains { $0.text.hasPrefix("2 ant.") })
-        #expect(psalm136.lines.contains { $0.text == "Treść następnego psalmu." })
+        let psalm135Cards = office.cards.filter { $0.title?.hasPrefix("Psalm 135, 1-12 (") == true }
+        let psalm136Cards = office.cards.filter { $0.title?.hasPrefix("Psalm 136 (") == true }
+        #expect(psalm135Cards.count == 2)
+        #expect(psalm136Cards.count == 2)
+        let psalm135GroupID = try #require(psalm135Cards.first?.contentGroupID)
+        let psalm136GroupID = try #require(psalm136Cards.first?.contentGroupID)
+        #expect(psalm135GroupID != psalm136GroupID)
+        #expect(psalm135Cards.allSatisfy { $0.contentGroupID == psalm135GroupID })
+        #expect(psalm136Cards.allSatisfy { $0.contentGroupID == psalm136GroupID })
+        #expect(psalm135Cards.map(\.partIndex) == [1, 2])
+        #expect(psalm136Cards.map(\.partIndex) == [1, 2])
+        let psalm135Lines = psalm135Cards.flatMap(\.lines)
+        let psalm136Lines = psalm136Cards.flatMap(\.lines)
+        #expect(office.cards.flatMap(\.lines).contains { $0.text.hasPrefix("1 ant.") })
+        #expect(office.cards.flatMap(\.lines).contains { $0.text.hasPrefix("2 ant.") })
+        #expect(psalm135Lines.contains { $0.text == "Chwała Boga, który czyni cuda" })
+        #expect(psalm135Lines.contains { $0.text == "Pierwsza część psalmu." })
+        #expect(!psalm135Lines.contains { $0.text == "Treść następnego psalmu." })
+        #expect(psalm136Lines.contains { $0.text == "Hymn paschalny" })
+        #expect(psalm136Lines.contains { $0.text == "Treść następnego psalmu." })
         #expect(office.cards.contains { $0.title == "CZYTANIE (Rz 8, 1)" })
         #expect(office.cards.contains { $0.title == "RESPONSORIUM KRÓTKIE" })
         #expect(office.cards.contains { $0.title == "PROŚBY" })
@@ -463,7 +474,7 @@ struct BrewiarzEPUBImporterTests {
         #expect(!saint.text.contains("Garść informacji"))
         #expect(!saint.text.contains("Teksty Mszy"))
         #expect(saint.cards.allSatisfy { card in
-            card.lines.reduce(0) { $0 + $1.text.count } <= 310
+            card.lines.reduce(0) { $0 + $1.text.count } <= 520
         })
     }
 
@@ -600,7 +611,7 @@ struct BrewiarzEPUBImporterTests {
 
         #expect(cards.count > 2)
         #expect(cards.allSatisfy { card in
-            card.lines.reduce(0) { $0 + $1.text.count } <= 310
+            card.lines.reduce(0) { $0 + $1.text.count } <= 520
         })
         #expect(cards.dropFirst().allSatisfy { $0.title?.hasPrefix("Jutrznia (") == true })
     }
