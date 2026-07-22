@@ -1052,6 +1052,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
             else if folded.hasPrefix("w.") { role = .response }
             else if folded.hasPrefix("ant.") || Self.isNumberedAntiphon(text) { role = .antiphon }
             else if leadingChoirIndent { role = .choirRight }
+            else if Self.isReadingProclamation(text) { role = .body }
             else if isUppercaseHeading || Self.isSemanticPrayerHeading(text) { role = .heading }
             else if isRubricOnly { role = .rubric }
             else if style.leftAligned { role = .choirLeft }
@@ -1073,6 +1074,18 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
             of: #"(?i)^((pierwsze|drugie|trzecie|[123]\.?|i{1,3}\.?)\s+czytanie|antyfona|wprowadzenie|akt pokuty|kolekta|psalm|pieśń|kantyk|hymn|czytanie|aklamacja|ewangelia|responsorium|prośby|modlitwa|prefacja|przed błogosławieństwem|propozycja śpiewów|te deum)(\s|$)"#,
             options: [.regularExpression, .diacriticInsensitive]
         ) != nil
+    }
+
+    private static func isReadingProclamation(_ text: String) -> Bool {
+        let folded = text.folding(
+            options: [.caseInsensitive, .diacriticInsensitive],
+            locale: Locale(identifier: "pl_PL")
+        )
+        return folded.hasPrefix("czytanie z ")
+            || folded.hasPrefix("czytanie wedlug ")
+            || folded.hasPrefix("slowa ewangelii ")
+            || folded.hasPrefix("poczatek ewangelii ")
+            || folded.hasPrefix("zakonczenie ewangelii ")
     }
 
     private static func isNumberedAntiphon(_ text: String) -> Bool {

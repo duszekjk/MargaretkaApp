@@ -1,9 +1,9 @@
-codex conversation [unknown] import Mass as a complex prayer
+codex conversation [unknown] keep Mass proclamations in their sections
 
-Add Msza as a native breviary prayer backed by the daily EPUB section between
-the real _czyt and _wezw anchors. Import its content, create a stable complex-
-prayer target and template, and support backup, icons, and online URL fallback.
+Classify reading and Gospel proclamation formulas as body text instead of new
+semantic headings. This lets the following Mass section start a fresh content
+group and prevents separate liturgical sections from being joined on iPad. Add
+regression assertions for both proclamation roles and all five section groups.
 
-The first physical-iPad run compiled and passed 19 of 20 importer tests. Mass
-content and anchor boundaries were correct, but the regression exposed that two
-of five Mass sections still shared a continuation group and need correction.
+Validated on the physical iPad: the app compiled without errors and all 20
+Brewiarz EPUB importer tests passed, including Mass boundaries and grouping.

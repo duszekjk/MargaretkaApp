@@ -805,6 +805,12 @@ struct BrewiarzEPUBImporterTests {
         #expect(massLines.contains { $0.text == "Oto mi Bóg dopomaga." })
         #expect(massLines.contains { $0.text == "Słowa Ewangelii według Świętego Mateusza." })
         #expect(!massLines.contains { $0.text == "Otwórz, Panie, wargi moje." })
+        #expect(massLines.first(where: {
+            $0.text == "Czytanie z Księgi proroka Micheasza."
+        })?.role == .body)
+        #expect(massLines.first(where: {
+            $0.text == "Słowa Ewangelii według Świętego Mateusza."
+        })?.role == .body)
 
         let sectionGroupIDs = [
             "ANTYFONA NA WEJŚCIE",
