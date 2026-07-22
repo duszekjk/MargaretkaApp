@@ -885,4 +885,25 @@ struct BrewiarzEPUBImporterTests {
         #expect(Set(missing.map(\.displayName)).contains("Nieszpory"))
         #expect(Set(missing.map(\.displayName)).contains("Msza"))
     }
+
+    @Test @MainActor func restoresMissingMassTemplateDespiteAPlainPrayerWithTheSameName() throws {
+        let plainMass = Prayer(
+            name: "Msza",
+            text: "Moja własna modlitwa",
+            symbol: "text.book.closed",
+            audioFilename: nil,
+            audioSource: nil,
+            timestampedLines: nil
+        )
+
+        let migrated = PrayerStore.mergingDefaultPrayers(into: [plainMass])
+        let breviaryMasses = migrated.filter {
+            if case .brewiarz(.msza) = $0.content { return true }
+            return false
+        }
+
+        #expect(migrated.contains { $0.id == plainMass.id })
+        #expect(breviaryMasses.count == 1)
+        #expect(breviaryMasses.first?.id == UUID(uuidString: "927a98de-7ae4-4f93-b173-b040318de111"))
+    }
 }

@@ -53,20 +53,34 @@ class PrayerStore: ObservableObject {
         LocalDatabase.shared.save(prayers, as: key)
     }
 
-    private func ensureDefaultPrayers() {
-        let merged = mergeDefaultPrayers(into: prayers)
+    func ensureDefaultPrayers() {
+        let merged = Self.mergingDefaultPrayers(into: prayers)
         if merged.count != prayers.count {
             prayers = merged
             save()
         }
     }
 
-    private func mergeDefaultPrayers(into existing: [Prayer]) -> [Prayer] {
+    static func mergingDefaultPrayers(into existing: [Prayer]) -> [Prayer] {
         let existingNames = Set(existing.map { $0.name })
         let templates = Array(prayersTemplate.values)
         var merged = existing
-        for template in templates where !existingNames.contains(template.name) {
-            merged.append(template)
+        for template in templates {
+            let alreadyExists: Bool
+            switch template.content {
+            case .brewiarz(let key):
+                alreadyExists = merged.contains {
+                    if case .brewiarz(let existingKey) = $0.content {
+                        return existingKey == key
+                    }
+                    return false
+                }
+            case .saintBiography:
+                alreadyExists = merged.contains { $0.content == .saintBiography }
+            case .text:
+                alreadyExists = existingNames.contains(template.name)
+            }
+            if !alreadyExists { merged.append(template) }
         }
         return merged
     }

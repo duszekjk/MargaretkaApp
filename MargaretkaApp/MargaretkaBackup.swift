@@ -975,6 +975,7 @@ struct DataTransferView: View {
                     message = "EPUB zawiera tylko wygasłe dni (pominięto: \(expiredCount))."
                     return
                 }
+                prayerStore.ensureDefaultPrayers()
                 let breviaryTargets = BreviaryPrayerTargetFactory.missingTargets(
                     for: retained,
                     prayers: prayerStore.prayers,
