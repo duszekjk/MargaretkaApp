@@ -187,6 +187,7 @@ struct PrayerFlowView: View {
     @State private var isIPadPortrait = false
     @State private var hasMeasuredIPadOrientation = false
     @State private var isImagePlaygroundPresented = false
+    @State private var isPreparingImagePlayground = false
     @State private var imagePlaygroundOfficeID: UUID?
     @State private var imagePlaygroundConcepts: [ImagePlaygroundConcept] = []
     @State private var promptedImagePlaygroundOfficeIDs = Set<UUID>()
@@ -285,18 +286,27 @@ struct PrayerFlowView: View {
         onlyOnce: Bool
     ) async {
         guard backgroundOfflineOffice?.id == office.id,
-              !isImagePlaygroundPresented else { return }
+              !isImagePlaygroundPresented,
+              !isPreparingImagePlayground else { return }
         if onlyOnce,
            !promptedImagePlaygroundOfficeIDs.insert(office.id).inserted {
             return
         }
 
-        let prompt = await BreviaryImageGenerator.shared.preparedPrompt(for: office)
-        guard backgroundOfflineOffice?.id == office.id else { return }
         imagePlaygroundOfficeID = office.id
+        isPreparingImagePlayground = true
+        let prompt = await BreviaryImageGenerator.shared.preparedPrompt(for: office)
+        guard !Task.isCancelled,
+              backgroundOfflineOffice?.id == office.id else {
+            if imagePlaygroundOfficeID == office.id {
+                imagePlaygroundOfficeID = nil
+                isPreparingImagePlayground = false
+            }
+            return
+        }
         imagePlaygroundConcepts = [
             .text(prompt),
-            .text("Use a vertical portrait composition. Show only the specified physical location, objects, weather, light, and colors. No people, text, letters, logos, signs, or abstract symbols.")
+            .text(BreviaryImageGenerator.fullCanvasConcept)
         ]
         print("Presenting Image Playground; environment support: \(supportsImagePlayground)")
         await Task.yield()
@@ -575,8 +585,17 @@ struct PrayerFlowView: View {
                                     )
                                 }
                             } label: {
-                                Label("Utwórz tło", systemImage: "photo.badge.plus")
+                                if isPreparingImagePlayground,
+                                   imagePlaygroundOfficeID == office.id {
+                                    HStack(spacing: 8) {
+                                        ProgressView()
+                                        Text("Przygotowuję tło…")
+                                    }
+                                } else {
+                                    Label("Utwórz tło", systemImage: "photo.badge.plus")
+                                }
                             }
+                            .disabled(isPreparingImagePlayground)
                             .padding(8)
                             .glassEffect()
                         }
@@ -781,21 +800,30 @@ struct PrayerFlowView: View {
                 }
             }
             .padding(.vertical, 35)
+
+            if isPreparingImagePlayground {
+                ImagePlaygroundPreparationOverlay()
+                    .transition(.opacity)
+                    .zIndex(100)
+            }
         }
         .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         .imagePlaygroundSheet(
             isPresented: $isImagePlaygroundPresented,
             concepts: imagePlaygroundConcepts,
             onCompletion: { resultURL in
-                guard let officeID = imagePlaygroundOfficeID else { return }
-                _ = offlineBreviaryStore.saveImagePlaygroundResult(
-                    at: resultURL,
-                    for: officeID
-                )
+                if let officeID = imagePlaygroundOfficeID {
+                    _ = offlineBreviaryStore.saveImagePlaygroundResult(
+                        at: resultURL,
+                        for: officeID
+                    )
+                }
                 imagePlaygroundOfficeID = nil
+                isPreparingImagePlayground = false
             },
             onCancellation: {
                 imagePlaygroundOfficeID = nil
+                isPreparingImagePlayground = false
             }
         )
         .imagePlaygroundGenerationStyle(
@@ -1202,7 +1230,7 @@ struct PrayerFlowView: View {
     }
 }
 
-private extension View {
+extension View {
     @ViewBuilder
     func breviaryWallpaperImagePlaygroundOptions() -> some View {
 #if compiler(>=6.3)
@@ -1219,6 +1247,35 @@ private extension View {
 #else
         self
 #endif
+    }
+}
+
+struct ImagePlaygroundPreparationOverlay: View {
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.38)
+                .ignoresSafeArea()
+
+            VStack(spacing: 14) {
+                ProgressView()
+                    .controlSize(.large)
+
+                Text("Przygotowuję tworzenie obrazu…")
+                    .font(.headline)
+
+                Text("Image Playground może potrzebować kilkunastu sekund.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 28)
+            .padding(.vertical, 22)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22))
+            .padding(24)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Przygotowuję tworzenie obrazu")
+        .accessibilityAddTraits(.updatesFrequently)
     }
 }
 

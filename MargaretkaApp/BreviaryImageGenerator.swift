@@ -7,6 +7,10 @@ import UIKit
 actor BreviaryImageGenerator {
     static let shared = BreviaryImageGenerator()
 
+    nonisolated static let fullCanvasConcept = """
+        Put the camera inside the specified location and continue the scene all the way to all four canvas edges. Do not show a border, frame, mat, margin, blank edge, white edge, card, poster, page, picture, painting, photograph, screen, or artwork containing the scene. No people, text, letters, logos, or signs.
+        """
+
     private var attemptedFingerprints = Set<String>()
     private var preparedPrompts: [String: String] = [:]
 
@@ -22,7 +26,7 @@ actor BreviaryImageGenerator {
                 : (creator.availableStyles.first ?? .animation)
             let concepts: [ImagePlaygroundConcept] = [
                 .text(prompt),
-                .text("Show only the specified physical location, objects, weather, light, and colors. No text, letters, logos, signs, or abstract symbols.")
+                .text(Self.fullCanvasConcept)
             ]
             for try await created in creator.images(for: concepts, style: style, limit: 1) {
                 return UIImage(cgImage: created.cgImage).jpegData(compressionQuality: 0.88)
@@ -49,6 +53,25 @@ actor BreviaryImageGenerator {
         return prompt
     }
 
+    func preparedPrompt(forPrayerName name: String) async -> String {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cacheKey = "prayer-target:\(trimmedName.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "pl_PL")))"
+        if let cached = preparedPrompts[cacheKey] { return cached }
+
+        let fallback = """
+            Inside a small stone room at dawn, a worn oak table fills the foreground beneath an open arched window. A clay lamp, a glass of water, a sprig of rosemary, a folded linen cloth, and a string of wooden beads rest directly on the tabletop. Beyond the window, a narrow garden path leads between olive trees toward low blue hills. Sunlight enters from the left and casts long shadows. Use warm stone, oak brown, olive green, and pale blue. Vertical wallpaper composition. No people, text, letters, logos, or signs.
+            """
+        let context = trimmedName.isEmpty
+            ? "No source name is available."
+            : "Name from the Polish source: \(trimmedName)"
+        let prompt = await concretePromptWhenAvailable(
+            sourceContext: context,
+            fallback: fallback
+        )
+        preparedPrompts[cacheKey] = prompt
+        return prompt
+    }
+
     private func translateInstalledPolishToEnglish(_ text: String) async throws -> String {
         let polish = Locale.Language(identifier: "pl")
         let english = Locale.Language(identifier: "en")
@@ -65,6 +88,7 @@ actor BreviaryImageGenerator {
             let session = LanguageModelSession(instructions: """
                 Write one English prompt for a vertical wallpaper image.
                 Describe only things a camera could see: one exact location, the foreground surface, three to six named physical objects, the background, time of day, weather, direction of light, and a small color palette.
+                Place the camera inside the location and make the location continue through all four canvas edges. Never describe a framed image, print, card, poster, page, painting, photograph, screen, border, mat, margin, blank edge, or white edge.
                 Use source names and excerpts only to choose fitting physical objects. Do not summarize or name the source material.
                 Never use abstract religious, emotional, or artistic labels. Never use words including Catholic, sacred, prayer, liturgy, spiritual, symbolic, contemplative, reverent, holy, faith, devotional, or theme.
                 Do not mention writing, captions, logos, signs, letters, or abstract symbols except in the final prohibition sentence.

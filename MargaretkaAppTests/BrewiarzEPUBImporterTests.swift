@@ -925,6 +925,19 @@ struct BrewiarzEPUBImporterTests {
         #expect(storedPixels.height == sourcePixels.height)
     }
 
+    @Test func imagePlaygroundRequiresAnEdgeToEdgeSceneWithoutFrames() {
+        let instruction = BreviaryImageGenerator.fullCanvasConcept.lowercased()
+        let requiredPhrases = [
+            "all four canvas edges", "border", "frame", "mat", "margin",
+            "blank edge", "white edge", "card", "poster", "page",
+            "picture", "painting", "photograph", "screen"
+        ]
+
+        for phrase in requiredPhrases {
+            #expect(instruction.contains(phrase))
+        }
+    }
+
     @Test func requestsPortraitNativeResolutionRegardlessOfDeviceRotation() {
         let portrait = OfflineBreviaryStore.portraitWallpaperPixelSize(
             for: CGSize(width: 1179, height: 2556)

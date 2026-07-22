@@ -1,14 +1,16 @@
-codex conversation [unknown] replace abstract background prompts with concrete scenes
+codex conversation [unknown] show progress before full-bleed background creation
 
-Require image descriptions to name one physical location, foreground surfaces,
-visible objects, background elements, time, weather, light direction, and a
-small color palette. Reject generated descriptions containing abstract labels
-and fall back to a distinct concrete scene for every imported office type.
-Remove the abstract extra concepts from both automatic and interactive Image
-Playground paths, and store source excerpts as context rather than an image
-instruction. Add regression coverage across every fallback scene.
+Show an immediate progress overlay while the background prompt and Image
+Playground interface are being prepared. Keep repeated taps disabled and clear
+the loading state when creation is completed, cancelled, or superseded by a
+different office. Require both interactive and automatic generation to fill
+the canvas through all four edges and prohibit frames, mats, margins, white
+edges, cards, posters, pages, and pictures of pictures. Add regression coverage
+for the shared edge-to-edge instruction. Add Image Playground beside the photo
+library picker when editing a prayer target, prefilled with a concrete scene,
+and save its result through the existing compressed-photo path.
 
-Validated on the connected iPhone 15 Pro: all 25 EPUB importer and prayer-flow
-tests passed, including the concrete fallback-scene regression test. The full
-MargaretkaApp target built successfully, then installed and launched on that
-device as com.duszekjk.MargaretkaApp.
+Validated on the connected iPhone 15 Pro: all 26 EPUB importer and prayer-flow
+tests passed, including the new edge-to-edge generation regression test. The
+full MargaretkaApp target also built successfully, then installed and launched
+on that device as com.duszekjk.MargaretkaApp.

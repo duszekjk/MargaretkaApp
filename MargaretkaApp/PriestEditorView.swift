@@ -6,6 +6,7 @@
 //
 
 
+import ImagePlayground
 import PhotosUI
 import SwiftUI
 
@@ -22,6 +23,10 @@ struct PriestEditorView: View {
     @State private var photoScale: Double = 1.0
     @State private var photoOffset: CGSize = .zero
     @State private var showPhotoAdjuster = false
+    @State private var isImagePlaygroundPresented = false
+    @State private var isPreparingImagePlayground = false
+    @State private var imagePlaygroundConcepts: [ImagePlaygroundConcept] = []
+    @Environment(\.supportsImagePlayground) private var supportsImagePlayground
 
     private var editorTitle: String {
         switch priest.category {
@@ -45,6 +50,37 @@ struct PriestEditorView: View {
         priest.schedule.applyPrayerTimeSuggestion(for: priest.firstName)
     }
 
+    private func storePhoto(_ image: UIImage) {
+        guard let photoData = image.storageJPEGData(),
+              let storedImage = UIImage(data: photoData) else { return }
+        photo = storedImage
+        priest.photoData = photoData
+        photoScale = 1.0
+        photoOffset = .zero
+        priest.photoScale = 1.0
+        priest.photoOffsetX = 0.0
+        priest.photoOffsetY = 0.0
+    }
+
+    private func prepareGeneratedPhoto() async {
+        guard !isPreparingImagePlayground,
+              !isImagePlaygroundPresented else { return }
+        isPreparingImagePlayground = true
+        let prompt = await BreviaryImageGenerator.shared.preparedPrompt(
+            forPrayerName: priest.firstName
+        )
+        guard !Task.isCancelled else {
+            isPreparingImagePlayground = false
+            return
+        }
+        imagePlaygroundConcepts = [
+            .text(prompt),
+            .text(BreviaryImageGenerator.fullCanvasConcept)
+        ]
+        await Task.yield()
+        isImagePlaygroundPresented = true
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Section("Zdjęcie") {
@@ -62,6 +98,25 @@ struct PriestEditorView: View {
                             photoOffset = CGSize(width: priest.photoOffsetX, height: priest.photoOffsetY)
                         }
                     }
+                }
+                if priest.category == .prayer,
+                   supportsImagePlayground {
+                    Button {
+                        Task {
+                            await prepareGeneratedPhoto()
+                        }
+                    } label: {
+                        if isPreparingImagePlayground {
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                Text("Przygotowuję generator…")
+                            }
+                        } else {
+                            Label("Wygeneruj obraz", systemImage: "apple.image.playground")
+                        }
+                    }
+                    .disabled(isPreparingImagePlayground)
+                    .padding(.horizontal)
                 }
                 if let photo {
                     VStack(alignment: .leading, spacing: 12) {
@@ -155,18 +210,36 @@ struct PriestEditorView: View {
             Task {
                 if let data = try? await newItem?.loadTransferable(type: Data.self),
                    let uiImage = UIImage(data: data) {
-                    guard let photoData = uiImage.storageJPEGData(),
-                          let storedImage = UIImage(data: photoData) else { return }
-                    photo = storedImage
-                    priest.photoData = photoData
-                    photoScale = 1.0
-                    photoOffset = .zero
-                    priest.photoScale = 1.0
-                    priest.photoOffsetX = 0.0
-                    priest.photoOffsetY = 0.0
+                    storePhoto(uiImage)
                 }
             }
         }
+        .overlay {
+            if isPreparingImagePlayground {
+                ImagePlaygroundPreparationOverlay()
+                    .transition(.opacity)
+                    .zIndex(100)
+            }
+        }
+        .imagePlaygroundSheet(
+            isPresented: $isImagePlaygroundPresented,
+            concepts: imagePlaygroundConcepts,
+            onCompletion: { resultURL in
+                defer { isPreparingImagePlayground = false }
+                guard let sourceData = try? Data(contentsOf: resultURL),
+                      let image = UIImage(data: sourceData) else { return }
+                storePhoto(image)
+            },
+            onCancellation: {
+                isPreparingImagePlayground = false
+            }
+        )
+        .imagePlaygroundGenerationStyle(
+            .illustration,
+            in: [.illustration, .animation, .sketch]
+        )
+        .imagePlaygroundPersonalizationPolicy(.disabled)
+        .breviaryWallpaperImagePlaygroundOptions()
         .fullScreenCover(isPresented: $showPhotoAdjuster) {
             if let photo {
                 PhotoAdjustmentFullScreenView(image: photo, scale: $photoScale, offset: $photoOffset)
