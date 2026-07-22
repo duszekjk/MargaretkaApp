@@ -1030,6 +1030,7 @@ private struct BreviaryPrayerCardText: View {
         HStack(alignment: .top, spacing: 8) {
             if line.role == .choirRight {
                 Spacer(minLength: 14)
+                    .frame(width: 14)
             }
 
             RoundedRectangle(cornerRadius: 2)
@@ -1045,6 +1046,7 @@ private struct BreviaryPrayerCardText: View {
             
             if line.role == .choirLeft {
                 Spacer(minLength: 14)
+                    .frame(width: 14)
             }
         }
         .frame(

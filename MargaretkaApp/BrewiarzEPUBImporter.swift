@@ -484,8 +484,8 @@ nonisolated enum BrewiarzEPUBImporter {
         _ lines: [OfflineBreviaryLine],
         initialTitle: String? = nil
     ) -> [OfflineBreviaryCard] {
-        let maxCharacters = 410
-        let maxLines = 9
+        let maxCharacters = 520
+        let maxLines = 14
         var cards: [OfflineBreviaryCard] = []
         var current: [OfflineBreviaryLine] = []
         var characterCount = 0
@@ -498,7 +498,7 @@ nonisolated enum BrewiarzEPUBImporter {
             current = []
             characterCount = 0
         }
-
+        var nextFlush = false
         for line in lines.flatMap({ splitForPagination($0, maximumCharacters: maxCharacters) }) {
             if line.role == .prayerReference {
                 flush()
@@ -508,10 +508,23 @@ nonisolated enum BrewiarzEPUBImporter {
                 continue
             }
             let numberedAntiphon = isNumberedAntiphon(line.text)
+            if(nextFlush)
+            {
+                flush()
+                nextFlush = false
+            }
             if numberedAntiphon {
                 flush()
                 sectionTitle = nil
                 awaitingNumberedAntiphonTitle = true
+                nextFlush = true
+            }
+            if(line.text.range(
+                of: #"^\s*[147]\s+"#,
+                options: .regularExpression
+            ) != nil)
+            {
+                flush()
             }
             if line.role == .heading {
                 if awaitingNumberedAntiphonTitle {
@@ -536,9 +549,6 @@ nonisolated enum BrewiarzEPUBImporter {
         text.range(
             of: #"^\s*\d+\s+ant\."#,
             options: [.regularExpression, .caseInsensitive]
-        ) != nil || text.range(
-            of: #"^\s*[147]\s+"#,
-            options: .regularExpression
         ) != nil || text.range(
             of: #"^\s*Psalm\s+\d+\,"#,
             options: [.regularExpression, .caseInsensitive]
