@@ -13,7 +13,9 @@ struct MargaretkaAppApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate: AppDelegate
     @StateObject var scheduleData = ScheduleData<Priest>(saveKey: "priest_sch")
     @StateObject var prayerStore = PrayerStore()
+    @StateObject var priestStore = PriestStore()
     @StateObject var offlineBreviaryStore = OfflineBreviaryStore()
+    @StateObject var syncService = SyncService.shared
     @State private var didScheduleNotificationRefresh = false
     @State private var showUiTestGate = ProcessInfo.processInfo.arguments.contains("--ui-tests")
     @Environment(\.scenePhase) private var scenePhase
@@ -29,7 +31,9 @@ struct MargaretkaAppApp: App {
             }
             .environmentObject(scheduleData)
             .environmentObject(prayerStore)
+            .environmentObject(priestStore)
             .environmentObject(offlineBreviaryStore)
+            .environmentObject(syncService)
             .overlay {
                 if showUiTestGate {
                     UiTestGateView(isPresented: $showUiTestGate)
@@ -38,6 +42,13 @@ struct MargaretkaAppApp: App {
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
                     offlineBreviaryStore.removeExpired()
+                    Task {
+                        await syncService.synchronize(
+                            prayerStore: prayerStore,
+                            targetStore: priestStore,
+                            offlineStore: offlineBreviaryStore
+                        )
+                    }
                 }
             }
         }

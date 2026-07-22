@@ -54,6 +54,12 @@ struct SettingsMenuView: View {
     
     var body: some View {
         List {
+                NavigationLink {
+                    SyncSettingsView()
+                } label: {
+                    Label("Synchronizuj", systemImage: "arrow.triangle.2.circlepath.icloud")
+                }
+
                 NavigationLink("Modlitwy (pojedyncze)", destination: PrayerListSettingsView())
 
                 NavigationLink(

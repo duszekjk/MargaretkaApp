@@ -105,7 +105,7 @@ class PrayerStore: ObservableObject {
 }
 
 struct HomeView: View {
-    @StateObject var priestStore = PriestStore()
+    @EnvironmentObject var priestStore: PriestStore
     @EnvironmentObject var prayerStore: PrayerStore
     
     

@@ -1,9 +1,11 @@
-codex conversation [20260722-sync] preserve full-resolution photos for sync
+codex conversation [20260722-sync] add Apple account sync client
 
-Store the exact selected or generated photo bytes separately from the compact
-on-device preview and queue each new original for immediate synchronization.
-Give every synced photo a stable asset identifier and modification date.
+Add a Synchronizuj settings screen with Sign in with Apple, Keychain-backed
+session storage, automatic foreground sync, manual sync status, and sign-out.
+Transfer the complete backup snapshot so app data and view preferences travel
+together, while full-resolution originals upload independently and retry.
 
-Persist independent iPhone and iPad crop scale and offsets. Migrate legacy
-coordinates to both device families and retain the old fields for backup
-compatibility. Include the new photo metadata in backup conflict comparison.
+Detect divergent server revisions and let the user keep the device version,
+the cloud version, or merge and retain both. Enable the Apple Sign In
+entitlement and restore both entitlement-file membership exclusions that Xcode
+removed while normalizing the project file.
