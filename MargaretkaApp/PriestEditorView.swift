@@ -298,10 +298,15 @@ extension UIImage {
     }
 
     nonisolated func storageJPEGData(
-        maxDimension: CGFloat = 1600,
+        maxDimension: CGFloat = 480,
         byteLimit: Int = storagePhotoByteLimit
     ) -> Data? {
-        let dimensionCandidates: [CGFloat] = [maxDimension, 1400, 1200, 1000, 800, 640]
+        let dimensionCandidates: [CGFloat] = [
+            maxDimension,
+            min(maxDimension, 400),
+            min(maxDimension, 320),
+            min(maxDimension, 240)
+        ]
         let qualityCandidates: [CGFloat] = [0.92, 0.88, 0.84, 0.78, 0.72, 0.66, 0.60]
         var fallback: Data?
 

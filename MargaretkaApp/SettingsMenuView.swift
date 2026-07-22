@@ -54,12 +54,6 @@ struct SettingsMenuView: View {
     
     var body: some View {
         List {
-                NavigationLink {
-                    SyncSettingsView()
-                } label: {
-                    Label("Synchronizuj", systemImage: "arrow.triangle.2.circlepath.icloud")
-                }
-
                 NavigationLink("Modlitwy (pojedyncze)", destination: PrayerListSettingsView())
 
                 NavigationLink(
@@ -116,6 +110,12 @@ struct SettingsMenuView: View {
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("Statystyki")
                     .accessibilityIdentifier("settings_stats_link")
+
+                NavigationLink {
+                    SyncSettingsView()
+                } label: {
+                    Label("Synchronizuj", systemImage: "arrow.triangle.2.circlepath.icloud")
+                }
 
                 NavigationLink(
                     destination: DataTransferView(targetStore: priestStore)
