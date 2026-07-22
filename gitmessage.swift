@@ -1,7 +1,11 @@
-codex conversation [unknown] bump build after validating iPad prayer layout
+codex conversation [unknown] tune iPad prayer box for each orientation
 
-Increase the app and widget build number from 40 to 41 after the semantic prayer
-grouping, continuous two-part iPad text, adaptive card height, and animated font
-changes passed all 16 importer tests and a generic iOS device build. The final
-build 41 also compiled, installed, and launched successfully on the connected
-physical iPad Air.
+Increase the prayer text box by 15 percent in iPad portrait and 4 percent in
+landscape, while retaining a safety margin for the surrounding controls. Reduce
+the landscape prayer font by 8 percent so more of the combined prayer fits on
+screen. The existing animated orientation state drives both adjustments.
+
+This focused layout correction keeps build number 41. The full app target
+compiled without errors, and the resulting build was installed and launched
+successfully on the connected physical iPad Air; visual fit remains for review
+on the device.

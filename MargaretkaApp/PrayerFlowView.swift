@@ -208,14 +208,17 @@ struct PrayerFlowView: View {
         guard isComplexPrayerCard else { return 440 }
         let screenHeight = UIScreen.main.bounds.height
         if isIPad {
-            return max(520, min(screenHeight - 250, 920))
+            let baseHeight = max(520, min(screenHeight - 250, 920))
+            let orientationScale: CGFloat = isIPadPortrait ? 1.15 : 1.04
+            return min(baseHeight * orientationScale, screenHeight - 100)
         }
         return min(screenHeight * 0.72, 680)
     }
 
     var currentPrayerCardFontSize: CGFloat {
         let baseSize: CGFloat = isComplexPrayerCard ? 23 : 19
-        return isIPad && isIPadPortrait ? baseSize * 1.1 : baseSize
+        guard isIPad else { return baseSize }
+        return isIPadPortrait ? baseSize * 1.1 : baseSize * 0.92
     }
 
     var currentPrayerMinimumScaleFactor: CGFloat {
