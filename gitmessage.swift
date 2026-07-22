@@ -1,9 +1,8 @@
-codex conversation [20260722-sync] fix preview size and settings visibility regressions
+codex conversation [20260722-sync] increment validated sync build to 44
 
-Restore the 480-point persisted preview limit while retaining the separate
-full-resolution source used by photo sync. Keep the existing Statistics row
-in its prior visible position and place Synchronizuj beside data transfer.
+Advance the app and widget build number once after validating the complete
+sync implementation, regression fixes, signing, and device test suite.
 
-Physical-device validation exposed both regressions: the preview dimension
-test reported a 1000-point stored image and the Statistics UI test could no
-longer find its row after the new first item shifted the list.
+The physical-device run passed 59 unit and integration tests, the Settings
+navigation UI test, both appearance launch tests, and the retried launch
+performance test. Django checks and all four backend tests also pass.
