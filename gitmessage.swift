@@ -1,9 +1,9 @@
-codex conversation [unknown] identify imported prayer continuations
+codex conversation [unknown] pair matching prayer pages on iPad
 
-Assign a new content group when the EPUB importer reaches a semantic prayer
-heading such as a psalm, canticle, intercessions, or final prayer. Preserve the
-group across subtitles and pagination boundaries, then record part positions.
+Show two offline breviary cards side by side on iPad only when their group,
+prayer identifier, sequential part numbers, and total part count all match.
+Keep a single card when any of those conditions differs.
 
-Number multi-card titles from their logical group instead of globally matching
-title text. Equal titles in separate prayers therefore never imply that their
-cards belong together. Validation follows with importer and iPad layout tests.
+Navigate by visible pairs so a swipe does not repeat the second page. Animate
+the prayer font between its normal size and a ten-percent-larger iPad portrait
+size after device rotation. Validation follows with focused tests and builds.

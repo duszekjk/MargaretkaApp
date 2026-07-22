@@ -76,6 +76,43 @@ enum PrayerFlowStepBuilder {
     }
 }
 
+enum PrayerFlowPagePairing {
+    static func visibleStepIndices(
+        activeStepIndex: Int,
+        steps: [PrayerFlowStep],
+        enabled: Bool
+    ) -> [Int] {
+        guard steps.indices.contains(activeStepIndex) else { return [] }
+        guard enabled,
+              let activeCard = steps[activeStepIndex].offlineCard,
+              let groupID = activeCard.contentGroupID,
+              let partIndex = activeCard.partIndex,
+              let partCount = activeCard.partCount,
+              partCount > 1 else {
+            return [activeStepIndex]
+        }
+
+        let firstPartIndex = ((partIndex - 1) / 2) * 2 + 1
+        let firstStepIndex = activeStepIndex + firstPartIndex - partIndex
+        let secondStepIndex = firstStepIndex + 1
+        guard steps.indices.contains(firstStepIndex),
+              steps.indices.contains(secondStepIndex),
+              let firstCard = steps[firstStepIndex].offlineCard,
+              let secondCard = steps[secondStepIndex].offlineCard,
+              steps[firstStepIndex].prayerID == steps[secondStepIndex].prayerID,
+              firstCard.contentGroupID == groupID,
+              secondCard.contentGroupID == groupID,
+              firstCard.partIndex == firstPartIndex,
+              secondCard.partIndex == firstPartIndex + 1,
+              firstCard.partCount == partCount,
+              secondCard.partCount == partCount else {
+            return [activeStepIndex]
+        }
+
+        return [firstStepIndex, secondStepIndex]
+    }
+}
+
 struct PrayerFlowView: View {
     @EnvironmentObject var prayerStore: PrayerStore
     @EnvironmentObject var priestStore: PriestStore
@@ -115,6 +152,8 @@ struct PrayerFlowView: View {
     @AppStorage("prayerSwipeMode") private var prayerSwipeModeRaw: String = PrayerSwipeMode.both.rawValue
     @AppStorage("prayerCompactView") private var prayerCompactView: Bool = false
     @GestureState private var prayerSwipeTranslation: CGSize = .zero
+    @State private var isIPadPortrait = false
+    @State private var hasMeasuredIPadOrientation = false
     var priestsAndPrayers: [Priest] {
         scheduleData.items.filter { $0.category == selectedCategory }
     }
@@ -171,8 +210,9 @@ struct PrayerFlowView: View {
             : 440
     }
 
-    var currentPrayerCardFont: Font {
-        .system(size: isComplexPrayerCard ? 23 : 19, weight: .semibold)
+    var currentPrayerCardFontSize: CGFloat {
+        let baseSize: CGFloat = isComplexPrayerCard ? 23 : 19
+        return isIPad && isIPadPortrait ? baseSize * 1.1 : baseSize
     }
 
     var currentPrayerMinimumScaleFactor: CGFloat {
@@ -229,6 +269,22 @@ struct PrayerFlowView: View {
         )
     }
 
+    var isIPad: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
+    }
+
+    var visiblePrayerStepIndices: [Int] {
+        PrayerFlowPagePairing.visibleStepIndices(
+            activeStepIndex: activeIndex - 1,
+            steps: prayerSteps,
+            enabled: isIPad
+        )
+    }
+
+    var visibleOfflineCards: [OfflineBreviaryCard] {
+        visiblePrayerStepIndices.compactMap { prayerSteps[$0].offlineCard }
+    }
+
     var flattenedPrayerIds: [UUID] {
         prayerSteps.map(\.prayerID)
     }
@@ -257,7 +313,8 @@ struct PrayerFlowView: View {
 
     var displayProgress: Int {
         let count = flattenedPrayerSymbols.count
-        return min(max(activeIndex, 0), count)
+        let furthestVisibleIndex = visiblePrayerStepIndices.last.map { $0 + 1 }
+        return min(max(furthestVisibleIndex ?? activeIndex, 0), count)
     }
 
     var scrollerRowLength: Int { prayerCompactView ? 56 : 14 }
@@ -328,7 +385,17 @@ struct PrayerFlowView: View {
         if activeIndex == 0 {
             Text(startPageText)
         } else if let card = currentOfflineCard {
-            BreviaryPrayerCardText(card: card)
+            let cards = visibleOfflineCards.isEmpty ? [card] : visibleOfflineCards
+            HStack(spacing: 0) {
+                ForEach(Array(cards.enumerated()), id: \.element.id) { index, visibleCard in
+                    BreviaryPrayerCardText(card: visibleCard)
+                        .frame(maxWidth: .infinity)
+                    if index < cards.count - 1 {
+                        Divider()
+                            .padding(.vertical)
+                    }
+                }
+            }
         } else if activeIndex <= flattenedPrayerSymbols.count,
                   let prayer = allPrayers[flattenedPrayerIds[activeIndex - 1]] {
             Text(prayer.text + "\n\n" + prayer.name)
@@ -341,10 +408,10 @@ struct PrayerFlowView: View {
     private var sizedPrayerCardText: some View {
         if currentOfflineCard != nil {
             prayerCardText
-                .font(currentPrayerCardFont)
+                .modifier(AnimatedPrayerFont(size: currentPrayerCardFontSize))
         } else {
             prayerCardText
-                .font(currentPrayerCardFont)
+                .modifier(AnimatedPrayerFont(size: currentPrayerCardFontSize))
                 .minimumScaleFactor(currentPrayerMinimumScaleFactor)
         }
     }
@@ -358,17 +425,21 @@ struct PrayerFlowView: View {
 
         if isHorizontalSwipe {
             if translation.width >= threshold {
-                return max(activeIndex - 1, 0)
+                let firstVisibleIndex = visiblePrayerStepIndices.first.map { $0 + 1 } ?? activeIndex
+                return max(firstVisibleIndex - 1, 0)
             }
             if translation.width <= -threshold {
-                return min(activeIndex + 1, lastDisplayIndex)
+                let lastVisibleIndex = visiblePrayerStepIndices.last.map { $0 + 1 } ?? activeIndex
+                return min(lastVisibleIndex + 1, lastDisplayIndex)
             }
         } else {
             if translation.height <= -threshold {
-                return min(activeIndex + 1, lastDisplayIndex)
+                let lastVisibleIndex = visiblePrayerStepIndices.last.map { $0 + 1 } ?? activeIndex
+                return min(lastVisibleIndex + 1, lastDisplayIndex)
             }
             if translation.height >= threshold {
-                return max(activeIndex - 1, 0)
+                let firstVisibleIndex = visiblePrayerStepIndices.first.map { $0 + 1 } ?? activeIndex
+                return max(firstVisibleIndex - 1, 0)
             }
         }
 
@@ -629,6 +700,19 @@ struct PrayerFlowView: View {
             .padding(.vertical, 35)
         }
         .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+        .onGeometryChange(for: Bool.self) { geometry in
+            geometry.size.height > geometry.size.width
+        } action: { isPortrait in
+            guard isIPad else { return }
+            if hasMeasuredIPadOrientation {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isIPadPortrait = isPortrait
+                }
+            } else {
+                isIPadPortrait = isPortrait
+                hasMeasuredIPadOrientation = true
+            }
+        }
         .task(id: currentOfflineOffice?.id) {
             guard let officeID = currentOfflineOffice?.id else { return }
             await offlineBreviaryStore.generateImageIfNeeded(for: officeID)
@@ -1003,6 +1087,19 @@ struct PrayerFlowView: View {
             return "\(hours)h \(minutes)m"
         }
         return "\(minutes)m"
+    }
+}
+
+private struct AnimatedPrayerFont: AnimatableModifier {
+    var size: CGFloat
+
+    var animatableData: CGFloat {
+        get { size }
+        set { size = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        content.font(.system(size: size, weight: .semibold))
     }
 }
 
