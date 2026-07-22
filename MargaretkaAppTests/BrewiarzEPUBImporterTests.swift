@@ -241,6 +241,83 @@ struct BrewiarzEPUBImporterTests {
         #expect(lines.contains { $0.italic && $0.text == "Wysłuchaj nas, Panie." })
     }
 
+    @Test func keepsCompleteIntercessionsTogetherWithTwoOrThreePerCard() throws {
+        let xhtml = """
+        <html xmlns="http://www.w3.org/1999/xhtml"><body>
+        <div>Środa, 22 lipca 2026</div>
+        <a id="d2207p_jt"></a>
+        <div><b>Jutrznia</b></div>
+        <div><b>PROŚBY</b></div>
+        <div>Uwielbiajmy naszego Zbawiciela i wołajmy do Niego:</div>
+        <div>Przyjdź, Panie Jezu.</div>
+        <div>Pierwsza prośba do Chrystusa,</div>
+        <div><b>- pierwsze dopełnienie.</b></div>
+        <div>Przyjdź, Panie Jezu.</div>
+        <div>Druga prośba do Chrystusa,</div>
+        <div><b>- drugie dopełnienie.</b></div>
+        <div>Przyjdź, Panie Jezu.</div>
+        <div>Trzecia prośba do Chrystusa,</div>
+        <div><b>- trzecie dopełnienie.</b></div>
+        <div>Przyjdź, Panie Jezu.</div>
+        <div>Czwarta prośba do Chrystusa,</div>
+        <div><b>- czwarte dopełnienie.</b></div>
+        <div>Przyjdź, Panie Jezu.</div>
+        <div>Piąta prośba do Chrystusa,</div>
+        <div><b>- piąte dopełnienie.</b></div>
+        <div>Przyjdź, Panie Jezu.</div>
+        <div><b>MODLITWA</b></div>
+        <div>Treść modlitwy końcowej.</div>
+        <a id="d2207p_m1"></a>
+        </body></html>
+        """
+
+        let day = try #require(BrewiarzEPUBImporter.parseDailyDocument(
+            xhtml,
+            entryName: "OEBPS/Text/2207p.xhtml",
+            importID: UUID(),
+            sourceIdentifier: "fixture.epub",
+            sourceTitle: "fixture"
+        ))
+        let cards = try #require(day.offices.first(where: { $0.key == .jutrznia }))
+            .cards
+            .filter { $0.title?.folding(
+                options: [.caseInsensitive, .diacriticInsensitive],
+                locale: Locale(identifier: "pl_PL")
+            ).hasPrefix("prosby") == true }
+
+        #expect(cards.count == 2)
+        #expect(cards.map { card in
+            card.lines.count(where: { $0.text.hasPrefix("-") })
+        } == [3, 2])
+        #expect(cards.allSatisfy { card in
+            !card.lines.contains { $0.text.hasPrefix("-") && $0.role == .heading }
+        })
+
+        let expectedPairs = [
+            (lead: "Pierwsza", continuation: "pierwsze"),
+            (lead: "Druga", continuation: "drugie"),
+            (lead: "Trzecia", continuation: "trzecie"),
+            (lead: "Czwarta", continuation: "czwarte"),
+            (lead: "Piąta", continuation: "piąte")
+        ]
+        for expected in expectedPairs {
+            let matchingCards = cards.filter { card in
+                card.lines.contains { $0.text.hasPrefix("\(expected.lead) prośba") }
+            }
+            let card = try #require(matchingCards.first)
+            #expect(matchingCards.count == 1)
+            #expect(card.lines.contains { line in
+                line.text.hasPrefix("-") && line.text.folding(
+                    options: [.caseInsensitive, .diacriticInsensitive],
+                    locale: Locale(identifier: "pl_PL")
+                ).contains(expected.continuation.folding(
+                    options: [.caseInsensitive, .diacriticInsensitive],
+                    locale: Locale(identifier: "pl_PL")
+                ))
+            })
+        }
+    }
+
     @Test func importsSaintBiographyAsDatedPaginatedContent() throws {
         let biography = Array(repeating: "Jacek podejmował wyprawy misyjne i wiernie służył Kościołowi.", count: 12)
             .joined(separator: " ")

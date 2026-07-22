@@ -491,20 +491,30 @@ nonisolated enum BrewiarzEPUBImporter {
         var characterCount = 0
         var sectionTitle = initialTitle
         var awaitingNumberedAntiphonTitle = false
+        var intercessionsOnCard = 0
+        var inIntercessions = false
+        var intercessionResponse: String?
 
         func flush() {
             guard !current.isEmpty else { return }
             cards.append(OfflineBreviaryCard(title: sectionTitle, lines: current))
             current = []
             characterCount = 0
+            intercessionsOnCard = 0
         }
         var nextFlush = false
-        for line in lines.flatMap({ splitForPagination($0, maximumCharacters: maxCharacters) }) {
+        let paginatedLines = lines.flatMap { splitForPagination($0, maximumCharacters: maxCharacters) }
+        var lineIndex = 0
+        while lineIndex < paginatedLines.count {
+            var line = paginatedLines[lineIndex]
             if line.role == .prayerReference {
                 flush()
                 cards.append(OfflineBreviaryCard(title: line.canonicalPrayerName, lines: [line]))
                 sectionTitle = nil
                 awaitingNumberedAntiphonTitle = false
+                inIntercessions = false
+                intercessionResponse = nil
+                lineIndex += 1
                 continue
             }
             let numberedAntiphon = isNumberedAntiphon(line.text)
@@ -527,22 +537,74 @@ nonisolated enum BrewiarzEPUBImporter {
                 flush()
             }
             if line.role == .heading {
-                if awaitingNumberedAntiphonTitle {
+                if inIntercessions && isIntercessionContinuation(line.text) {
+                    line.role = .body
+                } else if awaitingNumberedAntiphonTitle {
                     sectionTitle = line.text
                     awaitingNumberedAntiphonTitle = false
                 } else {
                     flush()
                     sectionTitle = line.text
+                    inIntercessions = isIntercessionsHeading(line.text)
+                    intercessionResponse = nil
                 }
             }
+
+            if inIntercessions,
+               !isIntercessionContinuation(line.text),
+               lineIndex + 1 < paginatedLines.count,
+               isIntercessionContinuation(paginatedLines[lineIndex + 1].text) {
+                var continuation = paginatedLines[lineIndex + 1]
+                continuation.role = .body
+                var group = [line, continuation]
+                var consumedLineCount = 2
+
+                if lineIndex + 2 < paginatedLines.count {
+                    let following = paginatedLines[lineIndex + 2]
+                    if intercessionResponse == nil,
+                       following.text == current.last?.text {
+                        intercessionResponse = following.text
+                    }
+                    if following.text == intercessionResponse {
+                        group.append(following)
+                        consumedLineCount += 1
+                    }
+                }
+
+                let groupCharacterCount = group.reduce(0) { $0 + $1.text.count }
+                let wouldOverflow = !current.isEmpty && (
+                    characterCount + groupCharacterCount > maxCharacters
+                        || current.count + group.count > maxLines
+                        || intercessionsOnCard >= 3
+                )
+                if wouldOverflow { flush() }
+                current.append(contentsOf: group)
+                characterCount += groupCharacterCount
+                intercessionsOnCard += 1
+                lineIndex += consumedLineCount
+                continue
+            }
+
             let wouldOverflow = !current.isEmpty
                 && (characterCount + line.text.count > maxCharacters || current.count >= maxLines)
             if wouldOverflow { flush() }
             current.append(line)
             characterCount += line.text.count
+            lineIndex += 1
         }
         flush()
         return numberedContinuationTitles(in: cards)
+    }
+
+    private static func isIntercessionsHeading(_ text: String) -> Bool {
+        text.folding(
+            options: [.caseInsensitive, .diacriticInsensitive],
+            locale: Locale(identifier: "pl_PL")
+        ) == "prosby"
+    }
+
+    private static func isIntercessionContinuation(_ text: String) -> Bool {
+        text.range(of: #"^\s*[-–—]\s+"#, options: .regularExpression) != nil
     }
 
     private static func isNumberedAntiphon(_ text: String) -> Bool {

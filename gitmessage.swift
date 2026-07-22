@@ -1,12 +1,13 @@
-codex conversation [unknown] restore runnable application scheme
+codex conversation [unknown] keep complete intercessions on each card
 
-Add a shared MargaretkaApp scheme that builds and launches the application,
-includes its unit and UI tests, and uses the app for profiling and archiving.
-Keep the separate widget scheme available and place it after the app in Xcode's
-scheme ordering.
+Treat a PROŚBY petition, its emphasized dash continuation, and its repeated
+response as one pagination unit. Keep at most three complete petitions on a
+card so page boundaries cannot combine halves from different petitions.
 
-Validate both scheme XML files, confirm Xcode discovers MargaretkaApp before
-MargaretkaWidget, and complete an unsigned Debug build of the MargaretkaApp
-scheme. The build compiles and links the app, embeds the widget extension, and
-finishes successfully; existing warnings are unchanged and intentionally
-ignored. Keep build number 40 because this is a focused configuration repair.
+Add a regression fixture covering five petitions and the original emphasized
+continuation markup. The new device test passes and the signed Debug app build
+succeeds for the physical iPhone target. Three unrelated, older importer tests
+still fail on pre-existing pagination-limit and numbered-title expectations.
+
+Keep build number 40 because this is a focused importer pagination correction,
+not a significant release-level change.
