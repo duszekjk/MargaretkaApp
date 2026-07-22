@@ -1,7 +1,5 @@
-codex conversation [unknown] bump build after validating prayer pagination
+codex conversation [unknown] preserve larger pagination limit
 
-Increase the app and widget build number from 41 to 42 after the revised Psalm
-pairing and sentence-aware EPUB pagination passed all 18 importer tests. The
-regular iPad target also compiled, installed, and launched successfully on the
-connected physical iPad Air. Final build 42 also compiled without regenerating
-assets, then installed and launched successfully on that iPad.
+Preserve the existing uncommitted change that raises the EPUB pagination limit
+from 520 to 1024 characters. This snapshot is made before investigating Office
+of Readings grouping and has not yet been validated by the test suite.
