@@ -918,8 +918,11 @@ struct BrewiarzEPUBImporterTests {
             OfflineBreviaryStore.backgroundJPEGDataPreservingDimensions(from: sourceData)
         )
         let stored = try #require(UIImage(data: storedData))
+        let sourcePixels = try #require(source.cgImage)
+        let storedPixels = try #require(stored.cgImage)
 
-        #expect(stored.size == CGSize(width: 300, height: 500))
+        #expect(storedPixels.width == sourcePixels.width)
+        #expect(storedPixels.height == sourcePixels.height)
     }
 
     @Test func requestsPortraitNativeResolutionRegardlessOfDeviceRotation() {
