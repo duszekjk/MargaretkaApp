@@ -1,11 +1,7 @@
-codex conversation [unknown] combine matching prayer parts into one iPad text
+codex conversation [unknown] bump build after validating iPad prayer layout
 
-Replace the rejected side-by-side iPad presentation with one continuous text
-view built from both matching cards' lines. Remove the column divider and avoid
-separate expanding card views inside the prayer card.
-
-Size the iPad card from the screen height after reserving space for controls and
-navigation, and replace the phone's expanding top spacer with a short fixed
-gap. The same-group pairing and pair-aware navigation remain unchanged. The
-16-test importer run and the generic iOS device build passed. The resulting app
-was installed and launched successfully on the connected physical iPad Air.
+Increase the app and widget build number from 40 to 41 after the semantic prayer
+grouping, continuous two-part iPad text, adaptive card height, and animated font
+changes passed all 16 importer tests and a generic iOS device build. The final
+build 41 also compiled, installed, and launched successfully on the connected
+physical iPad Air.
