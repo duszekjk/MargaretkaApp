@@ -55,11 +55,7 @@ struct MargaretkaWidgetEntryView: View {
             }
         }
         .containerBackground(for: .widget) {
-            LinearGradient(
-                colors: [Color.indigo.opacity(0.28), Color.purple.opacity(0.12)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            Color.black
         }
     }
 

@@ -395,7 +395,7 @@ nonisolated enum BrewiarzEPUBImporter {
     ) -> [OfflineBreviaryLine] {
         let navigationPhrases = [
             "kartka z kalendarza", "inne oficja", "wykaz obchodów", "teksty mszy",
-            "wczoraj", "dzisiaj", "copyright by", "opracowanie i edycja"
+            "wczoraj", "dzisiaj", "copyright by", "opracowanie i edycja", "Na końcu tej pieśni nie mówi się Chwała Ojcu."
         ]
         let normalizedOfficeTitle = officeTitle.lowercased()
         let otherOfficeTitles = Set(
@@ -484,8 +484,8 @@ nonisolated enum BrewiarzEPUBImporter {
         _ lines: [OfflineBreviaryLine],
         initialTitle: String? = nil
     ) -> [OfflineBreviaryCard] {
-        let maxCharacters = 310
-        let maxLines = 7
+        let maxCharacters = 410
+        let maxLines = 9
         var cards: [OfflineBreviaryCard] = []
         var current: [OfflineBreviaryLine] = []
         var characterCount = 0
@@ -535,6 +535,15 @@ nonisolated enum BrewiarzEPUBImporter {
     private static func isNumberedAntiphon(_ text: String) -> Bool {
         text.range(
             of: #"^\s*\d+\s+ant\."#,
+            options: [.regularExpression, .caseInsensitive]
+        ) != nil || text.range(
+            of: #"^\s*[147]\s+"#,
+            options: .regularExpression
+        ) != nil || text.range(
+            of: #"^\s*Psalm\s+\d+\,"#,
+            options: [.regularExpression, .caseInsensitive]
+        ) != nil || text.range(
+            of: #"^\s*Pieśń\s+\("#,
             options: [.regularExpression, .caseInsensitive]
         ) != nil
     }

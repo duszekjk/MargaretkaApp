@@ -172,11 +172,11 @@ struct PrayerFlowView: View {
     }
 
     var currentPrayerCardFont: Font {
-        .system(size: isComplexPrayerCard ? 24 : 20, weight: .semibold)
+        .system(size: isComplexPrayerCard ? 23 : 19, weight: .semibold)
     }
 
     var currentPrayerMinimumScaleFactor: CGFloat {
-        isComplexPrayerCard ? 17 / 24 : 0.9
+        isComplexPrayerCard ? 17 / 23 : 0.8
     }
 
     private func moveToIndex(_ index: Int, animated: Bool) {
@@ -1018,7 +1018,7 @@ private struct BreviaryPrayerCardText: View {
                     Text(line.text)
                         .bold(line.emphasized)
                         .italic(line.italic)
-                        .multilineTextAlignment(.center)
+                        .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
@@ -1029,7 +1029,7 @@ private struct BreviaryPrayerCardText: View {
     private func choirLine(_ line: OfflineBreviaryLine) -> some View {
         HStack(alignment: .top, spacing: 8) {
             if line.role == .choirRight {
-                Spacer(minLength: 28)
+                Spacer(minLength: 14)
             }
 
             RoundedRectangle(cornerRadius: 2)
@@ -1040,11 +1040,16 @@ private struct BreviaryPrayerCardText: View {
             Text(line.text)
                 .bold(line.emphasized)
                 .italic(line.italic)
-                .multilineTextAlignment(line.role == .choirRight ? .trailing : .leading)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+            
+            if line.role == .choirLeft {
+                Spacer(minLength: 14)
+            }
         }
         .frame(
             maxWidth: .infinity,
-            alignment: line.role == .choirRight ? .trailing : .leading
+            alignment: .leading
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
@@ -1052,6 +1057,7 @@ private struct BreviaryPrayerCardText: View {
                 ? "Chór prawy. \(line.text)"
                 : "Chór lewy. \(line.text)"
         )
+        
     }
 
     private var choirLeftColor: Color {
