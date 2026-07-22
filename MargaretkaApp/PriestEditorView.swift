@@ -28,6 +28,10 @@ struct PriestEditorView: View {
     @State private var imagePlaygroundConcepts: [ImagePlaygroundConcept] = []
     @Environment(\.supportsImagePlayground) private var supportsImagePlayground
 
+    private var photoLayoutFamily: PhotoLayoutFamily {
+        UIDevice.current.userInterfaceIdiom == .pad ? .iPad : .iPhone
+    }
+
     private var editorTitle: String {
         switch priest.category {
         case .priest:
@@ -50,16 +54,26 @@ struct PriestEditorView: View {
         priest.schedule.applyPrayerTimeSuggestion(for: priest.firstName)
     }
 
-    private func storePhoto(_ image: UIImage) {
+    private func storePhoto(_ image: UIImage, originalData: Data? = nil) {
         guard let photoData = image.storageJPEGData(),
               let storedImage = UIImage(data: photoData) else { return }
+        let assetID = priest.photoAssetID ?? UUID()
+        let fullResolutionData = originalData ?? image.jpegData(compressionQuality: 1)
+        if let fullResolutionData {
+            do {
+                try SyncedPhotoStorage.shared.saveOriginal(fullResolutionData, assetID: assetID)
+                priest.photoAssetID = assetID
+                priest.photoUpdatedAt = .now
+            } catch {
+                print("Failed to preserve original photo: \(error.localizedDescription)")
+            }
+        }
         photo = storedImage
         priest.photoData = photoData
         photoScale = 1.0
         photoOffset = .zero
-        priest.photoScale = 1.0
-        priest.photoOffsetX = 0.0
-        priest.photoOffsetY = 0.0
+        priest.photoPlacements = [.iPhone: .centered, .iPad: .centered]
+        priest.setPhotoPlacement(.centered, for: photoLayoutFamily)
     }
 
     private func prepareGeneratedPhoto() async {
@@ -94,8 +108,9 @@ struct PriestEditorView: View {
                         if let displayPhoto = priest.displayPhoto
                         {
                             photo = displayPhoto
-                            photoScale = priest.photoScale
-                            photoOffset = CGSize(width: priest.photoOffsetX, height: priest.photoOffsetY)
+                            let placement = priest.photoPlacement(for: photoLayoutFamily)
+                            photoScale = placement.scale
+                            photoOffset = CGSize(width: placement.offsetX, height: placement.offsetY)
                         }
                     }
                 }
@@ -143,11 +158,10 @@ struct PriestEditorView: View {
                     }
                     .padding(.horizontal)
                     .onChange(of: photoScale) {
-                        priest.photoScale = photoScale
+                        updatePhotoPlacement()
                     }
                     .onChange(of: photoOffset) {
-                        priest.photoOffsetX = photoOffset.width
-                        priest.photoOffsetY = photoOffset.height
+                        updatePhotoPlacement()
                     }
                 }
             }
@@ -210,7 +224,7 @@ struct PriestEditorView: View {
             Task {
                 if let data = try? await newItem?.loadTransferable(type: Data.self),
                    let uiImage = UIImage(data: data) {
-                    storePhoto(uiImage)
+                    storePhoto(uiImage, originalData: data)
                 }
             }
         }
@@ -228,7 +242,7 @@ struct PriestEditorView: View {
                 defer { isPreparingImagePlayground = false }
                 guard let sourceData = try? Data(contentsOf: resultURL),
                       let image = UIImage(data: sourceData) else { return }
-                storePhoto(image)
+                storePhoto(image, originalData: sourceData)
             },
             onCancellation: {
                 isPreparingImagePlayground = false
@@ -244,14 +258,24 @@ struct PriestEditorView: View {
             if let photo {
                 PhotoAdjustmentFullScreenView(image: photo, scale: $photoScale, offset: $photoOffset)
                     .onChange(of: photoScale) {
-                        priest.photoScale = photoScale
+                        updatePhotoPlacement()
                     }
                     .onChange(of: photoOffset) {
-                        priest.photoOffsetX = photoOffset.width
-                        priest.photoOffsetY = photoOffset.height
+                        updatePhotoPlacement()
                     }
             }
         }
+    }
+
+    private func updatePhotoPlacement() {
+        priest.setPhotoPlacement(
+            PhotoPlacement(
+                scale: photoScale,
+                offsetX: photoOffset.width,
+                offsetY: photoOffset.height
+            ),
+            for: photoLayoutFamily
+        )
     }
 }
 import UIKit

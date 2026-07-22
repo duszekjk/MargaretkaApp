@@ -660,9 +660,12 @@ enum MargaretkaBackupService {
         lhs.category == rhs.category
             && normalized(lhs.displayName) == normalized(rhs.displayName)
             && lhs.photoData == rhs.photoData
+            && lhs.photoAssetID == rhs.photoAssetID
+            && lhs.photoUpdatedAt == rhs.photoUpdatedAt
             && lhs.photoScale == rhs.photoScale
             && lhs.photoOffsetX == rhs.photoOffsetX
             && lhs.photoOffsetY == rhs.photoOffsetY
+            && lhs.photoPlacements == rhs.photoPlacements
             && lhs.assignedPrayerGroups == rhs.assignedPrayerGroups
             && lhs.schedule == rhs.schedule
     }

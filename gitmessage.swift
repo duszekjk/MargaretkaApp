@@ -1,5 +1,9 @@
-codex conversation [20260722-sync] preserve existing localization work
+codex conversation [20260722-sync] preserve full-resolution photos for sync
 
-Capture all work that was already uncommitted when the sync implementation
-conversation began. This commit intentionally preserves the existing
-Localizable.xcstrings additions without changing their content.
+Store the exact selected or generated photo bytes separately from the compact
+on-device preview and queue each new original for immediate synchronization.
+Give every synced photo a stable asset identifier and modification date.
+
+Persist independent iPhone and iPad crop scale and offsets. Migrate legacy
+coordinates to both device families and retain the old fields for backup
+compatibility. Include the new photo metadata in backup conflict comparison.

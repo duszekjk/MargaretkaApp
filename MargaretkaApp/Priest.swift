@@ -55,9 +55,12 @@ struct Priest: Identifiable, Hashable, Codable {
     var title: String
     var category: PrayerTargetCategory = .priest
     var photoData: Data?
+    var photoAssetID: UUID?
+    var photoUpdatedAt: Date?
     var photoScale: Double = 1.0
     var photoOffsetX: Double = 0.0
     var photoOffsetY: Double = 0.0
+    var photoPlacements: [PhotoLayoutFamily: PhotoPlacement] = [:]
     var assignedPrayerGroups: [AssignedPrayerGroup]
     
     
@@ -124,9 +127,12 @@ struct Priest: Identifiable, Hashable, Codable {
         title: String,
         category: PrayerTargetCategory = .priest,
         photoData: Data? = nil,
+        photoAssetID: UUID? = nil,
+        photoUpdatedAt: Date? = nil,
         photoScale: Double = 1.0,
         photoOffsetX: Double = 0.0,
         photoOffsetY: Double = 0.0,
+        photoPlacements: [PhotoLayoutFamily: PhotoPlacement] = [:],
         assignedPrayerGroups: [AssignedPrayerGroup],
         schedule: SchedulePlan,
         lastModified: Date,
@@ -143,9 +149,12 @@ struct Priest: Identifiable, Hashable, Codable {
         self.title = title
         self.category = category
         self.photoData = photoData
+        self.photoAssetID = photoAssetID
+        self.photoUpdatedAt = photoUpdatedAt
         self.photoScale = photoScale
         self.photoOffsetX = photoOffsetX
         self.photoOffsetY = photoOffsetY
+        self.photoPlacements = photoPlacements
         self.assignedPrayerGroups = assignedPrayerGroups
         self.schedule = schedule
         self.lastModified = lastModified
@@ -182,9 +191,12 @@ struct Priest: Identifiable, Hashable, Codable {
         case title
         case category
         case photoData
+        case photoAssetID
+        case photoUpdatedAt
         case photoScale
         case photoOffsetX
         case photoOffsetY
+        case photoPlacements
         case assignedPrayerGroups
         case schedule
         case lastModified
@@ -204,9 +216,20 @@ struct Priest: Identifiable, Hashable, Codable {
         title = try container.decode(String.self, forKey: .title)
         category = try container.decodeIfPresent(PrayerTargetCategory.self, forKey: .category) ?? .priest
         photoData = try container.decodeIfPresent(Data.self, forKey: .photoData)
+        photoAssetID = try container.decodeIfPresent(UUID.self, forKey: .photoAssetID)
+        photoUpdatedAt = try container.decodeIfPresent(Date.self, forKey: .photoUpdatedAt)
         photoScale = try container.decodeIfPresent(Double.self, forKey: .photoScale) ?? 1.0
         photoOffsetX = try container.decodeIfPresent(Double.self, forKey: .photoOffsetX) ?? 0.0
         photoOffsetY = try container.decodeIfPresent(Double.self, forKey: .photoOffsetY) ?? 0.0
+        let legacyPlacement = PhotoPlacement(
+            scale: photoScale,
+            offsetX: photoOffsetX,
+            offsetY: photoOffsetY
+        )
+        photoPlacements = try container.decodeIfPresent(
+            [PhotoLayoutFamily: PhotoPlacement].self,
+            forKey: .photoPlacements
+        ) ?? [.iPhone: legacyPlacement, .iPad: legacyPlacement]
         assignedPrayerGroups = try container.decode([AssignedPrayerGroup].self, forKey: .assignedPrayerGroups)
         schedule = try container.decode(SchedulePlan.self, forKey: .schedule)
         lastModified = try container.decode(Date.self, forKey: .lastModified)
@@ -240,9 +263,12 @@ struct Priest: Identifiable, Hashable, Codable {
         try container.encode(title, forKey: .title)
         try container.encode(category, forKey: .category)
         try container.encodeIfPresent(photoData, forKey: .photoData)
+        try container.encodeIfPresent(photoAssetID, forKey: .photoAssetID)
+        try container.encodeIfPresent(photoUpdatedAt, forKey: .photoUpdatedAt)
         try container.encode(photoScale, forKey: .photoScale)
         try container.encode(photoOffsetX, forKey: .photoOffsetX)
         try container.encode(photoOffsetY, forKey: .photoOffsetY)
+        try container.encode(photoPlacements, forKey: .photoPlacements)
         try container.encode(assignedPrayerGroups, forKey: .assignedPrayerGroups)
         try container.encode(schedule, forKey: .schedule)
         try container.encode(lastModified, forKey: .lastModified)
@@ -427,6 +453,23 @@ extension Priest {
         }
         guard let bundledPhotoAssetName else { return nil }
         return UIImage(named: bundledPhotoAssetName)
+    }
+
+    func photoPlacement(for family: PhotoLayoutFamily) -> PhotoPlacement {
+        photoPlacements[family] ?? PhotoPlacement(
+            scale: photoScale,
+            offsetX: photoOffsetX,
+            offsetY: photoOffsetY
+        )
+    }
+
+    mutating func setPhotoPlacement(_ placement: PhotoPlacement, for family: PhotoLayoutFamily) {
+        photoPlacements[family] = placement
+        // Keep the legacy fields current for older backup readers.
+        photoScale = placement.scale
+        photoOffsetX = placement.offsetX
+        photoOffsetY = placement.offsetY
+        lastModified = .now
     }
 
     var bundledPhotoAssetName: String? {

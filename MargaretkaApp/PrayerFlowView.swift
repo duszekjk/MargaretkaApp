@@ -543,19 +543,21 @@ struct PrayerFlowView: View {
     }
 
     var body: some View {
+        let layoutFamily: PhotoLayoutFamily = UIDevice.current.userInterfaceIdiom == .pad ? .iPad : .iPhone
+        let photoPlacement = selectedPriest?.photoPlacement(for: layoutFamily) ?? .centered
         ZStack {
             if let bg = backgroundImage {
                 AdjustableBackgroundImage(
                     image: bg,
                     scale: generatedBreviaryBackgroundImage == nil
-                        ? (selectedPriest?.photoScale ?? 1.0)
+                        ? photoPlacement.scale
                         : 1.0,
                     offset: CGSize(
                         width: generatedBreviaryBackgroundImage == nil
-                            ? (selectedPriest?.photoOffsetX ?? 0.0)
+                            ? photoPlacement.offsetX
                             : 0.0,
                         height: generatedBreviaryBackgroundImage == nil
-                            ? (selectedPriest?.photoOffsetY ?? 0.0)
+                            ? photoPlacement.offsetY
                             : 0.0
                     ),
                     size: UIScreen.main.bounds.size
