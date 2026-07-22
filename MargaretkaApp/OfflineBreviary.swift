@@ -131,11 +131,24 @@ nonisolated struct OfflineBreviaryCard: Codable, Hashable, Identifiable, Sendabl
     let id: UUID
     var title: String?
     var lines: [OfflineBreviaryLine]
+    var contentGroupID: UUID?
+    var partIndex: Int?
+    var partCount: Int?
 
-    init(id: UUID = UUID(), title: String? = nil, lines: [OfflineBreviaryLine]) {
+    init(
+        id: UUID = UUID(),
+        title: String? = nil,
+        lines: [OfflineBreviaryLine],
+        contentGroupID: UUID? = nil,
+        partIndex: Int? = nil,
+        partCount: Int? = nil
+    ) {
         self.id = id
         self.title = title
         self.lines = lines
+        self.contentGroupID = contentGroupID
+        self.partIndex = partIndex
+        self.partCount = partCount
     }
 }
 

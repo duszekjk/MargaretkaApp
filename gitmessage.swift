@@ -1,13 +1,9 @@
-codex conversation [unknown] keep complete intercessions on each card
+codex conversation [unknown] add prayer continuation metadata
 
-Treat a PROŚBY petition, its emphasized dash continuation, and its repeated
-response as one pagination unit. Keep at most three complete petitions on a
-card so page boundaries cannot combine halves from different petitions.
+Add optional content group, part index, and part count fields to offline
+breviary cards. The fields allow an iPad layout to distinguish continuation
+pages of one prayer from adjacent pages belonging to different prayers.
 
-Add a regression fixture covering five petitions and the original emphasized
-continuation markup. The new device test passes and the signed Debug app build
-succeeds for the physical iPhone target. Three unrelated, older importer tests
-still fail on pre-existing pagination-limit and numbered-title expectations.
-
-Keep build number 40 because this is a focused importer pagination correction,
-not a significant release-level change.
+Keep the fields optional so existing persisted imports remain decodable and
+are never paired without explicit grouping metadata. Full validation follows
+after the importer and iPad presentation changes.
