@@ -495,6 +495,7 @@ nonisolated enum BrewiarzEPUBImporter {
         var inIntercessions = false
         var intercessionResponse: String?
         var contentGroupID: UUID?
+        var contentGroupHasBody = false
 
         func flush() {
             guard !current.isEmpty else { return }
@@ -520,6 +521,7 @@ nonisolated enum BrewiarzEPUBImporter {
                 inIntercessions = false
                 intercessionResponse = nil
                 contentGroupID = nil
+                contentGroupHasBody = false
                 lineIndex += 1
                 continue
             }
@@ -533,6 +535,7 @@ nonisolated enum BrewiarzEPUBImporter {
                 flush()
                 sectionTitle = nil
                 contentGroupID = nil
+                contentGroupHasBody = false
                 awaitingNumberedAntiphonTitle = true
                 nextFlush = true
             }
@@ -551,12 +554,15 @@ nonisolated enum BrewiarzEPUBImporter {
                     awaitingNumberedAntiphonTitle = false
                     if isSemanticSectionHeading(line.text) {
                         contentGroupID = UUID()
+                        contentGroupHasBody = false
                     }
                 } else {
                     flush()
                     sectionTitle = line.text
-                    if isSemanticSectionHeading(line.text) {
+                    if isSemanticSectionHeading(line.text),
+                       contentGroupID == nil || contentGroupHasBody {
                         contentGroupID = UUID()
+                        contentGroupHasBody = false
                     }
                     inIntercessions = isIntercessionsHeading(line.text)
                     intercessionResponse = nil
@@ -594,6 +600,7 @@ nonisolated enum BrewiarzEPUBImporter {
                 current.append(contentsOf: group)
                 characterCount += groupCharacterCount
                 intercessionsOnCard += 1
+                contentGroupHasBody = true
                 lineIndex += consumedLineCount
                 continue
             }
@@ -603,6 +610,9 @@ nonisolated enum BrewiarzEPUBImporter {
             if wouldOverflow { flush() }
             current.append(line)
             characterCount += line.text.count
+            if contentGroupID != nil, line.role != .heading {
+                contentGroupHasBody = true
+            }
             lineIndex += 1
         }
         flush()
@@ -659,6 +669,30 @@ nonisolated enum BrewiarzEPUBImporter {
                 result[index].partCount = partCount
                 if partCount > 1, let groupTitle {
                     result[index].title = "\(groupTitle) (\(partIndex)/\(partCount))"
+                }
+            }
+            startIndex = endIndex
+        }
+
+        startIndex = 0
+        while startIndex < result.count {
+            guard result[startIndex].contentGroupID == nil,
+                  let title = result[startIndex].title else {
+                startIndex += 1
+                continue
+            }
+
+            var endIndex = startIndex + 1
+            while endIndex < result.count,
+                  result[endIndex].contentGroupID == nil,
+                  result[endIndex].title == title {
+                endIndex += 1
+            }
+
+            let partCount = endIndex - startIndex
+            if partCount > 1 {
+                for index in startIndex..<endIndex {
+                    result[index].title = "\(title) (\(index - startIndex + 1)/\(partCount))"
                 }
             }
             startIndex = endIndex

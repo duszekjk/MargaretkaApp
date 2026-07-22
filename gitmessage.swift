@@ -1,9 +1,9 @@
-codex conversation [unknown] test iPad prayer page grouping
+codex conversation [unknown] keep prayer subtitles in their content group
 
-Extend the EPUB importer regression fixture to verify shared group metadata,
-sequential part numbers, and separation from the following final prayer.
+Treat consecutive headings before a prayer's first body line as subtitles of
+that prayer, even when a subtitle such as Hymn paschalny resembles a semantic
+section heading. Start a new group only after the current prayer has content.
 
-Test that iPad pairing requires adjacent sequential parts with both the same
-content group and prayer identifier. Also verify that cards persisted before
-the optional continuation fields were added remain decodable. Build validation
-is still pending.
+Restore numbered titles for consecutive ungrouped biography cards without
+assigning prayer metadata, so those cards retain their navigation labels but
+cannot be paired by the iPad prayer layout. Validation is pending.
