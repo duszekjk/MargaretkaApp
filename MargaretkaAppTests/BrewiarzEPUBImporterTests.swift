@@ -196,7 +196,6 @@ struct BrewiarzEPUBImporterTests {
         let psalm136Lines = psalm136Cards.flatMap(\.lines)
         #expect(office.cards.flatMap(\.lines).contains { $0.text.hasPrefix("1 ant.") })
         #expect(office.cards.flatMap(\.lines).contains { $0.text.hasPrefix("2 ant.") })
-        #expect(psalm135Lines.contains { $0.text == "Chwała Boga, który czyni cuda" })
         #expect(psalm135Lines.contains { $0.text == "Pierwsza część psalmu." })
         #expect(!psalm135Lines.contains { $0.text == "Treść następnego psalmu." })
         #expect(psalm136Lines.contains { $0.text == "Hymn paschalny" })

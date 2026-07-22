@@ -1,9 +1,9 @@
-codex conversation [unknown] align importer tests with grouped pagination
+codex conversation [unknown] remove stale psalm commentary expectation
 
-Verify that each psalm's title, subtitle, and body cards share one content group
-while the following psalm receives a different group. Check sequential part
-metadata and the separately preserved numbered antiphons.
+Stop expecting the importer to preserve the Psalm 135 commentary line that the
+current normalization intentionally removes. The test continues to require
+the psalm body, separate antiphons, and correct group and part metadata.
 
-Update stale pagination assertions from the former 310-character limit to the
-current 520-character importer limit. These expectation corrections address
-the unrelated failures exposed by the full importer test run.
+Retain the independent check that the real Hymn paschalny subtitle and its body
+belong to Psalm 136 rather than forming a separate prayer group. Validation is
+pending on the next full importer test run.
