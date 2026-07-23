@@ -7,6 +7,7 @@ struct SyncSettingsView: View {
     @EnvironmentObject private var targetStore: PriestStore
     @EnvironmentObject private var offlineStore: OfflineBreviaryStore
     @EnvironmentObject private var scheduleData: ScheduleData<Priest>
+    @State private var isConfirmingAccountDeletion = false
 
     var body: some View {
         Form {
@@ -39,8 +40,14 @@ struct SyncSettingsView: View {
                     .disabled(syncService.isWorking)
 
                     Button("Wyloguj", role: .destructive) {
-                        syncService.signOut()
+                        Task { await syncService.signOut() }
                     }
+                    .disabled(syncService.isWorking)
+
+                    Button("Usuń konto i dane z chmury", role: .destructive) {
+                        isConfirmingAccountDeletion = true
+                    }
+                    .disabled(syncService.isWorking)
                 } footer: {
                     Text("Synchronizowane są modlitwy, osoby, harmonogramy, historia, ustawienia, dane brewiarza i zdjęcia w pełnej rozdzielczości.")
                 }
@@ -113,6 +120,18 @@ struct SyncSettingsView: View {
             }
         }
         .navigationTitle("Synchronizuj")
+        .confirmationDialog(
+            "Usunąć konto synchronizacji?",
+            isPresented: $isConfirmingAccountDeletion,
+            titleVisibility: .visible
+        ) {
+            Button("Usuń konto i dane z chmury", role: .destructive) {
+                Task { await syncService.deleteAccount() }
+            }
+            Button("Anuluj", role: .cancel) {}
+        } message: {
+            Text("Konto oraz wszystkie zsynchronizowane dane i zdjęcia zostaną trwale usunięte z serwera. Dane zapisane lokalnie na tym urządzeniu pozostaną bez zmian.")
+        }
     }
 
     private func synchronize() async {

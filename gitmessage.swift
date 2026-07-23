@@ -1,8 +1,10 @@
-codex conversation [20260722-sync] increment validated sync build to 44
+codex conversation [20260722-sync] connect logout and account deletion to Apple lifecycle
 
-Advance the app and widget build number once after validating the complete
-sync implementation, regression fixes, signing, and device test suite.
+Call the authenticated backend when signing out so its access token is revoked,
+and add a confirmed account-deletion action that removes the cloud account,
+synced records, photos, local API session, and per-account sync bookkeeping.
 
-The physical-device run passed 59 unit and integration tests, the Settings
-navigation UI test, both appearance launch tests, and the retried launch
-performance test. Django checks and all four backend tests also pass.
+Keep local prayer data and original photos when deleting the cloud account, as
+the confirmation explains. Scope revisions, last-success dates, and uploaded
+photo tracking by account to prevent one Apple user from contaminating another,
+while migrating the earlier single-account keys.

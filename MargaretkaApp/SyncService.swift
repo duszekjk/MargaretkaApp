@@ -63,11 +63,20 @@ final class SyncService: ObservableObject {
         decoder.dateDecodingStrategy = .iso8601
 
         accessToken = SyncKeychain.string(for: "accessToken")
+        var restoredUser: SyncAPIUser?
         if let data = UserDefaults.standard.data(forKey: "sync.user"),
            let restored = try? decoder.decode(SyncAPIUser.self, from: data) {
-            user = restored
+            restoredUser = restored
         }
-        lastSyncDate = UserDefaults.standard.object(forKey: "sync.lastSuccess") as? Date
+        user = restoredUser
+        if let restoredUser {
+            migrateLegacyStorageIfNeeded(for: restoredUser.id)
+            lastSyncDate = UserDefaults.standard.object(
+                forKey: Self.lastSuccessKey(for: restoredUser.id)
+            ) as? Date
+        } else {
+            lastSyncDate = nil
+        }
 
         photoObserver = NotificationCenter.default.publisher(for: .syncPhotoQueued)
             .compactMap { $0.object as? UUID }
@@ -111,6 +120,10 @@ final class SyncService: ObservableObject {
             )
             accessToken = response.accessToken
             user = response.user
+            migrateLegacyStorageIfNeeded(for: response.user.id)
+            lastSyncDate = UserDefaults.standard.object(
+                forKey: Self.lastSuccessKey(for: response.user.id)
+            ) as? Date
             try SyncKeychain.set(response.accessToken, for: "accessToken")
             UserDefaults.standard.set(try encoder.encode(response.user), forKey: "sync.user")
         } catch {
@@ -118,12 +131,43 @@ final class SyncService: ObservableObject {
         }
     }
 
-    func signOut() {
+    func signOut() async {
+        guard !isWorking else { return }
+        isWorking = true
+        errorMessage = nil
+        do {
+            try await requestWithoutResponse(path: "auth/logout/", method: "POST")
+        } catch {
+            errorMessage = "Wylogowano na tym urządzeniu, ale serwer nie potwierdził zakończenia sesji."
+        }
+        clearSession(removeAccountStorage: false)
+        isWorking = false
+    }
+
+    func deleteAccount() async {
+        guard !isWorking else { return }
+        isWorking = true
+        errorMessage = nil
+        defer { isWorking = false }
+        do {
+            try await requestWithoutResponse(path: "auth/account/", method: "DELETE")
+            clearSession(removeAccountStorage: true)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func clearSession(removeAccountStorage: Bool) {
+        if removeAccountStorage, let userID = user?.id {
+            UserDefaults.standard.removeObject(forKey: Self.revisionKey(for: userID))
+            UserDefaults.standard.removeObject(forKey: Self.lastSuccessKey(for: userID))
+            UserDefaults.standard.removeObject(forKey: Self.uploadedPhotoIDsKey(for: userID))
+        }
         accessToken = nil
         user = nil
+        lastSyncDate = nil
         pendingConflict = nil
         UserDefaults.standard.removeObject(forKey: "sync.user")
-        UserDefaults.standard.removeObject(forKey: "sync.revision")
         SyncKeychain.remove("accessToken")
     }
 
@@ -261,17 +305,25 @@ final class SyncService: ObservableObject {
 
     private var storedRevision: Int? {
         get {
-            let value = UserDefaults.standard.integer(forKey: "sync.revision")
+            guard let userID = user?.id else { return nil }
+            let value = UserDefaults.standard.integer(forKey: Self.revisionKey(for: userID))
             return value == 0 ? nil : value
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: "sync.revision")
+            guard let userID = user?.id else { return }
+            let key = Self.revisionKey(for: userID)
+            if let newValue {
+                UserDefaults.standard.set(newValue, forKey: key)
+            } else {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
         }
     }
 
     private func markSuccessfulSync() {
+        guard let userID = user?.id else { return }
         lastSyncDate = .now
-        UserDefaults.standard.set(lastSyncDate, forKey: "sync.lastSuccess")
+        UserDefaults.standard.set(lastSyncDate, forKey: Self.lastSuccessKey(for: userID))
     }
 
     private func uploadAllPendingPhotos() async throws {
@@ -318,11 +370,55 @@ final class SyncService: ObservableObject {
 
     private var uploadedPhotoIDs: Set<UUID> {
         get {
-            Set((UserDefaults.standard.stringArray(forKey: "sync.uploadedPhotoIDs") ?? []).compactMap(UUID.init(uuidString:)))
+            guard let userID = user?.id else { return [] }
+            return Set(
+                (UserDefaults.standard.stringArray(forKey: Self.uploadedPhotoIDsKey(for: userID)) ?? [])
+                    .compactMap(UUID.init(uuidString:))
+            )
         }
         set {
-            UserDefaults.standard.set(newValue.map(\.uuidString).sorted(), forKey: "sync.uploadedPhotoIDs")
+            guard let userID = user?.id else { return }
+            UserDefaults.standard.set(
+                newValue.map(\.uuidString).sorted(),
+                forKey: Self.uploadedPhotoIDsKey(for: userID)
+            )
         }
+    }
+
+    private func migrateLegacyStorageIfNeeded(for userID: UUID) {
+        let defaults = UserDefaults.standard
+        let revisionKey = Self.revisionKey(for: userID)
+        let lastSuccessKey = Self.lastSuccessKey(for: userID)
+        let photoIDsKey = Self.uploadedPhotoIDsKey(for: userID)
+
+        if defaults.object(forKey: revisionKey) == nil,
+           let revision = defaults.object(forKey: "sync.revision") {
+            defaults.set(revision, forKey: revisionKey)
+        }
+        if defaults.object(forKey: lastSuccessKey) == nil,
+           let lastSuccess = defaults.object(forKey: "sync.lastSuccess") {
+            defaults.set(lastSuccess, forKey: lastSuccessKey)
+        }
+        if defaults.object(forKey: photoIDsKey) == nil,
+           let photoIDs = defaults.object(forKey: "sync.uploadedPhotoIDs") {
+            defaults.set(photoIDs, forKey: photoIDsKey)
+        }
+
+        defaults.removeObject(forKey: "sync.revision")
+        defaults.removeObject(forKey: "sync.lastSuccess")
+        defaults.removeObject(forKey: "sync.uploadedPhotoIDs")
+    }
+
+    private static func revisionKey(for userID: UUID) -> String {
+        "sync.revision.\(userID.uuidString.lowercased())"
+    }
+
+    private static func lastSuccessKey(for userID: UUID) -> String {
+        "sync.lastSuccess.\(userID.uuidString.lowercased())"
+    }
+
+    private static func uploadedPhotoIDsKey(for userID: UUID) -> String {
+        "sync.uploadedPhotoIDs.\(userID.uuidString.lowercased())"
     }
 
     private func request<Request: Encodable, Response: Decodable>(
@@ -346,6 +442,21 @@ final class SyncService: ObservableObject {
             throw SyncServiceError.server(detail ?? "Błąd serwera synchronizacji (\(http.statusCode)).")
         }
         return try decoder.decode(Response.self, from: data)
+    }
+
+    private func requestWithoutResponse(path: String, method: String) async throws {
+        guard let accessToken else { throw SyncServiceError.signedOut }
+        var urlRequest = URLRequest(url: Self.baseURL.appending(path: path))
+        urlRequest.httpMethod = method
+        urlRequest.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        let (data, response) = try await session.data(for: urlRequest)
+        guard let http = response as? HTTPURLResponse else {
+            throw SyncServiceError.invalidResponse
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            let detail = (try? decoder.decode(APIErrorResponse.self, from: data).detail)
+            throw SyncServiceError.server(detail ?? "Błąd serwera synchronizacji (\(http.statusCode)).")
+        }
     }
 }
 
