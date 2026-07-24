@@ -115,8 +115,13 @@ final class LocalDatabase {
 
         do {
             let data = try JSONEncoder().encode(items)
+            let oldData = try? Self.unpackedPayload(from: Data(contentsOf: url))
             let payload = try Self.storedPayload(from: data)
             try payload.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            let change = Self.change(from: oldData, to: data, filename: filename)
+            if !change.changedIDs.isEmpty || !change.deletedIDs.isEmpty {
+                NotificationCenter.default.post(name: .localDataChanged, object: change)
+            }
         } catch {
             print("❌ Failed to save \(filename): \(error)")
         }
@@ -146,6 +151,37 @@ final class LocalDatabase {
         }
     }
 
+}
+
+private extension LocalDatabase {
+    static func change(from oldData: Data?, to newData: Data, filename: String) -> LocalDataChange {
+        let oldRecords = recordsByID(from: oldData)
+        let newRecords = recordsByID(from: newData)
+        let allIDs = Set(oldRecords.keys).union(newRecords.keys)
+        var changed = Set<String>()
+        var deleted = Set<String>()
+        for id in allIDs {
+            guard let newRecord = newRecords[id] else {
+                deleted.insert(id)
+                continue
+            }
+            if oldRecords[id] != newRecord { changed.insert(id) }
+        }
+        return LocalDataChange(filename: filename, changedIDs: changed, deletedIDs: deleted)
+    }
+
+    static func recordsByID(from data: Data?) -> [String: Data] {
+        guard let data,
+              let array = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return [:] }
+        var records: [String: Data] = [:]
+        for record in array {
+            guard let rawID = record["id"] ?? record["assetID"] ?? record["filename"] else { continue }
+            let id = String(describing: rawID).lowercased()
+            guard let canonical = try? JSONSerialization.data(withJSONObject: record, options: [.sortedKeys]) else { continue }
+            records[id] = canonical
+        }
+        return records
+    }
 }
 
 private extension LocalDatabase {

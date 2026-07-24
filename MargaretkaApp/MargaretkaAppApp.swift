@@ -32,6 +32,11 @@ struct MargaretkaAppApp: App {
                     .background(Color(.systemGroupedBackground))
                     .onAppear {
                         scheduleNotificationRefresh()
+                        syncService.configureStores(
+                            prayerStore: prayerStore,
+                            targetStore: priestStore,
+                            offlineStore: offlineBreviaryStore
+                        )
                     }
             }
             .environmentObject(scheduleData)

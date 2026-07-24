@@ -1,4 +1,5 @@
-codex conversation [20260724-sync] preserve existing build 49 bump
+codex conversation [20260724-sync] add immediate incremental sync
 
-Commit the pre-existing CURRENT_PROJECT_VERSION change from 48 to 49 before
-the incremental synchronization work. No other project settings are changed.
+Track changed local records, persist pending deltas, and trigger a debounced
+sync after saves. Add server revision checks so unchanged devices do not upload
+full archives, while pulling newer snapshots and preserving conflict history.

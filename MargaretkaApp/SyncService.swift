@@ -50,6 +50,12 @@ final class SyncService: ObservableObject {
     private let session: URLSession
     private var accessToken: String?
     private var photoObserver: AnyCancellable?
+    private var localChangeObserver: AnyCancellable?
+    private weak var configuredPrayerStore: PrayerStore?
+    private weak var configuredTargetStore: PriestStore?
+    private weak var configuredOfflineStore: OfflineBreviaryStore?
+    private var syncRequestPending = false
+    private var suppressAutomaticSync = false
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
 
@@ -86,6 +92,42 @@ final class SyncService: ObservableObject {
                     try? await self.uploadPhoto(assetID: assetID)
                 }
             }
+
+        localChangeObserver = NotificationCenter.default.publisher(for: .localDataChanged)
+            .compactMap { $0.object as? LocalDataChange }
+            .sink { [weak self] change in
+                Task { @MainActor [weak self] in
+                    guard let self, !self.suppressAutomaticSync else { return }
+                    self.recordPending(change)
+                    self.requestImmediateSync()
+                }
+            }
+    }
+
+    func configureStores(
+        prayerStore: PrayerStore,
+        targetStore: PriestStore,
+        offlineStore: OfflineBreviaryStore
+    ) {
+        configuredPrayerStore = prayerStore
+        configuredTargetStore = targetStore
+        configuredOfflineStore = offlineStore
+    }
+
+    func requestImmediateSync() {
+        guard isSignedIn,
+              let prayerStore = configuredPrayerStore,
+              let targetStore = configuredTargetStore,
+              let offlineStore = configuredOfflineStore else { return }
+        if isWorking {
+            syncRequestPending = true
+            return
+        }
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard let self else { return }
+            await self.synchronize(prayerStore: prayerStore, targetStore: targetStore, offlineStore: offlineStore)
+        }
     }
 
     func configureAppleRequest(_ request: ASAuthorizationAppleIDRequest) {
@@ -180,12 +222,45 @@ final class SyncService: ObservableObject {
     ) async {
         guard isSignedIn else { return }
         guard !isWorking else { return }
+        configureStores(prayerStore: prayerStore, targetStore: targetStore, offlineStore: offlineStore)
         isWorking = true
         errorMessage = nil
-        defer { isWorking = false }
+        defer {
+            isWorking = false
+            if syncRequestPending {
+                syncRequestPending = false
+                requestImmediateSync()
+            }
+        }
 
         do {
             try await uploadAllPendingPhotos()
+            if !force, revisionOverride == nil, let revision = storedRevision {
+                let metadata: SnapshotMetadataResponse = try await requestWithoutBody(path: "sync/snapshot/?metadata=1")
+                if metadata.revision == revision, pendingChanges.isEmpty {
+                    markSuccessfulSync()
+                    return
+                }
+                if metadata.revision > revision, pendingChanges.isEmpty {
+                    let snapshotResponse: SnapshotMetadataResponse = try await requestWithoutBody(path: "sync/snapshot/")
+                    if let remote = snapshotResponse.snapshot {
+                        let scheduleData = ScheduleData<Priest>(saveKey: "priest_sch")
+                        suppressAutomaticSync = true
+                        defer { suppressAutomaticSync = false }
+                        _ = try MargaretkaBackupService.restoreExactly(
+                            backup: remote,
+                            prayerStore: prayerStore,
+                            targetStore: targetStore,
+                            offlineStore: offlineStore,
+                            scheduleData: scheduleData
+                        )
+                        storedRevision = metadata.revision
+                        try await downloadMissingPhotos(for: targetStore.priests)
+                        markSuccessfulSync()
+                        return
+                    }
+                }
+            }
             let sessions: [PrayerSession] = LocalDatabase.shared.load(from: PrayerSessionStore.saveKey)
             let archive = MargaretkaBackupService.archive(
                 prayers: prayerStore.prayers,
@@ -194,11 +269,19 @@ final class SyncService: ObservableObject {
                 offlineDays: offlineStore.days,
                 purpose: .fullBackup
             )
+            let sentChanges = pendingChanges
             let payload = SnapshotPushRequest(
                 baseRevision: revisionOverride ?? storedRevision,
                 force: force,
                 device: DeviceDescription.current,
-                snapshot: archive
+                snapshot: storedRevision == nil || force ? archive : nil,
+                changes: storedRevision == nil || force ? nil : makeChanges(
+                    sentChanges,
+                    prayerStore: prayerStore,
+                    targetStore: targetStore,
+                    sessions: sessions,
+                    offlineStore: offlineStore
+                )
             )
             let response: SnapshotPushResponse = try await request(
                 path: "sync/snapshot/",
@@ -214,6 +297,7 @@ final class SyncService: ObservableObject {
                 return
             }
             storedRevision = response.revision
+            clearPending(sentChanges)
             pendingConflict = nil
             markSuccessfulSync()
         } catch {
@@ -320,6 +404,73 @@ final class SyncService: ObservableObject {
         }
     }
 
+    private var pendingChanges: PendingChanges {
+        get {
+            guard let userID = user?.id else { return PendingChanges() }
+            let defaults = UserDefaults.standard
+            let upserts = (defaults.dictionary(forKey: Self.pendingUpsertsKey(for: userID)) as? [String: [String]]) ?? [:]
+            let deletes = (defaults.dictionary(forKey: Self.pendingDeletesKey(for: userID)) as? [String: [String]]) ?? [:]
+            return PendingChanges(
+                upserts: upserts.mapValues(Set.init),
+                deletes: deletes.mapValues(Set.init)
+            )
+        }
+        set {
+            guard let userID = user?.id else { return }
+            UserDefaults.standard.set(newValue.upserts.mapValues { Array($0).sorted() }, forKey: Self.pendingUpsertsKey(for: userID))
+            UserDefaults.standard.set(newValue.deletes.mapValues { Array($0).sorted() }, forKey: Self.pendingDeletesKey(for: userID))
+        }
+    }
+
+    private func recordPending(_ change: LocalDataChange) {
+        guard let collection = Self.collectionName(for: change.filename) else { return }
+        var current = pendingChanges
+        current.upserts[collection, default: []].formUnion(change.changedIDs)
+        current.deletes[collection, default: []].formUnion(change.deletedIDs)
+        current.upserts[collection]?.subtract(change.deletedIDs)
+        pendingChanges = current
+    }
+
+    private func clearPending(_ sent: PendingChanges) {
+        var current = pendingChanges
+        for (collection, ids) in sent.upserts {
+            current.upserts[collection]?.subtract(ids)
+        }
+        for (collection, ids) in sent.deletes {
+            current.deletes[collection]?.subtract(ids)
+        }
+        pendingChanges = current
+    }
+
+    private func makeChanges(
+        _ pending: PendingChanges,
+        prayerStore: PrayerStore,
+        targetStore: PriestStore,
+        sessions: [PrayerSession],
+        offlineStore: OfflineBreviaryStore
+    ) -> SyncChanges {
+        func ids<T: Identifiable>(_ values: [T], _ key: String) -> [T] where T.ID == UUID {
+            let wanted = pending.upserts[key] ?? []
+            return values.filter { wanted.contains($0.id.uuidString.lowercased()) }
+        }
+        return SyncChanges(
+            prayers: TypedRecordDelta(upsert: ids(prayerStore.prayers, "prayers"), delete: Array(pending.deletes["prayers"] ?? []).sorted()),
+            targets: TypedRecordDelta(upsert: ids(targetStore.priests, "targets"), delete: Array(pending.deletes["targets"] ?? []).sorted()),
+            sessions: TypedRecordDelta(upsert: ids(sessions, "sessions"), delete: Array(pending.deletes["sessions"] ?? []).sorted()),
+            offlineBreviaryDays: TypedRecordDelta(upsert: ids(offlineStore.days, "offlineBreviaryDays"), delete: Array(pending.deletes["offlineBreviaryDays"] ?? []).sorted())
+        )
+    }
+
+    private static func collectionName(for filename: String) -> String? {
+        switch filename {
+        case "stored_prayers": return "prayers"
+        case "priest_sch": return "targets"
+        case PrayerSessionStore.saveKey: return "sessions"
+        case OfflineBreviaryStore.storageKey: return "offlineBreviaryDays"
+        default: return nil
+        }
+    }
+
     private func markSuccessfulSync() {
         guard let userID = user?.id else { return }
         lastSyncDate = .now
@@ -421,6 +572,14 @@ final class SyncService: ObservableObject {
         "sync.uploadedPhotoIDs.\(userID.uuidString.lowercased())"
     }
 
+    private static func pendingUpsertsKey(for userID: UUID) -> String {
+        "sync.pendingUpserts.\(userID.uuidString.lowercased())"
+    }
+
+    private static func pendingDeletesKey(for userID: UUID) -> String {
+        "sync.pendingDeletes.\(userID.uuidString.lowercased())"
+    }
+
     private func request<Request: Encodable, Response: Decodable>(
         path: String,
         method: String,
@@ -440,6 +599,18 @@ final class SyncService: ObservableObject {
         guard (200..<300).contains(http.statusCode) || http.statusCode == 409 else {
             let detail = (try? decoder.decode(APIErrorResponse.self, from: data).detail)
             throw SyncServiceError.server(detail ?? "Błąd serwera synchronizacji (\(http.statusCode)).")
+        }
+        return try decoder.decode(Response.self, from: data)
+    }
+
+    private func requestWithoutBody<Response: Decodable>(path: String) async throws -> Response {
+        guard let accessToken else { throw SyncServiceError.signedOut }
+        var urlRequest = URLRequest(url: Self.baseURL.appending(path: path))
+        urlRequest.httpMethod = "GET"
+        urlRequest.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        let (data, response) = try await session.data(for: urlRequest)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw SyncServiceError.server("Błąd serwera synchronizacji.")
         }
         return try decoder.decode(Response.self, from: data)
     }
@@ -477,13 +648,52 @@ private struct SnapshotPushRequest: Encodable {
     let baseRevision: Int?
     let force: Bool
     let device: DeviceDescription
-    let snapshot: MargaretkaBackup
+    let snapshot: MargaretkaBackup?
+    let changes: SyncChanges?
+
+    enum CodingKeys: String, CodingKey { case baseRevision, force, device, snapshot, changes }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(baseRevision, forKey: .baseRevision)
+        try container.encode(force, forKey: .force)
+        try container.encode(device, forKey: .device)
+        try container.encodeIfPresent(snapshot, forKey: .snapshot)
+        try container.encodeIfPresent(changes, forKey: .changes)
+    }
 }
 
 private struct SnapshotPushResponse: Decodable {
     let status: String
     let revision: Int
     let snapshot: MargaretkaBackup?
+}
+
+private struct SnapshotMetadataResponse: Decodable {
+    let status: String
+    let revision: Int
+    let snapshot: MargaretkaBackup?
+}
+
+private struct PendingChanges {
+    var upserts: [String: Set<String>] = [:]
+    var deletes: [String: Set<String>] = [:]
+
+    var isEmpty: Bool {
+        upserts.values.allSatisfy(\.isEmpty) && deletes.values.allSatisfy(\.isEmpty)
+    }
+}
+
+private struct TypedRecordDelta<T: Encodable>: Encodable {
+    let upsert: [T]
+    let delete: [String]
+}
+
+private struct SyncChanges: Encodable {
+    let prayers: TypedRecordDelta<Prayer>
+    let targets: TypedRecordDelta<Priest>
+    let sessions: TypedRecordDelta<PrayerSession>
+    let offlineBreviaryDays: TypedRecordDelta<OfflineBreviaryDay>
 }
 
 private struct APIErrorResponse: Decodable {

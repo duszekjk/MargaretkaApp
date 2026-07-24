@@ -47,4 +47,11 @@ final class PrayerNotificationRouter: ObservableObject {
 extension Notification.Name {
     static let prayerRestartRequested = Notification.Name("prayerRestartRequested")
     static let prayerMarkDoneRequested = Notification.Name("prayerMarkDoneRequested")
+    static let localDataChanged = Notification.Name("localDataChanged")
+}
+
+struct LocalDataChange {
+    let filename: String
+    let changedIDs: Set<String>
+    let deletedIDs: Set<String>
 }
