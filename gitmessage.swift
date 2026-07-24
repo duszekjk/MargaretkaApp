@@ -1,5 +1,4 @@
-codex conversation [20260724-sync] track photo fingerprints
+codex conversation [20260725-sync] send photo fingerprints to server
 
-Track each synchronized original photo by file size and modification timestamp.
-Re-upload only when that fingerprint changes, including when an asset keeps the
-same ID but its contents were replaced.
+Send the persisted local photo fingerprint with each original upload so the
+server can audit the metadata without comparing the full image bytes.

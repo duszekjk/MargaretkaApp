@@ -497,6 +497,9 @@ final class SyncService: ObservableObject {
         urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         urlRequest.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
         urlRequest.setValue("\(data.count)", forHTTPHeaderField: "Content-Length")
+        if let fingerprint = SyncedPhotoStorage.shared.fingerprint(for: assetID) {
+            urlRequest.setValue(fingerprint, forHTTPHeaderField: "X-Photo-Fingerprint")
+        }
         let (_, response) = try await session.data(for: urlRequest)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw SyncServiceError.server("Nie udało się przesłać zdjęcia w pełnej rozdzielczości.")
