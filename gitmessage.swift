@@ -1,5 +1,4 @@
-codex conversation [20260724-siri] mark Siri metadata English-only
+codex conversation [20260724-siri] checkpoint before Image Playground safety fix
 
-Set the Xcode development region to `en` so generated Siri/App Shortcuts
-metadata is trained and registered as English. Keep Polish in known regions
-for the app interface, but do not label English Siri utterances as `pl`.
+Checkpoint the current clean code plus the latest extracted App Shortcuts
+catalog before changing Image Playground presentation behavior.
