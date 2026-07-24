@@ -1,4 +1,5 @@
-codex conversation [20260724-sync] fix sync metadata URL query
+codex conversation [20260724-sync] defer startup synchronization
 
-Build synchronization URLs with URL parsing so `?metadata=1` remains a query
-parameter instead of becoming an escaped path component that returns 404.
+Start the initial synchronization one second after the first screen appears
+instead of launching network and data work during scene activation. Keep local
+change-triggered synchronization immediate after startup.

@@ -37,6 +37,10 @@ struct MargaretkaAppApp: App {
                             targetStore: priestStore,
                             offlineStore: offlineBreviaryStore
                         )
+                        Task { @MainActor in
+                            try? await Task.sleep(nanoseconds: 1_000_000_000)
+                            syncService.requestImmediateSync()
+                        }
                     }
             }
             .environmentObject(scheduleData)
@@ -52,13 +56,6 @@ struct MargaretkaAppApp: App {
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
                     offlineBreviaryStore.removeExpired()
-                    Task {
-                        await syncService.synchronize(
-                            prayerStore: prayerStore,
-                            targetStore: priestStore,
-                            offlineStore: offlineBreviaryStore
-                        )
-                    }
                 }
             }
         }
