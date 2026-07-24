@@ -198,6 +198,7 @@ struct MargaretkaAppShortcuts: AppShortcutsProvider {
             intent: StartPrayerIntent(),
             phrases: [
                 "Start prayer in \(.applicationName)",
+                "Start prayer for \(\.$target) in \(.applicationName)",
                 "Start \(\.$target) in \(.applicationName)",
                 "Open prayer for \(\.$target) in \(.applicationName)",
                 "Begin praying for \(\.$target) in \(.applicationName)"

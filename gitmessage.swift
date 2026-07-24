@@ -1,4 +1,4 @@
-codex conversation [20260724-siri] checkpoint before adding Siri target phrase
+codex conversation [20260724-siri] add exact Siri target phrase
 
-Checkpoint the clean state before adding the exact target-specific Siri phrase
-shown in the user's test screenshot.
+Add the exact target-specific App Shortcut phrase “Start prayer for target in
+application” so the tested wording is declared explicitly for Siri.
