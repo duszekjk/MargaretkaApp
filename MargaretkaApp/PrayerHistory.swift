@@ -24,6 +24,8 @@ class PrayerStore: ObservableObject {
 
     private let key = "stored_prayers"
     private let legacyDefaultsKey = "stored_prayers"
+    private var pendingChangedIDs = Set<String>()
+    private var pendingDeletedIDs = Set<String>()
 
     init() {
         let start = CFAbsoluteTimeGetCurrent()
@@ -50,7 +52,13 @@ class PrayerStore: ObservableObject {
     }
 
     private func save() {
-        LocalDatabase.shared.save(prayers, as: key)
+        let changed = pendingChangedIDs.isEmpty
+            ? Set(prayers.map { $0.id.uuidString.lowercased() })
+            : pendingChangedIDs
+        let deleted = pendingDeletedIDs
+        pendingChangedIDs.removeAll()
+        pendingDeletedIDs.removeAll()
+        LocalDatabase.shared.save(prayers, as: key, changedIDs: changed, deletedIDs: deleted)
     }
 
     func ensureDefaultPrayers() {
@@ -86,6 +94,7 @@ class PrayerStore: ObservableObject {
     }
 
     func addOrUpdate(_ prayer: Prayer) {
+        pendingChangedIDs.insert(prayer.id.uuidString.lowercased())
         if let index = prayers.firstIndex(where: { $0.id == prayer.id }) {
             let replacedAudio = prayers[index].audioFilename
             prayers[index] = prayer
@@ -98,6 +107,7 @@ class PrayerStore: ObservableObject {
     }
 
     func delete(at offsets: IndexSet) {
+        pendingDeletedIDs.formUnion(offsets.compactMap { prayers[$0].id.uuidString.lowercased() })
         let removedAudio = offsets.compactMap { prayers[$0].audioFilename }
         prayers.remove(atOffsets: offsets)
         removedAudio.forEach(AudioStorage.removeFile(named:))

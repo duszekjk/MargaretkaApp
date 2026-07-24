@@ -47,7 +47,7 @@ final class PrayerSessionStore: ObservableObject {
 
     func add(_ session: PrayerSession) {
         sessions.append(session)
-        save()
+        save(changedIDs: [session.id.uuidString.lowercased()])
         NotificationCenter.default.post(name: .prayerSessionsChanged, object: session.id)
     }
 
@@ -56,8 +56,8 @@ final class PrayerSessionStore: ObservableObject {
         MargaretkaWidgetDataWriter.updateStatistics(from: sessions)
     }
 
-    private func save() {
-        LocalDatabase.shared.save(sessions, as: Self.saveKey)
+    private func save(changedIDs: Set<String> = []) {
+        LocalDatabase.shared.save(sessions, as: Self.saveKey, changedIDs: changedIDs)
         MargaretkaWidgetDataWriter.updateStatistics(from: sessions)
     }
 

@@ -1,5 +1,5 @@
-codex conversation [20260724-sync] avoid redundant sync save work
+codex conversation [20260724-sync] replace payload diff with dirty IDs
 
-Skip identical LocalDatabase writes and calculate record-level change IDs on a
-utility queue. This prevents large prayer/photo archives from blocking the
-main thread or generating startup synchronization work without real changes.
+Remove whole-payload JSON diffing from LocalDatabase. Stores now pass explicit
+changed and deleted record IDs to persistence, so synchronization no longer
+reads, parses, or hashes photo bytes during ordinary saves.

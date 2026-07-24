@@ -23,6 +23,8 @@ class PriestStore: ObservableObject {
     private let legacyFileKey = "stored_priests"
     private let legacyDefaultsKey = "stored_priests"
     private let saveQueue = DispatchQueue(label: "PriestStore.save", qos: .utility)
+    private var pendingChangedIDs = Set<String>()
+    private var pendingDeletedIDs = Set<String>()
 
     init() {
         let start = CFAbsoluteTimeGetCurrent()
@@ -67,12 +69,19 @@ class PriestStore: ObservableObject {
 
     private func saveAsync() {
         let snapshot = priests
+        let changed = pendingChangedIDs.isEmpty
+            ? Set(snapshot.map { $0.id.uuidString.lowercased() })
+            : pendingChangedIDs
+        let deleted = pendingDeletedIDs
+        pendingChangedIDs.removeAll()
+        pendingDeletedIDs.removeAll()
         saveQueue.async {
-            LocalDatabase.shared.save(snapshot, as: self.key)
+            LocalDatabase.shared.save(snapshot, as: self.key, changedIDs: changed, deletedIDs: deleted)
         }
     }
 
     func addOrUpdate(_ priest: Priest) {
+        pendingChangedIDs.insert(priest.id.uuidString.lowercased())
         if let index = priests.firstIndex(where: { $0.id == priest.id }) {
             priests[index] = priest
         } else {
@@ -81,10 +90,12 @@ class PriestStore: ObservableObject {
     }
 
     func delete(at offsets: IndexSet) {
+        pendingDeletedIDs.formUnion(offsets.compactMap { priests[$0].id.uuidString.lowercased() })
         priests.remove(atOffsets: offsets)
     }
 
     func deletePriest(_ priest: Priest) {
+        pendingDeletedIDs.insert(priest.id.uuidString.lowercased())
         if let index = priests.firstIndex(of: priest) {
             priests.remove(at: index)
         }
