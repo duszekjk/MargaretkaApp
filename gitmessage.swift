@@ -1,4 +1,4 @@
-codex conversation [20260724-sync] expose sync HTTP failures
+codex conversation [20260724-sync] checkpoint before prayer defaults and iPad layout
 
-Include the HTTP status and API detail when a synchronization GET fails, so
-server deployment or authentication problems are diagnosable from the app.
+Checkpoint the clean Image Playground fix and current Xcode project changes
+before adjusting breviary notification defaults and window-responsive layout.
