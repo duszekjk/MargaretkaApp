@@ -1114,6 +1114,11 @@ struct PrayerFlowView: View {
             return true
         }
 
+        if !scheduleData.items.contains(where: { $0.id == target.id }) {
+            scheduleData.items.append(target)
+            scheduleData.save()
+        }
+
         selectedCategory = target.category
         selectedPriest = target
         moveToIndex(0, animated: false)

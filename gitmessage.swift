@@ -1,6 +1,7 @@
-codex conversation [20260724-siri] fix target names in restored Siri help
+codex conversation [20260724-siri] persist routed targets in schedule data
 
-Use Priest.displayName when generating concrete examples in the restored help
-description. The initial build exposed that Priest has no `name` property;
-this correction keeps the full description while using the model's supported
-display label.
+Persist routed targets from the saved priest store into schedule data when
+needed before selecting them, so a specific Siri/Shortcut target cannot be
+lost merely because the schedule has not finished loading it yet.
+Mark the router's shared UserDefaults constants nonisolated for Swift 6
+compatibility.

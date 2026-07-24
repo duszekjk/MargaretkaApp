@@ -17,8 +17,8 @@ struct PrayerNotificationRoute: Equatable, Identifiable {
 final class PrayerNotificationRouter: ObservableObject {
     static let shared = PrayerNotificationRouter()
 
-    private static let defaultStore = UserDefaults(suiteName: "group.com.duszekjk.MargaretkaApp") ?? .standard
-    private static let pendingItemIDKey = "pending_prayer_route_item_id"
+    nonisolated private static let defaultStore = UserDefaults(suiteName: "group.com.duszekjk.MargaretkaApp") ?? .standard
+    nonisolated private static let pendingItemIDKey = "pending_prayer_route_item_id"
 
     private let store: UserDefaults
     @Published private(set) var pendingRoute: PrayerNotificationRoute?
