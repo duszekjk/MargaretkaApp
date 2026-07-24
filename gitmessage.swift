@@ -1,4 +1,5 @@
-codex conversation [20260724-sync] add macOS app support
+codex conversation [20260724-sync] prevent startup sync work
 
-Enable the macOS platform, outgoing network access, and audio input/resource
-permissions requested by the new macOS application target configuration.
+Do not start network synchronization from the app root during initial view
+construction. Store changes still trigger immediate synchronization after the
+interface is ready, and manual synchronization remains available in Settings.
