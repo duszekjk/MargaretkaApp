@@ -58,6 +58,14 @@ final class SyncedPhotoStorage: @unchecked Sendable {
         fileManager.fileExists(atPath: url(for: assetID).path)
     }
 
+    func fingerprint(for assetID: UUID) -> String? {
+        let fileURL = url(for: assetID)
+        guard let attributes = try? fileManager.attributesOfItem(atPath: fileURL.path),
+              let size = attributes[.size] as? NSNumber,
+              let modified = attributes[.modificationDate] as? Date else { return nil }
+        return "\(size.int64Value):\(modified.timeIntervalSince1970)"
+    }
+
     func allStoredAssetIDs() -> [UUID] {
         guard let files = try? fileManager.contentsOfDirectory(
             at: directory,

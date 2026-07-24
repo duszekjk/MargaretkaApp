@@ -482,7 +482,8 @@ final class SyncService: ObservableObject {
     }
 
     private func uploadAllPendingPhotos() async throws {
-        for assetID in SyncedPhotoStorage.shared.allStoredAssetIDs() where !uploadedPhotoIDs.contains(assetID) {
+        for assetID in SyncedPhotoStorage.shared.allStoredAssetIDs()
+        where photoFingerprints[assetID] != SyncedPhotoStorage.shared.fingerprint(for: assetID) {
             try await uploadPhoto(assetID: assetID)
         }
     }
@@ -500,9 +501,11 @@ final class SyncService: ObservableObject {
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             throw SyncServiceError.server("Nie udało się przesłać zdjęcia w pełnej rozdzielczości.")
         }
-        var uploaded = uploadedPhotoIDs
-        uploaded.insert(assetID)
-        uploadedPhotoIDs = uploaded
+        var fingerprints = photoFingerprints
+        if let fingerprint = SyncedPhotoStorage.shared.fingerprint(for: assetID) {
+            fingerprints[assetID] = fingerprint
+        }
+        photoFingerprints = fingerprints
     }
 
     private func downloadMissingPhotos(for targets: [Priest]) async throws {
@@ -517,9 +520,11 @@ final class SyncService: ObservableObject {
                 to: SyncedPhotoStorage.shared.url(for: assetID),
                 options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
             )
-            var uploaded = uploadedPhotoIDs
-            uploaded.insert(assetID)
-            uploadedPhotoIDs = uploaded
+            var fingerprints = photoFingerprints
+            if let fingerprint = SyncedPhotoStorage.shared.fingerprint(for: assetID) {
+                fingerprints[assetID] = fingerprint
+            }
+            photoFingerprints = fingerprints
         }
     }
 
@@ -536,6 +541,23 @@ final class SyncService: ObservableObject {
             UserDefaults.standard.set(
                 newValue.map(\.uuidString).sorted(),
                 forKey: Self.uploadedPhotoIDsKey(for: userID)
+            )
+        }
+    }
+
+    private var photoFingerprints: [UUID: String] {
+        get {
+            guard let userID = user?.id else { return [:] }
+            let values = UserDefaults.standard.dictionary(forKey: Self.photoFingerprintsKey(for: userID)) as? [String: String] ?? [:]
+            return values.reduce(into: [:]) { result, entry in
+                if let id = UUID(uuidString: entry.key) { result[id] = entry.value }
+            }
+        }
+        set {
+            guard let userID = user?.id else { return }
+            UserDefaults.standard.set(
+                newValue.reduce(into: [:]) { $0[$1.key.uuidString.lowercased()] = $1.value },
+                forKey: Self.photoFingerprintsKey(for: userID)
             )
         }
     }
@@ -574,6 +596,10 @@ final class SyncService: ObservableObject {
 
     private static func uploadedPhotoIDsKey(for userID: UUID) -> String {
         "sync.uploadedPhotoIDs.\(userID.uuidString.lowercased())"
+    }
+
+    private static func photoFingerprintsKey(for userID: UUID) -> String {
+        "sync.photoFingerprints.\(userID.uuidString.lowercased())"
     }
 
     private static func pendingUpsertsKey(for userID: UUID) -> String {
