@@ -52,6 +52,9 @@
         }
       }
     },
+    "• %@" : {
+
+    },
     "© 2025\nDUSZEKJK Jacek Kałużny\nSoftware Development.\nAll rights reserved." : {
 
     },
@@ -62,6 +65,15 @@
 
     },
     "🔊 Nagranie zostanie wygenerowane na żywo z tekstu modlitwy podczas odtwarzania." : {
+
+    },
+    "1. Otwórz aplikację Skróty na iPhonie." : {
+
+    },
+    "2. Dodaj skrót z akcją Heptadaisy i wybierz konkretną osobę albo modlitwę." : {
+
+    },
+    "3. Powiedz Siri gotową angielską frazę albo uruchom skrót z automatyzacji NFC." : {
 
     },
     "7 osób = 7 dni tygodnia. Każda osoba modli się w swoim dniu." : {
@@ -356,6 +368,9 @@
     "Jak się modlić?" : {
 
     },
+    "Jak to działa" : {
+
+    },
     "Jak to działa (w skrócie)" : {
 
     },
@@ -442,6 +457,9 @@
         }
       }
     },
+    "Możesz przykleić znacznik NFC w miejscu modlitwy, przy różańcu, na biurku albo w samochodzie. W aplikacji Skróty utwórz automatyzację NFC, dodaj akcję Heptadaisy i wskaż w niej konkretną osobę albo modlitwę złożoną. Po dotknięciu iPhone'a tag uruchomi ten skrót." : {
+
+    },
     "Można dołączyć (opcjonalnie)" : {
 
     },
@@ -458,6 +476,12 @@
 
     },
     "Nazwisko" : {
+
+    },
+    "NFC — po co to?" : {
+
+    },
+    "NFC → automatyzacja Skrótów → Heptadaisy → wybrana modlitwa" : {
 
     },
     "Nie udało się" : {
@@ -529,6 +553,9 @@
     "Pokaż" : {
 
     },
+    "Pomoc" : {
+
+    },
     "Pora dnia modlitwy" : {
 
     },
@@ -572,6 +599,9 @@
 
     },
     "Przygotowuję tworzenie obrazu…" : {
+
+    },
+    "Przykładowe komendy" : {
 
     },
     "Przywróć pełną kopię" : {
@@ -632,13 +662,19 @@
     "Sesje: %lld" : {
 
     },
-    "Siri and Shortcuts" : {
+    "Siri → Heptadaisy → wybrana modlitwa" : {
 
     },
-    "Siri uses English for these commands. Built-in phrases include the app name. For an NFC tag, open Shortcuts, create an NFC automation, and run one of these actions." : {
+    "Siri w tej aplikacji używa języka angielskiego, ponieważ Siri nie obsługuje języka polskiego. Wbudowane frazy zawierają nazwę Heptadaisy. Własnemu skrótowi możesz nadać krótszą nazwę." : {
+
+    },
+    "Siri, Skróty i NFC" : {
 
     },
     "Skopiowano" : {
+
+    },
+    "Skrót w skrócie" : {
 
     },
     "start date" : {
@@ -1130,10 +1166,16 @@
         }
       }
     },
+    "To dobre rozwiązanie, jeśli chcesz:\n• uruchamiać modlitwę jednym ruchem,\n• mieć jeden stały skrót przy konkretnym miejscu,\n• nie wpisywać nic ręcznie, gdy masz zajęte ręce." : {
+
+    },
     "To modlitwa siedmiu osób za **jednego konkretnego kapłana** – każda osoba obejmuje go modlitwą w wybrany dzień tygodnia. Razem tworzą „stokrotkę” (7 płatków) z kapłanem w środku. Zobowiązanie ma charakter **stały** (długoterminowy)." : {
 
     },
     "To samo konto Apple daje dostęp do tych samych danych na wszystkich Twoich urządzeniach." : {
+
+    },
+    "To szybki sposób na uruchamianie modlitwy głosem albo jednym dotknięciem telefonu do znacznika NFC." : {
 
     },
     "Tryb" : {
