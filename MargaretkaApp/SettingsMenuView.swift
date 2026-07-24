@@ -25,8 +25,8 @@ struct SettingsMenuView: View {
     }
 
     private var exampleSiriCommands: [String] {
-        let targetName = savedTargets.first?.name ?? "Anna"
-        let secondTargetName = savedTargets.dropFirst().first?.name ?? "Father Piotr"
+        let targetName = savedTargets.first?.displayName ?? "Anna"
+        let secondTargetName = savedTargets.dropFirst().first?.displayName ?? "Father Piotr"
         return [
             "Hey Siri, start prayer for \(targetName) in Heptadaisy",
             "Hey Siri, log prayer for \(secondTargetName) in Heptadaisy",
