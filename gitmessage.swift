@@ -1,7 +1,4 @@
-codex conversation [20260724-siri] persist routed targets in schedule data
+codex conversation [20260724-siri] checkpoint before removing unrelated Iskra label
 
-Persist routed targets from the saved priest store into schedule data when
-needed before selecting them, so a specific Siri/Shortcut target cannot be
-lost merely because the schedule has not finished loading it yet.
-Mark the router's shared UserDefaults constants nonisolated for Swift 6
-compatibility.
+Checkpoint the clean implementation before correcting the settings help
+heading and description wording requested by the user.
