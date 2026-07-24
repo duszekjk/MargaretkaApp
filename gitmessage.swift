@@ -1,5 +1,4 @@
-codex conversation [20260724-sync] defer startup synchronization
+codex conversation [20260724-sync] add macOS app support
 
-Start the initial synchronization one second after the first screen appears
-instead of launching network and data work during scene activation. Keep local
-change-triggered synchronization immediate after startup.
+Enable the macOS platform, outgoing network access, and audio input/resource
+permissions requested by the new macOS application target configuration.
