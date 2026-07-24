@@ -609,8 +609,13 @@ final class SyncService: ObservableObject {
         urlRequest.httpMethod = "GET"
         urlRequest.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         let (data, response) = try await session.data(for: urlRequest)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw SyncServiceError.server("Błąd serwera synchronizacji.")
+        guard let http = response as? HTTPURLResponse else {
+            throw SyncServiceError.invalidResponse
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            let detail = (try? decoder.decode(APIErrorResponse.self, from: data).detail)
+            let suffix = detail.map { ": \($0)" } ?? ""
+            throw SyncServiceError.server("Błąd serwera synchronizacji (HTTP \(http.statusCode))\(suffix)")
         }
         return try decoder.decode(Response.self, from: data)
     }

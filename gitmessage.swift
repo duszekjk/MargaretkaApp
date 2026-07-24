@@ -1,5 +1,4 @@
-codex conversation [20260724-sync] add immediate incremental sync
+codex conversation [20260724-sync] expose sync HTTP failures
 
-Track changed local records, persist pending deltas, and trigger a debounced
-sync after saves. Add server revision checks so unchanged devices do not upload
-full archives, while pulling newer snapshots and preserving conflict history.
+Include the HTTP status and API detail when a synchronization GET fails, so
+server deployment or authentication problems are diagnosable from the app.
