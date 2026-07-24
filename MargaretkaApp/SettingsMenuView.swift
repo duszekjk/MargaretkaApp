@@ -8,6 +8,7 @@
 import AppIntents
 import Foundation
 import SwiftUI
+import _AppIntents_SwiftUI
 
 struct SettingsMenuView: View {
     @ObservedObject var priestStore: PriestStore

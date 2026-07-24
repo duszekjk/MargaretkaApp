@@ -9,4 +9,5 @@ Replace the misleading NFC essay with the native Siri tip and Shortcuts link.
 Explain that NFC setup belongs in a Shortcuts NFC automation, where the user
 can also assign a personal name without repeating the app name.
 
-Validation is pending.
+The full build reached Xcode's idle asset compiler but could not reach Swift
+compilation; source-level validation is pending.
