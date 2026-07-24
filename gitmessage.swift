@@ -1,4 +1,4 @@
-codex conversation [20260724-siri] preserve build and extracted localization updates
+codex conversation [20260724-siri] checkpoint before adding Siri target phrase
 
-Preserve the latest Xcode-generated build number 48 and extracted
-localization entries from the settings help text without changing them.
+Checkpoint the clean state before adding the exact target-specific Siri phrase
+shown in the user's test screenshot.
