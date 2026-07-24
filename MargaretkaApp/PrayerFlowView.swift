@@ -190,7 +190,6 @@ struct PrayerFlowView: View {
     @State private var isPreparingImagePlayground = false
     @State private var imagePlaygroundOfficeID: UUID?
     @State private var imagePlaygroundConcepts: [ImagePlaygroundConcept] = []
-    @State private var promptedImagePlaygroundOfficeIDs = Set<UUID>()
     var priestsAndPrayers: [Priest] {
         scheduleData.items.filter { $0.category == selectedCategory }
     }
@@ -282,17 +281,12 @@ struct PrayerFlowView: View {
     }
 
     private func presentImagePlayground(
-        for office: OfflineBreviaryOffice,
-        onlyOnce: Bool
+        for office: OfflineBreviaryOffice
     ) async {
-        guard backgroundOfflineOffice?.id == office.id,
+        guard supportsImagePlayground,
+              backgroundOfflineOffice?.id == office.id,
               !isImagePlaygroundPresented,
               !isPreparingImagePlayground else { return }
-        if onlyOnce,
-           !promptedImagePlaygroundOfficeIDs.insert(office.id).inserted {
-            return
-        }
-
         imagePlaygroundOfficeID = office.id
         isPreparingImagePlayground = true
         let prompt = await BreviaryImageGenerator.shared.preparedPrompt(for: office)
@@ -577,13 +571,13 @@ struct PrayerFlowView: View {
                             .lineLimit(4)
                             .padding(3)
                             .glassEffect()
-                        if let office = backgroundOfflineOffice,
+                        if supportsImagePlayground,
+                           let office = backgroundOfflineOffice,
                            office.imageFilename == nil {
                             Button {
                                 Task {
                                     await presentImagePlayground(
-                                        for: office,
-                                        onlyOnce: false
+                                        for: office
                                     )
                                 }
                             } label: {
@@ -846,18 +840,6 @@ struct PrayerFlowView: View {
                 isIPadPortrait = isPortrait
                 hasMeasuredIPadOrientation = true
             }
-        }
-        .task(id: backgroundOfflineOffice?.id) {
-            guard let office = backgroundOfflineOffice else { return }
-            let hasImage: Bool
-            if #available(iOS 27.0, *) {
-                hasImage = office.imageFilename != nil
-            } else {
-                hasImage = await offlineBreviaryStore.generateImageIfNeeded(for: office.id)
-            }
-            guard !hasImage,
-                  backgroundOfflineOffice?.id == office.id else { return }
-            await presentImagePlayground(for: office, onlyOnce: true)
         }
         .onAppear()
         {
