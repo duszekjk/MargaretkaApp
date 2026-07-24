@@ -1,4 +1,4 @@
-codex conversation [20260724-siri] checkpoint before removing unrelated Iskra label
+codex conversation [20260724-siri] remove unrelated Iskra wording
 
-Checkpoint the clean implementation before correcting the settings help
-heading and description wording requested by the user.
+Remove the unrelated “Iskra” name from the Siri, Shortcuts, and NFC help.
+Keep the description factual and directly tied to the supported features.
