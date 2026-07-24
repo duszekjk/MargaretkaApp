@@ -186,6 +186,7 @@ struct PrayerFlowView: View {
     @GestureState private var prayerSwipeTranslation: CGSize = .zero
     @State private var isIPadPortrait = false
     @State private var hasMeasuredIPadOrientation = false
+    @State private var availableWindowSize: CGSize = .zero
     @State private var isImagePlaygroundPresented = false
     @State private var isPreparingImagePlayground = false
     @State private var imagePlaygroundOfficeID: UUID?
@@ -249,7 +250,9 @@ struct PrayerFlowView: View {
 
     var currentPrayerCardHeight: CGFloat {
         guard isComplexPrayerCard else { return 440 }
-        let screenHeight = UIScreen.main.bounds.height
+        let screenHeight = availableWindowSize.height > 0
+            ? availableWindowSize.height
+            : UIScreen.main.bounds.height
         if isIPad {
             let baseHeight = max(520, min(screenHeight - 250, 920))
             let orientationScale: CGFloat = isIPadPortrait ? 1.15 : 1.04
@@ -554,7 +557,7 @@ struct PrayerFlowView: View {
                             ? photoPlacement.offsetY
                             : 0.0
                     ),
-                    size: UIScreen.main.bounds.size
+                    size: availableWindowSize == .zero ? UIScreen.main.bounds.size : availableWindowSize
                 )
                 .ignoresSafeArea()
             }
@@ -733,7 +736,7 @@ struct PrayerFlowView: View {
                 .padding(.horizontal, 16.0)
                 .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
                 .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
-                .frame(width: UIScreen.main.bounds.width)
+                .frame(width: availableWindowSize.width > 0 ? availableWindowSize.width : UIScreen.main.bounds.width)
 
 
 
@@ -744,7 +747,7 @@ struct PrayerFlowView: View {
                 {
                         RoundedRectangle(cornerRadius: 20)
                             .fill(.ultraThinMaterial)
-                            .frame(width:UIScreen.main.bounds.width-8, height: currentPrayerCardHeight)
+                            .frame(width: max(0, (availableWindowSize.width > 0 ? availableWindowSize.width : UIScreen.main.bounds.width) - 8), height: currentPrayerCardHeight)
                             .overlay(
                                 Group {
                                     if let key = currentBrewiarzKey,
@@ -771,7 +774,7 @@ struct PrayerFlowView: View {
                                     }
                                 }
                                 .gesture(prayerSwipeGesture)
-                                    .frame(width:UIScreen.main.bounds.width-10, height: currentPrayerCardHeight)
+                                    .frame(width: max(0, (availableWindowSize.width > 0 ? availableWindowSize.width : UIScreen.main.bounds.width) - 10), height: currentPrayerCardHeight)
                                 
                             )
                             .padding(.horizontal)
@@ -803,7 +806,12 @@ struct PrayerFlowView: View {
                     .zIndex(100)
             }
         }
-        .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onGeometryChange(for: CGSize.self) { geometry in
+            geometry.size
+        } action: { size in
+            availableWindowSize = size
+        }
         .imagePlaygroundSheet(
             isPresented: $isImagePlaygroundPresented,
             concepts: imagePlaygroundConcepts,

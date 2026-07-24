@@ -272,7 +272,7 @@ enum BreviaryPrayerTargetFactory {
                 assignedPrayerGroups: [
                     AssignedPrayerGroup(id: UUID(), prayerIds: [prayer.id], repeatCount: 1)
                 ],
-                schedule: .suggested(forPrayerName: key.displayName),
+                schedule: .suggested(forBreviaryKey: key),
                 lastModified: .now,
                 notificationTitle: key.displayName,
                 notificationMessage: ""

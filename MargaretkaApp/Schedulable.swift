@@ -256,6 +256,15 @@ extension SchedulePlan {
         return plan
     }
 
+    static func suggested(forBreviaryKey key: BrewiarzPrayerKey) -> SchedulePlan {
+        guard key == .jutrznia || key == .nieszpory else {
+            var plan = SchedulePlan()
+            plan.times = []
+            return plan
+        }
+        return suggested(forPrayerName: key.displayName)
+    }
+
     mutating func applyPrayerTimeSuggestion(for prayerName: String) {
         guard timeSelectionSource == .suggested,
               let suggestion = PrayerTimeSuggestion.matching(prayerName) else { return }
