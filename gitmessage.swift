@@ -1,4 +1,4 @@
-codex conversation [20260724-siri] add exact Siri target phrase
+codex conversation [20260724-siri] checkpoint before fixing Siri metadata locale
 
-Add the exact target-specific App Shortcut phrase “Start prayer for target in
-application” so the tested wording is declared explicitly for Siri.
+Checkpoint the clean state before correcting the language region used by the
+generated Siri/App Shortcuts metadata.
