@@ -30,17 +30,10 @@
     "%lld" : {
 
     },
-    "%lld kapłani, osoby lub modlitwy złożone / %lld priests, people, or complex prayers" : {
-      "localizations" : {
-        "pl" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld kapłani, osoby lub modlitwy złożone / %2$lld priests, people, or complex prayers"
-          }
-        }
-      }
-    },
     "%lld kart" : {
+
+    },
+    "%lld priests, people, or complex prayers" : {
 
     },
     "%lld tyg" : {
@@ -115,17 +108,7 @@
     "Audio niedostępne dla modlitw online." : {
 
     },
-    "Bieżąca seria dla %@ to %lld tygodni." : {
-      "localizations" : {
-        "pl" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Bieżąca seria dla %1$@ to %2$lld tygodni."
-          }
-        }
-      }
-    },
-    "Bieżąca seria dla %@ to jeden tydzień." : {
+    "Average prayer duration" : {
 
     },
     "Błąd" : {
@@ -156,6 +139,12 @@
         }
       }
     },
+    "Check average prayer duration" : {
+
+    },
+    "Check prayer streak" : {
+
+    },
     "Checkpointy tygodniowe" : {
 
     },
@@ -174,13 +163,7 @@
     "Compact view" : {
 
     },
-    "Czas w minutach" : {
-
-    },
     "Czas: %@" : {
-
-    },
-    "Czyją serię modlitwy sprawdzić?" : {
 
     },
     "Czym jest „Margaretka”?" : {
@@ -245,12 +228,6 @@
     "Dla każdej daty podczas importu zostanie zapisany tylko pierwszy dostępny wariant z tej listy. Przeciągnij warianty w trybie edycji, aby ustawić priorytety." : {
 
     },
-    "Dla kogo sprawdzić średni czas modlitwy?" : {
-
-    },
-    "Dlaczego NFC jest przydatne" : {
-
-    },
     "Do" : {
 
     },
@@ -275,6 +252,9 @@
           }
         }
       }
+    },
+    "Duration in minutes" : {
+
     },
     "E-mail" : {
 
@@ -331,6 +311,9 @@
         }
       }
     },
+    "For whom should I check the average prayer duration?" : {
+
+    },
     "Forma modlitwy: np. dziesiątka różańca, krótka modlitwa własnymi słowami; można dołączyć Komunię św., post, dobre uczynki." : {
 
     },
@@ -376,16 +359,7 @@
     "Jak to działa (w skrócie)" : {
 
     },
-    "Jeśli chcesz, możesz uruchamiać modlitwę głosem albo przez dotknięcie telefonu do taga NFC. Nie musisz znać technicznych ustawień — wystarczy gotowe zdanie albo zwykłe dotknięcie telefonu." : {
-
-    },
     "Kapłan" : {
-
-    },
-    "Kapłan, osoba lub modlitwa złożona" : {
-
-    },
-    "Kapłan, osoba lub modlitwa złożona / priest, person, or complex prayer" : {
 
     },
     "Kolejność wariantów" : {
@@ -418,10 +392,26 @@
     "Księża" : {
 
     },
-    "Którego kapłana, jaką osobę lub modlitwę złożoną masz na myśli?" : {
+    "Ładowanie..." : {
 
     },
-    "Ładowanie..." : {
+    "Log completed prayer" : {
+
+    },
+    "Log prayer" : {
+
+    },
+    "Logged completed prayer for %@.%@" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Logged completed prayer for %1$@.%2$@"
+          }
+        }
+      }
+    },
+    "Logs a completed prayer without opening the app. Duration is optional." : {
 
     },
     "Modlitwa Margaretka" : {
@@ -458,9 +448,6 @@
     "Najdłuższa: %lld tyg" : {
 
     },
-    "Najlepiej działa przy ikonie, obrazie, zdjęciu osoby albo przy kartce z imieniem. Dotykasz taga i od razu startuje właściwa modlitwa dla tej osoby." : {
-
-    },
     "Najmocniejszy miesiąc: %@" : {
 
     },
@@ -471,12 +458,6 @@
 
     },
     "Nazwisko" : {
-
-    },
-    "Nie ma jeszcze bieżącej serii dla: %@." : {
-
-    },
-    "Nie ma jeszcze zmierzonego czasu modlitwy dla: %@." : {
 
     },
     "Nie udało się" : {
@@ -512,7 +493,13 @@
     "OK" : {
 
     },
-    "Opcjonalny czas trwania modlitwy. Pozostaw zero, jeśli nie był mierzony." : {
+    "Opening prayer for %@." : {
+
+    },
+    "Opens a saved priest, person, or complex prayer at the beginning." : {
+
+    },
+    "Optional prayer duration. Leave it at zero when it was not measured." : {
 
     },
     "Osoby" : {
@@ -524,12 +511,6 @@
     "Ostatnia synchronizacja" : {
 
     },
-    "Otwiera wybraną osobę, kapłana lub modlitwę i przechodzi do początku modlitwy." : {
-
-    },
-    "Otwieram modlitwę: %@." : {
-
-    },
     "Pełna kopia zapasowa" : {
 
     },
@@ -537,12 +518,6 @@
 
     },
     "Po co?" : {
-
-    },
-    "Podaje liczbę kolejnych tygodni z ukończoną modlitwą za wybraną osobę lub dla wybranej modlitwy." : {
-
-    },
-    "Podaje średni zmierzony czas ukończonej modlitwy za wybraną osobę lub dla wybranej modlitwy." : {
 
     },
     "Podejrzane podobieństwa wymagają decyzji. Porównaj obecną i importowaną wersję." : {
@@ -554,16 +529,10 @@
     "Pokaż" : {
 
     },
-    "Pomoc" : {
-
-    },
     "Pora dnia modlitwy" : {
 
     },
     "Porównaj dane" : {
-
-    },
-    "Powiedz do Siri gotowe zdanie, gdy chcesz zacząć bez klikania." : {
 
     },
     "Powtórz %lldx" : {
@@ -576,6 +545,15 @@
 
     },
     "Praktyka może się nieco różnić w poszczególnych wspólnotach/parafiach – dostosuj do lokalnych zwyczajów. Istota pozostaje ta sama: **stała modlitwa za kapłana**." : {
+
+    },
+    "Prayer streak" : {
+
+    },
+    "priest, person, or complex prayer" : {
+
+    },
+    "Priest, person, or complex prayer" : {
 
     },
     "Przeciągnij zdjęcie, żeby zmienić pozycję" : {
@@ -596,12 +574,6 @@
     "Przygotowuję tworzenie obrazu…" : {
 
     },
-    "Przykładowe komendy" : {
-
-    },
-    "Przyklej tag NFC do zdjęcia osoby albo do kartki z imieniem i dotknij go telefonem." : {
-
-    },
     "Przywróć pełną kopię" : {
 
     },
@@ -618,7 +590,10 @@
         }
       }
     },
-    "Rozpocznij modlitwę" : {
+    "Reports the average measured duration of completed prayers for a saved target." : {
+
+    },
+    "Reports the number of consecutive weeks with a completed prayer for a saved target." : {
 
     },
     "Rozpocznij nagrywanie" : {
@@ -654,36 +629,17 @@
         }
       }
     },
-    "Seria modlitwy" : {
-
-    },
     "Sesje: %lld" : {
 
     },
-    "Siri, Skróty i NFC" : {
+    "Siri and Shortcuts" : {
+
+    },
+    "Siri uses English for these commands. Built-in phrases include the app name. For an NFC tag, open Shortcuts, create an NFC automation, and run one of these actions." : {
 
     },
     "Skopiowano" : {
 
-    },
-    "Sprawdź serię modlitwy" : {
-
-    },
-    "Sprawdź średni czas modlitwy" : {
-
-    },
-    "Średni czas modlitwy" : {
-
-    },
-    "Średni czas modlitwy dla %@ to %@." : {
-      "localizations" : {
-        "pl" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Średni czas modlitwy dla %1$@ to %2$@."
-          }
-        }
-      }
     },
     "start date" : {
       "localizations" : {
@@ -694,6 +650,9 @@
           }
         }
       }
+    },
+    "Start prayer" : {
+
     },
     "Statystyki" : {
 
@@ -720,6 +679,35 @@
 
     },
     "Testy UI uruchomione" : {
+
+    },
+    "The average prayer duration for %@ is %@." : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The average prayer duration for %1$@ is %2$@."
+          }
+        }
+      }
+    },
+    "The current streak for %@ is %lld weeks." : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The current streak for %1$@ is %2$lld weeks."
+          }
+        }
+      }
+    },
+    "The current streak for %@ is one week." : {
+
+    },
+    "There is no current streak for %@ yet." : {
+
+    },
+    "There is no measured prayer duration for %@ yet." : {
 
     },
     "Time:" : {
@@ -1145,13 +1133,7 @@
     "To modlitwa siedmiu osób za **jednego konkretnego kapłana** – każda osoba obejmuje go modlitwą w wybrany dzień tygodnia. Razem tworzą „stokrotkę” (7 płatków) z kapłanem w środku. Zobowiązanie ma charakter **stały** (długoterminowy)." : {
 
     },
-    "To są gotowe zdania. Siri podstawia nazwę kapłana, osoby albo modlitwy, które masz zapisane." : {
-
-    },
     "To samo konto Apple daje dostęp do tych samych danych na wszystkich Twoich urządzeniach." : {
-
-    },
-    "To wygodne, gdy:\n• chcesz uruchomić modlitwę przy konkretnej osobie,\n• chcesz mieć jedną prostą czynność zamiast szukania w telefonie,\n• modlisz się zawsze w tym samym miejscu." : {
 
     },
     "Tryb" : {
@@ -1259,6 +1241,18 @@
     "Wersja chmurowa: %lld" : {
 
     },
+    "Which priest, person, or complex prayer do you mean?" : {
+
+    },
+    "Who or which complex prayer should I log?" : {
+
+    },
+    "Who or which complex prayer should I start?" : {
+
+    },
+    "Whose prayer streak should I check?" : {
+
+    },
     "Widok" : {
 
     },
@@ -1292,12 +1286,6 @@
     "Wyloguj" : {
 
     },
-    "Za kogo lub jaką modlitwę złożoną rozpocząć?" : {
-
-    },
-    "Za kogo lub jaką modlitwę złożoną zapisać?" : {
-
-    },
     "Zachowaj dane z chmury" : {
 
     },
@@ -1316,29 +1304,10 @@
     "Zapisano jako: %@" : {
 
     },
-    "Zapisano ukończoną modlitwę: %@.%@" : {
-      "localizations" : {
-        "pl" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Zapisano ukończoną modlitwę: %1$@.%2$@"
-          }
-        }
-      }
-    },
-    "Zapisuje ukończoną modlitwę bez otwierania aplikacji. Czas trwania jest opcjonalny." : {
-
-    },
     "Zapisz" : {
 
     },
     "Zapisz imiona, dzień i datę rozpoczęcia." : {
-
-    },
-    "Zapisz modlitwę" : {
-
-    },
-    "Zapisz ukończoną modlitwę" : {
 
     },
     "Zarządzaj zapisanymi dniami" : {
