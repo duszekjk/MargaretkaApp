@@ -61,6 +61,10 @@ final class SyncService: ObservableObject {
 
     var isSignedIn: Bool { accessToken != nil && user != nil }
 
+    private func url(for path: String) -> URL {
+        URL(string: path, relativeTo: Self.baseURL)?.absoluteURL ?? Self.baseURL
+    }
+
     private init(session: URLSession = .shared) {
         self.session = session
         encoder = JSONEncoder()
@@ -586,7 +590,7 @@ final class SyncService: ObservableObject {
         body: Request,
         authenticated: Bool = true
     ) async throws -> Response {
-        var urlRequest = URLRequest(url: Self.baseURL.appending(path: path))
+        var urlRequest = URLRequest(url: url(for: path))
         urlRequest.httpMethod = method
         urlRequest.httpBody = try encoder.encode(body)
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -605,7 +609,7 @@ final class SyncService: ObservableObject {
 
     private func requestWithoutBody<Response: Decodable>(path: String) async throws -> Response {
         guard let accessToken else { throw SyncServiceError.signedOut }
-        var urlRequest = URLRequest(url: Self.baseURL.appending(path: path))
+        var urlRequest = URLRequest(url: url(for: path))
         urlRequest.httpMethod = "GET"
         urlRequest.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         let (data, response) = try await session.data(for: urlRequest)
@@ -622,7 +626,7 @@ final class SyncService: ObservableObject {
 
     private func requestWithoutResponse(path: String, method: String) async throws {
         guard let accessToken else { throw SyncServiceError.signedOut }
-        var urlRequest = URLRequest(url: Self.baseURL.appending(path: path))
+        var urlRequest = URLRequest(url: url(for: path))
         urlRequest.httpMethod = method
         urlRequest.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         let (data, response) = try await session.data(for: urlRequest)
