@@ -5,7 +5,7 @@
 //  Created by Jacek Kałużny on 11/07/2025.
 //
 
-
+import AppIntents
 import Foundation
 internal import Combine
 import SwiftUI
@@ -13,7 +13,10 @@ import SwiftUI
 
 class PriestStore: ObservableObject {
     @Published var priests: [Priest] = [] {
-        didSet { saveAsync() }
+        didSet {
+            saveAsync()
+            MargaretkaAppShortcuts.updateAppShortcutParameters()
+        }
     }
 
     private let key = Priest.storageKey

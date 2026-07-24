@@ -8,8 +8,8 @@ import Foundation
 
 struct PrayerTargetEntity: AppEntity {
     static var typeDisplayRepresentation = TypeDisplayRepresentation(
-        name: "Kapłan, osoba lub modlitwa złożona / priest, person, or complex prayer",
-        numericFormat: "\(placeholder: .int) kapłani, osoby lub modlitwy złożone / \(placeholder: .int) priests, people, or complex prayers"
+        name: "Kapłan, osoba lub modlitwa złożona",
+        numericFormat: "\(placeholder: .int) kapłani, osoby lub modlitwy złożone"
     )
     static var defaultQuery = PrayerTargetQuery()
 
@@ -69,10 +69,9 @@ struct PrayerTargetQuery: EntityStringQuery {
     }
 }
 
-struct StartPrayerIntent: AppIntent {
+struct StartPrayerIntent: OpenIntent {
     static var title: LocalizedStringResource = "Rozpocznij modlitwę"
     static var description = IntentDescription("Otwiera wybraną osobę, kapłana lub modlitwę i przechodzi do początku modlitwy.")
-    static var supportedModes: IntentModes { .foreground(.immediate) }
 
     @Parameter(
         title: "Kapłan, osoba lub modlitwa złożona",
@@ -198,15 +197,10 @@ struct MargaretkaAppShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: StartPrayerIntent(),
             phrases: [
+                "Rozpocznij modlitwę w \(.applicationName)",
                 "Rozpocznij \(\.$target) w \(.applicationName)",
                 "Otwórz modlitwę za \(\.$target) w \(.applicationName)",
-                "Zacznij modlitwę za \(\.$target) w \(.applicationName)",
-                "I want to pray for \(\.$target) in \(.applicationName)",
-                "Open prayer for \(\.$target) in \(.applicationName)",
-                "Start \(\.$target) in \(.applicationName)",
-                "Start prayer for \(\.$target) in \(.applicationName)",
-                "Begin prayer for \(\.$target) in \(.applicationName)",
-                "Begin praying for \(\.$target) in \(.applicationName)"
+                "Zacznij modlitwę za \(\.$target) w \(.applicationName)"
             ],
             shortTitle: "Rozpocznij modlitwę",
             systemImageName: "hands.sparkles"
@@ -216,13 +210,7 @@ struct MargaretkaAppShortcuts: AppShortcutsProvider {
             phrases: [
                 "Zapisz modlitwę w \(.applicationName)",
                 "Zaznacz modlitwę za \(\.$target) jako ukończoną w \(.applicationName)",
-                "Dodałem modlitwę za \(\.$target) w \(.applicationName)",
-                "I prayed for \(\.$target) in \(.applicationName)",
-                "I finished prayer for \(\.$target) in \(.applicationName)",
-                "Log prayer in \(.applicationName)",
-                "Log completed prayer for \(\.$target) in \(.applicationName)",
-                "Mark prayer for \(\.$target) as completed in \(.applicationName)",
-                "Mark that I prayed for \(\.$target) in \(.applicationName)"
+                "Dodałem modlitwę za \(\.$target) w \(.applicationName)"
             ],
             shortTitle: "Zapisz modlitwę",
             systemImageName: "checkmark.circle"
@@ -232,12 +220,7 @@ struct MargaretkaAppShortcuts: AppShortcutsProvider {
             phrases: [
                 "Sprawdź serię modlitwy w \(.applicationName)",
                 "Jak długa jest moja seria dla \(\.$target) w \(.applicationName)",
-                "Pokaż serię modlitwy za \(\.$target) w \(.applicationName)",
-                "How many weeks have I prayed for \(\.$target) in \(.applicationName)",
-                "Prayer streak in \(.applicationName)",
-                "Check prayer streak for \(\.$target) in \(.applicationName)",
-                "How long is my prayer streak for \(\.$target) in \(.applicationName)",
-                "What is my streak for \(\.$target) in \(.applicationName)"
+                "Pokaż serię modlitwy za \(\.$target) w \(.applicationName)"
             ],
             shortTitle: "Seria modlitwy",
             systemImageName: "flame"
@@ -247,12 +230,7 @@ struct MargaretkaAppShortcuts: AppShortcutsProvider {
             phrases: [
                 "Sprawdź średni czas modlitwy w \(.applicationName)",
                 "Jak długo zwykle modlę się za \(\.$target) w \(.applicationName)",
-                "Pokaż średni czas dla \(\.$target) w \(.applicationName)",
-                "How long do I usually pray for \(\.$target) in \(.applicationName)",
-                "Average prayer time in \(.applicationName)",
-                "Check average prayer duration for \(\.$target) in \(.applicationName)",
-                "What is the average prayer duration for \(\.$target) in \(.applicationName)",
-                "Tell me the average prayer time for \(\.$target) in \(.applicationName)"
+                "Pokaż średni czas dla \(\.$target) w \(.applicationName)"
             ],
             shortTitle: "Średni czas modlitwy",
             systemImageName: "clock"

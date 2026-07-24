@@ -60,7 +60,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				MargaretkaApp.entitlements,
 				Margaretka_old.icon,
 				Margaretka_old2.icon,
 			);
@@ -70,7 +69,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				MargaretkaWidget.entitlements,
 			);
 			target = F10000000000000000000008 /* MargaretkaWidget */;
 		};

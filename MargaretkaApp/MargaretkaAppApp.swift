@@ -5,6 +5,7 @@
 //  Created by Jacek Kałużny on 11/07/2025.
 //
 
+import AppIntents
 import SwiftUI
 import AudioToolbox
 
@@ -19,6 +20,10 @@ struct MargaretkaAppApp: App {
     @State private var didScheduleNotificationRefresh = false
     @State private var showUiTestGate = ProcessInfo.processInfo.arguments.contains("--ui-tests")
     @Environment(\.scenePhase) private var scenePhase
+
+    init() {
+        MargaretkaAppShortcuts.updateAppShortcutParameters()
+    }
 
     var body: some Scene {
         WindowGroup {
