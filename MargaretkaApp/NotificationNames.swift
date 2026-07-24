@@ -17,15 +17,29 @@ struct PrayerNotificationRoute: Equatable, Identifiable {
 final class PrayerNotificationRouter: ObservableObject {
     static let shared = PrayerNotificationRouter()
 
+    private static let defaultStore = UserDefaults(suiteName: "group.com.duszekjk.MargaretkaApp") ?? .standard
+    private static let pendingItemIDKey = "pending_prayer_route_item_id"
+
+    private let store: UserDefaults
     @Published private(set) var pendingRoute: PrayerNotificationRoute?
+
+    init(store: UserDefaults = PrayerNotificationRouter.defaultStore) {
+        self.store = store
+        if let itemID = store.string(forKey: Self.pendingItemIDKey),
+           let uuid = UUID(uuidString: itemID) {
+            pendingRoute = PrayerNotificationRoute(itemId: uuid)
+        }
+    }
 
     func requestPrayer(itemId: String?) {
         guard let itemId, let uuid = UUID(uuidString: itemId) else { return }
+        store.set(uuid.uuidString, forKey: Self.pendingItemIDKey)
         pendingRoute = PrayerNotificationRoute(itemId: uuid)
     }
 
     func consume(_ route: PrayerNotificationRoute) {
         guard pendingRoute?.id == route.id else { return }
+        store.removeObject(forKey: Self.pendingItemIDKey)
         pendingRoute = nil
     }
 }

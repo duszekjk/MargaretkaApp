@@ -1109,7 +1109,8 @@ struct PrayerFlowView: View {
         isFullscreen = false
         userSelectedCategory = false
 
-        guard let target = scheduleData.items.first(where: { $0.id == route.itemId }) else {
+        guard let target = scheduleData.items.first(where: { $0.id == route.itemId })
+                ?? priestStore.priests.first(where: { $0.id == route.itemId }) else {
             return true
         }
 

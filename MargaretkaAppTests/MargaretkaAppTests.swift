@@ -89,7 +89,9 @@ struct MargaretkaAppTests {
     }
 
     @Test func notificationRouteWaitsUntilConsumed() {
-        let router = PrayerNotificationRouter()
+        let store = UserDefaults(suiteName: "PrayerNotificationRouterTests")!
+        store.removePersistentDomain(forName: "PrayerNotificationRouterTests")
+        let router = PrayerNotificationRouter(store: store)
         let itemId = UUID()
 
         router.requestPrayer(itemId: itemId.uuidString)
@@ -100,6 +102,22 @@ struct MargaretkaAppTests {
             router.consume(route)
         }
         #expect(router.pendingRoute == nil)
+    }
+
+    @Test func notificationRouteSurvivesIntentToAppHandoff() {
+        let store = UserDefaults(suiteName: "PrayerNotificationRouterPersistenceTests")!
+        store.removePersistentDomain(forName: "PrayerNotificationRouterPersistenceTests")
+        let itemId = UUID()
+
+        let intentProcessRouter = PrayerNotificationRouter(store: store)
+        intentProcessRouter.requestPrayer(itemId: itemId.uuidString)
+        let appProcessRouter = PrayerNotificationRouter(store: store)
+
+        #expect(appProcessRouter.pendingRoute?.itemId == itemId)
+        if let route = appProcessRouter.pendingRoute {
+            appProcessRouter.consume(route)
+        }
+        #expect(PrayerNotificationRouter(store: store).pendingRoute == nil)
     }
 
     @Test func shortcutStatisticsAreTargetSpecificAndIgnoreUntimedAverages() {
