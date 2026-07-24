@@ -1,4 +1,5 @@
-codex conversation [20260724-siri] checkpoint before fixing Siri metadata locale
+codex conversation [20260724-siri] mark Siri metadata English-only
 
-Checkpoint the clean state before correcting the language region used by the
-generated Siri/App Shortcuts metadata.
+Set the Xcode development region to `en` so generated Siri/App Shortcuts
+metadata is trained and registered as English. Keep Polish in known regions
+for the app interface, but do not label English Siri utterances as `pl`.

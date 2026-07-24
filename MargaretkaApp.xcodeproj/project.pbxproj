@@ -296,7 +296,7 @@
 				};
 			};
 			buildConfigurationList = E07CA1A52E21619000AB58D7 /* Build configuration list for PBXProject "MargaretkaApp" */;
-			developmentRegion = pl;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
