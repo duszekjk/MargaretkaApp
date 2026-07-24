@@ -1,5 +1,5 @@
-codex conversation [20260724-sync] prevent startup sync work
+codex conversation [20260724-sync] avoid redundant sync save work
 
-Do not start network synchronization from the app root during initial view
-construction. Store changes still trigger immediate synchronization after the
-interface is ready, and manual synchronization remains available in Settings.
+Skip identical LocalDatabase writes and calculate record-level change IDs on a
+utility queue. This prevents large prayer/photo archives from blocking the
+main thread or generating startup synchronization work without real changes.

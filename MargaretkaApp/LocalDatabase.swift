@@ -116,11 +116,17 @@ final class LocalDatabase {
         do {
             let data = try JSONEncoder().encode(items)
             let oldData = try? Self.unpackedPayload(from: Data(contentsOf: url))
+            if oldData == data {
+                return
+            }
             let payload = try Self.storedPayload(from: data)
             try payload.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
-            let change = Self.change(from: oldData, to: data, filename: filename)
-            if !change.changedIDs.isEmpty || !change.deletedIDs.isEmpty {
-                NotificationCenter.default.post(name: .localDataChanged, object: change)
+            DispatchQueue.global(qos: .utility).async {
+                let change = Self.change(from: oldData, to: data, filename: filename)
+                guard !change.changedIDs.isEmpty || !change.deletedIDs.isEmpty else { return }
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: .localDataChanged, object: change)
+                }
             }
         } catch {
             print("❌ Failed to save \(filename): \(error)")
