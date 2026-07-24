@@ -8,8 +8,8 @@ import Foundation
 
 struct PrayerTargetEntity: AppEntity {
     static var typeDisplayRepresentation = TypeDisplayRepresentation(
-        name: "Kapłan, osoba lub modlitwa złożona",
-        numericFormat: "\(placeholder: .int) kapłani, osoby lub modlitwy złożone"
+        name: "priest, person, or complex prayer",
+        numericFormat: "\(placeholder: .int) priests, people, or complex prayers"
     )
     static var defaultQuery = PrayerTargetQuery()
 
@@ -33,13 +33,13 @@ struct PrayerTargetEntity: AppEntity {
     private var categoryTitle: String {
         switch PrayerTargetCategory(rawValue: categoryRawValue) {
         case .priest:
-            return "Ksiądz / Priest"
+            return "Priest"
         case .person:
-            return "Osoba / Person"
+            return "Person"
         case .prayer:
-            return "Modlitwa złożona / Complex prayer"
+            return "Complex prayer"
         case nil:
-            return "Cel modlitwy / Prayer target"
+            return "Prayer target"
         }
     }
 }
@@ -70,13 +70,13 @@ struct PrayerTargetQuery: EntityStringQuery {
 }
 
 struct StartPrayerIntent: OpenIntent {
-    static var title: LocalizedStringResource = "Rozpocznij modlitwę"
-    static var description = IntentDescription("Otwiera wybraną osobę, kapłana lub modlitwę i przechodzi do początku modlitwy.")
+    static var title: LocalizedStringResource = "Start prayer"
+    static var description = IntentDescription("Opens a saved priest, person, or complex prayer at the beginning.")
 
     @Parameter(
-        title: "Kapłan, osoba lub modlitwa złożona",
-        requestValueDialog: "Za kogo lub jaką modlitwę złożoną rozpocząć?",
-        requestDisambiguationDialog: "Którego kapłana, jaką osobę lub modlitwę złożoną masz na myśli?"
+        title: "Priest, person, or complex prayer",
+        requestValueDialog: "Who or which complex prayer should I start?",
+        requestDisambiguationDialog: "Which priest, person, or complex prayer do you mean?"
     )
     var target: PrayerTargetEntity
 
@@ -86,25 +86,25 @@ struct StartPrayerIntent: OpenIntent {
             throw AppIntentError.Unrecoverable.entityNotFound
         }
         PrayerNotificationRouter.shared.requestPrayer(itemId: target.id.uuidString)
-        return .result(dialog: IntentDialog("Otwieram modlitwę: \(target.name)."))
+        return .result(dialog: IntentDialog("Opening prayer for \(target.name)."))
     }
 }
 
 struct LogCompletedPrayerIntent: AppIntent {
-    static var title: LocalizedStringResource = "Zapisz ukończoną modlitwę"
-    static var description = IntentDescription("Zapisuje ukończoną modlitwę bez otwierania aplikacji. Czas trwania jest opcjonalny.")
+    static var title: LocalizedStringResource = "Log completed prayer"
+    static var description = IntentDescription("Logs a completed prayer without opening the app. Duration is optional.")
     static var supportedModes: IntentModes { .background }
 
     @Parameter(
-        title: "Kapłan, osoba lub modlitwa złożona",
-        requestValueDialog: "Za kogo lub jaką modlitwę złożoną zapisać?",
-        requestDisambiguationDialog: "Którego kapłana, jaką osobę lub modlitwę złożoną masz na myśli?"
+        title: "Priest, person, or complex prayer",
+        requestValueDialog: "Who or which complex prayer should I log?",
+        requestDisambiguationDialog: "Which priest, person, or complex prayer do you mean?"
     )
     var target: PrayerTargetEntity
 
     @Parameter(
-        title: "Czas w minutach",
-        description: "Opcjonalny czas trwania modlitwy. Pozostaw zero, jeśli nie był mierzony.",
+        title: "Duration in minutes",
+        description: "Optional prayer duration. Leave it at zero when it was not measured.",
         default: 0,
         controlStyle: .field,
         inclusiveRange: (lowerBound: 0, upperBound: 1440)
@@ -118,24 +118,24 @@ struct LogCompletedPrayerIntent: AppIntent {
             durationMinutes: durationMinutes
         )
         let durationText = session.duration > 0
-            ? " Czas: \(PrayerShortcutStatistics.formattedDuration(session.duration))."
+            ? " Duration: \(PrayerShortcutStatistics.formattedDuration(session.duration))."
             : ""
         return .result(
             value: true,
-            dialog: IntentDialog("Zapisano ukończoną modlitwę: \(target.name).\(durationText)")
+            dialog: IntentDialog("Logged completed prayer for \(target.name).\(durationText)")
         )
     }
 }
 
 struct PrayerStreakIntent: AppIntent {
-    static var title: LocalizedStringResource = "Sprawdź serię modlitwy"
-    static var description = IntentDescription("Podaje liczbę kolejnych tygodni z ukończoną modlitwą za wybraną osobę lub dla wybranej modlitwy.")
+    static var title: LocalizedStringResource = "Check prayer streak"
+    static var description = IntentDescription("Reports the number of consecutive weeks with a completed prayer for a saved target.")
     static var supportedModes: IntentModes { .background }
 
     @Parameter(
-        title: "Kapłan, osoba lub modlitwa złożona",
-        requestValueDialog: "Czyją serię modlitwy sprawdzić?",
-        requestDisambiguationDialog: "Którego kapłana, jaką osobę lub modlitwę złożoną masz na myśli?"
+        title: "Priest, person, or complex prayer",
+        requestValueDialog: "Whose prayer streak should I check?",
+        requestDisambiguationDialog: "Which priest, person, or complex prayer do you mean?"
     )
     var target: PrayerTargetEntity
 
@@ -148,25 +148,25 @@ struct PrayerStreakIntent: AppIntent {
         let dialog: IntentDialog
         switch stats.currentWeeklyStreak {
         case 0:
-            dialog = IntentDialog("Nie ma jeszcze bieżącej serii dla: \(target.name).")
+            dialog = IntentDialog("There is no current streak for \(target.name) yet.")
         case 1:
-            dialog = IntentDialog("Bieżąca seria dla \(target.name) to jeden tydzień.")
+            dialog = IntentDialog("The current streak for \(target.name) is one week.")
         default:
-            dialog = IntentDialog("Bieżąca seria dla \(target.name) to \(stats.currentWeeklyStreak) tygodni.")
+            dialog = IntentDialog("The current streak for \(target.name) is \(stats.currentWeeklyStreak) weeks.")
         }
         return .result(value: stats.currentWeeklyStreak, dialog: dialog)
     }
 }
 
 struct AveragePrayerDurationIntent: AppIntent {
-    static var title: LocalizedStringResource = "Sprawdź średni czas modlitwy"
-    static var description = IntentDescription("Podaje średni zmierzony czas ukończonej modlitwy za wybraną osobę lub dla wybranej modlitwy.")
+    static var title: LocalizedStringResource = "Check average prayer duration"
+    static var description = IntentDescription("Reports the average measured duration of completed prayers for a saved target.")
     static var supportedModes: IntentModes { .background }
 
     @Parameter(
-        title: "Kapłan, osoba lub modlitwa złożona",
-        requestValueDialog: "Dla kogo sprawdzić średni czas modlitwy?",
-        requestDisambiguationDialog: "Którego kapłana, jaką osobę lub modlitwę złożoną masz na myśli?"
+        title: "Priest, person, or complex prayer",
+        requestValueDialog: "For whom should I check the average prayer duration?",
+        requestDisambiguationDialog: "Which priest, person, or complex prayer do you mean?"
     )
     var target: PrayerTargetEntity
 
@@ -179,13 +179,13 @@ struct AveragePrayerDurationIntent: AppIntent {
         guard let average = stats.averageMeasuredDuration else {
             return .result(
                 value: 0,
-                dialog: IntentDialog("Nie ma jeszcze zmierzonego czasu modlitwy dla: \(target.name).")
+                dialog: IntentDialog("There is no measured prayer duration for \(target.name) yet.")
             )
         }
         let minutes = average / 60
         return .result(
             value: minutes,
-            dialog: IntentDialog("Średni czas modlitwy dla \(target.name) to \(PrayerShortcutStatistics.formattedDuration(average)).")
+            dialog: IntentDialog("The average prayer duration for \(target.name) is \(PrayerShortcutStatistics.formattedDuration(average)).")
         )
     }
 }
@@ -197,42 +197,42 @@ struct MargaretkaAppShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: StartPrayerIntent(),
             phrases: [
-                "Rozpocznij modlitwę w \(.applicationName)",
-                "Rozpocznij \(\.$target) w \(.applicationName)",
-                "Otwórz modlitwę za \(\.$target) w \(.applicationName)",
-                "Zacznij modlitwę za \(\.$target) w \(.applicationName)"
+                "Start prayer in \(.applicationName)",
+                "Start \(\.$target) in \(.applicationName)",
+                "Open prayer for \(\.$target) in \(.applicationName)",
+                "Begin praying for \(\.$target) in \(.applicationName)"
             ],
-            shortTitle: "Rozpocznij modlitwę",
+            shortTitle: "Start prayer",
             systemImageName: "hands.sparkles"
         )
         AppShortcut(
             intent: LogCompletedPrayerIntent(),
             phrases: [
-                "Zapisz modlitwę w \(.applicationName)",
-                "Zaznacz modlitwę za \(\.$target) jako ukończoną w \(.applicationName)",
-                "Dodałem modlitwę za \(\.$target) w \(.applicationName)"
+                "Log prayer in \(.applicationName)",
+                "Mark prayer for \(\.$target) as completed in \(.applicationName)",
+                "I prayed for \(\.$target) in \(.applicationName)"
             ],
-            shortTitle: "Zapisz modlitwę",
+            shortTitle: "Log prayer",
             systemImageName: "checkmark.circle"
         )
         AppShortcut(
             intent: PrayerStreakIntent(),
             phrases: [
-                "Sprawdź serię modlitwy w \(.applicationName)",
-                "Jak długa jest moja seria dla \(\.$target) w \(.applicationName)",
-                "Pokaż serię modlitwy za \(\.$target) w \(.applicationName)"
+                "Check prayer streak in \(.applicationName)",
+                "How long is my prayer streak for \(\.$target) in \(.applicationName)",
+                "Show the prayer streak for \(\.$target) in \(.applicationName)"
             ],
-            shortTitle: "Seria modlitwy",
+            shortTitle: "Prayer streak",
             systemImageName: "flame"
         )
         AppShortcut(
             intent: AveragePrayerDurationIntent(),
             phrases: [
-                "Sprawdź średni czas modlitwy w \(.applicationName)",
-                "Jak długo zwykle modlę się za \(\.$target) w \(.applicationName)",
-                "Pokaż średni czas dla \(\.$target) w \(.applicationName)"
+                "Check average prayer duration in \(.applicationName)",
+                "How long do I usually pray for \(\.$target) in \(.applicationName)",
+                "Show average prayer duration for \(\.$target) in \(.applicationName)"
             ],
-            shortTitle: "Średni czas modlitwy",
+            shortTitle: "Average prayer duration",
             systemImageName: "clock"
         )
     }
@@ -277,10 +277,10 @@ struct PrayerShortcutStatistics {
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60
         if hours > 0, minutes > 0 {
-            return "\(hours) godz. \(minutes) min"
+            return "\(hours) hr \(minutes) min"
         }
         if hours > 0 {
-            return "\(hours) godz."
+            return "\(hours) hr"
         }
         return "\(minutes) min"
     }

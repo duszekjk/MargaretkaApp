@@ -5,6 +5,7 @@
 //  Created by Jacek Kałużny on 11/07/2025.
 //
 
+import AppIntents
 import Foundation
 import SwiftUI
 
@@ -18,37 +19,12 @@ struct SettingsMenuView: View {
     @AppStorage("prayerSwipeMode") private var prayerSwipeModeRaw: String = PrayerSwipeMode.both.rawValue
     @AppStorage("prayerCompactView") private var prayerCompactView: Bool = true
 
-    private var hasPriestAndPerson: Bool {
-        let hasPriest = priestStore.priests.contains { $0.category == .priest }
-        let hasPerson = priestStore.priests.contains { $0.category == .person }
-        return hasPriest && hasPerson
-    }
-
-    private var examplePriestName: String {
-        priestStore.priests.first(where: { $0.category == .priest })?.displayName ?? "wybrany kapłan"
-    }
-
-    private var examplePersonName: String {
-        priestStore.priests.first(where: { $0.category == .person })?.displayName ?? "wybrana osoba"
-    }
-
-    private var exampleComplexPrayerNames: [String] {
-        let names = priestStore.priests
-            .filter { $0.category == .prayer }
-            .map(\.displayName)
-            .filter { !$0.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).isEmpty }
-        return names.isEmpty ? ["Różaniec", "Koronka do Miłosierdzia Bożego"] : names
-    }
-
     private var exampleSiriCommands: [String] {
-        let prayers = exampleComplexPrayerNames
-        let firstPrayer = prayers.first ?? "Różaniec"
-        let secondPrayer = prayers.dropFirst().first ?? firstPrayer
         return [
-            "• Siri, start prayer for \(examplePriestName) in Heptadaisy",
-            "• Siri, start prayer for \(examplePersonName) in Heptadaisy",
-            "• Siri, check prayer streak for \(firstPrayer) in Heptadaisy",
-            "• Siri, check average prayer duration for \(secondPrayer) in Heptadaisy"
+            "Hey Siri, start prayer in Heptadaisy",
+            "Hey Siri, log prayer in Heptadaisy",
+            "Hey Siri, check prayer streak in Heptadaisy",
+            "Hey Siri, check average prayer duration in Heptadaisy"
         ]
     }
     
@@ -144,83 +120,23 @@ struct SettingsMenuView: View {
                             .foregroundStyle(.secondary)
                     }
 
-                if hasPriestAndPerson {
-                    Section {
-                        GroupBox {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Siri, Skróty i NFC")
-                                    .font(.headline)
-                                    .fixedSize(horizontal: false, vertical: true)
+                Section("Siri and Shortcuts") {
+                    SiriTipView(intent: StartPrayerIntent())
+                        .siriTipViewStyle(.automatic)
 
-                                Text("Jeśli chcesz, możesz uruchamiać modlitwę głosem albo przez dotknięcie telefonu do taga NFC. Nie musisz znać technicznych ustawień — wystarczy gotowe zdanie albo zwykłe dotknięcie telefonu.")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-
-                                Divider()
-
-                                VStack(alignment: .leading, spacing: 10) {
-                                    Label {
-                                        Text("Powiedz do Siri gotowe zdanie, gdy chcesz zacząć bez klikania.")
-                                            .fixedSize(horizontal: false, vertical: true)
-                                    } icon: {
-                                        Image(systemName: "mic.fill")
-                                    }
-
-                                    Label {
-                                        Text("Przyklej tag NFC do zdjęcia osoby albo do kartki z imieniem i dotknij go telefonem.")
-                                            .fixedSize(horizontal: false, vertical: true)
-                                    } icon: {
-                                        Image(systemName: "nfc")
-                                    }
-                                }
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-
-                                Divider()
-
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Przykładowe komendy")
-                                        .font(.subheadline.bold())
-
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        ForEach(exampleSiriCommands, id: \.self) { command in
-                                            Text(command)
-                                        }
-                                    }
-                                    .font(.footnote)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                }
-
-                                Text("To są gotowe zdania. Siri podstawia nazwę kapłana, osoby albo modlitwy, które masz zapisane.")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-
-                                Divider()
-
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Dlaczego NFC jest przydatne")
-                                        .font(.subheadline.bold())
-
-                                    Text("Najlepiej działa przy ikonie, obrazie, zdjęciu osoby albo przy kartce z imieniem. Dotykasz taga i od razu startuje właściwa modlitwa dla tej osoby.")
-                                        .font(.footnote)
-                                        .foregroundStyle(.secondary)
-                                        .fixedSize(horizontal: false, vertical: true)
-
-                                    Text("To wygodne, gdy:\n• chcesz uruchomić modlitwę przy konkretnej osobie,\n• chcesz mieć jedną prostą czynność zamiast szukania w telefonie,\n• modlisz się zawsze w tym samym miejscu.")
-                                        .font(.footnote)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 6)
+                    ForEach(exampleSiriCommands, id: \.self) { command in
+                        Text(command)
+                            .font(.footnote)
                             .fixedSize(horizontal: false, vertical: true)
-                        }
-                        .listRowBackground(Color.clear)
-                    } header: {
-                        Text("Pomoc")
                     }
+
+                    Text("Siri uses English for these commands. Built-in phrases include the app name. For an NFC tag, open Shortcuts, create an NFC automation, and run one of these actions.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    ShortcutsLink()
+                        .shortcutsLinkStyle(.automatic)
                 }
 
                 Section {

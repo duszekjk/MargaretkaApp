@@ -1,12 +1,12 @@
-codex conversation [20260724-siri] register and localize functional Siri shortcuts
+codex conversation [20260724-siri] make Siri English-only and route NFC through Shortcuts
 
-Register dynamic prayer targets with App Shortcuts on first launch and whenever
-a saved priest, person, or complex prayer changes. This supplies Siri with the
-entity values required by parameterized phrases.
+Use English as the only Siri language because Siri does not support Polish.
+Make all intent prompts, spoken responses, entity labels, and App Shortcut
+phrases English, with an English AppShortcuts catalog and a target-free phrase
+that can prompt for the prayer.
 
-Make starting a selected prayer an OpenIntent, add a target-free phrase that can
-prompt for the prayer, and provide separate Polish and English trigger phrase
-localizations instead of compiling English commands into the Polish language
-model.
+Replace the misleading NFC essay with the native Siri tip and Shortcuts link.
+Explain that NFC setup belongs in a Shortcuts NFC automation, where the user
+can also assign a personal name without repeating the app name.
 
 Validation is pending.

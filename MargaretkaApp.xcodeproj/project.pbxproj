@@ -300,6 +300,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
+				en,
 				pl,
 			);
 			mainGroup = E07CA1A12E21619000AB58D7;

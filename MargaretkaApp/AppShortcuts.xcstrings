@@ -1,136 +1,19 @@
 {
-  "sourceLanguage" : "pl",
+  "sourceLanguage" : "en",
   "strings" : {
-    "Dodałem modlitwę za ${target} w ${applicationName}" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I prayed for ${target} in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Jak długa jest moja seria dla ${target} w ${applicationName}" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "How long is my prayer streak for ${target} in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Jak długo zwykle modlę się za ${target} w ${applicationName}" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "How long do I usually pray for ${target} in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Otwórz modlitwę za ${target} w ${applicationName}" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open prayer for ${target} in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Pokaż serię modlitwy za ${target} w ${applicationName}" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show the prayer streak for ${target} in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Pokaż średni czas dla ${target} w ${applicationName}" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show average prayer time for ${target} in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Rozpocznij ${target} w ${applicationName}" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start ${target} in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Rozpocznij modlitwę w ${applicationName}" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Start prayer in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Sprawdź serię modlitwy w ${applicationName}" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check prayer streak in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Sprawdź średni czas modlitwy w ${applicationName}" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check average prayer time in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Zacznij modlitwę za ${target} w ${applicationName}" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Begin praying for ${target} in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Zapisz modlitwę w ${applicationName}" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Log prayer in ${applicationName}"
-          }
-        }
-      }
-    },
-    "Zaznacz modlitwę za ${target} jako ukończoną w ${applicationName}" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mark prayer for ${target} as completed in ${applicationName}"
-          }
-        }
-      }
-    }
+    "Begin praying for ${target} in ${applicationName}" : {},
+    "Check average prayer duration in ${applicationName}" : {},
+    "Check prayer streak in ${applicationName}" : {},
+    "How long do I usually pray for ${target} in ${applicationName}" : {},
+    "How long is my prayer streak for ${target} in ${applicationName}" : {},
+    "I prayed for ${target} in ${applicationName}" : {},
+    "Log prayer in ${applicationName}" : {},
+    "Mark prayer for ${target} as completed in ${applicationName}" : {},
+    "Open prayer for ${target} in ${applicationName}" : {},
+    "Show average prayer duration for ${target} in ${applicationName}" : {},
+    "Show the prayer streak for ${target} in ${applicationName}" : {},
+    "Start ${target} in ${applicationName}" : {},
+    "Start prayer in ${applicationName}" : {}
   },
   "version" : "1.0"
 }
