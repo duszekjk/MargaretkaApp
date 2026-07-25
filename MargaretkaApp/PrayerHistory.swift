@@ -173,8 +173,10 @@ struct HomeView: View {
 
             let mainStart = CFAbsoluteTimeGetCurrent()
             await MainActor.run {
-                priestStore.priests = loadedPriests
-                if mergedPrayers.count != prayersSnapshot.count {
+                if priestStore.priests != loadedPriests {
+                    priestStore.priests = loadedPriests
+                }
+                if mergedPrayers != prayersSnapshot {
                     prayerStore.prayers = mergedPrayers
                 }
             }

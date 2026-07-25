@@ -55,6 +55,7 @@ final class SyncService: ObservableObject {
     private weak var configuredTargetStore: PriestStore?
     private weak var configuredOfflineStore: OfflineBreviaryStore?
     private var syncRequestPending = false
+    private var scheduledSyncTask: Task<Void, Never>?
     private var suppressAutomaticSync = false
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
@@ -127,9 +128,15 @@ final class SyncService: ObservableObject {
             syncRequestPending = true
             return
         }
-        Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 300_000_000)
-            guard let self else { return }
+        guard scheduledSyncTask == nil else { return }
+        scheduledSyncTask = Task { @MainActor [weak self] in
+            defer { self?.scheduledSyncTask = nil }
+            do {
+                try await Task.sleep(nanoseconds: 300_000_000)
+            } catch {
+                return
+            }
+            guard let self, !Task.isCancelled else { return }
             await self.synchronize(prayerStore: prayerStore, targetStore: targetStore, offlineStore: offlineStore)
         }
     }

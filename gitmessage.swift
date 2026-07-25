@@ -1,5 +1,4 @@
-codex conversation [20260725-sync] enforce one-second startup deadline
+codex conversation [20260725-sync] coalesce startup synchronization requests
 
-Measure the logged-in transition to PrayerFlowView against one shared
-one-second deadline and keep the three-minute foreground stability test for
-delayed crashes.
+Prevent repeated startup data writes from spawning an unbounded number of
+delayed synchronization tasks, and skip publishing unchanged store data.
