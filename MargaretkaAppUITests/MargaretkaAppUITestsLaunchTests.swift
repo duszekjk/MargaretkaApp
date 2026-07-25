@@ -22,12 +22,15 @@ final class MargaretkaAppUITestsLaunchTests: XCTestCase {
         let app = XCUIApplication()
         let launchStart = Date()
         app.launch()
+        let startupDeadline = launchStart.addingTimeInterval(1)
+        let foregroundTimeout = max(0, startupDeadline.timeIntervalSinceNow)
         XCTAssertTrue(
-            app.wait(for: .runningForeground, timeout: 1),
+            app.wait(for: .runningForeground, timeout: foregroundTimeout),
             "MargaretkaApp did not reach the foreground within 1 second"
         )
+        let prayerFlowTimeout = max(0, startupDeadline.timeIntervalSinceNow)
         XCTAssertTrue(
-            app.otherElements["prayer_flow_view"].waitForExistence(timeout: 1),
+            app.otherElements["prayer_flow_view"].waitForExistence(timeout: prayerFlowTimeout),
             "Logged-in MargaretkaApp did not present PrayerFlowView within 1 second"
         )
         XCTAssertLessThanOrEqual(
