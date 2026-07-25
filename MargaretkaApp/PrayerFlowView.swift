@@ -812,6 +812,7 @@ struct PrayerFlowView: View {
         } action: { size in
             availableWindowSize = size
         }
+        .accessibilityIdentifier("prayer_flow_view")
         .imagePlaygroundSheet(
             isPresented: $isImagePlaygroundPresented,
             concepts: imagePlaygroundConcepts,

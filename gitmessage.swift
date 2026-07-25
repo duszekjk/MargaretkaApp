@@ -1,4 +1,5 @@
-codex conversation [20260725-sync] preserve macOS project support changes
+codex conversation [20260725-sync] add fast and long launch diagnostics
 
-Commit the existing project settings changes that add the user's macOS
-support configuration without modifying any other work.
+Measure the logged-in transition to PrayerFlowView against a one-second
+startup budget and add a three-minute foreground stability test for delayed
+crashes.
