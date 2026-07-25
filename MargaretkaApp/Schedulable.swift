@@ -1028,7 +1028,14 @@ func computeUpcomingNotifications(
         case .daily:
             let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
             var cursor = max(todayAtTime ?? now, item.schedule.startDate)
+            var catchUpSteps = 0
             while cursor < now {
+                catchUpSteps += 1
+                if catchUpSteps > 10_000 {
+                    print("⚠️ Notification schedule catch-up capped: \(title), start \(item.schedule.startDate)")
+                    cursor = now
+                    break
+                }
                 guard let next = calendar.date(byAdding: .day, value: interval, to: cursor) else { break }
                 cursor = next
             }
