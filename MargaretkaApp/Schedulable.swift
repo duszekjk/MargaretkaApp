@@ -454,6 +454,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
         let itemsSnapshot = items
         Task.detached(priority: .background) {
             let rescheduleStart = CFAbsoluteTimeGetCurrent()
+            print("📅 ScheduleData.rescheduleAll start: \(self.saveKey), items \(itemsSnapshot.count)")
             let now = Date()
             let calendar = Calendar.current
             let notificationCenter = UNUserNotificationCenter.current()
@@ -479,6 +480,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
             var scheduled: [Scheduled] = []
             let buildStart = CFAbsoluteTimeGetCurrent()
             for (index, item) in itemsSnapshot.enumerated() {
+                print("📅 ScheduleData building item \(index + 1)/\(itemsSnapshot.count): \(item.notificationTitle)")
                 let upcoming = self.buildUpcomingNotifications(for: item, title: item.notificationTitle, now: now, calendar: calendar)
                 for entry in upcoming {
                     if item.notificationIdsFinished.contains(entry.id) { continue }
@@ -510,6 +512,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                 }
             }
             let buildDuration = CFAbsoluteTimeGetCurrent() - buildStart
+            print("📅 ScheduleData built \(scheduled.count) notifications in \(String(format: \"%.3f\", buildDuration))s")
 
             scheduled.sort { $0.notificationDate < $1.notificationDate }
             if scheduled.count > maxNotificationsToSchedule {

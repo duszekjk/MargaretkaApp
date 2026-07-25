@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] cap notification schedule catch-up
+codex conversation [20260725-sync] instrument notification rescheduling
 
-Prevent an old or malformed daily schedule start date from forcing an
-unbounded catch-up loop while rebuilding notifications.
+Add stage diagnostics around notification rescheduling to identify any
+remaining startup stall after loading local data.
