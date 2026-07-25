@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] send photo fingerprints to server
+codex conversation [20260725-sync] enforce launch smoke-test timeout
 
-Send the persisted local photo fingerprint with each original upload so the
-server can audit the metadata without comparing the full image bytes.
+Make the UI launch test fail explicitly when the app does not reach the
+foreground within 15 seconds, instead of taking a screenshot of a hung launch.
