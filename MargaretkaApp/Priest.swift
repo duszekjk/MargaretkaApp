@@ -47,6 +47,8 @@ enum PrayerTargetCategory: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+private let displayPhotoCache = NSCache<NSString, UIImage>()
+
 struct Priest: Identifiable, Hashable, Codable {
     
     var id: UUID
@@ -448,8 +450,17 @@ extension Priest {
     }
 
     var displayPhoto: UIImage? {
-        if let photoData, let image = UIImage(data: photoData) {
-            return image
+        if let photoData {
+            let version = photoUpdatedAt?.timeIntervalSince1970 ?? 0
+            let key = "(id.uuidString.lowercased()):(version):(photoData.count)" as NSString
+            if let cached = displayPhotoCache.object(forKey: key) {
+                return cached
+            }
+            if let image = UIImage(data: photoData) {
+                displayPhotoCache.setObject(image, forKey: key)
+                print("🖼️ displayPhoto cache miss: \(id.uuidString), bytes \(photoData.count), size \(Int(image.size.width))x\(Int(image.size.height))")
+                return image
+            }
         }
         guard let bundledPhotoAssetName else { return nil }
         return UIImage(named: bundledPhotoAssetName)
