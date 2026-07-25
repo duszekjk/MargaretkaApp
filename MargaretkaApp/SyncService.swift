@@ -56,6 +56,8 @@ final class SyncService: ObservableObject {
     private weak var configuredOfflineStore: OfflineBreviaryStore?
     private var syncRequestPending = false
     private var scheduledSyncTask: Task<Void, Never>?
+    private var lastSyncFinishedAt: Date?
+    private let minimumSyncInterval: TimeInterval = 20
     private var suppressAutomaticSync = false
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
@@ -232,11 +234,18 @@ final class SyncService: ObservableObject {
         revisionOverride: Int? = nil
     ) async {
         guard isSignedIn else { return }
+        if let lastSyncFinishedAt {
+            let remaining = minimumSyncInterval - Date().timeIntervalSince(lastSyncFinishedAt)
+            if remaining > 0 {
+                try? await Task.sleep(for: .seconds(remaining))
+            }
+        }
         guard !isWorking else { return }
         configureStores(prayerStore: prayerStore, targetStore: targetStore, offlineStore: offlineStore)
         isWorking = true
         errorMessage = nil
         defer {
+            lastSyncFinishedAt = Date()
             isWorking = false
             if syncRequestPending {
                 syncRequestPending = false
