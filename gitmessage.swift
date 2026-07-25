@@ -1,5 +1,4 @@
-codex conversation [20260725-sync] enforce twenty-second sync interval
+codex conversation [20260725-sync] prevent zero-interval notification loop
 
-Prevent repeated startup data writes from spawning an unbounded number of
-delayed synchronization tasks, skip publishing unchanged store data, and
-enforce a minimum twenty-second interval between synchronization attempts.
+Prevent legacy schedules with a zero interval from leaving notification
+rescheduling cursors unchanged and consuming CPU indefinitely.

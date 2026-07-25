@@ -1011,6 +1011,9 @@ func computeUpcomingNotifications(
     calendar: Calendar = .current
 ) -> [(eventDate: Date, notificationDate: Date, id: String)] {
     var upcoming: [(Date, Date, String)] = []
+    // Legacy schedules may contain zero or negative intervals. Without this
+    // guard the cursor in the daily/weekly/monthly loops never advances.
+    let interval = max(1, item.schedule.everyN)
 
     for time in item.schedule.times {
         if time.event.hour == nil && time.event.minute == nil {
@@ -1026,7 +1029,7 @@ func computeUpcomingNotifications(
             let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
             var cursor = max(todayAtTime ?? now, item.schedule.startDate)
             while cursor < now {
-                guard let next = calendar.date(byAdding: .day, value: item.schedule.everyN, to: cursor) else { break }
+                guard let next = calendar.date(byAdding: .day, value: interval, to: cursor) else { break }
                 cursor = next
             }
             var emitted = 0
@@ -1088,7 +1091,7 @@ func computeUpcomingNotifications(
                         }
                     }
                 }
-                if let nextWeek = calendar.date(byAdding: .weekOfYear, value: item.schedule.everyN, to: weekCursor) {
+                if let nextWeek = calendar.date(byAdding: .weekOfYear, value: interval, to: weekCursor) {
                     weekCursor = nextWeek
                 } else {
                     break
@@ -1140,7 +1143,7 @@ func computeUpcomingNotifications(
                         }
                     }
                 }
-                if let nextMonth = calendar.date(byAdding: .month, value: item.schedule.everyN, to: monthCursor) {
+                if let nextMonth = calendar.date(byAdding: .month, value: interval, to: monthCursor) {
                     monthCursor = nextMonth
                 } else {
                     break
