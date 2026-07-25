@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] enforce launch smoke-test timeout
+codex conversation [20260725-sync] preserve macOS project support changes
 
-Make the UI launch test fail explicitly when the app does not reach the
-foreground within 15 seconds, instead of taking a screenshot of a hung launch.
+Commit the existing project settings changes that add the user's macOS
+support configuration without modifying any other work.
