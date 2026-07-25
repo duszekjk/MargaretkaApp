@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] instrument notification rescheduling
+codex conversation [20260725-sync] fix notification diagnostic logging
 
-Add stage diagnostics around notification rescheduling to identify any
-remaining startup stall after loading local data.
+Fix the diagnostic formatting so the notification rescheduling instrumentation
+compiles correctly.

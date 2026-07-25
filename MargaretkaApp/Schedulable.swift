@@ -512,7 +512,7 @@ class ScheduleData<T: Schedulable>: ObservableObject {
                 }
             }
             let buildDuration = CFAbsoluteTimeGetCurrent() - buildStart
-            print("📅 ScheduleData built \(scheduled.count) notifications in \(String(format: \"%.3f\", buildDuration))s")
+            print("📅 ScheduleData built \(scheduled.count) notifications in \(String(format: "%.3f", buildDuration))s")
 
             scheduled.sort { $0.notificationDate < $1.notificationDate }
             if scheduled.count > maxNotificationsToSchedule {
