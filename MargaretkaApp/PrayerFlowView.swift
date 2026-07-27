@@ -1615,8 +1615,7 @@ struct PrayerTouchScrollerView: View {
                 print("🧩 Prayer frames log took \(String(format: "%.3f", logDuration))s")
             }
         }
-
-        }.coordinateSpace(name: "scrollZone")
+        .coordinateSpace(name: "scrollZone")
 
     }
     private func prayerName(at index: Int) -> String? {

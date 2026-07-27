@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] break PrayerFlow layout feedback
+codex conversation [20260725-sync] complete PrayerFlow layout feedback fix
 
-Keep window measurement from feeding back into child widths and remove the
-heavy glass container from the large prayer scroller.
+Finish the scroller container replacement after removing the obsolete wrapper.
+The prior layout change required this syntax correction to build cleanly.
