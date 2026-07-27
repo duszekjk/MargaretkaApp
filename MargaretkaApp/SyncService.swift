@@ -769,13 +769,24 @@ private struct DeviceDescription: Codable {
             id = UUID()
             defaults.set(id.uuidString, forKey: "sync.deviceID")
         }
+#if os(macOS)
+        let deviceName = Host.current().localizedName ?? "Mac"
+        let deviceModel = "Mac"
+        let systemVersion = ProcessInfo.processInfo.operatingSystemVersionString
+        let family: PhotoLayoutFamily = .iPad
+#else
         let device = UIDevice.current
+        let deviceName = device.name
+        let deviceModel = device.model
+        let systemVersion = device.systemVersion
+        let family: PhotoLayoutFamily = device.userInterfaceIdiom == .pad ? .iPad : .iPhone
+#endif
         return DeviceDescription(
             id: id,
-            name: device.name,
-            model: device.model,
-            systemVersion: device.systemVersion,
-            family: device.userInterfaceIdiom == .pad ? .iPad : .iPhone
+            name: deviceName,
+            model: deviceModel,
+            systemVersion: systemVersion,
+            family: family
         )
     }
 }
