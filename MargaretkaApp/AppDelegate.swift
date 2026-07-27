@@ -5,10 +5,15 @@
 //  Created by Jacek Kałużny on 15/08/2025.
 //
 
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 import UserNotifications
 import WebKit
 
+#if canImport(UIKit)
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(
         _ application: UIApplication,
@@ -19,6 +24,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         cleanLegacyWebCachesIfNeeded()
         return true
     }
+#else
+final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        UNUserNotificationCenter.current().delegate = self
+        cleanStalePreferenceTemporaryFiles()
+        cleanLegacyWebCachesIfNeeded()
+    }
+#endif
 
     private func cleanStalePreferenceTemporaryFiles() {
         guard let bundleIdentifier = Bundle.main.bundleIdentifier,
@@ -63,7 +76,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+#if canImport(UIKit)
         completionHandler([.banner, .sound, .badge, .list])
+#else
+        completionHandler([.alert, .sound, .badge])
+#endif
     }
 
     func userNotificationCenter(
