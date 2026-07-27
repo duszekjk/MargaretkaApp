@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] keep compilable PrayerFlow layout fix
+codex conversation [20260725-sync] simplify PrayerFlow image layout
 
-Remove the type-checker-heavy local snapshot from the SwiftUI body while
-retaining the window feedback and scroller Glass reductions.
+Keep image caching while removing extra body-local image expressions that
+exceeded the SwiftUI type-checker limit.
