@@ -2,7 +2,11 @@ import AuthenticationServices
 internal import Combine
 import Foundation
 import Security
+#if os(iOS) || os(tvOS) || os(visionOS)
 import UIKit
+#else
+import AppKit
+#endif
 
 struct SyncAPIUser: Codable, Equatable {
     let id: UUID
@@ -133,11 +137,6 @@ final class SyncService: ObservableObject {
         guard scheduledSyncTask == nil else { return }
         scheduledSyncTask = Task { @MainActor [weak self] in
             defer { self?.scheduledSyncTask = nil }
-            do {
-                try await Task.sleep(nanoseconds: 300_000_000)
-            } catch {
-                return
-            }
             guard let self, !Task.isCancelled else { return }
             await self.synchronize(prayerStore: prayerStore, targetStore: targetStore, offlineStore: offlineStore)
         }

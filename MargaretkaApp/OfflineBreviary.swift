@@ -1,6 +1,10 @@
 import Foundation
 import SwiftUI
+#if os(iOS) || os(tvOS) || os(visionOS)
 import UIKit
+#else
+import AppKit
+#endif
 internal import Combine
 
 nonisolated struct BreviaryCivilDate: Codable, Hashable, Comparable, Identifiable, Sendable {

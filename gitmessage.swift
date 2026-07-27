@@ -1,4 +1,4 @@
-codex conversation [20260727-sync] fix macOS imports and extension build version
+codex conversation [20260727-sync] make remaining UIKit imports platform-aware
 
-Select UIKit only for Apple mobile platforms, remove an unused UIKit import
-from backup code, and align the widget build version with the containing app.
+Select UIKit only for Apple mobile platforms in the breviary, editor, and
+sync files; keep AppKit as the native macOS counterpart.

@@ -9,6 +9,11 @@
 import ImagePlayground
 import PhotosUI
 import SwiftUI
+#if os(iOS) || os(tvOS) || os(visionOS)
+import UIKit
+#else
+import AppKit
+#endif
 
 struct PriestEditorView: View {
     @Environment(\.dismiss) var dismiss
@@ -278,8 +283,7 @@ struct PriestEditorView: View {
         )
     }
 }
-import UIKit
-
+#if os(iOS) || os(tvOS) || os(visionOS)
 extension UIImage {
     static let storagePhotoByteLimit = 160_000
 
@@ -326,3 +330,4 @@ extension UIImage {
         return fallback
     }
 }
+#endif
