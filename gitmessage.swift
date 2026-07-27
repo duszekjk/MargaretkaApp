@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] prevent PrayerFlow render work loop
+codex conversation [20260725-sync] reuse PrayerFlow render snapshot
 
-Cache generated breviary backgrounds and ignore unchanged frame preferences so
-body recomputation cannot repeatedly decode images and write the same state.
+Compute prayer lookup, steps, symbols, names, progress, and rows once per body
+evaluation, and ignore unchanged window sizes to avoid repeated render work.

@@ -547,18 +547,44 @@ struct PrayerFlowView: View {
     var body: some View {
         let layoutFamily: PhotoLayoutFamily = UIDevice.current.userInterfaceIdiom == .pad ? .iPad : .iPhone
         let photoPlacement = selectedPriest?.photoPlacement(for: layoutFamily) ?? .centered
+        let renderPrayerLookup = allPrayers
+        let renderPrayerSteps = prayerSteps
+        let renderPrayerIDs = renderPrayerSteps.map(\.prayerID)
+        let renderPrayerSymbols = renderPrayerIDs.map { renderPrayerLookup[$0]?.symbol ?? "questionmark" }
+        let renderPrayerNames = renderPrayerSteps.map { step in
+            step.offlineCard?.title ?? renderPrayerLookup[step.prayerID]?.name
+        }
+        let renderDisplaySymbols = ["play.circle"] + renderPrayerSymbols + ["rectangle.pattern.checkered"]
+        let renderDisplayNames: [String?] = [nil] + renderPrayerNames + [nil]
+        let renderVisibleIndices = PrayerFlowPagePairing.visibleStepIndices(
+            activeStepIndex: activeIndex - 1,
+            steps: renderPrayerSteps,
+            enabled: isIPad
+        )
+        let renderDisplayProgress = min(
+            max(renderVisibleIndices.last.map { $0 + 1 } ?? activeIndex, 0),
+            renderPrayerSymbols.count
+        )
+        let renderLastDisplayIndex = max(0, renderDisplaySymbols.count - 1)
+        let renderRows: [[String]] = stride(from: 0, to: renderDisplaySymbols.count, by: scrollerRowLength).map { start in
+            var row = Array(renderDisplaySymbols[start..<min(start + scrollerRowLength, renderDisplaySymbols.count)])
+            if (start / scrollerRowLength) % 2 == 1 { row.reverse() }
+            return row
+        }
+        let generatedBackground = generatedBreviaryBackgroundImage
+        let displayedBackground = generatedBackground ?? backgroundImage
         ZStack {
-            if let bg = backgroundImage {
+            if let bg = displayedBackground {
                 AdjustableBackgroundImage(
                     image: bg,
-                    scale: generatedBreviaryBackgroundImage == nil
+                    scale: generatedBackground == nil
                         ? photoPlacement.scale
                         : 1.0,
                     offset: CGSize(
-                        width: generatedBreviaryBackgroundImage == nil
+                        width: generatedBackground == nil
                             ? photoPlacement.offsetX
                             : 0.0,
-                        height: generatedBreviaryBackgroundImage == nil
+                        height: generatedBackground == nil
                             ? photoPlacement.offsetY
                             : 0.0
                     ),
@@ -673,11 +699,11 @@ struct PrayerFlowView: View {
                     }
                     Spacer()
                     
-                    if(flattenedPrayerSymbols.count>0)
+                    if !renderPrayerSymbols.isEmpty
                     {
                         GlassEffectContainer(spacing: 0) {
                             HStack(spacing: 0) {
-                                Text("\(displayProgress)/\(flattenedPrayerSymbols.count)")
+                                Text("\(renderDisplayProgress)/\(renderPrayerSymbols.count)")
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
                                     .glassEffect() 
@@ -710,7 +736,7 @@ struct PrayerFlowView: View {
                             else
                             {
                                 Button(action: {
-                                    moveToIndex(lastDisplayIndex, animated: true)
+                                    moveToIndex(renderLastDisplayIndex, animated: true)
                                 }) {
                                     Image(systemName: "checkmark")
                                         .padding(12)
@@ -739,8 +765,8 @@ struct PrayerFlowView: View {
                     }
                 }
                 .padding(.horizontal, 16.0)
-                .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
-                .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
+                .padding(.bottom, renderPrayerSymbols.isEmpty ? 8.0 : -6.0)
+                .padding(.top, renderPrayerSymbols.isEmpty ? -12.0 : 0.0)
                 .frame(width: availableWindowSize.width > 0 ? availableWindowSize.width : UIScreen.main.bounds.width)
 
 
@@ -748,7 +774,7 @@ struct PrayerFlowView: View {
 
                 
                 
-                if(flattenedPrayerSymbols.count>0)
+                if !renderPrayerSymbols.isEmpty
                 {
                         RoundedRectangle(cornerRadius: 20)
                             .fill(.ultraThinMaterial)
@@ -787,9 +813,9 @@ struct PrayerFlowView: View {
 
                 if selectedPriest != nil {
                     PrayerTouchScrollerView(
-                        rows: arrangedInS,
-                        symbols: displayPrayerSymbols,
-                        prayerNames: displayPrayerNames,
+                        rows: renderRows,
+                        symbols: renderDisplaySymbols,
+                        prayerNames: renderDisplayNames,
                         compactView: prayerCompactView,
                         activeIndex: $activeIndex,
                         onIndexChange: { index in
@@ -815,6 +841,7 @@ struct PrayerFlowView: View {
         .onGeometryChange(for: CGSize.self) { geometry in
             geometry.size
         } action: { size in
+            guard availableWindowSize != size else { return }
             availableWindowSize = size
         }
         .accessibilityIdentifier("prayer_flow_view")
