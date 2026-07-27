@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] retain simple PrayerFlow conditions
+codex conversation [20260725-sync] simplify PrayerFlow viewport expressions
 
-Use the original condition form to keep SwiftUI type-checking stable after
-the window-layout feedback changes.
+Use one explicit viewport width value so the SwiftUI builder type-checks
+without changing the current window-sized layout behavior.

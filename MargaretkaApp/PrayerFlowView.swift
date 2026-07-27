@@ -548,6 +548,7 @@ struct PrayerFlowView: View {
     var body: some View {
         let layoutFamily: PhotoLayoutFamily = UIDevice.current.userInterfaceIdiom == .pad ? .iPad : .iPhone
         let photoPlacement = selectedPriest?.photoPlacement(for: layoutFamily) ?? .centered
+        let viewportWidth: CGFloat = availableWindowSize.width > 0 ? availableWindowSize.width : UIScreen.main.bounds.width
         ZStack {
             if let bg = backgroundImage {
                 AdjustableBackgroundImage(
@@ -742,7 +743,7 @@ struct PrayerFlowView: View {
                 .padding(.horizontal, 16.0)
                 .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
                 .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
-                .frame(maxWidth: .infinity)
+                .frame(width: viewportWidth)
 
 
 
@@ -753,7 +754,7 @@ struct PrayerFlowView: View {
                 {
                         RoundedRectangle(cornerRadius: 20)
                             .fill(.ultraThinMaterial)
-                            .frame(maxWidth: .infinity, height: currentPrayerCardHeight)
+                            .frame(width: max(0, viewportWidth - 8), height: currentPrayerCardHeight)
                             .overlay(
                                 Group {
                                     if let key = currentBrewiarzKey,
@@ -780,7 +781,7 @@ struct PrayerFlowView: View {
                                     }
                                 }
                                 .gesture(prayerSwipeGesture)
-                                    .frame(maxWidth: .infinity, height: currentPrayerCardHeight)
+                                    .frame(width: max(0, viewportWidth - 10), height: currentPrayerCardHeight)
                                 
                             )
                             .padding(.horizontal)
