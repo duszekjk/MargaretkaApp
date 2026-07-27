@@ -1,4 +1,4 @@
-codex conversation [20260728-keyboard] add initial cross-platform keyboard controls
+codex conversation [20260728-keyboard] complete cross-platform keyboard controls
 
-Add cross-platform arrow, Space, Home, End, R, and Escape handling; a follow-up
-commit will correct the character-key API usage found by the compiler.
+Support arrow keys, Space, Shift-Space, Home, End, R, and Escape in the prayer
+flow on every supported platform.

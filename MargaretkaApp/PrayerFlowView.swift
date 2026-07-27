@@ -405,7 +405,7 @@ struct PrayerFlowView: View {
         case .end:
             moveToIndex(lastDisplayIndex, animated: true)
             return .handled
-        case .r where keyPress.modifiers.isEmpty:
+        case _ where keyPress.characters.lowercased() == "r" && keyPress.modifiers.isEmpty:
             moveToIndex(0, animated: true)
             return .handled
         default:
