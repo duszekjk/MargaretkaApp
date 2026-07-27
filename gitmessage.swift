@@ -1,4 +1,4 @@
-codex conversation [20260727-sync] skip unavailable macOS audio session setup
+codex conversation [20260727-sync] use macOS toolbar placement
 
-Keep AVAudioSession routing configuration on iOS and let AVAudioRecorder use
-the macOS system audio route without that unavailable session API.
+Use automatic toolbar placement on macOS and retain navigation-bar placement
+on iOS for the add action.

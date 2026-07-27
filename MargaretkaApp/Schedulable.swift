@@ -762,7 +762,14 @@ struct ScheduleList<T: Schedulable>: View {
             }
             .navigationTitle(title)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                let addPlacement: ToolbarItemPlacement = {
+#if os(macOS)
+                    .automatic
+#else
+                    .navigationBarTrailing
+#endif
+                }()
+                ToolbarItem(placement: addPlacement) {
                     Button {
                         editingItem = nil
                         showingForm = true
