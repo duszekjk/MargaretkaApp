@@ -1,4 +1,4 @@
-codex conversation [20260727-sync] build widget for the host platform
+codex conversation [20260728-macos] add initial macOS selection and glass fallback
 
-Use automatic SDK selection and include macOS for the widget target so a
-macOS app never embeds an iOS-built extension.
+Add the intended schedule synchronization and macOS material fallback; the
+follow-up commit will provide HomeView's missing schedule environment.

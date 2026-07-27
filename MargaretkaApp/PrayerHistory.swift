@@ -189,6 +189,13 @@ struct HomeView: View {
                 if priestStore.priests != loadedPriests {
                     priestStore.priests = loadedPriests
                 }
+                // The schedule is the source used by PrayerFlowView's picker.
+                // On a new installation PriestStore can already contain the
+                // built-in targets while ScheduleData is still empty.
+                if scheduleData.items != loadedPriests {
+                    scheduleData.items = loadedPriests
+                    scheduleData.save()
+                }
                 if mergedPrayers != prayersSnapshot {
                     prayerStore.prayers = mergedPrayers
                 }

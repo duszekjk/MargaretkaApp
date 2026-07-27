@@ -45,8 +45,14 @@ private final class UINotificationFeedbackGenerator {
     func notificationOccurred(_ type: UINotificationFeedbackType) {}
 }
 private extension View {
-    func safeGlassEffect() -> some View { self }
-    func safeGlassEffectUnion(id: String, namespace: Namespace.ID) -> some View { self }
+    // macOS 15 does not expose Liquid Glass. Keep the same translucent visual
+    // language as iOS instead of dropping the control background entirely.
+    func safeGlassEffect() -> some View {
+        background(.ultraThinMaterial)
+    }
+    func safeGlassEffectUnion(id: String, namespace: Namespace.ID) -> some View {
+        background(.ultraThinMaterial)
+    }
     func safeNavigationChrome(isFullscreen: Bool) -> some View { self }
     func safeStatusBarHidden(_ hidden: Bool) -> some View { self }
 }
