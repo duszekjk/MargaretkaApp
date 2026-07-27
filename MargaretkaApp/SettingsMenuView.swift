@@ -149,8 +149,10 @@ struct SettingsMenuView: View {
                             .font(.footnote)
                             .foregroundStyle(.secondary)
 
+#if !os(macOS)
                             SiriTipView(intent: StartPrayerIntent())
                                 .siriTipViewStyle(.automatic)
+#endif
 
                             Divider()
 
@@ -174,8 +176,6 @@ struct SettingsMenuView: View {
                                 Text("Możesz przykleić znacznik NFC w miejscu modlitwy, przy różańcu, na biurku albo w samochodzie. W aplikacji Skróty utwórz automatyzację NFC, dodaj akcję Heptadaisy i wskaż w niej konkretną osobę albo modlitwę złożoną. Po dotknięciu iPhone'a tag uruchomi ten skrót.")
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
-                                Text("To dobre rozwiązanie, jeśli chcesz:\n• uruchamiać modlitwę jednym ruchem,\n• mieć jeden stały skrót przy konkretnym miejscu,\n• nie wpisywać nic ręcznie, gdy masz zajęte ręce.")
-                                    .font(.footnote)
                             }
 
 #if !os(macOS)

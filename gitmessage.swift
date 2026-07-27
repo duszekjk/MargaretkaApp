@@ -1,4 +1,4 @@
-codex conversation [20260727-sync] hide unavailable macOS shortcuts link
+codex conversation [20260727-sync] hide unavailable macOS Siri tip
 
-Keep the ShortcutsLink section on iOS and omit it from native macOS where the
-ShortcutsLink API is unavailable.
+Keep SiriTipView and ShortcutsLink on iOS while omitting both unavailable
+Shortcuts APIs from native macOS.
