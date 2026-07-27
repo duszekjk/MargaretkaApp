@@ -178,8 +178,10 @@ struct SettingsMenuView: View {
                                     .font(.footnote)
                             }
 
+#if !os(macOS)
                             ShortcutsLink()
                                 .shortcutsLinkStyle(.automatic)
+#endif
 
                             Divider()
 
