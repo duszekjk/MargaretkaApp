@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] complete PrayerFlow layout feedback fix
+codex conversation [20260725-sync] split PrayerFlow render snapshot
 
-Finish the scroller container replacement after removing the obsolete wrapper.
-The prior layout change required this syntax correction to build cleanly.
+Move render snapshot construction out of the large SwiftUI body so the
+type-checker can compile the layout while retaining one-pass derived data.
