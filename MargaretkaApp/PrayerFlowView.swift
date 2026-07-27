@@ -294,6 +294,9 @@ struct PrayerFlowView: View {
     }
 
     private func pollWindowSize() async {
+        let idiom = UIDevice.current.userInterfaceIdiom
+        guard idiom == .pad || idiom == .mac else { return }
+
         while !Task.isCancelled {
             if let size = currentWindowSize(), size.width > 0, size.height > 0, size != availableWindowSize {
                 if availableWindowSize == .zero {

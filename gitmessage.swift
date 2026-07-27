@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] poll window size safely
+codex conversation [20260725-sync] limit window polling to iPad Mac
 
-Check the actual key window every five seconds and animate only real size
-changes, without observing and writing the layout tree's own geometry.
+Poll and animate window-size changes only on resizable platforms; iPhone
+returns immediately without starting the five-second loop.
