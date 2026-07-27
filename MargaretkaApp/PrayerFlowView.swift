@@ -814,12 +814,6 @@ struct PrayerFlowView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onGeometryChange(for: CGSize.self) { geometry in
-            geometry.size
-        } action: { size in
-            guard availableWindowSize != size else { return }
-            availableWindowSize = size
-        }
         .accessibilityIdentifier("prayer_flow_view")
         .imagePlaygroundSheet(
             isPresented: $isImagePlaygroundPresented,

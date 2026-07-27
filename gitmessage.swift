@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] restore PrayerFlow glass design
+codex conversation [20260725-sync] remove recursive window-size feedback
 
-Restore the original GlassEffectContainer and glass styling in the prayer
-scroller; the diagnostic workaround did not prove this was the root cause.
+Stop writing measured view size back into the same layout tree. This removes
+the suspected infinite SwiftUI state/layout loop while preserving the design.
