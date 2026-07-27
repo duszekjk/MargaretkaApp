@@ -53,6 +53,9 @@ private extension View {
     func safeGlassEffectUnion(id: String, namespace: Namespace.ID) -> some View {
         background(.ultraThinMaterial)
     }
+    func safeGlassEffect(tint: Color) -> some View {
+        background(.ultraThinMaterial).tint(tint)
+    }
     func safeNavigationChrome(isFullscreen: Bool) -> some View { self }
     func safeStatusBarHidden(_ hidden: Bool) -> some View { self }
 }
@@ -63,6 +66,10 @@ private extension View {
     @available(iOS 26.0, tvOS 26.0, visionOS 26.0, *)
     func safeGlassEffectUnion(id: String, namespace: Namespace.ID) -> some View {
         glassEffectUnion(id: id, namespace: namespace)
+    }
+    @available(iOS 26.0, tvOS 26.0, visionOS 26.0, *)
+    func safeGlassEffect(tint: Color) -> some View {
+        glassEffect(.regular.tint(tint))
     }
     func safeStatusBarHidden(_ hidden: Bool) -> some View { statusBarHidden(hidden) }
     @ViewBuilder
@@ -337,9 +344,13 @@ struct PrayerFlowView: View {
 
     var currentPrayerCardHeight: CGFloat {
         guard isComplexPrayerCard else { return 440 }
+#if os(macOS)
         let screenHeight = availableWindowSize.height > 0
             ? availableWindowSize.height
             : UIScreen.main.bounds.height
+#else
+        let screenHeight = UIScreen.main.bounds.height
+#endif
         if isIPad {
             let baseHeight = max(520, min(screenHeight - 250, 920))
             let orientationScale: CGFloat = isIPadPortrait ? 1.15 : 1.04
@@ -719,9 +730,13 @@ struct PrayerFlowView: View {
     var body: some View {
         let layoutFamily: PhotoLayoutFamily = UIDevice.current.userInterfaceIdiom == .pad ? .iPad : .iPhone
         let photoPlacement = selectedPriest?.photoPlacement(for: layoutFamily) ?? .centered
+#if os(macOS)
         let viewportWidth: CGFloat = availableWindowSize.width > 0
             ? availableWindowSize.width
             : 1000
+#else
+        let viewportWidth = UIScreen.main.bounds.width
+#endif
         ZStack {
             if let bg = backgroundImage {
                 AdjustableBackgroundImage(
@@ -737,7 +752,11 @@ struct PrayerFlowView: View {
                             ? photoPlacement.offsetY
                             : 0.0
                     ),
+#if os(macOS)
                     size: availableWindowSize == .zero ? UIScreen.main.bounds.size : availableWindowSize
+#else
+                    size: UIScreen.main.bounds.size
+#endif
                 )
                 .ignoresSafeArea()
             }
@@ -878,7 +897,7 @@ struct PrayerFlowView: View {
                             {
                                 Image(systemName: "checkmark")
                                     .padding(12)
-                                    .safeGlassEffect() 
+                                    .safeGlassEffect(tint: .green) 
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundStyle(.primary)
                             }
@@ -986,7 +1005,11 @@ struct PrayerFlowView: View {
                     .zIndex(100)
             }
         }
+#if os(macOS)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+#else
+        .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
+#endif
         .focusable()
         .focused($keyboardFocus)
         .onKeyPress { keyPress in
@@ -1695,7 +1718,7 @@ struct PrayerTouchScrollerView: View {
                                             .padding(compactView ? 2.5 : 10)
                                             .frame(width: compactView ? 11 : 45, height: compactView ? 11 : 45)
                                             .clipShape(Circle())
-                                            .safeGlassEffect()
+                                            .safeGlassEffect(tint: Color.green.opacity(0.4))
                                             .padding(.top, padding.top)
                                             .padding(.bottom, padding.bottom)
                                     }
