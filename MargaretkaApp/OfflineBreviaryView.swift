@@ -2,6 +2,7 @@ import SwiftUI
 
 struct OfflineBreviaryManagerView: View {
     @EnvironmentObject private var store: OfflineBreviaryStore
+    @Environment(\.editMode) private var editMode
     @State private var variantOrder = BreviaryVariantPreferences.load()
     @State private var rangeStart = Date.now
     @State private var rangeEnd = Date.now
@@ -115,7 +116,17 @@ struct OfflineBreviaryManagerView: View {
             }
         }
         .navigationTitle("Brewiarz offline")
-        .toolbar { EditButton() }
+        .toolbar {
+#if os(macOS)
+            Button(editMode?.wrappedValue == .active ? "Gotowe" : "Edytuj") {
+                withAnimation {
+                    editMode?.wrappedValue = editMode?.wrappedValue == .active ? .inactive : .active
+                }
+            }
+#else
+            EditButton()
+#endif
+        }
         .onAppear {
             variantOrder = BreviaryVariantPreferences.normalizedOrder(
                 BreviaryVariantPreferences.load(),
