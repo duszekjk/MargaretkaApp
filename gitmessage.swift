@@ -1,4 +1,4 @@
-codex conversation [20260727-sync] add backup navigation fallback on macOS
+codex conversation [20260727-sync] make all PrayerFlow glass APIs compatible
 
-Keep inline navigation title styling on iOS and omit the unavailable modifier
-from the native macOS backup screen.
+Route all Liquid Glass containers and modifiers through availability-aware
+fallbacks, and omit mobile navigation/status-bar APIs on macOS.

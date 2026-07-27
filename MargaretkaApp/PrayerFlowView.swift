@@ -46,15 +46,45 @@ private final class UINotificationFeedbackGenerator {
 }
 private extension View {
     func safeGlassEffect() -> some View { self }
+    func safeGlassEffectUnion(id: String, namespace: Namespace.ID) -> some View { self }
+    func safeNavigationChrome(isFullscreen: Bool) -> some View { self }
     func safeStatusBarHidden(_ hidden: Bool) -> some View { self }
 }
 #else
 private extension View {
     @available(iOS 26.0, tvOS 26.0, visionOS 26.0, *)
     func safeGlassEffect() -> some View { glassEffect() }
+    @available(iOS 26.0, tvOS 26.0, visionOS 26.0, *)
+    func safeGlassEffectUnion(id: String, namespace: Namespace.ID) -> some View {
+        glassEffectUnion(id: id, namespace: namespace)
+    }
     func safeStatusBarHidden(_ hidden: Bool) -> some View { statusBarHidden(hidden) }
+    @ViewBuilder
+    func safeNavigationChrome(isFullscreen: Bool) -> some View {
+        self
+            .toolbar(isFullscreen ? .hidden : .visible, for: .navigationBar)
+            .toolbarBackground(isFullscreen ? .hidden : .visible, for: .navigationBar)
+    }
 }
 #endif
+
+private struct SafeGlassEffectContainer<Content: View>: View {
+    let spacing: CGFloat
+    @ViewBuilder let content: () -> Content
+
+    init(spacing: CGFloat = 0, @ViewBuilder content: @escaping () -> Content) {
+        self.spacing = spacing
+        self.content = content
+    }
+
+    @ViewBuilder var body: some View {
+        if #available(macOS 26.0, iOS 26.0, tvOS 26.0, visionOS 26.0, *) {
+            GlassEffectContainer(spacing: spacing) { content() }
+        } else {
+            content()
+        }
+    }
+}
 
 struct PrayerFlowStep: Hashable {
     let prayerID: UUID
@@ -666,7 +696,7 @@ struct PrayerFlowView: View {
                         Text(selectedPriest?.displayName ?? "")
                             .lineLimit(4)
                             .padding(3)
-                            .glassEffect()
+                            .safeGlassEffect()
                         if supportsImagePlayground,
                            let office = backgroundOfflineOffice,
                            office.imageFilename == nil {
@@ -689,7 +719,7 @@ struct PrayerFlowView: View {
                             }
                             .disabled(isPreparingImagePlayground)
                             .padding(8)
-                            .glassEffect()
+                            .safeGlassEffect()
                         }
 //                    }
                     if isIPad {
@@ -701,7 +731,7 @@ struct PrayerFlowView: View {
                 }
                 HStack(spacing: 14) {
                     
-                    GlassEffectContainer(spacing: 0) {
+                    SafeGlassEffectContainer(spacing: 0) {
                         
                         Menu {
                             Section("Pokaż") {
@@ -754,7 +784,7 @@ struct PrayerFlowView: View {
                             .cornerRadius(16)
                         }
                         .cornerRadius(16)
-                        .glassEffect() 
+                        .safeGlassEffect() 
                         .symbolRenderingMode(.monochrome)
                         .foregroundStyle(.primary)
 
@@ -763,13 +793,13 @@ struct PrayerFlowView: View {
                     
                     if(flattenedPrayerSymbols.count>0)
                     {
-                        GlassEffectContainer(spacing: 0) {
+                        SafeGlassEffectContainer(spacing: 0) {
                             HStack(spacing: 0) {
                                 Text("\(displayProgress)/\(flattenedPrayerSymbols.count)")
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
-                                    .glassEffect() 
-                                    .glassEffectUnion(id: "restartGroup", namespace: namespace)
+                                    .safeGlassEffect() 
+                                    .safeGlassEffectUnion(id: "restartGroup", namespace: namespace)
                                     .foregroundStyle(.primary)
                                 
                                 Button(action: {
@@ -778,20 +808,20 @@ struct PrayerFlowView: View {
                                     Image(systemName: "arrow.triangle.2.circlepath")
                                         .padding(12)
                                 }
-                                .glassEffect() 
-                                .glassEffectUnion(id: "restartGroup", namespace: namespace)
+                                .safeGlassEffect() 
+                                .safeGlassEffectUnion(id: "restartGroup", namespace: namespace)
                                 .symbolRenderingMode(.monochrome)
                                 .foregroundStyle(.primary)
                             }
                             .padding(4) 
                         }
                         
-                        GlassEffectContainer(spacing: 0) {
+                        SafeGlassEffectContainer(spacing: 0) {
                             if(finished)
                             {
                                 Image(systemName: "checkmark")
                                     .padding(12)
-                                    .glassEffect(.regular.tint(.green)) 
+                                    .safeGlassEffect() 
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundStyle(.primary)
                             }
@@ -803,14 +833,14 @@ struct PrayerFlowView: View {
                                     Image(systemName: "checkmark")
                                         .padding(12)
                                 }
-                                .glassEffect() 
+                                .safeGlassEffect() 
                                 .symbolRenderingMode(.monochrome)
                                 .foregroundStyle(.primary)
                             }
                         }
 
                         if isCurrentPrayerWeb {
-                            GlassEffectContainer(spacing: 0) {
+                            SafeGlassEffectContainer(spacing: 0) {
                                 Button(action: {
                                     withAnimation(.easeInOut(duration: 0.25)) {
                                         isFullscreen = true
@@ -819,7 +849,7 @@ struct PrayerFlowView: View {
                                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                                         .padding(12)
                                 }
-                                .glassEffect()
+                                .safeGlassEffect()
                                 .symbolRenderingMode(.monochrome)
                                 .foregroundStyle(.primary)
                             }
@@ -1084,10 +1114,9 @@ struct PrayerFlowView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: isFullscreen)
-        .statusBarHidden(isFullscreen)
+        .safeStatusBarHidden(isFullscreen)
         .persistentSystemOverlays(isFullscreen ? .hidden : .visible)
-        .toolbar(isFullscreen ? .hidden : .visible, for: .navigationBar)
-        .toolbarBackground(isFullscreen ? .hidden : .visible, for: .navigationBar)
+        .safeNavigationChrome(isFullscreen: isFullscreen)
     }
 
     private func startSession() {
@@ -1564,7 +1593,7 @@ struct PrayerTouchScrollerView: View {
     }
 
     var body: some View {
-        GlassEffectContainer
+        SafeGlassEffectContainer
         {
             VStack(spacing: 0) {
                 ForEach(rows.indices, id: \.self) { rowIndex in
@@ -1603,7 +1632,7 @@ struct PrayerTouchScrollerView: View {
                                             .padding(compactView ? 2.5 : 10)
                                             .frame(width: compactView ? 11 : 45, height: compactView ? 11 : 45)
                                             .clipShape(Circle())
-                                            .glassEffect(.regular.tint(Color.green.opacity(0.4)))
+                                            .safeGlassEffect()
                                             .padding(.top, padding.top)
                                             .padding(.bottom, padding.bottom)
                                     }
@@ -1615,7 +1644,7 @@ struct PrayerTouchScrollerView: View {
                                             .padding(compactView ? 1.25 : 5)
                                             .frame(width: compactView ? 6 : 25, height: compactView ? 6 : 25)
                                             .clipShape(Circle())
-                                            .glassEffect()
+                                            .safeGlassEffect()
                                             .padding(.top, padding.top)
                                             .padding(.bottom, padding.bottom)
                                     }
