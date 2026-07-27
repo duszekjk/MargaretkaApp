@@ -1,7 +1,6 @@
 import Foundation
 import SwiftUI
 internal import UniformTypeIdentifiers
-import UIKit
 
 struct MargaretkaBackup: Codable {
     static let currentSchemaVersion = 2

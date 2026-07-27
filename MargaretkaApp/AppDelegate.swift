@@ -5,22 +5,22 @@
 //  Created by Jacek Kałużny on 15/08/2025.
 //
 
-#if canImport(UIKit)
+#if os(iOS) || os(tvOS) || os(visionOS)
 import UIKit
-#elseif canImport(AppKit)
+#else
 import AppKit
 #endif
 import UserNotifications
 import WebKit
 
-#if canImport(UIKit)
+#if os(iOS) || os(tvOS) || os(visionOS)
 private typealias PlatformAppDelegate = UIApplicationDelegate
 #else
 private typealias PlatformAppDelegate = NSApplicationDelegate
 #endif
 
 final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenterDelegate {
-#if canImport(UIKit)
+#if os(iOS) || os(tvOS) || os(visionOS)
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -81,7 +81,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-#if canImport(UIKit)
+#if os(iOS) || os(tvOS) || os(visionOS)
         completionHandler([.banner, .sound, .badge, .list])
 #else
         completionHandler([.alert, .sound, .badge])

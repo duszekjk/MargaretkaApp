@@ -1,4 +1,4 @@
-codex conversation [20260727-sync] make breviary image encoding cross-platform
+codex conversation [20260727-sync] fix macOS imports and extension build version
 
-Use UIKit JPEG encoding on iOS and AppKit JPEG encoding on macOS so the
-generator no longer requires UIKit in the Mac target.
+Select UIKit only for Apple mobile platforms, remove an unused UIKit import
+from backup code, and align the widget build version with the containing app.
