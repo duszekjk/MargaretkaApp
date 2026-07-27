@@ -1,4 +1,4 @@
-codex conversation [20260727-sync] use macOS toolbar placement
+codex conversation [20260727-sync] add macOS PrayerFlow compatibility layer
 
-Use automatic toolbar placement on macOS and retain navigation-bar placement
-on iOS for the add action.
+Provide macOS window, device, haptics, glass, and status-bar fallbacks while
+retaining UIKit behavior on iOS.

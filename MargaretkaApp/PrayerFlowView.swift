@@ -7,6 +7,54 @@
 
 import SwiftUI
 import ImagePlayground
+#if os(macOS)
+import AppKit
+#endif
+
+#if os(macOS)
+private enum UIUserInterfaceIdiom { case phone, pad, mac }
+private final class UIDevice {
+    static let current = UIDevice()
+    let userInterfaceIdiom: UIUserInterfaceIdiom = .mac
+}
+private final class UIScreen {
+    static let main = UIScreen()
+    var bounds: CGRect { NSScreen.main?.frame ?? .zero }
+    var nativeBounds: CGRect { bounds }
+}
+private final class UIWindow {
+    let isKeyWindow = true
+    let bounds: CGRect
+    init(bounds: CGRect) { self.bounds = bounds }
+}
+private final class UIWindowScene {
+    let windows: [UIWindow]
+    init() { windows = [UIWindow(bounds: NSScreen.main?.frame ?? .zero)] }
+}
+private final class UIApplication {
+    static let shared = UIApplication()
+    let connectedScenes: [Any] = [UIWindowScene()]
+}
+private enum UIImpactFeedbackStyle { case light, medium, heavy }
+private final class UIImpactFeedbackGenerator {
+    init(style: UIImpactFeedbackStyle) {}
+    func impactOccurred(intensity: Double = 1.0) {}
+}
+private enum UINotificationFeedbackType { case error }
+private final class UINotificationFeedbackGenerator {
+    func notificationOccurred(_ type: UINotificationFeedbackType) {}
+}
+private extension View {
+    func safeGlassEffect() -> some View { self }
+    func safeStatusBarHidden(_ hidden: Bool) -> some View { self }
+}
+#else
+private extension View {
+    @available(iOS 26.0, tvOS 26.0, visionOS 26.0, *)
+    func safeGlassEffect() -> some View { glassEffect() }
+    func safeStatusBarHidden(_ hidden: Bool) -> some View { statusBarHidden(hidden) }
+}
+#endif
 
 struct PrayerFlowStep: Hashable {
     let prayerID: UUID
@@ -1434,7 +1482,7 @@ struct BrewiarzFullScreenView: View {
                     Image(systemName: "arrow.down.right.and.arrow.up.left")
                         .padding(16)
                 }
-                .glassEffect()
+                .safeGlassEffect()
 
                 Spacer()
 
@@ -1453,12 +1501,12 @@ struct BrewiarzFullScreenView: View {
                         .padding(.horizontal, 4.0)
                         .padding(16)
                 }
-                .glassEffect()
+                .safeGlassEffect()
             }
             .padding(.horizontal, 32)
             .padding(.bottom, 48)
         }
-        .statusBarHidden(true)
+        .safeStatusBarHidden(true)
         .persistentSystemOverlays(.hidden)
     }
 }
