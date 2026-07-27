@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] fix notification diagnostic logging
+codex conversation [20260725-sync] stop zero-interval notification loop
 
-Fix the diagnostic formatting so the notification rescheduling instrumentation
-compiles correctly.
+Use the validated interval fallback when advancing daily notification schedules.
+This prevents legacy everyN=0 data from spinning forever during startup.

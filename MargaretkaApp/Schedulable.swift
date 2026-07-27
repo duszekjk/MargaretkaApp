@@ -1053,7 +1053,7 @@ func computeUpcomingNotifications(
                         upcoming.append((cursor, dateN, notifId))
                     }
                 }
-                guard let next = calendar.date(byAdding: .day, value: item.schedule.everyN, to: cursor) else { break }
+                guard let next = calendar.date(byAdding: .day, value: interval, to: cursor) else { break }
                 cursor = next
                 emitted += 1
             }
