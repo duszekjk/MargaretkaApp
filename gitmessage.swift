@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] split PrayerFlow render snapshot
+codex conversation [20260725-sync] restore compilable render snapshot
 
-Move render snapshot construction out of the large SwiftUI body so the
-type-checker can compile the layout while retaining one-pass derived data.
+Keep the one-pass render locals while removing the helper form that exceeded
+SwiftUI body type-checking limits.
