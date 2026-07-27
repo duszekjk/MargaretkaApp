@@ -39,6 +39,7 @@ struct AudioRecorderView: View {
         ]
 
         do {
+#if !os(macOS)
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(
                 .playAndRecord,
@@ -49,6 +50,7 @@ struct AudioRecorderView: View {
 
 
             try session.setActive(true)
+#endif
             recorder = try AVAudioRecorder(url: url, settings: settings)
             recorder?.record()
             audioFilename = filename
