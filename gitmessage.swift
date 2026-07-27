@@ -1,4 +1,4 @@
-codex conversation [20260727-sync] add macOS offline edit control
+codex conversation [20260727-sync] remove unavailable macOS edit environment
 
-Replace unavailable macOS EditButton with an explicit edit-mode toggle while
-keeping the standard EditButton on iOS.
+Use a local macOS editing state for the toolbar label; keep the standard
+EditButton on iOS without referencing the unavailable editMode environment.

@@ -2,8 +2,10 @@ import SwiftUI
 
 struct OfflineBreviaryManagerView: View {
     @EnvironmentObject private var store: OfflineBreviaryStore
-    @Environment(\.editMode) private var editMode
     @State private var variantOrder = BreviaryVariantPreferences.load()
+#if os(macOS)
+    @State private var macEditing = false
+#endif
     @State private var rangeStart = Date.now
     @State private var rangeEnd = Date.now
     @State private var importToDelete: UUID?
@@ -118,9 +120,9 @@ struct OfflineBreviaryManagerView: View {
         .navigationTitle("Brewiarz offline")
         .toolbar {
 #if os(macOS)
-            Button(editMode?.wrappedValue == .active ? "Gotowe" : "Edytuj") {
+            Button(macEditing ? "Gotowe" : "Edytuj") {
                 withAnimation {
-                    editMode?.wrappedValue = editMode?.wrappedValue == .active ? .inactive : .active
+                    macEditing.toggle()
                 }
             }
 #else
