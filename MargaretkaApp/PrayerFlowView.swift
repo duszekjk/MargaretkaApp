@@ -297,6 +297,7 @@ struct PrayerFlowView: View {
         let idiom = UIDevice.current.userInterfaceIdiom
         guard idiom == .pad || idiom == .mac else { return }
 
+        var fastPollingUntil: Date?
         while !Task.isCancelled {
             if let size = currentWindowSize(), size.width > 0, size.height > 0, size != availableWindowSize {
                 if availableWindowSize == .zero {
@@ -306,10 +307,16 @@ struct PrayerFlowView: View {
                         availableWindowSize = size
                     }
                 }
+                fastPollingUntil = Date().addingTimeInterval(10)
             }
 
             do {
-                try await Task.sleep(for: .seconds(5))
+                let interval: Duration = if let fastPollingUntil, fastPollingUntil > Date() {
+                    .milliseconds(500)
+                } else {
+                    .seconds(5)
+                }
+                try await Task.sleep(for: interval)
             } catch {
                 return
             }
