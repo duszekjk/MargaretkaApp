@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] fix cross-platform AppDelegate declaration
+codex conversation [20260725-sync] fix Mac delegate and prayer duplicates
 
-Use a platform delegate typealias so the shared class remains syntactically
-valid for both UIKit and AppKit targets.
+Use a platform delegate typealias for UIKit/AppKit and keep one record per
+BrewiarzPrayerKey or UUID when loading, importing, or restoring snapshots.

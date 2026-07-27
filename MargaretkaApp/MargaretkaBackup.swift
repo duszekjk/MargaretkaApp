@@ -431,7 +431,7 @@ enum MargaretkaBackupService {
         AudioStorage.removeAllStoredAudioFiles()
         OfflineBreviaryStore.removeAllStoredImages()
         let filenameMap = try restoreAssetsExactly(backup.assets)
-        let restoredPrayers = backup.prayers.map { source -> Prayer in
+        let restoredPrayers = PrayerStore.deduplicatingBreviaryPrayers(backup.prayers).map { source -> Prayer in
             var prayer = source
             if let filename = source.audioFilename {
                 prayer.audioFilename = filenameMap[assetMapKey(.audio, filename)] ?? filename

@@ -39,13 +39,13 @@ class PrayerStore: ObservableObject {
     private func load() {
         let stored: [Prayer] = LocalDatabase.shared.load(from: key)
         if !stored.isEmpty {
-            self.prayers = stored
+            self.prayers = Self.deduplicatingBreviaryPrayers(stored)
             return
         }
 
         if let data = UserDefaults.standard.data(forKey: legacyDefaultsKey),
            let decoded = try? JSONDecoder().decode([Prayer].self, from: data) {
-            self.prayers = decoded
+            self.prayers = Self.deduplicatingBreviaryPrayers(decoded)
             LocalDatabase.shared.save(decoded, as: key)
             UserDefaults.standard.removeObject(forKey: legacyDefaultsKey)
         }
@@ -62,10 +62,23 @@ class PrayerStore: ObservableObject {
     }
 
     func ensureDefaultPrayers() {
-        let merged = Self.mergingDefaultPrayers(into: prayers)
-        if merged.count != prayers.count {
+        let deduplicated = Self.deduplicatingBreviaryPrayers(prayers)
+        let merged = Self.mergingDefaultPrayers(into: deduplicated)
+        if merged != prayers {
             prayers = merged
             save()
+        }
+    }
+
+    static func deduplicatingBreviaryPrayers(_ prayers: [Prayer]) -> [Prayer] {
+        var seenIDs = Set<UUID>()
+        var seenBreviaryKeys = Set<BrewiarzPrayerKey>()
+        return prayers.filter { prayer in
+            guard seenIDs.insert(prayer.id).inserted else { return false }
+            if case .brewiarz(let key) = prayer.content {
+                return seenBreviaryKeys.insert(key).inserted
+            }
+            return true
         }
     }
 
