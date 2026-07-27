@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] fix Mac delegate and prayer duplicates
+codex conversation [20260727-sync] make breviary image encoding cross-platform
 
-Use a platform delegate typealias for UIKit/AppKit and keep one record per
-BrewiarzPrayerKey or UUID when loading, importing, or restoring snapshots.
+Use UIKit JPEG encoding on iOS and AppKit JPEG encoding on macOS so the
+generator no longer requires UIKit in the Mac target.

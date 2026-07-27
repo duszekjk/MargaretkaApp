@@ -2,7 +2,11 @@ import Foundation
 import FoundationModels
 import ImagePlayground
 import Translation
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 actor BreviaryImageGenerator {
     static let shared = BreviaryImageGenerator()
@@ -29,7 +33,16 @@ actor BreviaryImageGenerator {
                 .text(Self.fullCanvasConcept)
             ]
             for try await created in creator.images(for: concepts, style: style, limit: 1) {
+                #if canImport(UIKit)
                 return UIImage(cgImage: created.cgImage).jpegData(compressionQuality: 0.88)
+                #elseif canImport(AppKit)
+                let image = NSImage(cgImage: created.cgImage, size: .zero)
+                return image.tiffRepresentation
+                    .flatMap { NSBitmapImageRep(data: $0) }
+                    .flatMap { $0.representation(using: .jpeg, properties: [:]) }
+                #else
+                return nil
+                #endif
             }
         } catch {
             print("Breviary image generation unavailable: \(error.localizedDescription)")
