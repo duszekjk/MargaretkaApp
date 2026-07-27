@@ -344,7 +344,7 @@ struct PrayerFlowView: View {
 
     var currentPrayerCardHeight: CGFloat {
         guard isComplexPrayerCard else { return 440 }
-#if os(macOS)
+#if os(macOS) || os(iOS)
         let screenHeight = availableWindowSize.height > 0
             ? availableWindowSize.height
             : UIScreen.main.bounds.height
@@ -735,12 +735,16 @@ struct PrayerFlowView: View {
             ? availableWindowSize.width
             : 1000
 #else
-        let viewportWidth = UIScreen.main.bounds.width
+        let viewportWidth = isIPad && availableWindowSize.width > 0
+            ? availableWindowSize.width
+            : UIScreen.main.bounds.width
 #endif
 #if os(macOS)
         let viewportSize = availableWindowSize == .zero ? UIScreen.main.bounds.size : availableWindowSize
 #else
-        let viewportSize = UIScreen.main.bounds.size
+        let viewportSize = isIPad && availableWindowSize != .zero
+            ? availableWindowSize
+            : UIScreen.main.bounds.size
 #endif
         ZStack {
             if let bg = backgroundImage {
@@ -1006,11 +1010,14 @@ struct PrayerFlowView: View {
                     .zIndex(100)
             }
         }
-#if os(macOS)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-#else
-        .frame(width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
-#endif
+        .frame(
+            width: (isIPad || UIDevice.current.userInterfaceIdiom == .mac)
+                ? viewportWidth
+                : UIScreen.main.bounds.width,
+            height: (isIPad || UIDevice.current.userInterfaceIdiom == .mac)
+                ? viewportSize.height
+                : UIScreen.main.bounds.height
+        )
         .focusable()
         .focused($keyboardFocus)
         .onKeyPress { keyPress in

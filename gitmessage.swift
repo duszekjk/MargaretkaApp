@@ -1,4 +1,4 @@
-codex conversation [20260728-ios] restore iOS design and screen dimensions
+codex conversation [20260728-ipad] restore adaptive iPad window layout
 
-Restore the original iOS/iPadOS screen sizing and tinted Liquid Glass styles;
-keep the macOS-specific sizing and material fallback isolated to macOS.
+Keep iPhone full-screen sizing while using the real window dimensions for iPad
+and macOS resizing, without changing the iOS/iPadOS Liquid Glass modifiers.
