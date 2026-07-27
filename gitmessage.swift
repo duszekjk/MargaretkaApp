@@ -1,4 +1,5 @@
-codex conversation [20260727-sync] provide macOS image compatibility
+codex conversation [20260727-sync] add macOS fallbacks for UIKit views
 
-Use NSImage as the macOS counterpart of UIImage, including JPEG conversion
-needed by Priest photo caching and compact storage.
+Keep UIKit representables and app delegates on Apple mobile platforms while
+providing SwiftUI/AppKit fallbacks for macOS and availability annotations for
+newer App Intents APIs.

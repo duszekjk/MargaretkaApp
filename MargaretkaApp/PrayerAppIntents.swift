@@ -93,6 +93,7 @@ struct StartPrayerIntent: OpenIntent {
 struct LogCompletedPrayerIntent: AppIntent {
     static var title: LocalizedStringResource = "Log completed prayer"
     static var description = IntentDescription("Logs a completed prayer without opening the app. Duration is optional.")
+    @available(macOS 26.0, iOS 26.0, *)
     static var supportedModes: IntentModes { .background }
 
     @Parameter(
@@ -130,6 +131,7 @@ struct LogCompletedPrayerIntent: AppIntent {
 struct PrayerStreakIntent: AppIntent {
     static var title: LocalizedStringResource = "Check prayer streak"
     static var description = IntentDescription("Reports the number of consecutive weeks with a completed prayer for a saved target.")
+    @available(macOS 26.0, iOS 26.0, *)
     static var supportedModes: IntentModes { .background }
 
     @Parameter(
@@ -161,6 +163,7 @@ struct PrayerStreakIntent: AppIntent {
 struct AveragePrayerDurationIntent: AppIntent {
     static var title: LocalizedStringResource = "Check average prayer duration"
     static var description = IntentDescription("Reports the average measured duration of completed prayers for a saved target.")
+    @available(macOS 26.0, iOS 26.0, *)
     static var supportedModes: IntentModes { .background }
 
     @Parameter(

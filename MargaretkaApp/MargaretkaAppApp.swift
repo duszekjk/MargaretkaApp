@@ -11,7 +11,11 @@ import AudioToolbox
 
 @main
 struct MargaretkaAppApp: App {
+#if os(iOS) || os(tvOS) || os(visionOS)
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate: AppDelegate
+#else
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate: AppDelegate
+#endif
     @StateObject var scheduleData = ScheduleData<Priest>(saveKey: "priest_sch")
     @StateObject var prayerStore = PrayerStore()
     @StateObject var priestStore = PriestStore()

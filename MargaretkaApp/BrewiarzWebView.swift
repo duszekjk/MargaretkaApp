@@ -18,20 +18,27 @@ struct BrewiarzPrayerView: View {
         ZStack {
             if let url = resolvedURL {
                 WebView(url: url)
+#if os(iOS) || os(tvOS) || os(visionOS)
                     .ignoresSafeArea()
                     .padding(fullScreen ? -45.0 : 0.0)
                     .padding(.leading, fullScreen ? -275.0 : 0.0)
+#else
+                    .padding(fullScreen ? -45.0 : 0.0)
+#endif
             } else {
                 ProgressView("Ładowanie...")
             }
         }
+#if os(iOS) || os(tvOS) || os(visionOS)
         .ignoresSafeArea()
+#endif
         .task(id: key) {
             resolvedURL = await BrewiarzURLResolver.shared.resolveURL(for: key)
         }
     }
 }
 
+#if os(iOS) || os(tvOS) || os(visionOS)
 struct WebView: UIViewRepresentable {
     let url: URL
 
@@ -145,3 +152,14 @@ struct WebView: UIViewRepresentable {
         uiView.load(request)
     }
 }
+#else
+struct WebView: View {
+    let url: URL
+
+    var body: some View {
+        Link(destination: url) {
+            Label("Otwórz brewiarz w przeglądarce", systemImage: "safari")
+        }
+    }
+}
+#endif

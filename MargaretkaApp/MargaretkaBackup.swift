@@ -1287,6 +1287,7 @@ private struct BackupConflictResolutionView: View {
     }
 }
 
+#if os(iOS) || os(tvOS) || os(visionOS)
 private struct ActivityShareView: UIViewControllerRepresentable {
     let items: [Any]
 
@@ -1296,6 +1297,16 @@ private struct ActivityShareView: UIViewControllerRepresentable {
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
+#else
+private struct ActivityShareView: View {
+    let items: [Any]
+
+    var body: some View {
+        Text("Udostępnianie jest dostępne z poziomu Findera.")
+            .padding()
+    }
+}
+#endif
 
 extension URL: @retroactive Identifiable {
     public var id: String { absoluteString }
