@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] add initial macOS selection and glass fallback
+codex conversation [20260728-macos] complete macOS prayer selection fix
 
-Add the intended schedule synchronization and macOS material fallback; the
-follow-up commit will provide HomeView's missing schedule environment.
+Expose the shared schedule to HomeView so built-in targets populate the picker
+and compile the schedule synchronization on every supported platform.

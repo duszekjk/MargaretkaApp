@@ -130,6 +130,7 @@ class PrayerStore: ObservableObject {
 struct HomeView: View {
     @EnvironmentObject var priestStore: PriestStore
     @EnvironmentObject var prayerStore: PrayerStore
+    @EnvironmentObject var scheduleData: ScheduleData<Priest>
     
     
     @State var showSettings: Bool = false
