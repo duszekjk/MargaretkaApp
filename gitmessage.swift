@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] reuse PrayerFlow render snapshot
+codex conversation [20260725-sync] break PrayerFlow layout feedback
 
-Compute prayer lookup, steps, symbols, names, progress, and rows once per body
-evaluation, and ignore unchanged window sizes to avoid repeated render work.
+Keep window measurement from feeding back into child widths and remove the
+heavy glass container from the large prayer scroller.

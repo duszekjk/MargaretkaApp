@@ -767,7 +767,7 @@ struct PrayerFlowView: View {
                 .padding(.horizontal, 16.0)
                 .padding(.bottom, renderPrayerSymbols.isEmpty ? 8.0 : -6.0)
                 .padding(.top, renderPrayerSymbols.isEmpty ? -12.0 : 0.0)
-                .frame(width: availableWindowSize.width > 0 ? availableWindowSize.width : UIScreen.main.bounds.width)
+                .frame(maxWidth: .infinity)
 
 
 
@@ -778,7 +778,7 @@ struct PrayerFlowView: View {
                 {
                         RoundedRectangle(cornerRadius: 20)
                             .fill(.ultraThinMaterial)
-                            .frame(width: max(0, (availableWindowSize.width > 0 ? availableWindowSize.width : UIScreen.main.bounds.width) - 8), height: currentPrayerCardHeight)
+                            .frame(maxWidth: .infinity, height: currentPrayerCardHeight)
                             .overlay(
                                 Group {
                                     if let key = currentBrewiarzKey,
@@ -805,7 +805,7 @@ struct PrayerFlowView: View {
                                     }
                                 }
                                 .gesture(prayerSwipeGesture)
-                                    .frame(width: max(0, (availableWindowSize.width > 0 ? availableWindowSize.width : UIScreen.main.bounds.width) - 10), height: currentPrayerCardHeight)
+                                    .frame(maxWidth: .infinity, height: currentPrayerCardHeight)
                                 
                             )
                             .padding(.horizontal)
@@ -1505,9 +1505,7 @@ struct PrayerTouchScrollerView: View {
     }
 
     var body: some View {
-        GlassEffectContainer
-        {
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 ForEach(rows.indices, id: \.self) { rowIndex in
                     let row = rows[rowIndex]
                     let baseIndex = rowLength * rowIndex
@@ -1544,7 +1542,7 @@ struct PrayerTouchScrollerView: View {
                                             .padding(compactView ? 2.5 : 10)
                                             .frame(width: compactView ? 11 : 45, height: compactView ? 11 : 45)
                                             .clipShape(Circle())
-                                            .glassEffect(.regular.tint(Color.green.opacity(0.4)))
+                                            .background(Circle().fill(Color.green.opacity(0.4)))
                                             .padding(.top, padding.top)
                                             .padding(.bottom, padding.bottom)
                                     }
@@ -1556,7 +1554,7 @@ struct PrayerTouchScrollerView: View {
                                             .padding(compactView ? 1.25 : 5)
                                             .frame(width: compactView ? 6 : 25, height: compactView ? 6 : 25)
                                             .clipShape(Circle())
-                                            .glassEffect()
+                                            .background(Circle().fill(.thinMaterial))
                                             .padding(.top, padding.top)
                                             .padding(.bottom, padding.bottom)
                                     }
@@ -1570,8 +1568,8 @@ struct PrayerTouchScrollerView: View {
                         }
                     }
                 }
-            }
-            .gesture(
+        }
+        .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
                         let location = value.location
@@ -1604,7 +1602,7 @@ struct PrayerTouchScrollerView: View {
                     .onEnded { _ in
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     }
-            )
+        )
         .onPreferenceChange(PrayerButtonFramePreferenceKey.self) { value in
             guard self.frames != value else { return }
             let start = CFAbsoluteTimeGetCurrent()
