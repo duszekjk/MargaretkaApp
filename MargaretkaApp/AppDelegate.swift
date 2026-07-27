@@ -14,7 +14,13 @@ import UserNotifications
 import WebKit
 
 #if canImport(UIKit)
-final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+private typealias PlatformAppDelegate = UIApplicationDelegate
+#else
+private typealias PlatformAppDelegate = NSApplicationDelegate
+#endif
+
+final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenterDelegate {
+#if canImport(UIKit)
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -25,7 +31,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         return true
     }
 #else
-final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         UNUserNotificationCenter.current().delegate = self
         cleanStalePreferenceTemporaryFiles()

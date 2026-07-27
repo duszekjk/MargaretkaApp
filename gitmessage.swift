@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] make AppDelegate cross-platform
+codex conversation [20260725-sync] fix cross-platform AppDelegate declaration
 
-Use UIKit and UIApplicationDelegate on iOS, and AppKit and NSApplicationDelegate
-on macOS so the Mac target no longer imports UIKit unconditionally.
+Use a platform delegate typealias so the shared class remains syntactically
+valid for both UIKit and AppKit targets.
