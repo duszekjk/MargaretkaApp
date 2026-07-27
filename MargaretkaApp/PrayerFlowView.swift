@@ -277,6 +277,7 @@ struct PrayerFlowView: View {
     @State private var isPreparingImagePlayground = false
     @State private var imagePlaygroundOfficeID: UUID?
     @State private var imagePlaygroundConcepts: [ImagePlaygroundConcept] = []
+    @FocusState private var keyboardFocus: Bool
     var priestsAndPrayers: [Priest] {
         scheduleData.items.filter { $0.category == selectedCategory }
     }
@@ -369,12 +370,60 @@ struct PrayerFlowView: View {
         }
     }
 
+    private func handleKeyPress(_ keyPress: KeyPress) -> KeyPress.Result {
+        if keyPress.key == .escape {
+            guard isFullscreen else { return .ignored }
+            withAnimation(.easeInOut(duration: 0.25)) {
+                isFullscreen = false
+            }
+            return .handled
+        }
+
+        let isPrevious = keyPress.key == .leftArrow
+            || keyPress.key == .upArrow
+            || (keyPress.key == .space && keyPress.modifiers.contains(.shift))
+        let isNext = keyPress.key == .rightArrow
+            || keyPress.key == .downArrow
+            || (keyPress.key == .space && !keyPress.modifiers.contains(.shift))
+
+        if isPrevious || isNext {
+            let targetIndex: Int
+            if isNext {
+                targetIndex = min(activeIndex + 1, lastDisplayIndex)
+            } else {
+                targetIndex = max(activeIndex - 1, 0)
+            }
+            guard targetIndex != activeIndex else { return .handled }
+            moveToIndex(targetIndex, animated: true)
+            return .handled
+        }
+
+        switch keyPress.key {
+        case .home:
+            moveToIndex(0, animated: true)
+            return .handled
+        case .end:
+            moveToIndex(lastDisplayIndex, animated: true)
+            return .handled
+        case .r where keyPress.modifiers.isEmpty:
+            moveToIndex(0, animated: true)
+            return .handled
+        default:
+            return .ignored
+        }
+    }
+
     private func currentWindowSize() -> CGSize? {
+#if os(macOS)
+        guard let window = NSApp?.keyWindow else { return nil }
+        return window.contentView?.bounds.size
+#else
         UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap(\.windows)
             .first(where: \.isKeyWindow)?
             .bounds.size
+#endif
     }
 
     private func pollWindowSize() async {
@@ -670,7 +719,9 @@ struct PrayerFlowView: View {
     var body: some View {
         let layoutFamily: PhotoLayoutFamily = UIDevice.current.userInterfaceIdiom == .pad ? .iPad : .iPhone
         let photoPlacement = selectedPriest?.photoPlacement(for: layoutFamily) ?? .centered
-        let viewportWidth: CGFloat = availableWindowSize.width > 0 ? availableWindowSize.width : UIScreen.main.bounds.width
+        let viewportWidth: CGFloat = availableWindowSize.width > 0
+            ? availableWindowSize.width
+            : 1000
         ZStack {
             if let bg = backgroundImage {
                 AdjustableBackgroundImage(
@@ -936,6 +987,11 @@ struct PrayerFlowView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .focusable()
+        .focused($keyboardFocus)
+        .onKeyPress { keyPress in
+            handleKeyPress(keyPress)
+        }
         .accessibilityIdentifier("prayer_flow_view")
         .task {
             await pollWindowSize()
@@ -984,6 +1040,7 @@ struct PrayerFlowView: View {
                 let now = CFAbsoluteTimeGetCurrent()
                 print("PrayerFlowView onAppear start at \(String(format: "%.3f", now))")
             }
+            keyboardFocus = true
 
             let templatesStart = CFAbsoluteTimeGetCurrent()
             Priest.ensureTemplates(using: prayerStore.prayers)

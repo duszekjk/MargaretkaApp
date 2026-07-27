@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] complete macOS prayer selection fix
+codex conversation [20260728-keyboard] add initial cross-platform keyboard controls
 
-Expose the shared schedule to HomeView so built-in targets populate the picker
-and compile the schedule synchronization on every supported platform.
+Add cross-platform arrow, Space, Home, End, R, and Escape handling; a follow-up
+commit will correct the character-key API usage found by the compiler.
