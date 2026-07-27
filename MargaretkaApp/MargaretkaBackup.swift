@@ -1118,7 +1118,7 @@ private struct ExportSelectionView: View {
                 }
             }
             .navigationTitle("Co wyeksportować?")
-            .navigationBarTitleDisplayMode(.inline)
+            .safeNavigationBarTitleDisplayModeInline()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Anuluj") { dismiss() }
@@ -1310,4 +1310,15 @@ private struct ActivityShareView: View {
 
 extension URL: @retroactive Identifiable {
     public var id: String { absoluteString }
+}
+
+private extension View {
+    @ViewBuilder
+    func safeNavigationBarTitleDisplayModeInline() -> some View {
+#if os(macOS)
+        self
+#else
+        navigationBarTitleDisplayMode(.inline)
+#endif
+    }
 }
