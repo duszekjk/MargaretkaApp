@@ -8,6 +8,9 @@
 import AppIntents
 import SwiftUI
 import AudioToolbox
+#if os(macOS)
+import AppKit
+#endif
 
 @main
 struct MargaretkaAppApp: App {
@@ -33,7 +36,11 @@ struct MargaretkaAppApp: App {
         WindowGroup {
             NavigationStack {
                 HomeView()
+#if os(macOS)
+                    .background(Color(nsColor: .windowBackgroundColor))
+#else
                     .background(Color(.systemGroupedBackground))
+#endif
                     .onAppear {
                         scheduleNotificationRefresh()
                         syncService.configureStores(
