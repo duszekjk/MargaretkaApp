@@ -1481,7 +1481,9 @@ struct PrayerTouchScrollerView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        GlassEffectContainer
+        {
+            VStack(spacing: 0) {
                 ForEach(rows.indices, id: \.self) { rowIndex in
                     let row = rows[rowIndex]
                     let baseIndex = rowLength * rowIndex
@@ -1518,7 +1520,7 @@ struct PrayerTouchScrollerView: View {
                                             .padding(compactView ? 2.5 : 10)
                                             .frame(width: compactView ? 11 : 45, height: compactView ? 11 : 45)
                                             .clipShape(Circle())
-                                            .background(Circle().fill(Color.green.opacity(0.4)))
+                                            .glassEffect(.regular.tint(Color.green.opacity(0.4)))
                                             .padding(.top, padding.top)
                                             .padding(.bottom, padding.bottom)
                                     }
@@ -1530,7 +1532,7 @@ struct PrayerTouchScrollerView: View {
                                             .padding(compactView ? 1.25 : 5)
                                             .frame(width: compactView ? 6 : 25, height: compactView ? 6 : 25)
                                             .clipShape(Circle())
-                                            .background(Circle().fill(.thinMaterial))
+                                            .glassEffect()
                                             .padding(.top, padding.top)
                                             .padding(.bottom, padding.bottom)
                                     }
@@ -1544,8 +1546,8 @@ struct PrayerTouchScrollerView: View {
                         }
                     }
                 }
-        }
-        .gesture(
+            }
+            .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { value in
                         let location = value.location
@@ -1578,7 +1580,7 @@ struct PrayerTouchScrollerView: View {
                     .onEnded { _ in
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     }
-        )
+            )
         .onPreferenceChange(PrayerButtonFramePreferenceKey.self) { value in
             guard self.frames != value else { return }
             let start = CFAbsoluteTimeGetCurrent()
@@ -1591,7 +1593,7 @@ struct PrayerTouchScrollerView: View {
                 print("🧩 Prayer frames log took \(String(format: "%.3f", logDuration))s")
             }
         }
-        .coordinateSpace(name: "scrollZone")
+        }.coordinateSpace(name: "scrollZone")
 
     }
     private func prayerName(at index: Int) -> String? {

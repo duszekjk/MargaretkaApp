@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] simplify PrayerFlow viewport expressions
+codex conversation [20260725-sync] restore PrayerFlow glass design
 
-Use one explicit viewport width value so the SwiftUI builder type-checks
-without changing the current window-sized layout behavior.
+Restore the original GlassEffectContainer and glass styling in the prayer
+scroller; the diagnostic workaround did not prove this was the root cause.
