@@ -1,4 +1,4 @@
-codex conversation [20260728-keyboard] complete cross-platform keyboard controls
+codex conversation [20260728-macos] make window size and resizing work
 
-Support arrow keys, Space, Shift-Space, Home, End, R, and Escape in the prayer
-flow on every supported platform.
+Use the actual macOS content window bounds and a reasonable default size so
+PrayerFlow does not open at the full screen size or lock window resizing.
