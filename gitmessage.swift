@@ -1,4 +1,4 @@
-codex conversation [20260728-ios] restore iOS design and dimensions attempt
+codex conversation [20260728-ios] restore iOS design and screen dimensions
 
 Restore the original iOS/iPadOS screen sizing and tinted Liquid Glass styles;
-the next commit will correct conditional sizing syntax found by the compiler.
+keep the macOS-specific sizing and material fallback isolated to macOS.

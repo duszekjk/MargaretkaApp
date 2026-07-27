@@ -737,6 +737,11 @@ struct PrayerFlowView: View {
 #else
         let viewportWidth = UIScreen.main.bounds.width
 #endif
+#if os(macOS)
+        let viewportSize = availableWindowSize == .zero ? UIScreen.main.bounds.size : availableWindowSize
+#else
+        let viewportSize = UIScreen.main.bounds.size
+#endif
         ZStack {
             if let bg = backgroundImage {
                 AdjustableBackgroundImage(
@@ -752,11 +757,7 @@ struct PrayerFlowView: View {
                             ? photoPlacement.offsetY
                             : 0.0
                     ),
-#if os(macOS)
-                    size: availableWindowSize == .zero ? UIScreen.main.bounds.size : availableWindowSize
-#else
-                    size: UIScreen.main.bounds.size
-#endif
+                    size: viewportSize
                 )
                 .ignoresSafeArea()
             }
