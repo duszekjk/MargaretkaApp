@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] restore compilable render snapshot
+codex conversation [20260725-sync] keep compilable PrayerFlow layout fix
 
-Keep the one-pass render locals while removing the helper form that exceeded
-SwiftUI body type-checking limits.
+Remove the type-checker-heavy local snapshot from the SwiftUI body while
+retaining the window feedback and scroller Glass reductions.
