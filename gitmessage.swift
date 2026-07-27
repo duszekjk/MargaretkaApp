@@ -1,4 +1,4 @@
-codex conversation [20260727-sync] support older macOS API availability
+codex conversation [20260727-sync] provide macOS image compatibility
 
-Keep iOS navigation styling conditional, and use fallback prompts on macOS
-versions before the Translation and Foundation Models APIs are available.
+Use NSImage as the macOS counterpart of UIImage, including JPEG conversion
+needed by Priest photo caching and compact storage.

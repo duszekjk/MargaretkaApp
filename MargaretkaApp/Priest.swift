@@ -5,6 +5,32 @@
 //  Created by Jacek Kałużny on 11/07/2025.
 //
 import SwiftUI
+#if os(iOS) || os(tvOS) || os(visionOS)
+import UIKit
+#else
+import AppKit
+typealias UIImage = NSImage
+
+extension NSImage {
+    static let storagePhotoByteLimit = 160_000
+
+    func jpegData(compressionQuality: CGFloat) -> Data? {
+        guard let tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiffRepresentation) else { return nil }
+        return bitmap.representation(
+            using: .jpeg,
+            properties: [.compressionFactor: compressionQuality]
+        )
+    }
+
+    func storageJPEGData(
+        maxDimension: CGFloat = 480,
+        byteLimit: Int = storagePhotoByteLimit
+    ) -> Data? {
+        jpegData(compressionQuality: 0.88)
+    }
+}
+#endif
 
 enum PrayerTargetCategory: String, Codable, CaseIterable, Identifiable {
     case priest
