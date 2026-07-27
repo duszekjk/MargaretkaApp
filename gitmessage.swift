@@ -1,4 +1,4 @@
-codex conversation [20260727-sync] add macOS sync device metadata
+codex conversation [20260727-sync] use platform image initializer
 
-Use Host and ProcessInfo for macOS sync device metadata while retaining
-UIDevice details and family detection on iOS.
+Use the native NSImage initializer on macOS and retain the UIImage initializer
+on iOS, explicitly typing the shared SwiftUI image before modifiers.

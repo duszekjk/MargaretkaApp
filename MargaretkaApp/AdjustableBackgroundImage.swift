@@ -14,7 +14,12 @@ struct AdjustableBackgroundImage: View {
     let size: CGSize
 
     var body: some View {
-        Image(uiImage: image)
+#if os(macOS)
+        let renderedImage = SwiftUI.Image(nsImage: image)
+#else
+        let renderedImage = SwiftUI.Image(uiImage: image)
+#endif
+        renderedImage
             .resizable()
             .interpolation(.high)
             .scaledToFill()
