@@ -16,7 +16,11 @@ struct PhotoPickerView: View {
     var body: some View {
         HStack {
             if let photo {
+#if os(macOS)
+                Image(nsImage: photo)
+#else
                 Image(uiImage: photo)
+#endif
                     .resizable()
                     .interpolation(.high)
                     .scaledToFill()

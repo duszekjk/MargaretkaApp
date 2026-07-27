@@ -1,5 +1,4 @@
-codex conversation [20260727-sync] add macOS fallbacks for UIKit views
+codex conversation [20260727-sync] select native macOS view fallbacks
 
-Keep UIKit representables and app delegates on Apple mobile platforms while
-providing SwiftUI/AppKit fallbacks for macOS and availability annotations for
-newer App Intents APIs.
+Use explicit non-macOS conditions for UIKit representables and app delegates,
+and render photos with Image(nsImage:) on macOS.

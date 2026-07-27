@@ -11,7 +11,7 @@ import AudioToolbox
 
 @main
 struct MargaretkaAppApp: App {
-#if os(iOS) || os(tvOS) || os(visionOS)
+#if !os(macOS)
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate: AppDelegate
 #else
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate: AppDelegate

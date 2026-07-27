@@ -1287,7 +1287,7 @@ private struct BackupConflictResolutionView: View {
     }
 }
 
-#if os(iOS) || os(tvOS) || os(visionOS)
+#if !os(macOS)
 private struct ActivityShareView: UIViewControllerRepresentable {
     let items: [Any]
 
