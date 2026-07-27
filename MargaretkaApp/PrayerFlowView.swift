@@ -45,32 +45,18 @@ private final class UINotificationFeedbackGenerator {
     func notificationOccurred(_ type: UINotificationFeedbackType) {}
 }
 private extension View {
-    // macOS 15 does not expose Liquid Glass. Keep the same translucent visual
-    // language as iOS instead of dropping the control background entirely.
-    func safeGlassEffect() -> some View {
+    // macOS 15 compatibility implementation for the system Liquid Glass names.
+    func glassEffect() -> some View {
         background(.ultraThinMaterial)
     }
-    func safeGlassEffectUnion(id: String, namespace: Namespace.ID) -> some View {
+    func glassEffectUnion(id: String, namespace: Namespace.ID) -> some View {
         background(.ultraThinMaterial)
-    }
-    func safeGlassEffect(tint: Color) -> some View {
-        background(.ultraThinMaterial).tint(tint)
     }
     func safeNavigationChrome(isFullscreen: Bool) -> some View { self }
     func safeStatusBarHidden(_ hidden: Bool) -> some View { self }
 }
 #else
 private extension View {
-    @available(iOS 26.0, tvOS 26.0, visionOS 26.0, *)
-    func safeGlassEffect() -> some View { glassEffect() }
-    @available(iOS 26.0, tvOS 26.0, visionOS 26.0, *)
-    func safeGlassEffectUnion(id: String, namespace: Namespace.ID) -> some View {
-        glassEffectUnion(id: id, namespace: namespace)
-    }
-    @available(iOS 26.0, tvOS 26.0, visionOS 26.0, *)
-    func safeGlassEffect(tint: Color) -> some View {
-        glassEffect(.regular.tint(tint))
-    }
     func safeStatusBarHidden(_ hidden: Bool) -> some View { statusBarHidden(hidden) }
     @ViewBuilder
     func safeNavigationChrome(isFullscreen: Bool) -> some View {
@@ -81,7 +67,8 @@ private extension View {
 }
 #endif
 
-private struct SafeGlassEffectContainer<Content: View>: View {
+#if os(macOS)
+private struct GlassEffectContainer<Content: View>: View {
     let spacing: CGFloat
     @ViewBuilder let content: () -> Content
 
@@ -92,12 +79,13 @@ private struct SafeGlassEffectContainer<Content: View>: View {
 
     @ViewBuilder var body: some View {
         if #available(macOS 26.0, iOS 26.0, tvOS 26.0, visionOS 26.0, *) {
-            GlassEffectContainer(spacing: spacing) { content() }
+            SwiftUI.GlassEffectContainer(spacing: spacing) { content() }
         } else {
             content()
         }
     }
 }
+#endif
 
 struct PrayerFlowStep: Hashable {
     let prayerID: UUID
@@ -777,7 +765,7 @@ struct PrayerFlowView: View {
                         Text(selectedPriest?.displayName ?? "")
                             .lineLimit(4)
                             .padding(3)
-                            .safeGlassEffect()
+                            .glassEffect()
                         if supportsImagePlayground,
                            let office = backgroundOfflineOffice,
                            office.imageFilename == nil {
@@ -800,7 +788,7 @@ struct PrayerFlowView: View {
                             }
                             .disabled(isPreparingImagePlayground)
                             .padding(8)
-                            .safeGlassEffect()
+                            .glassEffect()
                         }
 //                    }
                     if isIPad {
@@ -812,7 +800,7 @@ struct PrayerFlowView: View {
                 }
                 HStack(spacing: 14) {
                     
-                    SafeGlassEffectContainer(spacing: 0) {
+                    GlassEffectContainer(spacing: 0) {
                         
                         Menu {
                             Section("Pokaż") {
@@ -865,7 +853,7 @@ struct PrayerFlowView: View {
                             .cornerRadius(16)
                         }
                         .cornerRadius(16)
-                        .safeGlassEffect() 
+                        .glassEffect() 
                         .symbolRenderingMode(.monochrome)
                         .foregroundStyle(.primary)
 
@@ -874,13 +862,13 @@ struct PrayerFlowView: View {
                     
                     if(flattenedPrayerSymbols.count>0)
                     {
-                        SafeGlassEffectContainer(spacing: 0) {
+                        GlassEffectContainer(spacing: 0) {
                             HStack(spacing: 0) {
                                 Text("\(displayProgress)/\(flattenedPrayerSymbols.count)")
                                     .padding(.horizontal, 16)
                                     .padding(.vertical, 10)
-                                    .safeGlassEffect() 
-                                    .safeGlassEffectUnion(id: "restartGroup", namespace: namespace)
+                                    .glassEffect() 
+                                    .glassEffectUnion(id: "restartGroup", namespace: namespace)
                                     .foregroundStyle(.primary)
                                 
                                 Button(action: {
@@ -889,20 +877,20 @@ struct PrayerFlowView: View {
                                     Image(systemName: "arrow.triangle.2.circlepath")
                                         .padding(12)
                                 }
-                                .safeGlassEffect() 
-                                .safeGlassEffectUnion(id: "restartGroup", namespace: namespace)
+                                .glassEffect() 
+                                .glassEffectUnion(id: "restartGroup", namespace: namespace)
                                 .symbolRenderingMode(.monochrome)
                                 .foregroundStyle(.primary)
                             }
                             .padding(4) 
                         }
                         
-                        SafeGlassEffectContainer(spacing: 0) {
+                        GlassEffectContainer(spacing: 0) {
                             if(finished)
                             {
                                 Image(systemName: "checkmark")
                                     .padding(12)
-                                    .safeGlassEffect(tint: .green) 
+                                    .glassEffect(.regular.tint(.green)) 
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundStyle(.primary)
                             }
@@ -914,14 +902,14 @@ struct PrayerFlowView: View {
                                     Image(systemName: "checkmark")
                                         .padding(12)
                                 }
-                                .safeGlassEffect() 
+                                .glassEffect() 
                                 .symbolRenderingMode(.monochrome)
                                 .foregroundStyle(.primary)
                             }
                         }
 
                         if isCurrentPrayerWeb {
-                            SafeGlassEffectContainer(spacing: 0) {
+                            GlassEffectContainer(spacing: 0) {
                                 Button(action: {
                                     withAnimation(.easeInOut(duration: 0.25)) {
                                         isFullscreen = true
@@ -930,7 +918,7 @@ struct PrayerFlowView: View {
                                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                                         .padding(12)
                                 }
-                                .safeGlassEffect()
+                                .glassEffect()
                                 .symbolRenderingMode(.monochrome)
                                 .foregroundStyle(.primary)
                             }
@@ -1605,7 +1593,7 @@ struct BrewiarzFullScreenView: View {
                     Image(systemName: "arrow.down.right.and.arrow.up.left")
                         .padding(16)
                 }
-                .safeGlassEffect()
+                .glassEffect()
 
                 Spacer()
 
@@ -1624,7 +1612,7 @@ struct BrewiarzFullScreenView: View {
                         .padding(.horizontal, 4.0)
                         .padding(16)
                 }
-                .safeGlassEffect()
+                .glassEffect()
             }
             .padding(.horizontal, 32)
             .padding(.bottom, 48)
@@ -1687,7 +1675,7 @@ struct PrayerTouchScrollerView: View {
     }
 
     var body: some View {
-        SafeGlassEffectContainer
+        GlassEffectContainer
         {
             VStack(spacing: 0) {
                 ForEach(rows.indices, id: \.self) { rowIndex in
@@ -1726,7 +1714,7 @@ struct PrayerTouchScrollerView: View {
                                             .padding(compactView ? 2.5 : 10)
                                             .frame(width: compactView ? 11 : 45, height: compactView ? 11 : 45)
                                             .clipShape(Circle())
-                                            .safeGlassEffect(tint: Color.green.opacity(0.4))
+                                            .glassEffect(.regular.tint(Color.green.opacity(0.4)))
                                             .padding(.top, padding.top)
                                             .padding(.bottom, padding.bottom)
                                     }
@@ -1738,7 +1726,7 @@ struct PrayerTouchScrollerView: View {
                                             .padding(compactView ? 1.25 : 5)
                                             .frame(width: compactView ? 6 : 25, height: compactView ? 6 : 25)
                                             .clipShape(Circle())
-                                            .safeGlassEffect()
+                                            .glassEffect()
                                             .padding(.top, padding.top)
                                             .padding(.bottom, padding.bottom)
                                     }

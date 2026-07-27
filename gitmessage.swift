@@ -1,4 +1,5 @@
-codex conversation [20260728-ipad] restore adaptive iPad window layout
+codex conversation [20260728-glass] use native Liquid Glass on iOS and iPadOS
 
-Keep iPhone full-screen sizing while using the real window dimensions for iPad
-and macOS resizing, without changing the iOS/iPadOS Liquid Glass modifiers.
+Remove all safe-glass wrappers. iOS and iPadOS now call the native Liquid Glass
+modifiers and container directly; macOS compatibility is isolated at compile
+time behind the same system API names.
