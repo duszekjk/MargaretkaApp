@@ -674,7 +674,7 @@ struct PrayerFlowView: View {
                     }
                     Spacer()
                     
-                    if !flattenedPrayerSymbols.isEmpty
+                    if(flattenedPrayerSymbols.count>0)
                     {
                         GlassEffectContainer(spacing: 0) {
                             HStack(spacing: 0) {
@@ -740,8 +740,8 @@ struct PrayerFlowView: View {
                     }
                 }
                 .padding(.horizontal, 16.0)
-                .padding(.bottom, flattenedPrayerSymbols.isEmpty ? 8.0 : -6.0)
-                .padding(.top, flattenedPrayerSymbols.isEmpty ? -12.0 : 0.0)
+                .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
+                .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
                 .frame(maxWidth: .infinity)
 
 
@@ -749,7 +749,7 @@ struct PrayerFlowView: View {
 
                 
                 
-                if !flattenedPrayerSymbols.isEmpty
+                if(flattenedPrayerSymbols.count>0)
                 {
                         RoundedRectangle(cornerRadius: 20)
                             .fill(.ultraThinMaterial)

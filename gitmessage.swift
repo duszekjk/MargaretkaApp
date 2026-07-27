@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] simplify PrayerFlow image layout
+codex conversation [20260725-sync] retain simple PrayerFlow conditions
 
-Keep image caching while removing extra body-local image expressions that
-exceeded the SwiftUI type-checker limit.
+Use the original condition form to keep SwiftUI type-checking stable after
+the window-layout feedback changes.
