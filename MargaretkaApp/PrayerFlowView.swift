@@ -145,6 +145,7 @@ enum PrayerFlowBackgroundOfficeResolver {
 }
 
 struct PrayerFlowView: View {
+    private static let generatedBackgroundCache = NSCache<NSString, UIImage>()
     @EnvironmentObject var prayerStore: PrayerStore
     @EnvironmentObject var priestStore: PriestStore
     @EnvironmentObject var offlineBreviaryStore: OfflineBreviaryStore
@@ -435,15 +436,19 @@ struct PrayerFlowView: View {
     }
 
     var generatedBreviaryBackgroundImage: UIImage? {
-        if let filename = backgroundOfflineOffice?.imageFilename,
-           let generated = UIImage(
-               contentsOfFile: OfflineBreviaryStore.imageDirectory
-                   .appendingPathComponent(filename)
-                   .path
-           ) {
-            return generated
+        guard let filename = backgroundOfflineOffice?.imageFilename else { return nil }
+        let key = filename as NSString
+        if let cached = Self.generatedBackgroundCache.object(forKey: key) {
+            return cached
         }
-        return nil
+        guard let generated = UIImage(
+            contentsOfFile: OfflineBreviaryStore.imageDirectory
+                .appendingPathComponent(filename)
+                .path
+        ) else { return nil }
+        Self.generatedBackgroundCache.setObject(generated, forKey: key)
+        print("🖼️ generated background cache miss: \(filename), size \(Int(generated.size.width))x\(Int(generated.size.height))")
+        return generated
     }
 
     var backgroundImage: UIImage? {
@@ -1574,6 +1579,7 @@ struct PrayerTouchScrollerView: View {
                     }
             )
         .onPreferenceChange(PrayerButtonFramePreferenceKey.self) { value in
+            guard self.frames != value else { return }
             let start = CFAbsoluteTimeGetCurrent()
             self.frames = value
             let framesDuration = CFAbsoluteTimeGetCurrent() - start

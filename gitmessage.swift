@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] stop zero-interval notification loop
+codex conversation [20260725-sync] prevent PrayerFlow render work loop
 
-Use the validated interval fallback when advancing daily notification schedules.
-This prevents legacy everyN=0 data from spinning forever during startup.
+Cache generated breviary backgrounds and ignore unchanged frame preferences so
+body recomputation cannot repeatedly decode images and write the same state.
