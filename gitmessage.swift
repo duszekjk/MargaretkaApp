@@ -1,4 +1,4 @@
-codex conversation [20260727-sync] make all PrayerFlow glass APIs compatible
+codex conversation [20260727-sync] build widget for the host platform
 
-Route all Liquid Glass containers and modifiers through availability-aware
-fallbacks, and omit mobile navigation/status-bar APIs on macOS.
+Use automatic SDK selection and include macOS for the widget target so a
+macOS app never embeds an iOS-built extension.
