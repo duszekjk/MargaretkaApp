@@ -1,4 +1,4 @@
-codex conversation [20260727-sync] make remaining UIKit imports platform-aware
+codex conversation [20260727-sync] support older macOS API availability
 
-Select UIKit only for Apple mobile platforms in the breviary, editor, and
-sync files; keep AppKit as the native macOS counterpart.
+Keep iOS navigation styling conditional, and use fallback prompts on macOS
+versions before the Translation and Foundation Models APIs are available.

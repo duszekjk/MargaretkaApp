@@ -51,7 +51,9 @@ struct CzymJestMargaretkaView: View {
             .padding()
         }
         .navigationTitle("Czym jest Margaretka?")
+#if os(iOS) || os(tvOS) || os(visionOS)
         .navigationBarTitleDisplayMode(.inline)
+#endif
     }
 }
 

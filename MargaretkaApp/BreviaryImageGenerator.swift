@@ -86,6 +86,7 @@ actor BreviaryImageGenerator {
     }
 
     private func translateInstalledPolishToEnglish(_ text: String) async throws -> String {
+        guard #available(macOS 26.0, iOS 26.0, *) else { return text }
         let polish = Locale.Language(identifier: "pl")
         let english = Locale.Language(identifier: "en")
         let session = TranslationSession(installedSource: polish, target: english)
@@ -96,6 +97,7 @@ actor BreviaryImageGenerator {
         sourceContext: String,
         fallback: String
     ) async -> String {
+        guard #available(macOS 26.0, iOS 26.0, *) else { return fallback }
         guard SystemLanguageModel.default.isAvailable else { return fallback }
         do {
             let session = LanguageModelSession(instructions: """

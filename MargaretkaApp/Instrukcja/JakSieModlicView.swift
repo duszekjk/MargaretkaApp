@@ -79,7 +79,9 @@ Maryjo, Matko Kapłanów, otaczaj go swoją opieką. Amen.
             .padding()
         }
         .navigationTitle("Jak się modlić?")
+#if os(iOS) || os(tvOS) || os(visionOS)
         .navigationBarTitleDisplayMode(.inline)
+#endif
     }
 
     private func bullet(_ text: String) -> some View {
