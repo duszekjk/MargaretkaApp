@@ -34,7 +34,11 @@ struct PriestEditorView: View {
     @Environment(\.supportsImagePlayground) private var supportsImagePlayground
 
     private var photoLayoutFamily: PhotoLayoutFamily {
+#if os(macOS)
+        .iPad
+#else
         UIDevice.current.userInterfaceIdiom == .pad ? .iPad : .iPhone
+#endif
     }
 
     private var editorTitle: String {
@@ -259,7 +263,7 @@ struct PriestEditorView: View {
         )
         .imagePlaygroundPersonalizationPolicy(.disabled)
         .breviaryWallpaperImagePlaygroundOptions()
-        .fullScreenCover(isPresented: $showPhotoAdjuster) {
+        .photoAdjustmentSheet(isPresented: $showPhotoAdjuster) {
             if let photo {
                 PhotoAdjustmentFullScreenView(image: photo, scale: $photoScale, offset: $photoOffset)
                     .onChange(of: photoScale) {
@@ -283,6 +287,27 @@ struct PriestEditorView: View {
         )
     }
 }
+
+#if os(macOS)
+private extension View {
+    func photoAdjustmentSheet<Content: View>(
+        isPresented: Binding<Bool>,
+        @ViewBuilder content: @escaping () -> Content
+    ) -> some View {
+        sheet(isPresented: isPresented, content: content)
+    }
+}
+#else
+private extension View {
+    func photoAdjustmentSheet<Content: View>(
+        isPresented: Binding<Bool>,
+        @ViewBuilder content: @escaping () -> Content
+    ) -> some View {
+        fullScreenCover(isPresented: isPresented, content: content)
+    }
+}
+#endif
+
 #if os(iOS) || os(tvOS) || os(visionOS)
 extension UIImage {
     static let storagePhotoByteLimit = 160_000

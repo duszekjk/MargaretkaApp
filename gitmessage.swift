@@ -1,4 +1,4 @@
-codex conversation [20260727-sync] fix macOS SwiftUI image and color types
+codex conversation [20260727-sync] fix editor platform presentation syntax
 
-Use NSColor for the macOS window background and explicitly type the platform
-photo as SwiftUI.Image before applying shared view modifiers.
+Use a stable iPad photo layout on macOS and route photo adjustment through a
+platform-specific view modifier so iOS keeps fullScreenCover.
