@@ -1,4 +1,4 @@
-codex conversation [20260725-sync] remove recursive window-size feedback
+codex conversation [20260725-sync] poll window size safely
 
-Stop writing measured view size back into the same layout tree. This removes
-the suspected infinite SwiftUI state/layout loop while preserving the design.
+Check the actual key window every five seconds and animate only real size
+changes, without observing and writing the layout tree's own geometry.

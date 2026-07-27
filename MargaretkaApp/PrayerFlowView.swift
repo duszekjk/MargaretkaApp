@@ -285,6 +285,34 @@ struct PrayerFlowView: View {
         }
     }
 
+    private func currentWindowSize() -> CGSize? {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first(where: \.isKeyWindow)?
+            .bounds.size
+    }
+
+    private func pollWindowSize() async {
+        while !Task.isCancelled {
+            if let size = currentWindowSize(), size.width > 0, size.height > 0, size != availableWindowSize {
+                if availableWindowSize == .zero {
+                    availableWindowSize = size
+                } else {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        availableWindowSize = size
+                    }
+                }
+            }
+
+            do {
+                try await Task.sleep(for: .seconds(5))
+            } catch {
+                return
+            }
+        }
+    }
+
     private func presentImagePlayground(
         for office: OfflineBreviaryOffice
     ) async {
@@ -815,6 +843,9 @@ struct PrayerFlowView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier("prayer_flow_view")
+        .task {
+            await pollWindowSize()
+        }
         .imagePlaygroundSheet(
             isPresented: $isImagePlaygroundPresented,
             concepts: imagePlaygroundConcepts,
