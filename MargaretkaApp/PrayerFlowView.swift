@@ -390,7 +390,18 @@ struct PrayerFlowView: View {
     private func currentWindowSize() -> CGSize? {
 #if os(macOS)
         guard let window = NSApp?.keyWindow else { return nil }
-        return window.contentView?.bounds.size
+        let measured = window.contentView?.bounds.size ?? .zero
+        let limited = CGSize(
+            width: min(measured.width, 1100),
+            height: min(measured.height, 800)
+        )
+        if measured != limited, limited.width > 0, limited.height > 0 {
+            DispatchQueue.main.async {
+                window.setContentSize(limited)
+                window.center()
+            }
+        }
+        return limited
 #else
         UIApplication.shared.connectedScenes
             .compactMap { $0 as? UIWindowScene }

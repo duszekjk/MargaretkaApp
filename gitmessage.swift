@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] clamp restored oversized macOS window
+codex conversation [20260728-macos] clamp every macOS window size sample
 
-Clamp a previously persisted oversized NSWindow to the 1100x800 design size
-and the visible screen area when the macOS app starts.
+Clamp every measured macOS content size to 1100x800 before PrayerFlow uses it,
+and immediately resize an oversized NSWindow as well.
