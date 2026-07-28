@@ -161,6 +161,14 @@ struct HomeView: View {
                 showOsoby = true
                 showSettings = true
             }
+            .onReceive(NotificationCenter.default.publisher(for: .margaretkaHowTo)) { _ in
+                showJakSie = true
+                showSettings = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .margaretkaAbout)) { _ in
+                showCzymJest = true
+                showSettings = true
+            }
             .task {
                 loadInitialData()
             }

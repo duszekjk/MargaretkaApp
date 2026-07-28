@@ -25,12 +25,19 @@ private final class MacMenuTarget: NSObject {
     @objc func newPerson() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil) }
     @objc func settings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
     @objc func about() { NotificationCenter.default.post(name: .margaretkaAbout, object: nil) }
+    @objc func howTo() { NotificationCenter.default.post(name: .margaretkaHowTo, object: nil) }
 }
 #endif
 
 final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenterDelegate {
 #if os(macOS)
     private let menuTarget = MacMenuTarget()
+#endif
+#if os(iOS)
+    @objc private func openNewPerson() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil) }
+    @objc private func openSettings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
+    @objc private func openAbout() { NotificationCenter.default.post(name: .margaretkaAbout, object: nil) }
+    @objc private func openHowTo() { NotificationCenter.default.post(name: .margaretkaHowTo, object: nil) }
 #endif
 #if os(iOS) || os(tvOS) || os(visionOS)
     func application(
@@ -42,6 +49,22 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         cleanLegacyWebCachesIfNeeded()
         return true
     }
+#if os(iOS)
+    func application(_ application: UIApplication, buildMenuWith builder: UIMenuBuilder) {
+        guard builder.system == .main else { return }
+        for menu in [UIMenu.Identifier.file, .edit, .view, .window, .help] {
+            builder.remove(menu: menu)
+        }
+        let addPerson = UIKeyCommand(input: "n", modifierFlags: .command, action: #selector(openNewPerson))
+        addPerson.title = "Dodaj osobę do modlitwy"
+        builder.insertSibling(UIMenu(title: "Plik", children: [addPerson]), afterMenu: .application)
+        builder.insertSibling(UIMenu(title: "Księża", children: [UICommand(title: "Dodaj księdza", action: #selector(openNewPerson))]), afterMenu: .application)
+        builder.insertSibling(UIMenu(title: "Osoby", children: [UICommand(title: "Dodaj osobę", action: #selector(openNewPerson))]), afterMenu: .application)
+        builder.insertSibling(UIMenu(title: "Modlitwy", children: [UICommand(title: "Ustawienia modlitw", action: #selector(openSettings))]), afterMenu: .application)
+        builder.insertSibling(UIMenu(title: "Widok", children: []), afterMenu: .application)
+        builder.insertSibling(UIMenu(title: "Pomoc", children: [UICommand(title: "Czym jest Margaretka?", action: #selector(openAbout)), UICommand(title: "Jak się modlić?", action: #selector(openHowTo))]), afterMenu: .application)
+    }
+#endif
 #else
     func applicationDidFinishLaunching(_ notification: Notification) {
         UNUserNotificationCenter.current().delegate = self
@@ -62,7 +85,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
 #endif
 
 #if os(macOS)
-    private func configureMargaretkaMenu() {
+    func configureMargaretkaMenu() {
         let menu = NSMenu()
         let file = NSMenu(title: "Plik")
         file.addItem(withTitle: "Dodaj osobę do modlitwy", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "n").target = menuTarget
@@ -74,6 +97,8 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
 
         let help = NSMenu(title: "Pomoc")
         help.addItem(withTitle: "O aplikacji Margaretka", action: #selector(MacMenuTarget.about), keyEquivalent: "").target = menuTarget
+        help.addItem(withTitle: "Czym jest Margaretka?", action: #selector(MacMenuTarget.about), keyEquivalent: "").target = menuTarget
+        help.addItem(withTitle: "Jak się modlić?", action: #selector(MacMenuTarget.howTo), keyEquivalent: "").target = menuTarget
 
         let customMenus: [(String, NSMenu)] = [
             ("Plik", file),
@@ -102,6 +127,9 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
     func makeNSView(context: Context) -> NSView { NSView(frame: .zero) }
 
     func updateNSView(_ nsView: NSView, context: Context) {
+        if NSApp.mainMenu?.item(withTitle: "Księża") == nil {
+            (NSApp.delegate as? AppDelegate)?.configureMargaretkaMenu()
+        }
         guard let window = nsView.window else {
             DispatchQueue.main.async { self.updateNSView(nsView, context: context) }
             return

@@ -107,6 +107,7 @@ extension Notification.Name {
     static let margaretkaNewPerson = Notification.Name("margaretka.newPerson")
     static let margaretkaSettings = Notification.Name("margaretka.settings")
     static let margaretkaAbout = Notification.Name("margaretka.about")
+    static let margaretkaHowTo = Notification.Name("margaretka.howTo")
 }
 
 
