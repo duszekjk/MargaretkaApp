@@ -11,18 +11,6 @@ import ImagePlayground
 import AppKit
 #endif
 
-private struct PrayerFlowAdaptiveWidth: ViewModifier {
-    let width: CGFloat
-
-    func body(content: Content) -> some View {
-#if os(macOS)
-        content.frame(maxWidth: .infinity)
-#else
-        content.frame(width: width)
-#endif
-    }
-}
-
 private struct PrayerFlowCardBackground: View {
     var body: some View {
 #if os(macOS)
@@ -962,7 +950,11 @@ struct PrayerFlowView: View {
                 .padding(.horizontal, 16.0)
                 .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
                 .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
-                .modifier(PrayerFlowAdaptiveWidth(width: viewportWidth))
+#if os(macOS)
+                .frame(maxWidth: .infinity)
+#else
+                .frame(width: viewportWidth)
+#endif
 
 
 
@@ -972,8 +964,11 @@ struct PrayerFlowView: View {
                 if(flattenedPrayerSymbols.count>0)
                 {
                         PrayerFlowCardBackground()
-                            .frame(height: currentPrayerCardHeight)
-                            .modifier(PrayerFlowAdaptiveWidth(width: max(0, viewportWidth - 8)))
+#if os(macOS)
+                            .frame(maxWidth: .infinity, height: currentPrayerCardHeight)
+#else
+                            .frame(width: max(0, viewportWidth - 8), height: currentPrayerCardHeight)
+#endif
                             .overlay(
                                 Group {
                                     if let key = currentBrewiarzKey,
@@ -1000,8 +995,11 @@ struct PrayerFlowView: View {
                                     }
                                 }
                                 .gesture(prayerSwipeGesture)
-                                    .frame(height: currentPrayerCardHeight)
-                                    .modifier(PrayerFlowAdaptiveWidth(width: max(0, viewportWidth - 10)))
+#if os(macOS)
+                                    .frame(maxWidth: .infinity, height: currentPrayerCardHeight)
+#else
+                                    .frame(width: max(0, viewportWidth - 10), height: currentPrayerCardHeight)
+#endif
                                 
                             )
                             .padding(.horizontal)

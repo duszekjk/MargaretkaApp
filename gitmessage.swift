@@ -1,5 +1,6 @@
-codex conversation [20260728-macos] revert background extraction regression
+codex conversation [20260728-swiftui] remove adaptive width type-check regression
 
-Revert the latest PrayerFlowView background helper extraction after the build
-still failed to type-check the main ZStack. Restore the prior inline layout
-while preserving the existing user breakpoint changes.
+Replace the generic PrayerFlowAdaptiveWidth modifier in PrayerFlow's large
+layout expression with platform-conditional frame modifiers. This restores
+the structure used by the earlier type-checking fix while retaining macOS
+window expansion.
