@@ -801,6 +801,7 @@ struct DataTransferView: View {
 
     @ObservedObject var targetStore: PriestStore
     var initialRoute: DataTransferRoute = .overview
+    var initialFileURL: URL?
     @EnvironmentObject private var prayerStore: PrayerStore
     @EnvironmentObject private var offlineStore: OfflineBreviaryStore
     @EnvironmentObject private var scheduleData: ScheduleData<Priest>
@@ -871,6 +872,11 @@ struct DataTransferView: View {
         .navigationTitle("Import i eksport")
         .onAppear {
             DispatchQueue.main.async {
+                if let initialFileURL {
+                    importIntent = .mergeData
+                    handleImportedFile(initialFileURL)
+                    return
+                }
                 switch initialRoute {
                 case .overview:
                     break
@@ -895,16 +901,7 @@ struct DataTransferView: View {
         }
         .fileImporter(isPresented: $isImporting, allowedContentTypes: [.json, .epub]) { result in
             do {
-                let url = try result.get()
-                if importIntent == .restoreBackup, url.pathExtension.lowercased() != "json" {
-                    throw MargaretkaBackupError.notJSONBackup
-                }
-                if url.pathExtension.lowercased() == "epub" {
-                    importEPUB(url)
-                    return
-                } else {
-                    prepareImport(try MargaretkaBackupService.decode(from: url))
-                }
+                handleImportedFile(try result.get())
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -961,6 +958,21 @@ struct DataTransferView: View {
             Button("OK", role: .cancel) { errorMessage = nil }
         } message: {
             Text(errorMessage ?? "Nieznany błąd")
+        }
+    }
+
+    private func handleImportedFile(_ url: URL) {
+        do {
+            if importIntent == .restoreBackup, url.pathExtension.lowercased() != "json" {
+                throw MargaretkaBackupError.notJSONBackup
+            }
+            if url.pathExtension.lowercased() == "epub" {
+                importEPUB(url)
+            } else {
+                prepareImport(try MargaretkaBackupService.decode(from: url))
+            }
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 
