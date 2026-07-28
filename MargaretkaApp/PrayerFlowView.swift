@@ -25,10 +25,27 @@ private struct PrayerFlowAdaptiveWidth: ViewModifier {
 
 private struct PrayerFlowCardBackground: View {
     var body: some View {
+        RoundedRectangle(cornerRadius: 20)
+            .fill(.clear)
+            .modifier(PrayerFlowCardMaterial())
+    }
+}
+
+private struct PrayerFlowCardMaterial: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
 #if os(macOS)
-        Color.clear
+        if #available(macOS 26.0, *) {
+            content.glassEffect(.regular)
+        } else {
+            content.background(.ultraThinMaterial)
+        }
 #else
-        RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial)
+        if #available(iOS 26.0, *) {
+            content.glassEffect(.regular)
+        } else {
+            content.background(.ultraThinMaterial)
+        }
 #endif
     }
 }

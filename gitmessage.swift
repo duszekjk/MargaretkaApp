@@ -1,4 +1,5 @@
-codex conversation [20260728-macos] remove fixed content sizing and card frame
+codex conversation [20260728-macos] restore native/material prayer welcome card
 
-Use a small platform width modifier and actual display-sized window samples so
-macOS can resize freely and the background image is not surrounded by bands.
+Restore the prayer welcome card background consistently across platforms. Use
+native Liquid Glass where available and the same translucent material fallback
+on older systems, so the background photo does not show directly through text.
