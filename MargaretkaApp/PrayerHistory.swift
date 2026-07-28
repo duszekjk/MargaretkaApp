@@ -141,6 +141,7 @@ struct HomeView: View {
     @State var showCzymJest: Bool = false
     @State var showJakSie: Bool = false
     @State private var didLoadInitialData = false
+    @State private var showImport = false
     @AppStorage("prayerCompactView") private var prayerCompactView = false
 
     var body: some View {
@@ -179,8 +180,17 @@ struct HomeView: View {
                 .frame(minWidth: 520, minHeight: 480)
             }
 #endif
+            .sheet(isPresented: $showImport) {
+                NavigationStack {
+                    DataTransferView(targetStore: priestStore)
+                }
+            }
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaSettings)) { _ in
                 showSettings = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .margaretkaImport)) { _ in
+                showSettings = false
+                showImport = true
             }
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaNewPerson)) { _ in
                 showEditor = true

@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] refresh dynamic menu after data load
+codex conversation [20260728-macos] route import menu action to importer
 
-Rebuild the macOS menu when the saved target catalog changes, so dynamic
-Księża, Osoby, and Modlitwy entries appear after startup data loads.
+Open DataTransferView directly from the Importuj modlitwy menu action on
+macOS and iPadOS instead of merely opening the general settings screen.

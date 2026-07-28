@@ -35,6 +35,7 @@ private enum MacMenuCatalog {
 private final class MacMenuTarget: NSObject, NSMenuItemValidation {
     @objc func newPerson() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil) }
     @objc func settings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
+    @objc func importPrayers() { NotificationCenter.default.post(name: .margaretkaImport, object: nil) }
     @objc func about() { NotificationCenter.default.post(name: .margaretkaAbout, object: nil) }
     @objc func howTo() { NotificationCenter.default.post(name: .margaretkaHowTo, object: nil) }
     @objc func syncNow() { NotificationCenter.default.post(name: .margaretkaSync, object: nil) }
@@ -62,6 +63,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
 #if os(iOS)
     @objc private func openNewPerson() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil) }
     @objc private func openSettings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
+    @objc private func openImport() { NotificationCenter.default.post(name: .margaretkaImport, object: nil) }
     @objc private func openAbout() { NotificationCenter.default.post(name: .margaretkaAbout, object: nil) }
     @objc private func openHowTo() { NotificationCenter.default.post(name: .margaretkaHowTo, object: nil) }
     @objc private func openSync() { NotificationCenter.default.post(name: .margaretkaSync, object: nil) }
@@ -89,7 +91,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         addPerson.title = "Dodaj osobę do modlitwy"
         let syncCommand = UICommand(title: "Synchronizuj teraz", action: #selector(openSync))
         if !SyncService.shared.isSignedIn { syncCommand.attributes = [.disabled] }
-        builder.insertSibling(UIMenu(title: "Plik", children: [addPerson, UICommand(title: "Importuj modlitwy", action: #selector(openSettings))]), afterMenu: .application)
+        builder.insertSibling(UIMenu(title: "Plik", children: [addPerson, UICommand(title: "Importuj modlitwy", action: #selector(openImport))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Księża", children: [UICommand(title: "Lista księży", action: #selector(openSettings)), UICommand(title: "Dodaj księdza", action: #selector(openNewPerson))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Osoby", children: [UICommand(title: "Lista osób", action: #selector(openSettings)), UICommand(title: "Dodaj osobę", action: #selector(openNewPerson))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Modlitwy", children: [UICommand(title: "Lista modlitw", action: #selector(openPrayerList)), UICommand(title: "Modlitwy pojedyncze", action: #selector(openPrayerList)), UICommand(title: "Modlitwy złożone", action: #selector(openPrayerList))]), afterMenu: .application)
@@ -136,7 +138,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         let menu = NSMenu()
         let file = NSMenu(title: "Plik")
         file.addItem(withTitle: "Dodaj osobę do modlitwy", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "n").target = menuTarget
-        file.addItem(withTitle: "Importuj modlitwy", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
+        file.addItem(withTitle: "Importuj modlitwy", action: #selector(MacMenuTarget.importPrayers), keyEquivalent: "").target = menuTarget
         file.addItem(.separator())
         file.addItem(withTitle: "Zakończ Margaretkę", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q").target = NSApp
 
@@ -163,7 +165,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         addTargetItems(to: customMenus[2].1, category: .person)
         customMenus[2].1.addItem(withTitle: "Dodaj osobę", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "").target = menuTarget
         addTargetItems(to: customMenus[3].1, category: .prayer)
-        customMenus[3].1.addItem(withTitle: "Importuj modlitwy", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
+        customMenus[3].1.addItem(withTitle: "Importuj modlitwy", action: #selector(MacMenuTarget.importPrayers), keyEquivalent: "").target = menuTarget
         customMenus[4].1.addItem(withTitle: "Zaloguj przez Apple", action: #selector(MacMenuTarget.syncSettings), keyEquivalent: "").target = menuTarget
         customMenus[4].1.addItem(withTitle: "Synchronizuj teraz", action: #selector(MacMenuTarget.syncNow), keyEquivalent: "").target = menuTarget
         customMenus[5].1.addItem(withTitle: "Księża", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
