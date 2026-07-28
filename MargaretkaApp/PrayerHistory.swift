@@ -157,7 +157,28 @@ struct HomeView: View {
             .onAppear {
                 let now = CFAbsoluteTimeGetCurrent()
                 print("HomeView onAppear at \(String(format: "%.3f", now))")
+#if os(macOS)
+                MacMenuCatalog.update(scheduleData.items)
+#endif
             }
+#if os(macOS)
+            .onChange(of: scheduleData.items) { _, items in
+                MacMenuCatalog.update(items)
+            }
+            .sheet(isPresented: $showSettings) {
+                NavigationStack {
+                    SettingsMenuView(
+                        priestStore: priestStore,
+                        availablePrayers: $prayerStore.prayers,
+                        showEditor: $showEditor,
+                        showOsoby: $showOsoby,
+                        showCzymJest: $showCzymJest,
+                        showJakSie: $showJakSie
+                    )
+                }
+                .frame(minWidth: 520, minHeight: 480)
+            }
+#endif
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaSettings)) { _ in
                 showSettings = true
             }

@@ -1,5 +1,5 @@
-codex conversation [20260728-macos] restore project to 034d5c8 baseline
+codex conversation [20260728-macos] make menu actions and target lists work
 
-Revert all changes after 034d5c8, removing the later diagnostic and layout
-experiments. Existing commits remain in history; restore the requested
-baseline while preserving the user's uncommitted breakpoints.
+Populate Księża, Osoby, and Modlitwy menus from saved targets, route target
+selection into PrayerFlow, and present Settings from macOS menu actions.
+Synchronisation and help actions continue using the existing notifications.

@@ -21,6 +21,17 @@ private typealias PlatformAppDelegate = NSApplicationDelegate
 #endif
 
 #if os(macOS)
+private enum MacMenuCatalog {
+    static var entries: [PrayerTargetCategory: [(UUID, String)]] = [:]
+
+    static func update(_ targets: [Priest]) {
+        entries = Dictionary(uniqueKeysWithValues: PrayerTargetCategory.allCases.map { category in
+            (category, targets.filter { $0.category == category }.map { ($0.id, $0.displayName) })
+        })
+        NotificationCenter.default.post(name: .margaretkaMenuNeedsRefresh, object: nil)
+    }
+}
+
 private final class MacMenuTarget: NSObject, NSMenuItemValidation {
     @objc func newPerson() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil) }
     @objc func settings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
@@ -30,6 +41,10 @@ private final class MacMenuTarget: NSObject, NSMenuItemValidation {
     @objc func syncSettings() { NotificationCenter.default.post(name: .margaretkaSyncSettings, object: nil) }
     @objc func prayerList() { NotificationCenter.default.post(name: .margaretkaPrayerList, object: nil) }
     @objc func toggleCompact() { NotificationCenter.default.post(name: .margaretkaToggleCompact, object: nil) }
+    @objc func selectTarget(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? UUID else { return }
+        NotificationCenter.default.post(name: .margaretkaSelectTarget, object: id)
+    }
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(syncNow) {
@@ -136,13 +151,11 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
             ("Widok", view),
             ("Pomoc", help)
         ]
-        customMenus[1].1.addItem(withTitle: "Księża", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
+        addTargetItems(to: customMenus[1].1, category: .priest)
         customMenus[1].1.addItem(withTitle: "Dodaj księdza", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "").target = menuTarget
-        customMenus[2].1.addItem(withTitle: "Osoby", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
+        addTargetItems(to: customMenus[2].1, category: .person)
         customMenus[2].1.addItem(withTitle: "Dodaj osobę", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "").target = menuTarget
-        customMenus[3].1.addItem(withTitle: "Lista modlitw", action: #selector(MacMenuTarget.prayerList), keyEquivalent: "").target = menuTarget
-        customMenus[3].1.addItem(withTitle: "Modlitwy pojedyncze", action: #selector(MacMenuTarget.prayerList), keyEquivalent: "").target = menuTarget
-        customMenus[3].1.addItem(withTitle: "Modlitwy złożone", action: #selector(MacMenuTarget.prayerList), keyEquivalent: "").target = menuTarget
+        addTargetItems(to: customMenus[3].1, category: .prayer)
         customMenus[3].1.addItem(withTitle: "Importuj modlitwy", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
         customMenus[4].1.addItem(withTitle: "Zaloguj przez Apple", action: #selector(MacMenuTarget.syncSettings), keyEquivalent: "").target = menuTarget
         customMenus[4].1.addItem(withTitle: "Synchronizuj teraz", action: #selector(MacMenuTarget.syncNow), keyEquivalent: "").target = menuTarget
@@ -160,6 +173,19 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         view.addItem(settings)
         view.addItem(withTitle: "Compact view", action: #selector(MacMenuTarget.toggleCompact), keyEquivalent: "").target = menuTarget
         NSApp.mainMenu = menu
+    }
+
+    private func addTargetItems(to menu: NSMenu, category: PrayerTargetCategory) {
+        let items = MacMenuCatalog.entries[category] ?? []
+        if items.isEmpty {
+            menu.addItem(withTitle: "Brak zapisanych elementów", action: nil, keyEquivalent: "").isEnabled = false
+        } else {
+            for (id, title) in items {
+                let item = menu.addItem(withTitle: title, action: #selector(MacMenuTarget.selectTarget(_:)), keyEquivalent: "")
+                item.target = menuTarget
+                item.representedObject = id
+            }
+        }
     }
 
     struct MacWindowConfigurator: NSViewRepresentable {
