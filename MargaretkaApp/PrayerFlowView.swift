@@ -752,15 +752,6 @@ struct PrayerFlowView: View {
             ? availableWindowSize.width
             : UIScreen.main.bounds.width
 #endif
-#if os(macOS)
-        let viewportSize = availableWindowSize == .zero
-            ? CGSize(width: 1100, height: 800)
-            : availableWindowSize
-#else
-        let viewportSize = isIPad && availableWindowSize != .zero
-            ? availableWindowSize
-            : UIScreen.main.bounds.size
-#endif
         return ZStack {
             if let bg = backgroundImage {
                 GeometryReader { proxy in

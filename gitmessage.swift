@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] expand macOS compact prayer card
+codex conversation [20260728-macos] remove dead viewport expression
 
-Increase the macOS prayer card height in Compact view to use the freed vertical
-space, leaving iPhone and iPad card sizing unchanged.
+Remove the obsolete viewport-size branch after GeometryReader became the sole
+background sizing source, reducing PrayerFlowView type-check complexity.
