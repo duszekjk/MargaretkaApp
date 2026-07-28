@@ -255,6 +255,9 @@
     "Dodaj nową podgrupę" : {
 
     },
+    "Dodaj osobę do modlitwy" : {
+
+    },
     "Dokument %lld z %lld" : {
       "localizations" : {
         "pl" : {
@@ -497,6 +500,9 @@
 
     },
     "Nowa modlitwa" : {
+
+    },
+    "O aplikacji Margaretka" : {
 
     },
     "Obejmuje modlitwy, osoby, księży, modlitwy złożone i brewiarz offline, ale bez historii, statystyk i ustawień." : {
@@ -1213,6 +1219,9 @@
 
     },
     "Ustawienia" : {
+
+    },
+    "Ustawienia Margaretki" : {
 
     },
     "Usuń" : {
