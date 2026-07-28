@@ -736,6 +736,24 @@ struct PrayerFlowView: View {
             }
     }
 
+    @ViewBuilder
+    private func prayerFlowBackground(_ placement: PhotoPlacement) -> some View {
+        if let bg = backgroundImage {
+            let generated = generatedBreviaryBackgroundImage != nil
+            GeometryReader { proxy in
+                AdjustableBackgroundImage(
+                    image: bg,
+                    scale: generated ? 1.0 : placement.scale,
+                    offset: generated
+                        ? .zero
+                        : CGSize(width: placement.offsetX, height: placement.offsetY),
+                    size: proxy.size
+                )
+            }
+            .ignoresSafeArea()
+        }
+    }
+
     var body: some View {
         prayerFlowLayout
     }
@@ -753,26 +771,7 @@ struct PrayerFlowView: View {
             : UIScreen.main.bounds.width
 #endif
         return ZStack {
-            if let bg = backgroundImage {
-                GeometryReader { proxy in
-                    AdjustableBackgroundImage(
-                        image: bg,
-                        scale: generatedBreviaryBackgroundImage == nil
-                            ? photoPlacement.scale
-                            : 1.0,
-                        offset: CGSize(
-                            width: generatedBreviaryBackgroundImage == nil
-                                ? photoPlacement.offsetX
-                                : 0.0,
-                            height: generatedBreviaryBackgroundImage == nil
-                                ? photoPlacement.offsetY
-                                : 0.0
-                        ),
-                        size: proxy.size
-                    )
-                }
-                .ignoresSafeArea()
-            }
+            prayerFlowBackground(photoPlacement)
 //            else {
 //                Color.white.ignoresSafeArea()
 //            }

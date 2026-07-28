@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] remove dead viewport expression
+codex conversation [20260728-macos] split PrayerFlowView background expression
 
-Remove the obsolete viewport-size branch after GeometryReader became the sole
-background sizing source, reducing PrayerFlowView type-check complexity.
+Extract the GeometryReader-based background layer from the main PrayerFlowView
+ZStack to reduce SwiftUI type-checking complexity without changing layout.
