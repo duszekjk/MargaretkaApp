@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] install menus after scene creation and on iPad
+codex conversation [20260728-macos] install custom menu after WindowGroup appears
 
-Install the custom macOS menu after SwiftUI creates the scene, add Margaretka
-help destinations, and replace iPadOS default menus through UIMenuBuilder.
+Remove competing SwiftUI command groups and install the explicit Margaretka
+macOS menu from the WindowGroup appearance callback after scene creation.

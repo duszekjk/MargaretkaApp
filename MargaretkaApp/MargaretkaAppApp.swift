@@ -49,6 +49,9 @@ struct MargaretkaAppApp: App {
                             targetStore: priestStore,
                             offlineStore: offlineBreviaryStore
                         )
+#if os(macOS)
+                        (NSApp.delegate as? AppDelegate)?.configureMargaretkaMenu()
+#endif
                     }
             }
             .environmentObject(scheduleData)
@@ -70,25 +73,6 @@ struct MargaretkaAppApp: App {
 #if os(macOS)
         .defaultSize(width: 1100, height: 800)
         .windowResizability(.automatic)
-        .commands {
-            CommandGroup(replacing: .newItem) {
-                Button("Dodaj osobę do modlitwy") {
-                    NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil)
-                }
-                .keyboardShortcut("n", modifiers: .command)
-            }
-            CommandGroup(replacing: .appInfo) {
-                Button("O aplikacji Margaretka") {
-                    NotificationCenter.default.post(name: .margaretkaAbout, object: nil)
-                }
-            }
-            CommandGroup(replacing: .help) {
-                Button("Ustawienia Margaretki") {
-                    NotificationCenter.default.post(name: .margaretkaSettings, object: nil)
-                }
-                .keyboardShortcut(",", modifiers: .command)
-            }
-        }
 #endif
     }
 
