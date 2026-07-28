@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] stop window recentering and fake frames
+codex conversation [20260728-macos] remove macOS card frame and fixed widths
 
-Keep the widget sandbox fix, stop moving the window on focus or size correction,
-and remove artificial material frames from the legacy macOS path.
+Keep the widget sandbox fix and free the macOS toolbar/card from fixed widths
+and opaque material so the background image fills the resizable window.

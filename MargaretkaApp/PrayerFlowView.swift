@@ -934,7 +934,11 @@ struct PrayerFlowView: View {
                 .padding(.horizontal, 16.0)
                 .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
                 .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
+#if os(macOS)
+                .frame(maxWidth: .infinity)
+#else
                 .frame(width: viewportWidth)
+#endif
 
 
 
@@ -944,8 +948,16 @@ struct PrayerFlowView: View {
                 if(flattenedPrayerSymbols.count>0)
                 {
                         RoundedRectangle(cornerRadius: 20)
+#if os(macOS)
+                            .fill(Color.clear)
+#else
                             .fill(.ultraThinMaterial)
+#endif
+#if os(macOS)
+                            .frame(maxWidth: .infinity, height: currentPrayerCardHeight)
+#else
                             .frame(width: max(0, viewportWidth - 8), height: currentPrayerCardHeight)
+#endif
                             .overlay(
                                 Group {
                                     if let key = currentBrewiarzKey,
@@ -972,7 +984,11 @@ struct PrayerFlowView: View {
                                     }
                                 }
                                 .gesture(prayerSwipeGesture)
+#if os(macOS)
+                                    .frame(maxWidth: .infinity, height: currentPrayerCardHeight)
+#else
                                     .frame(width: max(0, viewportWidth - 10), height: currentPrayerCardHeight)
+#endif
                                 
                             )
                             .padding(.horizontal)
