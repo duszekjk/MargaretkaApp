@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] open native macOS import picker
+codex conversation [20260728-macos] route selected import file
 
-Open the macOS file chooser directly from the Import menu before presenting
-any DataTransferView sheet, so the picker is not blocked by another popup.
+Add a notification route for the URL selected by the native macOS import
+panel so HomeView can start the existing import flow after selection.
