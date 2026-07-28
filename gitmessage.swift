@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] present import after file selection
+codex conversation [20260728-macos] import uniform type identifiers
 
-Route the selected macOS file into the transfer view only after the native
-picker closes, avoiding competing sheet and file-importer presentations.
+Import UniformTypeIdentifiers so the macOS file panel can compile its JSON and
+EPUB content type filters.

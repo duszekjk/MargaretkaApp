@@ -13,6 +13,7 @@ import AppKit
 import SwiftUI
 import UserNotifications
 import WebKit
+import UniformTypeIdentifiers
 
 #if os(iOS) || os(tvOS) || os(visionOS)
 private typealias PlatformAppDelegate = UIApplicationDelegate
