@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] add settings features to platform menus
+codex conversation [20260728-macos] separate synchronization and statistics menus
 
-Add import, priest, person, prayer, synchronization, statistics, compact-view,
-and help entries to the appropriate macOS and iPadOS menu groups.
+Make Synchronizacja and Statystyki top-level menus. Put Księża, Osoby, and
+Modlitwy under Statystyki, while keeping prayer editing/import under Modlitwy.

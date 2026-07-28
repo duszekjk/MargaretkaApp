@@ -60,7 +60,9 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         builder.insertSibling(UIMenu(title: "Plik", children: [addPerson, UICommand(title: "Importuj modlitwy", action: #selector(openSettings))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Księża", children: [UICommand(title: "Lista księży", action: #selector(openSettings)), UICommand(title: "Dodaj księdza", action: #selector(openNewPerson))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Osoby", children: [UICommand(title: "Lista osób", action: #selector(openSettings)), UICommand(title: "Dodaj osobę", action: #selector(openNewPerson))]), afterMenu: .application)
-        builder.insertSibling(UIMenu(title: "Modlitwy", children: [UICommand(title: "Modlitwy pojedyncze", action: #selector(openSettings)), UICommand(title: "Modlitwy złożone", action: #selector(openSettings)), UICommand(title: "Synchronizacja", action: #selector(openSettings)), UICommand(title: "Statystyki", action: #selector(openSettings))]), afterMenu: .application)
+        builder.insertSibling(UIMenu(title: "Modlitwy", children: [UICommand(title: "Modlitwy pojedyncze", action: #selector(openSettings)), UICommand(title: "Modlitwy złożone", action: #selector(openSettings))]), afterMenu: .application)
+        builder.insertSibling(UIMenu(title: "Synchronizacja", children: [UICommand(title: "Synchronizuj teraz", action: #selector(openSettings))]), afterMenu: .application)
+        builder.insertSibling(UIMenu(title: "Statystyki", children: [UICommand(title: "Księża", action: #selector(openSettings)), UICommand(title: "Osoby", action: #selector(openSettings)), UICommand(title: "Modlitwy", action: #selector(openSettings))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Widok", children: [UICommand(title: "Compact view", action: #selector(openSettings))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Pomoc", children: [UICommand(title: "Czym jest Margaretka?", action: #selector(openAbout)), UICommand(title: "Jak się modlić?", action: #selector(openHowTo))]), afterMenu: .application)
     }
@@ -112,6 +114,8 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
             ("Księża", NSMenu(title: "Księża")),
             ("Osoby", NSMenu(title: "Osoby")),
             ("Modlitwy", NSMenu(title: "Modlitwy")),
+            ("Synchronizacja", NSMenu(title: "Synchronizacja")),
+            ("Statystyki", NSMenu(title: "Statystyki")),
             ("Widok", view),
             ("Pomoc", help)
         ]
@@ -122,8 +126,10 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         customMenus[3].1.addItem(withTitle: "Modlitwy pojedyncze", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
         customMenus[3].1.addItem(withTitle: "Modlitwy złożone", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
         customMenus[3].1.addItem(withTitle: "Importuj modlitwy", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
-        customMenus[3].1.addItem(withTitle: "Synchronizacja", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
-        customMenus[3].1.addItem(withTitle: "Statystyki", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
+        customMenus[4].1.addItem(withTitle: "Synchronizuj teraz", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
+        customMenus[5].1.addItem(withTitle: "Księża", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
+        customMenus[5].1.addItem(withTitle: "Osoby", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
+        customMenus[5].1.addItem(withTitle: "Modlitwy", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
         for (title, submenu) in customMenus {
             let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
             item.submenu = submenu
