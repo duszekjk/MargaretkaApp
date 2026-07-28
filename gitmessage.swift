@@ -1,4 +1,4 @@
-codex conversation [20260728-glass] isolate legacy macOS glass implementation
+codex conversation [20260728-macos] use window-sized initial PrayerFlow layout
 
-Move all older-macOS material compatibility declarations into the dedicated
-legacy file; PrayerFlowView now contains only native Liquid Glass call sites.
+Avoid using the full macOS screen frame before the first window-size sample;
+start PrayerFlow at the 1100x800 window size so the card and background fit.

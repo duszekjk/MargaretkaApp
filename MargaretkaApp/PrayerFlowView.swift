@@ -308,7 +308,9 @@ struct PrayerFlowView: View {
 #if os(macOS) || os(iOS)
         let screenHeight = availableWindowSize.height > 0
             ? availableWindowSize.height
-            : UIScreen.main.bounds.height
+            : (UIDevice.current.userInterfaceIdiom == .mac
+                ? 800
+                : UIScreen.main.bounds.height)
 #else
         let screenHeight = UIScreen.main.bounds.height
 #endif
@@ -694,14 +696,16 @@ struct PrayerFlowView: View {
 #if os(macOS)
         let viewportWidth: CGFloat = availableWindowSize.width > 0
             ? availableWindowSize.width
-            : 1000
+            : 1100
 #else
         let viewportWidth = isIPad && availableWindowSize.width > 0
             ? availableWindowSize.width
             : UIScreen.main.bounds.width
 #endif
 #if os(macOS)
-        let viewportSize = availableWindowSize == .zero ? UIScreen.main.bounds.size : availableWindowSize
+        let viewportSize = availableWindowSize == .zero
+            ? CGSize(width: 1100, height: 800)
+            : availableWindowSize
 #else
         let viewportSize = isIPad && availableWindowSize != .zero
             ? availableWindowSize
