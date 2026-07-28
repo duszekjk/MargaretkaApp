@@ -46,9 +46,11 @@ private final class UINotificationFeedbackGenerator {
 }
 private extension View {
     // macOS 15 compatibility implementation for the system Liquid Glass names.
+    @available(macOS 15.0, obsoleted: 26.0)
     func glassEffect() -> some View {
         background(.ultraThinMaterial)
     }
+    @available(macOS 15.0, obsoleted: 26.0)
     func glassEffectUnion(id: String, namespace: Namespace.ID) -> some View {
         background(.ultraThinMaterial)
     }
@@ -68,6 +70,7 @@ private extension View {
 #endif
 
 #if os(macOS)
+@available(macOS 15.0, obsoleted: 26.0)
 private struct GlassEffectContainer<Content: View>: View {
     let spacing: CGFloat
     @ViewBuilder let content: () -> Content
@@ -890,7 +893,15 @@ struct PrayerFlowView: View {
                             {
                                 Image(systemName: "checkmark")
                                     .padding(12)
-                                    .glassEffect(.regular.tint(.green)) 
+#if os(macOS)
+                                    if #available(macOS 26.0, *) {
+                                        glassEffect(.regular.tint(.green))
+                                    } else {
+                                        prayerFlowLegacyGlass(.green)
+                                    }
+#else
+                                    .glassEffect(.regular.tint(.green))
+#endif
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundStyle(.primary)
                             }
@@ -1714,7 +1725,15 @@ struct PrayerTouchScrollerView: View {
                                             .padding(compactView ? 2.5 : 10)
                                             .frame(width: compactView ? 11 : 45, height: compactView ? 11 : 45)
                                             .clipShape(Circle())
+#if os(macOS)
+                                            if #available(macOS 26.0, *) {
+                                                glassEffect(.regular.tint(Color.green.opacity(0.4)))
+                                            } else {
+                                                prayerFlowLegacyGlass(Color.green.opacity(0.4))
+                                            }
+#else
                                             .glassEffect(.regular.tint(Color.green.opacity(0.4)))
+#endif
                                             .padding(.top, padding.top)
                                             .padding(.bottom, padding.bottom)
                                     }

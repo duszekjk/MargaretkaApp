@@ -1,5 +1,4 @@
-codex conversation [20260728-glass] use native Liquid Glass on iOS and iPadOS
+codex conversation [20260728-glass] add legacy macOS glass fallback attempt
 
-Remove all safe-glass wrappers. iOS and iPadOS now call the native Liquid Glass
-modifiers and container directly; macOS compatibility is isolated at compile
-time behind the same system API names.
+Add a separate material fallback file for older macOS while preparing the
+native Liquid Glass paths for newer macOS and iOS/iPadOS.
