@@ -35,11 +35,12 @@ enum MacMenuCatalog {
 private final class MacMenuTarget: NSObject, NSMenuItemValidation {
     @objc func newPerson() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil) }
     @objc func settings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
-    @objc func importPrayers() { NotificationCenter.default.post(name: .margaretkaImport, object: "overview") }
+    @objc func importPrayers() { NotificationCenter.default.post(name: .margaretkaImport, object: "import") }
     @objc func exportData() { NotificationCenter.default.post(name: .margaretkaImport, object: "export") }
     @objc func backupData() { NotificationCenter.default.post(name: .margaretkaImport, object: "backup") }
     @objc func restoreBackup() { NotificationCenter.default.post(name: .margaretkaImport, object: "restore") }
     @objc func sharePrayers() { NotificationCenter.default.post(name: .margaretkaImport, object: "share") }
+    @objc func statistics() { NotificationCenter.default.post(name: .margaretkaStatistics, object: nil) }
     @objc func about() { NotificationCenter.default.post(name: .margaretkaAbout, object: nil) }
     @objc func howTo() { NotificationCenter.default.post(name: .margaretkaHowTo, object: nil) }
     @objc func syncNow() { NotificationCenter.default.post(name: .margaretkaSync, object: nil) }
@@ -67,11 +68,12 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
 #if os(iOS)
     @objc private func openNewPerson() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil) }
     @objc private func openSettings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
-    @objc private func openImport() { NotificationCenter.default.post(name: .margaretkaImport, object: "overview") }
+    @objc private func openImport() { NotificationCenter.default.post(name: .margaretkaImport, object: "import") }
     @objc private func openExport() { NotificationCenter.default.post(name: .margaretkaImport, object: "export") }
     @objc private func openBackup() { NotificationCenter.default.post(name: .margaretkaImport, object: "backup") }
     @objc private func openRestore() { NotificationCenter.default.post(name: .margaretkaImport, object: "restore") }
     @objc private func openSharePrayers() { NotificationCenter.default.post(name: .margaretkaImport, object: "share") }
+    @objc private func openStatistics() { NotificationCenter.default.post(name: .margaretkaStatistics, object: nil) }
     @objc private func openAbout() { NotificationCenter.default.post(name: .margaretkaAbout, object: nil) }
     @objc private func openHowTo() { NotificationCenter.default.post(name: .margaretkaHowTo, object: nil) }
     @objc private func openSync() { NotificationCenter.default.post(name: .margaretkaSync, object: nil) }
@@ -111,7 +113,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         builder.insertSibling(UIMenu(title: "Osoby", children: [UICommand(title: "Lista osób", action: #selector(openSettings)), UICommand(title: "Dodaj osobę", action: #selector(openNewPerson))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Modlitwy", children: [UICommand(title: "Lista modlitw", action: #selector(openPrayerList)), UICommand(title: "Modlitwy pojedyncze", action: #selector(openPrayerList)), UICommand(title: "Modlitwy złożone", action: #selector(openPrayerList))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Synchronizacja", children: [UICommand(title: "Zaloguj przez Apple", action: #selector(openSyncSettings)), syncCommand]), afterMenu: .application)
-        builder.insertSibling(UIMenu(title: "Statystyki", children: [UICommand(title: "Księża", action: #selector(openSettings)), UICommand(title: "Osoby", action: #selector(openSettings)), UICommand(title: "Modlitwy", action: #selector(openSettings))]), afterMenu: .application)
+        builder.insertSibling(UIMenu(title: "Statystyki", children: [UICommand(title: "Otwórz statystyki", action: #selector(openStatistics))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Widok", children: [UICommand(title: "Compact view", action: #selector(toggleCompact))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Pomoc", children: [UICommand(title: "Czym jest Margaretka?", action: #selector(openAbout)), UICommand(title: "Jak się modlić?", action: #selector(openHowTo))]), afterMenu: .application)
     }
@@ -187,9 +189,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         customMenus[3].1.addItem(withTitle: "Importuj modlitwy", action: #selector(MacMenuTarget.importPrayers), keyEquivalent: "").target = menuTarget
         customMenus[4].1.addItem(withTitle: "Zaloguj przez Apple", action: #selector(MacMenuTarget.syncSettings), keyEquivalent: "").target = menuTarget
         customMenus[4].1.addItem(withTitle: "Synchronizuj teraz", action: #selector(MacMenuTarget.syncNow), keyEquivalent: "").target = menuTarget
-        customMenus[5].1.addItem(withTitle: "Księża", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
-        customMenus[5].1.addItem(withTitle: "Osoby", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
-        customMenus[5].1.addItem(withTitle: "Modlitwy", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
+        customMenus[5].1.addItem(withTitle: "Otwórz statystyki", action: #selector(MacMenuTarget.statistics), keyEquivalent: "").target = menuTarget
         for (title, submenu) in customMenus {
             let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
             item.submenu = submenu

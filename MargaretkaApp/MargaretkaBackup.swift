@@ -786,6 +786,7 @@ enum MargaretkaBackupService {
 
 enum DataTransferRoute {
     case overview
+    case importData
     case export
     case backup
     case restore
@@ -872,6 +873,9 @@ struct DataTransferView: View {
             switch initialRoute {
             case .overview:
                 break
+            case .importData:
+                importIntent = .mergeData
+                isImporting = true
             case .export, .sharePrayers:
                 showingExportSelection = true
             case .backup:

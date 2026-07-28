@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] expose menu catalog to HomeView
+codex conversation [20260728-macos] map import and statistics menu routes
 
-Make MacMenuCatalog visible across the app module so HomeView can refresh
-dynamic menu entries after target data loads.
+Route Importuj modlitwy directly to the file importer and Statystyki directly
+to StatsView, instead of opening unrelated overview or settings screens.
