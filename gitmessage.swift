@@ -1,5 +1,4 @@
-codex conversation [20260728-macos] restore native/material prayer welcome card
+codex conversation [20260728-macos] revert incompatible prayer welcome card change
 
-Restore the prayer welcome card background consistently across platforms. Use
-native Liquid Glass where available and the same translucent material fallback
-on older systems, so the background photo does not show directly through text.
+Revert the previous card-material change after it caused regressions on newer
+devices. Restore the exact prior implementation.
