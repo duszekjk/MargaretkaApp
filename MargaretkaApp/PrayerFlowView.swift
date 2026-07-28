@@ -886,7 +886,7 @@ struct PrayerFlowView: View {
                                     if #available(macOS 26.0, *) {
                                         Image(systemName: "checkmark")
                                             .padding(12)
-                                            .glassEffect(.regular.tint(.green))
+                                            .glassEffect()
                                     } else {
                                         Image(systemName: "checkmark")
                                             .padding(12)
@@ -1729,7 +1729,7 @@ struct PrayerTouchScrollerView: View {
                                                     .padding(compactView ? 2.5 : 10)
                                                     .frame(width: compactView ? 11 : 45, height: compactView ? 11 : 45)
                                                     .clipShape(Circle())
-                                                    .glassEffect(.regular.tint(Color.green.opacity(0.4)))
+                                                    .glassEffect()
                                             } else {
                                                 Image(systemName: symbol)
                                                     .resizable()

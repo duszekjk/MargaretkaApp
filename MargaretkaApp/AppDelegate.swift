@@ -35,6 +35,13 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         UNUserNotificationCenter.current().delegate = self
         cleanStalePreferenceTemporaryFiles()
         cleanLegacyWebCachesIfNeeded()
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.didBecomeKeyNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.constrainMainWindow()
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
             self?.constrainMainWindow()
         }
