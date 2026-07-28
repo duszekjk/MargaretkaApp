@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] revert incompatible prayer welcome card change
+codex conversation [20260728-macos] match macOS prayer welcome card colors
 
-Revert the previous card-material change after it caused regressions on newer
-devices. Restore the exact prior implementation.
+Use the same translucent card material on macOS as on iOS. Keep all iOS code
+and native Liquid Glass paths unchanged.

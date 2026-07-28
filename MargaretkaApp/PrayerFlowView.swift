@@ -26,7 +26,9 @@ private struct PrayerFlowAdaptiveWidth: ViewModifier {
 private struct PrayerFlowCardBackground: View {
     var body: some View {
 #if os(macOS)
-        Color.clear
+        // Keep the macOS welcome card visually aligned with iOS while leaving
+        // the iOS Liquid Glass implementation untouched.
+        RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial)
 #else
         RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial)
 #endif
