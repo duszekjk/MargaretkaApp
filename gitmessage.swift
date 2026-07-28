@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] remove macOS card frame and fixed widths
+codex conversation [20260728-swiftui] simplify PrayerFlow body frame
 
-Keep the widget sandbox fix and free the macOS toolbar/card from fixed widths
-and opaque material so the background image fills the resizable window.
+Replace platform-conditional root frame branches with one flexible frame to
+avoid SwiftUI's opaque-body diagnostic while preserving adaptive layout.
