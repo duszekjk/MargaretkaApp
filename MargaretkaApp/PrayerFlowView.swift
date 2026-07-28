@@ -740,25 +740,32 @@ struct PrayerFlowView: View {
             ? availableWindowSize.width
             : UIScreen.main.bounds.width
 #endif
+#if os(macOS)
+        let viewportSize = availableWindowSize == .zero
+            ? CGSize(width: 1100, height: 800)
+            : availableWindowSize
+#else
+        let viewportSize = isIPad && availableWindowSize != .zero
+            ? availableWindowSize
+            : UIScreen.main.bounds.size
+#endif
         return ZStack {
             if let bg = backgroundImage {
-                GeometryReader { proxy in
-                    AdjustableBackgroundImage(
-                        image: bg,
-                        scale: generatedBreviaryBackgroundImage == nil
-                            ? photoPlacement.scale
-                            : 1.0,
-                        offset: CGSize(
-                            width: generatedBreviaryBackgroundImage == nil
-                                ? photoPlacement.offsetX
-                                : 0.0,
-                            height: generatedBreviaryBackgroundImage == nil
-                                ? photoPlacement.offsetY
-                                : 0.0
-                        ),
-                        size: proxy.size
-                    )
-                }
+                AdjustableBackgroundImage(
+                    image: bg,
+                    scale: generatedBreviaryBackgroundImage == nil
+                        ? photoPlacement.scale
+                        : 1.0,
+                    offset: CGSize(
+                        width: generatedBreviaryBackgroundImage == nil
+                            ? photoPlacement.offsetX
+                            : 0.0,
+                        height: generatedBreviaryBackgroundImage == nil
+                            ? photoPlacement.offsetY
+                            : 0.0
+                    ),
+                    size: viewportSize
+                )
                 .ignoresSafeArea()
             }
 //            else {
