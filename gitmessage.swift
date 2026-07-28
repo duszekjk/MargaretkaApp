@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] add dynamic target menu entries
+codex conversation [20260728-macos] expand macOS compact prayer card
 
-Populate macOS prayer menus from the live schedule and route each target
-selection back through PrayerFlowView, preserving category and selection state.
+Increase the macOS prayer card height in Compact view to use the freed vertical
+space, leaving iPhone and iPad card sizing unchanged.

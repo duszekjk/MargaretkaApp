@@ -343,7 +343,13 @@ struct PrayerFlowView: View {
             let orientationScale: CGFloat = isIPadPortrait ? 1.15 : 1.04
             return min(baseHeight * orientationScale, screenHeight - 100)
         }
+#if os(macOS)
+        let compactScale: CGFloat = prayerCompactView ? 0.82 : 0.72
+        let compactMaximum: CGFloat = prayerCompactView ? 760 : 680
+        return min(screenHeight * compactScale, compactMaximum)
+#else
         return min(screenHeight * 0.72, 680)
+#endif
     }
 
     var currentPrayerCardFontSize: CGFloat {
