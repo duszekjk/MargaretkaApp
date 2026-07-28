@@ -11,6 +11,13 @@ struct StartView: View {
     @Binding var showOsoby: Bool
     @Binding var showCzymJest: Bool
     @Binding var showJakSie: Bool
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var startBackground: Color {
+        colorScheme == .dark
+            ? Color(red: 0.10, green: 0.12, blue: 0.16)
+            : Color(red: 0.95, green: 0.95, blue: 0.97)
+    }
 
     var body: some View {
         NavigationStack {
@@ -68,11 +75,16 @@ struct StartView: View {
                     .multilineTextAlignment(.center)
                     .padding(.bottom, 8)
             }
-//            .background(Color(.systemGroupedBackground))
+            .background(startBackground)
             .edgesIgnoringSafeArea(.all)
         }
     }
 }
+
+enum MargaretkaStartStyle {
+    static let accent = Color(red: 0.616, green: 0.757, blue: 0.514)
+}
+
 enum ActionButtonStyle {
     case prominent, bordered
 }
@@ -107,7 +119,7 @@ struct ButtonStyling: ViewModifier {
         case .prominent:
             content
                 .padding()
-                .background(Color.accentColor)
+                .background(MargaretkaStartStyle.accent)
                 .foregroundColor(.white)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
         case .bordered:
@@ -115,10 +127,9 @@ struct ButtonStyling: ViewModifier {
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.accentColor, lineWidth: 2)
+                        .stroke(MargaretkaStartStyle.accent, lineWidth: 2)
                 )
-                .foregroundColor(Color.accentColor)
+                .foregroundColor(MargaretkaStartStyle.accent)
         }
     }
 }
-

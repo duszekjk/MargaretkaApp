@@ -143,12 +143,14 @@ struct HomeView: View {
     var body: some View {
         PrayerFlowView(showSettings: $showSettings, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie)
             .environmentObject(priestStore)
+#if !os(macOS)
             .toolbar {
                 NavigationLink(destination: SettingsMenuView(priestStore: priestStore, availablePrayers: $prayerStore.prayers, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie),
                                isActive: $showSettings) {
                     Image(systemName: "gear")
                 }
             }
+#endif
             .onAppear {
                 let now = CFAbsoluteTimeGetCurrent()
                 print("HomeView onAppear at \(String(format: "%.3f", now))")

@@ -84,7 +84,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
-        DispatchQueue.main.async { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
             self?.configureMargaretkaMenu()
         }
     }
