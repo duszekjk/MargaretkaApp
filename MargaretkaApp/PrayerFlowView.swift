@@ -891,17 +891,23 @@ struct PrayerFlowView: View {
                         GlassEffectContainer(spacing: 0) {
                             if(finished)
                             {
-                                Image(systemName: "checkmark")
-                                    .padding(12)
+                                Group {
 #if os(macOS)
                                     if #available(macOS 26.0, *) {
-                                        glassEffect(.regular.tint(.green))
+                                        Image(systemName: "checkmark")
+                                            .padding(12)
+                                            .glassEffect(.regular.tint(.green))
                                     } else {
-                                        prayerFlowLegacyGlass(.green)
+                                        Image(systemName: "checkmark")
+                                            .padding(12)
+                                            .prayerFlowLegacyGlass(.green)
                                     }
 #else
-                                    .glassEffect(.regular.tint(.green))
+                                    Image(systemName: "checkmark")
+                                        .padding(12)
+                                        .glassEffect(.regular.tint(.green))
 #endif
+                                }
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundStyle(.primary)
                             }
@@ -1719,21 +1725,35 @@ struct PrayerTouchScrollerView: View {
                                     .frame(width: compactView ? 6 : 25, height: compactView ? 6 : 25)
                                     if(isActive)
                                     {
-                                        Image(systemName: symbol)
-                                            .resizable()
-                                            .scaledToFit()
-                                            .padding(compactView ? 2.5 : 10)
-                                            .frame(width: compactView ? 11 : 45, height: compactView ? 11 : 45)
-                                            .clipShape(Circle())
+                                        Group {
 #if os(macOS)
                                             if #available(macOS 26.0, *) {
-                                                glassEffect(.regular.tint(Color.green.opacity(0.4)))
+                                                Image(systemName: symbol)
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .padding(compactView ? 2.5 : 10)
+                                                    .frame(width: compactView ? 11 : 45, height: compactView ? 11 : 45)
+                                                    .clipShape(Circle())
+                                                    .glassEffect(.regular.tint(Color.green.opacity(0.4)))
                                             } else {
-                                                prayerFlowLegacyGlass(Color.green.opacity(0.4))
+                                                Image(systemName: symbol)
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .padding(compactView ? 2.5 : 10)
+                                                    .frame(width: compactView ? 11 : 45, height: compactView ? 11 : 45)
+                                                    .clipShape(Circle())
+                                                    .prayerFlowLegacyGlass(Color.green.opacity(0.4))
                                             }
 #else
-                                            .glassEffect(.regular.tint(Color.green.opacity(0.4)))
+                                            Image(systemName: symbol)
+                                                .resizable()
+                                                .scaledToFit()
+                                                .padding(compactView ? 2.5 : 10)
+                                                .frame(width: compactView ? 11 : 45, height: compactView ? 11 : 45)
+                                                .clipShape(Circle())
+                                                .glassEffect(.regular.tint(Color.green.opacity(0.4)))
 #endif
+                                        }
                                             .padding(.top, padding.top)
                                             .padding(.bottom, padding.bottom)
                                     }
