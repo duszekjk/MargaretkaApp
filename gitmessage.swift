@@ -1,4 +1,5 @@
-codex conversation [20260728-macos] route import menu action to importer
+codex conversation [20260728-macos] expose backup and export menu actions
 
-Open DataTransferView directly from the Importuj modlitwy menu action on
-macOS and iPadOS instead of merely opening the general settings screen.
+Expose backup, restore, export, and prayer-sharing entries in the Plik menu.
+They open the existing DataTransferView, which contains the corresponding
+working operations and file/share controls.

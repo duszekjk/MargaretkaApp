@@ -91,7 +91,12 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         addPerson.title = "Dodaj osobę do modlitwy"
         let syncCommand = UICommand(title: "Synchronizuj teraz", action: #selector(openSync))
         if !SyncService.shared.isSignedIn { syncCommand.attributes = [.disabled] }
-        builder.insertSibling(UIMenu(title: "Plik", children: [addPerson, UICommand(title: "Importuj modlitwy", action: #selector(openImport))]), afterMenu: .application)
+        builder.insertSibling(UIMenu(title: "Plik", children: [
+            addPerson,
+            UICommand(title: "Importuj modlitwy", action: #selector(openImport)),
+            UICommand(title: "Kopia zapasowa, przywracanie i eksport", action: #selector(openImport)),
+            UICommand(title: "Udostępnij modlitwy", action: #selector(openImport))
+        ]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Księża", children: [UICommand(title: "Lista księży", action: #selector(openSettings)), UICommand(title: "Dodaj księdza", action: #selector(openNewPerson))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Osoby", children: [UICommand(title: "Lista osób", action: #selector(openSettings)), UICommand(title: "Dodaj osobę", action: #selector(openNewPerson))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Modlitwy", children: [UICommand(title: "Lista modlitw", action: #selector(openPrayerList)), UICommand(title: "Modlitwy pojedyncze", action: #selector(openPrayerList)), UICommand(title: "Modlitwy złożone", action: #selector(openPrayerList))]), afterMenu: .application)
@@ -139,6 +144,8 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         let file = NSMenu(title: "Plik")
         file.addItem(withTitle: "Dodaj osobę do modlitwy", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "n").target = menuTarget
         file.addItem(withTitle: "Importuj modlitwy", action: #selector(MacMenuTarget.importPrayers), keyEquivalent: "").target = menuTarget
+        file.addItem(withTitle: "Kopia zapasowa, przywracanie i eksport", action: #selector(MacMenuTarget.importPrayers), keyEquivalent: "").target = menuTarget
+        file.addItem(withTitle: "Udostępnij modlitwy", action: #selector(MacMenuTarget.importPrayers), keyEquivalent: "").target = menuTarget
         file.addItem(.separator())
         file.addItem(withTitle: "Zakończ Margaretkę", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q").target = NSApp
 
