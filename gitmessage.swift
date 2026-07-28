@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] connect menu actions to app state
+codex conversation [20260728-macos] reduce macOS prayer flow margins
 
-Connect synchronization, Apple login, compact view, and prayer-list menu
-actions to application notifications. Disable synchronization when signed out.
+Reduce top/bottom PrayerFlowView spacing on macOS only; keep iPhone and iPad
+spacing unchanged.
