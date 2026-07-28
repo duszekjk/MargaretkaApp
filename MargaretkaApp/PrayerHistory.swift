@@ -153,6 +153,14 @@ struct HomeView: View {
                 let now = CFAbsoluteTimeGetCurrent()
                 print("HomeView onAppear at \(String(format: "%.3f", now))")
             }
+            .onReceive(NotificationCenter.default.publisher(for: .margaretkaSettings)) { _ in
+                showSettings = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .margaretkaNewPerson)) { _ in
+                showEditor = true
+                showOsoby = true
+                showSettings = true
+            }
             .task {
                 loadInitialData()
             }

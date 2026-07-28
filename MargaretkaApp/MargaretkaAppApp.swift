@@ -38,7 +38,7 @@ struct MargaretkaAppApp: App {
                 HomeView()
 #if os(macOS)
                     .background(Color(nsColor: .windowBackgroundColor))
-                    .background(MacWindowConfigurator())
+                    .background(AppDelegate.MacWindowConfigurator())
 #else
                     .background(Color(.systemGroupedBackground))
 #endif
@@ -70,6 +70,25 @@ struct MargaretkaAppApp: App {
 #if os(macOS)
         .defaultSize(width: 1100, height: 800)
         .windowResizability(.automatic)
+        .commands {
+            CommandGroup(replacing: .newItem) {
+                Button("Dodaj osobę do modlitwy") {
+                    NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil)
+                }
+                .keyboardShortcut("n", modifiers: .command)
+            }
+            CommandGroup(replacing: .appInfo) {
+                Button("O aplikacji Margaretka") {
+                    NotificationCenter.default.post(name: .margaretkaAbout, object: nil)
+                }
+            }
+            CommandGroup(replacing: .help) {
+                Button("Ustawienia Margaretki") {
+                    NotificationCenter.default.post(name: .margaretkaSettings, object: nil)
+                }
+                .keyboardShortcut(",", modifiers: .command)
+            }
+        }
 #endif
     }
 
@@ -82,6 +101,12 @@ struct MargaretkaAppApp: App {
             scheduleData.rescheduleAll()
         }
     }
+}
+
+extension Notification.Name {
+    static let margaretkaNewPerson = Notification.Name("margaretka.newPerson")
+    static let margaretkaSettings = Notification.Name("margaretka.settings")
+    static let margaretkaAbout = Notification.Name("margaretka.about")
 }
 
 

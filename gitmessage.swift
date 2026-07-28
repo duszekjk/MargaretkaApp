@@ -1,4 +1,5 @@
-codex conversation [20260728-macos] import SwiftUI for mac window configurator
+codex conversation [20260728-macos] fix mac window scope and custom menu
 
-Import SwiftUI so the NSViewRepresentable window configurator compiles on
-macOS. Window behavior is unchanged.
+Reference the window configurator through its AppDelegate scope and replace
+default macOS menu groups with Margaretka-specific actions for new person,
+settings, and app information.
