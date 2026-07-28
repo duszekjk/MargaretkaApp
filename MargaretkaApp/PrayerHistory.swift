@@ -131,6 +131,8 @@ struct HomeView: View {
     @EnvironmentObject var priestStore: PriestStore
     @EnvironmentObject var prayerStore: PrayerStore
     @EnvironmentObject var scheduleData: ScheduleData<Priest>
+    @EnvironmentObject var syncService: SyncService
+    @EnvironmentObject var offlineStore: OfflineBreviaryStore
     
     
     @State var showSettings: Bool = false
@@ -139,6 +141,7 @@ struct HomeView: View {
     @State var showCzymJest: Bool = false
     @State var showJakSie: Bool = false
     @State private var didLoadInitialData = false
+    @AppStorage("prayerCompactView") private var prayerCompactView = false
 
     var body: some View {
         PrayerFlowView(showSettings: $showSettings, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie)
@@ -170,6 +173,24 @@ struct HomeView: View {
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaAbout)) { _ in
                 showCzymJest = true
                 showSettings = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .margaretkaSyncSettings)) { _ in
+                showSettings = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .margaretkaPrayerList)) { _ in
+                showSettings = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .margaretkaToggleCompact)) { _ in
+                prayerCompactView.toggle()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .margaretkaSync)) { _ in
+                Task {
+                    await syncService.synchronize(
+                        prayerStore: prayerStore,
+                        targetStore: priestStore,
+                        offlineStore: offlineStore
+                    )
+                }
             }
             .task {
                 loadInitialData()

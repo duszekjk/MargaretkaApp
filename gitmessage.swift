@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] separate synchronization and statistics menus
+codex conversation [20260728-macos] connect menu actions to app state
 
-Make Synchronizacja and Statystyki top-level menus. Put Księża, Osoby, and
-Modlitwy under Statystyki, while keeping prayer editing/import under Modlitwy.
+Connect synchronization, Apple login, compact view, and prayer-list menu
+actions to application notifications. Disable synchronization when signed out.

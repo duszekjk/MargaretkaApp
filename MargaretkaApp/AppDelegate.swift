@@ -21,11 +21,22 @@ private typealias PlatformAppDelegate = NSApplicationDelegate
 #endif
 
 #if os(macOS)
-private final class MacMenuTarget: NSObject {
+private final class MacMenuTarget: NSObject, NSMenuItemValidation {
     @objc func newPerson() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil) }
     @objc func settings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
     @objc func about() { NotificationCenter.default.post(name: .margaretkaAbout, object: nil) }
     @objc func howTo() { NotificationCenter.default.post(name: .margaretkaHowTo, object: nil) }
+    @objc func syncNow() { NotificationCenter.default.post(name: .margaretkaSync, object: nil) }
+    @objc func syncSettings() { NotificationCenter.default.post(name: .margaretkaSyncSettings, object: nil) }
+    @objc func prayerList() { NotificationCenter.default.post(name: .margaretkaPrayerList, object: nil) }
+    @objc func toggleCompact() { NotificationCenter.default.post(name: .margaretkaToggleCompact, object: nil) }
+
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem.action == #selector(syncNow) {
+            return SyncService.shared.isSignedIn && !SyncService.shared.isWorking
+        }
+        return true
+    }
 }
 #endif
 
@@ -38,6 +49,10 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
     @objc private func openSettings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
     @objc private func openAbout() { NotificationCenter.default.post(name: .margaretkaAbout, object: nil) }
     @objc private func openHowTo() { NotificationCenter.default.post(name: .margaretkaHowTo, object: nil) }
+    @objc private func openSync() { NotificationCenter.default.post(name: .margaretkaSync, object: nil) }
+    @objc private func openSyncSettings() { NotificationCenter.default.post(name: .margaretkaSyncSettings, object: nil) }
+    @objc private func openPrayerList() { NotificationCenter.default.post(name: .margaretkaPrayerList, object: nil) }
+    @objc private func toggleCompact() { NotificationCenter.default.post(name: .margaretkaToggleCompact, object: nil) }
 #endif
 #if os(iOS) || os(tvOS) || os(visionOS)
     func application(
@@ -57,13 +72,15 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         }
         let addPerson = UIKeyCommand(input: "n", modifierFlags: .command, action: #selector(openNewPerson))
         addPerson.title = "Dodaj osobę do modlitwy"
+        let syncCommand = UICommand(title: "Synchronizuj teraz", action: #selector(openSync))
+        if !SyncService.shared.isSignedIn { syncCommand.attributes = [.disabled] }
         builder.insertSibling(UIMenu(title: "Plik", children: [addPerson, UICommand(title: "Importuj modlitwy", action: #selector(openSettings))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Księża", children: [UICommand(title: "Lista księży", action: #selector(openSettings)), UICommand(title: "Dodaj księdza", action: #selector(openNewPerson))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Osoby", children: [UICommand(title: "Lista osób", action: #selector(openSettings)), UICommand(title: "Dodaj osobę", action: #selector(openNewPerson))]), afterMenu: .application)
-        builder.insertSibling(UIMenu(title: "Modlitwy", children: [UICommand(title: "Modlitwy pojedyncze", action: #selector(openSettings)), UICommand(title: "Modlitwy złożone", action: #selector(openSettings))]), afterMenu: .application)
-        builder.insertSibling(UIMenu(title: "Synchronizacja", children: [UICommand(title: "Synchronizuj teraz", action: #selector(openSettings))]), afterMenu: .application)
+        builder.insertSibling(UIMenu(title: "Modlitwy", children: [UICommand(title: "Lista modlitw", action: #selector(openPrayerList)), UICommand(title: "Modlitwy pojedyncze", action: #selector(openPrayerList)), UICommand(title: "Modlitwy złożone", action: #selector(openPrayerList))]), afterMenu: .application)
+        builder.insertSibling(UIMenu(title: "Synchronizacja", children: [UICommand(title: "Zaloguj przez Apple", action: #selector(openSyncSettings)), syncCommand]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Statystyki", children: [UICommand(title: "Księża", action: #selector(openSettings)), UICommand(title: "Osoby", action: #selector(openSettings)), UICommand(title: "Modlitwy", action: #selector(openSettings))]), afterMenu: .application)
-        builder.insertSibling(UIMenu(title: "Widok", children: [UICommand(title: "Compact view", action: #selector(openSettings))]), afterMenu: .application)
+        builder.insertSibling(UIMenu(title: "Widok", children: [UICommand(title: "Compact view", action: #selector(toggleCompact))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Pomoc", children: [UICommand(title: "Czym jest Margaretka?", action: #selector(openAbout)), UICommand(title: "Jak się modlić?", action: #selector(openHowTo))]), afterMenu: .application)
     }
 #endif
@@ -123,10 +140,12 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         customMenus[1].1.addItem(withTitle: "Dodaj księdza", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "").target = menuTarget
         customMenus[2].1.addItem(withTitle: "Osoby", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
         customMenus[2].1.addItem(withTitle: "Dodaj osobę", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "").target = menuTarget
-        customMenus[3].1.addItem(withTitle: "Modlitwy pojedyncze", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
-        customMenus[3].1.addItem(withTitle: "Modlitwy złożone", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
+        customMenus[3].1.addItem(withTitle: "Lista modlitw", action: #selector(MacMenuTarget.prayerList), keyEquivalent: "").target = menuTarget
+        customMenus[3].1.addItem(withTitle: "Modlitwy pojedyncze", action: #selector(MacMenuTarget.prayerList), keyEquivalent: "").target = menuTarget
+        customMenus[3].1.addItem(withTitle: "Modlitwy złożone", action: #selector(MacMenuTarget.prayerList), keyEquivalent: "").target = menuTarget
         customMenus[3].1.addItem(withTitle: "Importuj modlitwy", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
-        customMenus[4].1.addItem(withTitle: "Synchronizuj teraz", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
+        customMenus[4].1.addItem(withTitle: "Zaloguj przez Apple", action: #selector(MacMenuTarget.syncSettings), keyEquivalent: "").target = menuTarget
+        customMenus[4].1.addItem(withTitle: "Synchronizuj teraz", action: #selector(MacMenuTarget.syncNow), keyEquivalent: "").target = menuTarget
         customMenus[5].1.addItem(withTitle: "Księża", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
         customMenus[5].1.addItem(withTitle: "Osoby", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
         customMenus[5].1.addItem(withTitle: "Modlitwy", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
@@ -139,7 +158,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         settings.keyEquivalentModifierMask = [.command]
         settings.target = menuTarget
         view.addItem(settings)
-        view.addItem(withTitle: "Compact view", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
+        view.addItem(withTitle: "Compact view", action: #selector(MacMenuTarget.toggleCompact), keyEquivalent: "").target = menuTarget
         NSApp.mainMenu = menu
     }
 
