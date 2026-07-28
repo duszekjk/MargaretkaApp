@@ -1,4 +1,4 @@
-codex conversation [20260728-swiftui] revert modifier conditionals causing body error
+codex conversation [20260728-swiftui] return PrayerFlow layout expression
 
-Revert the platform conditionals added inside the large PrayerFlow modifier
-chains, which caused Xcode's body type-checking failure at the root ZStack.
+Add the explicit return required after local layout constants in the extracted
+opaque prayerFlowLayout property.

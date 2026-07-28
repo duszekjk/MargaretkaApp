@@ -730,7 +730,7 @@ struct PrayerFlowView: View {
             ? availableWindowSize
             : UIScreen.main.bounds.size
 #endif
-        ZStack {
+        return ZStack {
             if let bg = backgroundImage {
                 AdjustableBackgroundImage(
                     image: bg,
