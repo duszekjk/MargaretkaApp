@@ -143,6 +143,7 @@ struct HomeView: View {
     @State private var didLoadInitialData = false
     @State private var showImport = false
     @State private var dataTransferRoute: DataTransferRoute = .overview
+    @State private var pendingImportFile: URL?
     @State private var showStatistics = false
     @AppStorage("prayerCompactView") private var prayerCompactView = false
 
@@ -184,8 +185,9 @@ struct HomeView: View {
 #endif
             .sheet(isPresented: $showImport) {
                 NavigationStack {
-                    DataTransferView(targetStore: priestStore, initialRoute: dataTransferRoute)
+                    DataTransferView(targetStore: priestStore, initialRoute: dataTransferRoute, initialFileURL: pendingImportFile)
                 }
+                .onDisappear { pendingImportFile = nil }
             }
             .sheet(isPresented: $showStatistics) {
                 NavigationStack {
@@ -205,6 +207,13 @@ struct HomeView: View {
                 case "share": dataTransferRoute = .sharePrayers
                 default: dataTransferRoute = .overview
                 }
+                showImport = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .margaretkaImportFile)) { notification in
+                guard let url = notification.object as? URL else { return }
+                showSettings = false
+                dataTransferRoute = .overview
+                pendingImportFile = url
                 showImport = true
             }
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaStatistics)) { _ in

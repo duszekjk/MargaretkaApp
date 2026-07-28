@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] process selected import file
+codex conversation [20260728-macos] present import after file selection
 
-Pass a file selected by the native macOS panel into DataTransferView and reuse
-the existing JSON and EPUB import processing after selection.
+Route the selected macOS file into the transfer view only after the native
+picker closes, avoiding competing sheet and file-importer presentations.
