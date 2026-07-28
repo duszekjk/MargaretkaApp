@@ -281,6 +281,9 @@
         }
       }
     },
+    "Edytuj" : {
+
+    },
     "Edytuj kolejność modlitw" : {
 
     },
@@ -533,6 +536,9 @@
 
     },
     "Ostatnia synchronizacja" : {
+
+    },
+    "Otwórz brewiarz w przeglądarce" : {
 
     },
     "Pełna kopia zapasowa" : {
@@ -1166,9 +1172,6 @@
         }
       }
     },
-    "To dobre rozwiązanie, jeśli chcesz:\n• uruchamiać modlitwę jednym ruchem,\n• mieć jeden stały skrót przy konkretnym miejscu,\n• nie wpisywać nic ręcznie, gdy masz zajęte ręce." : {
-
-    },
     "To modlitwa siedmiu osób za **jednego konkretnego kapłana** – każda osoba obejmuje go modlitwą w wybrany dzień tygodnia. Razem tworzą „stokrotkę” (7 płatków) z kapłanem w środku. Zobowiązanie ma charakter **stały** (długoterminowy)." : {
 
     },
@@ -1188,6 +1191,9 @@
 
     },
     "Tytuł" : {
+
+    },
+    "Udostępnianie jest dostępne z poziomu Findera." : {
 
     },
     "Udostępnij" : {

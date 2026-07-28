@@ -17,9 +17,6 @@ extension Notification.Name {
     static let syncPhotoQueued = Notification.Name("syncPhotoQueued")
 }
 
-/// Keeps the exact bytes selected by the user. `Priest.photoData` remains a
-/// deliberately small rendering preview; this file is the source uploaded to
-/// the sync service and later used to derive device-specific renditions.
 final class SyncedPhotoStorage: @unchecked Sendable {
     static let shared = SyncedPhotoStorage()
 
