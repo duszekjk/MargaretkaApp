@@ -68,7 +68,7 @@ struct MargaretkaAppApp: App {
         }
 #if os(macOS)
         .defaultSize(width: 1100, height: 800)
-        .windowResizability(.automatic)
+        .windowResizability(.contentMinSize)
 #endif
     }
 
