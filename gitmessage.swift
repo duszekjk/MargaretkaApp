@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] execute selected data transfer menu action
+codex conversation [20260728-macos] expose menu catalog to HomeView
 
-Route backup, restore, export, and prayer-sharing menu commands to distinct
-DataTransferView actions instead of merely opening its overview screen.
+Make MacMenuCatalog visible across the app module so HomeView can refresh
+dynamic menu entries after target data loads.

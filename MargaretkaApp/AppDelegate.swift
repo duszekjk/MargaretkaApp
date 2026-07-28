@@ -21,7 +21,7 @@ private typealias PlatformAppDelegate = NSApplicationDelegate
 #endif
 
 #if os(macOS)
-private enum MacMenuCatalog {
+enum MacMenuCatalog {
     static var entries: [PrayerTargetCategory: [(UUID, String)]] = [:]
 
     static func update(_ targets: [Priest]) {
