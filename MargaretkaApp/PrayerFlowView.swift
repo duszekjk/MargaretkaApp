@@ -46,11 +46,11 @@ private final class UINotificationFeedbackGenerator {
 }
 private extension View {
     // macOS 15 compatibility implementation for the system Liquid Glass names.
-    @available(macOS 15.0, obsoleted: 26.0)
+    @available(macOS, introduced: 15.0, obsoleted: 26.0)
     func glassEffect() -> some View {
         background(.ultraThinMaterial)
     }
-    @available(macOS 15.0, obsoleted: 26.0)
+    @available(macOS, introduced: 15.0, obsoleted: 26.0)
     func glassEffectUnion(id: String, namespace: Namespace.ID) -> some View {
         background(.ultraThinMaterial)
     }
@@ -70,7 +70,7 @@ private extension View {
 #endif
 
 #if os(macOS)
-@available(macOS 15.0, obsoleted: 26.0)
+@available(macOS, introduced: 15.0, obsoleted: 26.0)
 private struct GlassEffectContainer<Content: View>: View {
     let spacing: CGFloat
     @ViewBuilder let content: () -> Content

@@ -1,4 +1,4 @@
-codex conversation [20260728-glass] separate native and legacy glass paths
+codex conversation [20260728-glass] fix legacy glass availability declaration
 
-Keep older macOS material fallback in its own file and use direct native
-Liquid Glass modifiers for iOS/iPadOS and macOS 26 or newer.
+Correct the macOS availability syntax for the legacy compatibility declarations
+while keeping native Liquid Glass direct on newer systems.
