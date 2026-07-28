@@ -1,5 +1,5 @@
-codex conversation [20260728-macos] constrain macOS window frame to display
+codex conversation [20260728-macos] configure actual SwiftUI macOS window
 
-Apply 320x256 minimum and display-area maximum to the actual NSWindow frame,
-then clamp an oversized frame once at launch. This avoids content-size versus
-window-frame mismatches that left the height larger than the screen.
+Configure the real NSWindow after SwiftUI creates it, forcing resizability and
+applying 320x256 minimum and display-area maximum to its frame. Keep scene
+resizability automatic so SwiftUI does not impose a content-size lock.

@@ -49,6 +49,28 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
 #endif
 
 #if os(macOS)
+struct MacWindowConfigurator: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView { NSView(frame: .zero) }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        guard let window = nsView.window,
+              let screen = window.screen ?? NSScreen.main else { return }
+        let visible = screen.visibleFrame
+        let minimum = NSSize(width: 320, height: 256)
+        let maximum = NSSize(
+            width: max(minimum.width, visible.width - 40),
+            height: max(minimum.height, visible.height - 40)
+        )
+        window.styleMask.insert(.resizable)
+        window.minSize = minimum
+        window.maxSize = maximum
+        var frame = window.frame
+        if frame.size.width > maximum.width { frame.size.width = maximum.width }
+        if frame.size.height > maximum.height { frame.size.height = maximum.height }
+        if frame != window.frame { window.setFrame(frame, display: true) }
+    }
+}
+
     private func constrainMainWindow() {
         guard let window = NSApp.windows.first(where: { $0.isVisible }),
               let screen = window.screen ?? NSScreen.main else { return }

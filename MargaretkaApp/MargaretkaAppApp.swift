@@ -38,6 +38,7 @@ struct MargaretkaAppApp: App {
                 HomeView()
 #if os(macOS)
                     .background(Color(nsColor: .windowBackgroundColor))
+                    .background(MacWindowConfigurator())
 #else
                     .background(Color(.systemGroupedBackground))
 #endif
@@ -68,7 +69,7 @@ struct MargaretkaAppApp: App {
         }
 #if os(macOS)
         .defaultSize(width: 1100, height: 800)
-        .windowResizability(.contentMinSize)
+        .windowResizability(.automatic)
 #endif
     }
 
