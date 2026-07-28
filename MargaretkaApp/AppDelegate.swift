@@ -35,7 +35,16 @@ enum MacMenuCatalog {
 private final class MacMenuTarget: NSObject, NSMenuItemValidation {
     @objc func newPerson() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil) }
     @objc func settings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
-    @objc func importPrayers() { NotificationCenter.default.post(name: .margaretkaImport, object: "import") }
+    @objc func importPrayers() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json, .epub]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            NotificationCenter.default.post(name: .margaretkaImportFile, object: url)
+        }
+    }
     @objc func exportData() { NotificationCenter.default.post(name: .margaretkaImport, object: "export") }
     @objc func backupData() { NotificationCenter.default.post(name: .margaretkaImport, object: "backup") }
     @objc func restoreBackup() { NotificationCenter.default.post(name: .margaretkaImport, object: "restore") }

@@ -1,5 +1,4 @@
-codex conversation [20260728-macos] defer file importer presentation
+codex conversation [20260728-macos] open native macOS import picker
 
-Defer DataTransferView's initial import/export action until after the sheet
-finishes appearing, preventing macOS from showing a blank placeholder instead
-of its file chooser.
+Open the macOS file chooser directly from the Import menu before presenting
+any DataTransferView sheet, so the picker is not blocked by another popup.
