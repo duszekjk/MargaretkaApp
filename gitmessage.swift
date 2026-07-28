@@ -1,4 +1,4 @@
-codex conversation [20260728-swiftui] simplify PrayerFlow body frame
+codex conversation [20260728-swiftui] split PrayerFlow type-check context
 
-Replace platform-conditional root frame branches with one flexible frame to
-avoid SwiftUI's opaque-body diagnostic while preserving adaptive layout.
+Keep the layout unchanged but move the large expression into a separate
+prayerFlowLayout property so Xcode can type-check body quickly.

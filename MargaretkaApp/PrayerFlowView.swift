@@ -706,6 +706,10 @@ struct PrayerFlowView: View {
     }
 
     var body: some View {
+        prayerFlowLayout
+    }
+
+    private var prayerFlowLayout: some View {
         let layoutFamily: PhotoLayoutFamily = UIDevice.current.userInterfaceIdiom == .pad ? .iPad : .iPhone
         let photoPlacement = selectedPriest?.photoPlacement(for: layoutFamily) ?? .centered
 #if os(macOS)
