@@ -106,6 +106,13 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         cleanLegacyWebCachesIfNeeded()
         configureMargaretkaMenu()
         NotificationCenter.default.addObserver(
+            forName: .margaretkaMenuNeedsRefresh,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.configureMargaretkaMenu()
+        }
+        NotificationCenter.default.addObserver(
             forName: NSWindow.didBecomeKeyNotification,
             object: nil,
             queue: .main
