@@ -1,7 +1,4 @@
-codex conversation [019fa86c-505b-78f0-8e53-c90296cb5862] preserve existing iOS work
+codex conversation [20260728-macos] make PrayerFlow content resizable
 
-Checkpoint every pre-existing uncommitted iOS change before investigating the
-notification regression. Preserve the current project, localization, photo
-storage, and breakpoint state without removing or rewriting the user's work.
-Ignore Xcode Derived Data directories so generated build artifacts remain local
-and outside version control.
+Let macOS content expand with the window and cap only to the current display,
+removing fixed 1100x800 constraints that caused gray unused bands.

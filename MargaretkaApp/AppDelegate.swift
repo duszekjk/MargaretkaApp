@@ -55,8 +55,8 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
 
         let visible = screen.visibleFrame
         let maximum = CGSize(
-            width: min(1100, max(640, visible.width - 80)),
-            height: min(800, max(480, visible.height - 80))
+            width: max(640, visible.width - 80),
+            height: max(480, visible.height - 80)
         )
         window.styleMask.insert(.resizable)
         window.contentMinSize = NSSize(width: 640, height: 480)
