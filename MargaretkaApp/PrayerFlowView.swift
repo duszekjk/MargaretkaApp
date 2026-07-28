@@ -11,6 +11,28 @@ import ImagePlayground
 import AppKit
 #endif
 
+private struct PrayerFlowAdaptiveWidth: ViewModifier {
+    let width: CGFloat
+
+    func body(content: Content) -> some View {
+#if os(macOS)
+        content.frame(maxWidth: .infinity)
+#else
+        content.frame(width: width)
+#endif
+    }
+}
+
+private struct PrayerFlowCardBackground: View {
+    var body: some View {
+#if os(macOS)
+        Color.clear
+#else
+        RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial)
+#endif
+    }
+}
+
 #if os(macOS)
 private enum UIUserInterfaceIdiom { case phone, pad, mac }
 private final class UIDevice {
@@ -393,8 +415,8 @@ struct PrayerFlowView: View {
         let measured = window.contentView?.bounds.size ?? .zero
         let visible = (window.screen ?? NSScreen.main)?.visibleFrame
         let maximum = CGSize(
-            width: min(1100, max(320, (visible?.width ?? 1180) - 80)),
-            height: min(800, max(240, (visible?.height ?? 880) - 80))
+            width: max(320, (visible?.width ?? 1180) - 80),
+            height: max(240, (visible?.height ?? 880) - 80)
         )
         let limited = CGSize(
             width: min(measured.width, maximum.width),
@@ -938,7 +960,7 @@ struct PrayerFlowView: View {
                 .padding(.horizontal, 16.0)
                 .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
                 .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
-                .frame(width: viewportWidth)
+                .modifier(PrayerFlowAdaptiveWidth(width: viewportWidth))
 
 
 
@@ -947,9 +969,9 @@ struct PrayerFlowView: View {
                 
                 if(flattenedPrayerSymbols.count>0)
                 {
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(.ultraThinMaterial)
-                            .frame(width: max(0, viewportWidth - 8), height: currentPrayerCardHeight)
+                        PrayerFlowCardBackground()
+                            .frame(height: currentPrayerCardHeight)
+                            .modifier(PrayerFlowAdaptiveWidth(width: max(0, viewportWidth - 8)))
                             .overlay(
                                 Group {
                                     if let key = currentBrewiarzKey,
@@ -976,7 +998,8 @@ struct PrayerFlowView: View {
                                     }
                                 }
                                 .gesture(prayerSwipeGesture)
-                                    .frame(width: max(0, viewportWidth - 10), height: currentPrayerCardHeight)
+                                    .frame(height: currentPrayerCardHeight)
+                                    .modifier(PrayerFlowAdaptiveWidth(width: max(0, viewportWidth - 10)))
                                 
                             )
                             .padding(.horizontal)
