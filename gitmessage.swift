@@ -1,5 +1,6 @@
-codex conversation [20260728-swiftui] simplify platform padding expressions
+codex conversation [20260728-swiftui] restore known-good PrayerFlow builder
 
-Move macOS/iOS padding constants out of inline closure expressions in
-PrayerFlow's large layout. The values and platform behavior are unchanged;
-the change only removes unnecessary result-builder work from the ZStack.
+Restore PrayerFlow's main layout builder to the structure from the last
+known-good type-checking commit. This removes the later platform-specific
+card/background branches from the builder while leaving unrelated menu and
+scroller changes untouched.

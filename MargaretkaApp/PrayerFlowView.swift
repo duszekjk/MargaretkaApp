@@ -11,18 +11,6 @@ import ImagePlayground
 import AppKit
 #endif
 
-private struct PrayerFlowCardBackground: View {
-    var body: some View {
-#if os(macOS)
-        // Keep the macOS welcome card visually aligned with iOS while leaving
-        // the iOS Liquid Glass implementation untouched.
-        RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial)
-#else
-        RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial)
-#endif
-    }
-}
-
 #if os(macOS)
 private enum UIUserInterfaceIdiom { case phone, pad, mac }
 private final class UIDevice {
@@ -749,13 +737,6 @@ struct PrayerFlowView: View {
             ? availableWindowSize
             : UIScreen.main.bounds.size
 #endif
-#if os(macOS)
-        let prayerFlowBottomPadding: CGFloat = 8.0
-        let prayerFlowVerticalPadding: CGFloat = 0.0
-#else
-        let prayerFlowBottomPadding: CGFloat = 60.0
-        let prayerFlowVerticalPadding: CGFloat = 35.0
-#endif
         return ZStack {
             if let bg = backgroundImage {
                 AdjustableBackgroundImage(
@@ -964,11 +945,7 @@ struct PrayerFlowView: View {
                 .padding(.horizontal, 16.0)
                 .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
                 .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
-#if os(macOS)
-                .frame(maxWidth: .infinity)
-#else
                 .frame(width: viewportWidth)
-#endif
 
 
 
@@ -977,12 +954,9 @@ struct PrayerFlowView: View {
                 
                 if(flattenedPrayerSymbols.count>0)
                 {
-                        PrayerFlowCardBackground()
-#if os(macOS)
-                            .frame(maxWidth: .infinity, height: currentPrayerCardHeight)
-#else
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(.ultraThinMaterial)
                             .frame(width: max(0, viewportWidth - 8), height: currentPrayerCardHeight)
-#endif
                             .overlay(
                                 Group {
                                     if let key = currentBrewiarzKey,
@@ -1009,11 +983,7 @@ struct PrayerFlowView: View {
                                     }
                                 }
                                 .gesture(prayerSwipeGesture)
-#if os(macOS)
-                                    .frame(maxWidth: .infinity, height: currentPrayerCardHeight)
-#else
                                     .frame(width: max(0, viewportWidth - 10), height: currentPrayerCardHeight)
-#endif
                                 
                             )
                             .padding(.horizontal)
@@ -1030,14 +1000,14 @@ struct PrayerFlowView: View {
                             moveToIndex(index, animated: true)
                         }
                     )
-                    .padding(.bottom, prayerFlowBottomPadding)
+                    .padding(.bottom, 60.0)
                 }
                 else
                 {
                     StartView(showSettings: $showSettings, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie)
                 }
             }
-            .padding(.vertical, prayerFlowVerticalPadding)
+            .padding(.vertical, 35)
 
             if isPreparingImagePlayground {
                 ImagePlaygroundPreparationOverlay()
