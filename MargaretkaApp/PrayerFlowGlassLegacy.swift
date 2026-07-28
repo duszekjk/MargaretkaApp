@@ -6,19 +6,19 @@ import SwiftUI
 @available(macOS 15.0, *)
 extension View {
     func prayerFlowLegacyGlass(_ tint: Color) -> some View {
-        background(.ultraThinMaterial).tint(tint)
+        self
     }
 
     @available(macOS, introduced: 15.0, obsoleted: 26.0)
     @_disfavoredOverload
     func glassEffect() -> some View {
-        background(.ultraThinMaterial)
+        self
     }
 
     @available(macOS, introduced: 15.0, obsoleted: 26.0)
     @_disfavoredOverload
     func glassEffectUnion(id: String, namespace: Namespace.ID) -> some View {
-        background(.ultraThinMaterial)
+        self
     }
 }
 

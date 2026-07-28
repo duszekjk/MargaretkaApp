@@ -403,7 +403,6 @@ struct PrayerFlowView: View {
         if measured != limited, limited.width > 0, limited.height > 0 {
             DispatchQueue.main.async {
                 window.setContentSize(limited)
-                window.center()
             }
         }
         return limited

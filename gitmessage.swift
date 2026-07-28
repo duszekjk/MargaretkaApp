@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] fix widget sandbox and macOS chrome
+codex conversation [20260728-macos] stop window recentering and fake frames
 
-Enable the widget application sandbox, reapply resizable window bounds when the
-window becomes key, and remove unintended green tint from macOS glass controls.
+Keep the widget sandbox fix, stop moving the window on focus or size correction,
+and remove artificial material frames from the legacy macOS path.

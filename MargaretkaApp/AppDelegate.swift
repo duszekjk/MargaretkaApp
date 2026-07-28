@@ -68,7 +68,6 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
             width: min(current.width, maximum.width),
             height: min(current.height, maximum.height)
         ))
-        window.center()
     }
 #endif
 
