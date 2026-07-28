@@ -1,4 +1,4 @@
-codex conversation [20260728-window] allow interactive Mac and iPad resizing
+codex conversation [20260728-window] cap macOS window to current display
 
-Keep the oversized-window clamp, but let macOS and iPad PrayerFlow roots
-expand to their actual window so manual resizing remains possible.
+Keep interactive resizing, but calculate the macOS maximum from the current
+screen's visible frame so the window cannot exceed its display.

@@ -391,9 +391,14 @@ struct PrayerFlowView: View {
 #if os(macOS)
         guard let window = NSApp?.keyWindow else { return nil }
         let measured = window.contentView?.bounds.size ?? .zero
+        let visible = (window.screen ?? NSScreen.main)?.visibleFrame
+        let maximum = CGSize(
+            width: min(1100, max(320, (visible?.width ?? 1180) - 80)),
+            height: min(800, max(240, (visible?.height ?? 880) - 80))
+        )
         let limited = CGSize(
-            width: min(measured.width, 1100),
-            height: min(measured.height, 800)
+            width: min(measured.width, maximum.width),
+            height: min(measured.height, maximum.height)
         )
         if measured != limited, limited.width > 0, limited.height > 0 {
             DispatchQueue.main.async {
