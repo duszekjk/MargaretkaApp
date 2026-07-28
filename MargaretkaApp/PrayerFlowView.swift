@@ -730,8 +730,6 @@ struct PrayerFlowView: View {
             ? availableWindowSize
             : UIScreen.main.bounds.size
 #endif
-        let flexibleWindowWidth: CGFloat? = UIDevice.current.userInterfaceIdiom == .mac ? .infinity : nil
-        let toolbarWidth: CGFloat? = UIDevice.current.userInterfaceIdiom == .mac ? nil : viewportWidth
         return ZStack {
             if let bg = backgroundImage {
                 AdjustableBackgroundImage(
@@ -940,7 +938,7 @@ struct PrayerFlowView: View {
                 .padding(.horizontal, 16.0)
                 .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
                 .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
-                .frame(width: toolbarWidth, maxWidth: flexibleWindowWidth)
+                .frame(width: viewportWidth)
 
 
 
@@ -951,11 +949,7 @@ struct PrayerFlowView: View {
                 {
                         RoundedRectangle(cornerRadius: 20)
                             .fill(.ultraThinMaterial)
-                            .frame(
-                                width: UIDevice.current.userInterfaceIdiom == .mac ? nil : max(0, viewportWidth - 8),
-                                maxWidth: flexibleWindowWidth,
-                                height: currentPrayerCardHeight
-                            )
+                            .frame(width: max(0, viewportWidth - 8), height: currentPrayerCardHeight)
                             .overlay(
                                 Group {
                                     if let key = currentBrewiarzKey,
@@ -982,11 +976,7 @@ struct PrayerFlowView: View {
                                     }
                                 }
                                 .gesture(prayerSwipeGesture)
-                                    .frame(
-                                        width: UIDevice.current.userInterfaceIdiom == .mac ? nil : max(0, viewportWidth - 10),
-                                        maxWidth: flexibleWindowWidth,
-                                        height: currentPrayerCardHeight
-                                    )
+                                    .frame(width: max(0, viewportWidth - 10), height: currentPrayerCardHeight)
                                 
                             )
                             .padding(.horizontal)

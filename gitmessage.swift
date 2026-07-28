@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] make PrayerFlow content resizable
+codex conversation [20260728-swiftui] revert type-checking regression
 
-Let macOS content expand with the window and cap only to the current display,
-removing fixed 1100x800 constraints that caused gray unused bands.
+Revert the optional width/maxWidth ternaries that made PrayerFlow body
+type-checking exceed Xcode's limit.
