@@ -1,4 +1,4 @@
-codex conversation [20260728-swiftui] split PrayerFlow type-check context
+codex conversation [20260728-swiftui] erase oversized PrayerFlow zstack type
 
-Keep the layout unchanged but move the large expression into a separate
-prayerFlowLayout property so Xcode can type-check body quickly.
+Keep the layout unchanged but erase the large root ZStack type so Xcode can
+type-check the surrounding body without timing out.

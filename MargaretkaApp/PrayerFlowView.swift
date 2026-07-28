@@ -730,7 +730,7 @@ struct PrayerFlowView: View {
             ? availableWindowSize
             : UIScreen.main.bounds.size
 #endif
-        ZStack {
+        AnyView(ZStack {
             if let bg = backgroundImage {
                 AdjustableBackgroundImage(
                     image: bg,
@@ -1023,7 +1023,7 @@ struct PrayerFlowView: View {
                     .transition(.opacity)
                     .zIndex(100)
             }
-        }
+        })
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .focusable()
         .focused($keyboardFocus)
