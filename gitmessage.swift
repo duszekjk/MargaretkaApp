@@ -1,4 +1,5 @@
-codex conversation [20260728-macos] match macOS prayer welcome card colors
+codex conversation [20260728-macos] stop overriding user window resizing
 
-Use the same translucent card material on macOS as on iOS. Keep all iOS code
-and native Liquid Glass paths unchanged.
+Stop changing the macOS content size from the five-second viewport poll. The
+window remains constrained only at launch when it exceeds the display, so user
+resizing is no longer overwritten during normal use.

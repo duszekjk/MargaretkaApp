@@ -424,11 +424,6 @@ struct PrayerFlowView: View {
             width: min(measured.width, maximum.width),
             height: min(measured.height, maximum.height)
         )
-        if measured != limited, limited.width > 0, limited.height > 0 {
-            DispatchQueue.main.async {
-                window.setContentSize(limited)
-            }
-        }
         return limited
 #else
         UIApplication.shared.connectedScenes
