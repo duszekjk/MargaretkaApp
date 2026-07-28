@@ -1000,14 +1000,19 @@ struct PrayerFlowView: View {
                     .zIndex(100)
             }
         }
+#if os(macOS)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+#elseif os(iOS)
         .frame(
-            width: (isIPad || UIDevice.current.userInterfaceIdiom == .mac)
-                ? viewportWidth
-                : UIScreen.main.bounds.width,
-            height: (isIPad || UIDevice.current.userInterfaceIdiom == .mac)
-                ? viewportSize.height
-                : UIScreen.main.bounds.height
+            width: isIPad ? nil : UIScreen.main.bounds.width,
+            height: isIPad ? nil : UIScreen.main.bounds.height
         )
+#else
+        .frame(
+            width: isIPad ? viewportWidth : UIScreen.main.bounds.width,
+            height: isIPad ? viewportSize.height : UIScreen.main.bounds.height
+        )
+#endif
         .focusable()
         .focused($keyboardFocus)
         .onKeyPress { keyPress in

@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] clamp every macOS window size sample
+codex conversation [20260728-window] allow interactive Mac and iPad resizing
 
-Clamp every measured macOS content size to 1100x800 before PrayerFlow uses it,
-and immediately resize an oversized NSWindow as well.
+Keep the oversized-window clamp, but let macOS and iPad PrayerFlow roots
+expand to their actual window so manual resizing remains possible.
