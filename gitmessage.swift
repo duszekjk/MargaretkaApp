@@ -1,4 +1,5 @@
-codex conversation [20260728-macos] split PrayerFlowView background expression
+codex conversation [20260728-macos] revert background extraction regression
 
-Extract the GeometryReader-based background layer from the main PrayerFlowView
-ZStack to reduce SwiftUI type-checking complexity without changing layout.
+Revert the latest PrayerFlowView background helper extraction after the build
+still failed to type-check the main ZStack. Restore the prior inline layout
+while preserving the existing user breakpoint changes.
