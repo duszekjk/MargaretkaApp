@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] import uniform type identifiers
+codex conversation [20260728-macos] align uniform type import visibility
 
-Import UniformTypeIdentifiers so the macOS file panel can compile its JSON and
-EPUB content type filters.
+Use the project's internal import visibility for UniformTypeIdentifiers so the
+macOS file panel content type filters compile with Swift 6.
