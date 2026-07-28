@@ -23,6 +23,18 @@ private struct PrayerFlowAdaptiveWidth: ViewModifier {
     }
 }
 
+private struct PrayerFlowCardBackground: View {
+    var body: some View {
+#if os(macOS)
+        // Keep the macOS welcome card visually aligned with iOS while leaving
+        // the iOS Liquid Glass implementation untouched.
+        RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial)
+#else
+        RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial)
+#endif
+    }
+}
+
 #if os(macOS)
 private enum UIUserInterfaceIdiom { case phone, pad, mac }
 private final class UIDevice {
@@ -962,8 +974,7 @@ struct PrayerFlowView: View {
                 
                 if(flattenedPrayerSymbols.count>0)
                 {
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(.ultraThinMaterial)
+                        PrayerFlowCardBackground()
                             .frame(height: currentPrayerCardHeight)
                             .modifier(PrayerFlowAdaptiveWidth(width: max(0, viewportWidth - 8)))
                             .overlay(
@@ -1103,22 +1114,6 @@ struct PrayerFlowView: View {
             if !isShowing {
                 scheduleData.load()
                 syncSelectedPriest()
-            }
-        }
-        .onChange(of: scheduleData.items) { _, items in
-#if os(macOS)
-            MacMenuCatalog.update(items)
-#endif
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .margaretkaSelectTarget)) { notification in
-            guard let id = notification.object as? UUID,
-                  let target = scheduleData.items.first(where: { $0.id == id }) else { return }
-            withAnimation {
-                userSelectedCategory = true
-                selectedCategory = target.category
-                selectedPriest = target
-                activeIndex = 0
-                finished = false
             }
         }
         .onChange(of: selectedCategory) { _, _ in

@@ -1,6 +1,5 @@
-codex conversation [20260728-macos] restore PrayerFlow from compiled menu baseline
+codex conversation [20260728-macos] restore project to 034d5c8 baseline
 
-Restore PrayerFlow layout code to the exact structure present in 034d5c8,
-which was reported as compiling: GeometryReader background sizing, the
-adaptive-width modifier, and the original card sizing. No other files or menu
-actions are changed.
+Revert all changes after 034d5c8, removing the later diagnostic and layout
+experiments. Existing commits remain in history; restore the requested
+baseline while preserving the user's uncommitted breakpoints.
