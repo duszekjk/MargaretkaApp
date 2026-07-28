@@ -1,5 +1,5 @@
-codex conversation [20260728-swiftui] restore simple background sizing
+codex conversation [20260728-swiftui] simplify platform padding expressions
 
-Restore the pre-GeometryReader background sizing in PrayerFlow's large layout
-expression. The measured viewport is computed before the ZStack, keeping the
-compiler workload bounded while preserving the existing layout behavior.
+Move macOS/iOS padding constants out of inline closure expressions in
+PrayerFlow's large layout. The values and platform behavior are unchanged;
+the change only removes unnecessary result-builder work from the ZStack.

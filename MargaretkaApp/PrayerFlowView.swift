@@ -749,6 +749,13 @@ struct PrayerFlowView: View {
             ? availableWindowSize
             : UIScreen.main.bounds.size
 #endif
+#if os(macOS)
+        let prayerFlowBottomPadding: CGFloat = 8.0
+        let prayerFlowVerticalPadding: CGFloat = 0.0
+#else
+        let prayerFlowBottomPadding: CGFloat = 60.0
+        let prayerFlowVerticalPadding: CGFloat = 35.0
+#endif
         return ZStack {
             if let bg = backgroundImage {
                 AdjustableBackgroundImage(
@@ -1023,26 +1030,14 @@ struct PrayerFlowView: View {
                             moveToIndex(index, animated: true)
                         }
                     )
-                    .padding(.bottom, {
-#if os(macOS)
-                        8.0
-#else
-                        60.0
-#endif
-                    }())
+                    .padding(.bottom, prayerFlowBottomPadding)
                 }
                 else
                 {
                     StartView(showSettings: $showSettings, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie)
                 }
             }
-            .padding(.vertical, {
-#if os(macOS)
-                0.0
-#else
-                35.0
-#endif
-            }())
+            .padding(.vertical, prayerFlowVerticalPadding)
 
             if isPreparingImagePlayground {
                 ImagePlaygroundPreparationOverlay()
