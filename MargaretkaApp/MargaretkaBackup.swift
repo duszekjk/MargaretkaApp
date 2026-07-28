@@ -870,19 +870,21 @@ struct DataTransferView: View {
         }
         .navigationTitle("Import i eksport")
         .onAppear {
-            switch initialRoute {
-            case .overview:
-                break
-            case .importData:
-                importIntent = .mergeData
-                isImporting = true
-            case .export, .sharePrayers:
-                showingExportSelection = true
-            case .backup:
-                exportArchive(purpose: .fullBackup)
-            case .restore:
-                importIntent = .restoreBackup
-                isImporting = true
+            DispatchQueue.main.async {
+                switch initialRoute {
+                case .overview:
+                    break
+                case .importData:
+                    importIntent = .mergeData
+                    isImporting = true
+                case .export, .sharePrayers:
+                    showingExportSelection = true
+                case .backup:
+                    exportArchive(purpose: .fullBackup)
+                case .restore:
+                    importIntent = .restoreBackup
+                    isImporting = true
+                }
             }
         }
         .disabled(epubProgress != nil)

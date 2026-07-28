@@ -1,4 +1,5 @@
-codex conversation [20260728-macos] map import and statistics menu routes
+codex conversation [20260728-macos] defer file importer presentation
 
-Route Importuj modlitwy directly to the file importer and Statystyki directly
-to StatsView, instead of opening unrelated overview or settings screens.
+Defer DataTransferView's initial import/export action until after the sheet
+finishes appearing, preventing macOS from showing a blank placeholder instead
+of its file chooser.
