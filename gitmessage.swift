@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] use window-sized initial PrayerFlow layout
+codex conversation [20260728-macos] clamp restored oversized macOS window
 
-Avoid using the full macOS screen frame before the first window-size sample;
-start PrayerFlow at the 1100x800 window size so the card and background fit.
+Clamp a previously persisted oversized NSWindow to the 1100x800 design size
+and the visible screen area when the macOS app starts.

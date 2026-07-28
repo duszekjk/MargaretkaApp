@@ -35,6 +35,30 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         UNUserNotificationCenter.current().delegate = self
         cleanStalePreferenceTemporaryFiles()
         cleanLegacyWebCachesIfNeeded()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            self?.constrainMainWindow()
+        }
+    }
+#endif
+
+#if os(macOS)
+    private func constrainMainWindow() {
+        guard let window = NSApp.windows.first(where: { $0.isVisible }),
+              let screen = window.screen ?? NSScreen.main else { return }
+
+        let visible = screen.visibleFrame
+        let maximum = CGSize(
+            width: min(1100, max(640, visible.width - 80)),
+            height: min(800, max(480, visible.height - 80))
+        )
+        let current = window.contentView?.bounds.size ?? window.frame.size
+        guard current.width > maximum.width || current.height > maximum.height else { return }
+
+        window.setContentSize(CGSize(
+            width: min(current.width, maximum.width),
+            height: min(current.height, maximum.height)
+        ))
+        window.center()
     }
 #endif
 
