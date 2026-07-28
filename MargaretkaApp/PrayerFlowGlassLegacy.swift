@@ -10,11 +10,13 @@ extension View {
     }
 
     @available(macOS, introduced: 15.0, obsoleted: 26.0)
+    @_disfavoredOverload
     func glassEffect() -> some View {
         background(.ultraThinMaterial)
     }
 
     @available(macOS, introduced: 15.0, obsoleted: 26.0)
+    @_disfavoredOverload
     func glassEffectUnion(id: String, namespace: Namespace.ID) -> some View {
         background(.ultraThinMaterial)
     }
