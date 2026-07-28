@@ -59,6 +59,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
             height: max(480, visible.height - 80)
         )
         window.styleMask.insert(.resizable)
+        window.contentMinSize = NSSize(width: 320, height: 256)
         let current = window.contentView?.bounds.size ?? window.frame.size
         guard current.width > maximum.width || current.height > maximum.height else { return }
 
