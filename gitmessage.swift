@@ -1,4 +1,5 @@
-codex conversation [20260728-macos] set macOS window minimum to 320x256
+codex conversation [20260728-macos] constrain macOS window frame to display
 
-Set the macOS window content minimum to exactly 320x256. The maximum remains
-the available display area and is used only for the launch clamp.
+Apply 320x256 minimum and display-area maximum to the actual NSWindow frame,
+then clamp an oversized frame once at launch. This avoids content-size versus
+window-frame mismatches that left the height larger than the screen.

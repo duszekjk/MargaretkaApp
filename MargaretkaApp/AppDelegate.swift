@@ -54,19 +54,20 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
               let screen = window.screen ?? NSScreen.main else { return }
 
         let visible = screen.visibleFrame
+        let minimum = CGSize(width: 320, height: 256)
         let maximum = CGSize(
-            width: max(640, visible.width - 80),
-            height: max(480, visible.height - 80)
+            width: max(minimum.width, visible.width - 40),
+            height: max(minimum.height, visible.height - 40)
         )
         window.styleMask.insert(.resizable)
-        window.contentMinSize = NSSize(width: 320, height: 256)
-        let current = window.contentView?.bounds.size ?? window.frame.size
+        window.minSize = minimum
+        window.maxSize = maximum
+        let current = window.frame.size
         guard current.width > maximum.width || current.height > maximum.height else { return }
-
-        window.setContentSize(CGSize(
-            width: min(current.width, maximum.width),
-            height: min(current.height, maximum.height)
-        ))
+        var frame = window.frame
+        frame.size.width = min(current.width, maximum.width)
+        frame.size.height = min(current.height, maximum.height)
+        window.setFrame(frame, display: true)
     }
 #endif
 
