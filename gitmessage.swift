@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] allow macOS window resizing past ideal size
+codex conversation [20260728-macos] measure prayer background from view bounds
 
-Use SwiftUI's content-minimum window resizability so the macOS scene can grow
-and shrink instead of being locked to its ideal content size.
+Measure the prayer background from the actual view geometry instead of the
+polled screen-sized viewport, preventing oversized ideal windows and gray bands.

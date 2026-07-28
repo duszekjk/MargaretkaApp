@@ -751,21 +751,23 @@ struct PrayerFlowView: View {
 #endif
         return ZStack {
             if let bg = backgroundImage {
-                AdjustableBackgroundImage(
-                    image: bg,
-                    scale: generatedBreviaryBackgroundImage == nil
-                        ? photoPlacement.scale
-                        : 1.0,
-                    offset: CGSize(
-                        width: generatedBreviaryBackgroundImage == nil
-                            ? photoPlacement.offsetX
-                            : 0.0,
-                        height: generatedBreviaryBackgroundImage == nil
-                            ? photoPlacement.offsetY
-                            : 0.0
-                    ),
-                    size: viewportSize
-                )
+                GeometryReader { proxy in
+                    AdjustableBackgroundImage(
+                        image: bg,
+                        scale: generatedBreviaryBackgroundImage == nil
+                            ? photoPlacement.scale
+                            : 1.0,
+                        offset: CGSize(
+                            width: generatedBreviaryBackgroundImage == nil
+                                ? photoPlacement.offsetX
+                                : 0.0,
+                            height: generatedBreviaryBackgroundImage == nil
+                                ? photoPlacement.offsetY
+                                : 0.0
+                        ),
+                        size: proxy.size
+                    )
+                }
                 .ignoresSafeArea()
             }
 //            else {
