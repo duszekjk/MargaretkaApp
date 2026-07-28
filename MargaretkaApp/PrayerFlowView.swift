@@ -45,15 +45,6 @@ private final class UINotificationFeedbackGenerator {
     func notificationOccurred(_ type: UINotificationFeedbackType) {}
 }
 private extension View {
-    // macOS 15 compatibility implementation for the system Liquid Glass names.
-    @available(macOS, introduced: 15.0, obsoleted: 26.0)
-    func glassEffect() -> some View {
-        background(.ultraThinMaterial)
-    }
-    @available(macOS, introduced: 15.0, obsoleted: 26.0)
-    func glassEffectUnion(id: String, namespace: Namespace.ID) -> some View {
-        background(.ultraThinMaterial)
-    }
     func safeNavigationChrome(isFullscreen: Bool) -> some View { self }
     func safeStatusBarHidden(_ hidden: Bool) -> some View { self }
 }
@@ -65,27 +56,6 @@ private extension View {
         self
             .toolbar(isFullscreen ? .hidden : .visible, for: .navigationBar)
             .toolbarBackground(isFullscreen ? .hidden : .visible, for: .navigationBar)
-    }
-}
-#endif
-
-#if os(macOS)
-@available(macOS, introduced: 15.0, obsoleted: 26.0)
-private struct GlassEffectContainer<Content: View>: View {
-    let spacing: CGFloat
-    @ViewBuilder let content: () -> Content
-
-    init(spacing: CGFloat = 0, @ViewBuilder content: @escaping () -> Content) {
-        self.spacing = spacing
-        self.content = content
-    }
-
-    @ViewBuilder var body: some View {
-        if #available(macOS 26.0, iOS 26.0, tvOS 26.0, visionOS 26.0, *) {
-            SwiftUI.GlassEffectContainer(spacing: spacing) { content() }
-        } else {
-            content()
-        }
     }
 }
 #endif

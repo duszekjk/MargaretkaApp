@@ -1,4 +1,4 @@
-codex conversation [20260728-glass] fix legacy glass availability declaration
+codex conversation [20260728-glass] isolate legacy macOS glass implementation
 
-Correct the macOS availability syntax for the legacy compatibility declarations
-while keeping native Liquid Glass direct on newer systems.
+Move all older-macOS material compatibility declarations into the dedicated
+legacy file; PrayerFlowView now contains only native Liquid Glass call sites.
