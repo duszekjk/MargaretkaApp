@@ -11,6 +11,18 @@ import ImagePlayground
 import AppKit
 #endif
 
+private struct PrayerFlowAdaptiveWidth: ViewModifier {
+    let width: CGFloat
+
+    func body(content: Content) -> some View {
+#if os(macOS)
+        content.frame(maxWidth: .infinity)
+#else
+        content.frame(width: width)
+#endif
+    }
+}
+
 #if os(macOS)
 private enum UIUserInterfaceIdiom { case phone, pad, mac }
 private final class UIDevice {
@@ -319,13 +331,7 @@ struct PrayerFlowView: View {
             let orientationScale: CGFloat = isIPadPortrait ? 1.15 : 1.04
             return min(baseHeight * orientationScale, screenHeight - 100)
         }
-#if os(macOS)
-        let compactScale: CGFloat = prayerCompactView ? 0.82 : 0.72
-        let compactMaximum: CGFloat = prayerCompactView ? 760 : 680
-        return min(screenHeight * compactScale, compactMaximum)
-#else
         return min(screenHeight * 0.72, 680)
-#endif
     }
 
     var currentPrayerCardFontSize: CGFloat {
@@ -739,21 +745,23 @@ struct PrayerFlowView: View {
 #endif
         return ZStack {
             if let bg = backgroundImage {
-                AdjustableBackgroundImage(
-                    image: bg,
-                    scale: generatedBreviaryBackgroundImage == nil
-                        ? photoPlacement.scale
-                        : 1.0,
-                    offset: CGSize(
-                        width: generatedBreviaryBackgroundImage == nil
-                            ? photoPlacement.offsetX
-                            : 0.0,
-                        height: generatedBreviaryBackgroundImage == nil
-                            ? photoPlacement.offsetY
-                            : 0.0
-                    ),
-                    size: viewportSize
-                )
+                GeometryReader { proxy in
+                    AdjustableBackgroundImage(
+                        image: bg,
+                        scale: generatedBreviaryBackgroundImage == nil
+                            ? photoPlacement.scale
+                            : 1.0,
+                        offset: CGSize(
+                            width: generatedBreviaryBackgroundImage == nil
+                                ? photoPlacement.offsetX
+                                : 0.0,
+                            height: generatedBreviaryBackgroundImage == nil
+                                ? photoPlacement.offsetY
+                                : 0.0
+                        ),
+                        size: proxy.size
+                    )
+                }
                 .ignoresSafeArea()
             }
 //            else {
@@ -945,7 +953,7 @@ struct PrayerFlowView: View {
                 .padding(.horizontal, 16.0)
                 .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
                 .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
-                .frame(width: viewportWidth)
+                .modifier(PrayerFlowAdaptiveWidth(width: viewportWidth))
 
 
 
@@ -956,7 +964,8 @@ struct PrayerFlowView: View {
                 {
                         RoundedRectangle(cornerRadius: 20)
                             .fill(.ultraThinMaterial)
-                            .frame(width: max(0, viewportWidth - 8), height: currentPrayerCardHeight)
+                            .frame(height: currentPrayerCardHeight)
+                            .modifier(PrayerFlowAdaptiveWidth(width: max(0, viewportWidth - 8)))
                             .overlay(
                                 Group {
                                     if let key = currentBrewiarzKey,
@@ -983,7 +992,8 @@ struct PrayerFlowView: View {
                                     }
                                 }
                                 .gesture(prayerSwipeGesture)
-                                    .frame(width: max(0, viewportWidth - 10), height: currentPrayerCardHeight)
+                                    .frame(height: currentPrayerCardHeight)
+                                    .modifier(PrayerFlowAdaptiveWidth(width: max(0, viewportWidth - 10)))
                                 
                             )
                             .padding(.horizontal)
