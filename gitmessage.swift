@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] reduce macOS prayer flow margins
+codex conversation [20260728-macos] add dynamic target menu entries
 
-Reduce top/bottom PrayerFlowView spacing on macOS only; keep iPhone and iPad
-spacing unchanged.
+Populate macOS prayer menus from the live schedule and route each target
+selection back through PrayerFlowView, preserving category and selection state.

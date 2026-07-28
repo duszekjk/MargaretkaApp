@@ -1128,6 +1128,22 @@ struct PrayerFlowView: View {
                 syncSelectedPriest()
             }
         }
+        .onChange(of: scheduleData.items) { _, items in
+#if os(macOS)
+            MacMenuCatalog.update(items)
+#endif
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .margaretkaSelectTarget)) { notification in
+            guard let id = notification.object as? UUID,
+                  let target = scheduleData.items.first(where: { $0.id == id }) else { return }
+            withAnimation {
+                userSelectedCategory = true
+                selectedCategory = target.category
+                selectedPriest = target
+                activeIndex = 0
+                finished = false
+            }
+        }
         .onChange(of: selectedCategory) { _, _ in
             activeIndex = 0
             finished = false

@@ -21,6 +21,18 @@ private typealias PlatformAppDelegate = NSApplicationDelegate
 #endif
 
 #if os(macOS)
+enum MacMenuCatalog {
+    struct Entry { let id: UUID; let title: String; let category: PrayerTargetCategory }
+    static var entries: [PrayerTargetCategory: [Entry]] = [:]
+
+    static func update(_ targets: [Priest]) {
+        entries = Dictionary(uniqueKeysWithValues: PrayerTargetCategory.allCases.map { category in
+            (category, targets.filter { $0.category == category }.map { Entry(id: $0.id, title: $0.displayName, category: category) })
+        })
+        NotificationCenter.default.post(name: .margaretkaMenuNeedsRefresh, object: nil)
+    }
+}
+
 private final class MacMenuTarget: NSObject, NSMenuItemValidation {
     @objc func newPerson() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil) }
     @objc func settings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
@@ -30,6 +42,11 @@ private final class MacMenuTarget: NSObject, NSMenuItemValidation {
     @objc func syncSettings() { NotificationCenter.default.post(name: .margaretkaSyncSettings, object: nil) }
     @objc func prayerList() { NotificationCenter.default.post(name: .margaretkaPrayerList, object: nil) }
     @objc func toggleCompact() { NotificationCenter.default.post(name: .margaretkaToggleCompact, object: nil) }
+    @objc func selectTarget(_ sender: NSMenuItem) {
+        guard let value = sender.representedObject as? String,
+              let id = UUID(uuidString: value) else { return }
+        NotificationCenter.default.post(name: .margaretkaSelectTarget, object: id)
+    }
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(syncNow) {
@@ -91,6 +108,13 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         cleanLegacyWebCachesIfNeeded()
         configureMargaretkaMenu()
         NotificationCenter.default.addObserver(
+            forName: .margaretkaMenuNeedsRefresh,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.configureMargaretkaMenu()
+        }
+        NotificationCenter.default.addObserver(
             forName: NSWindow.didBecomeKeyNotification,
             object: nil,
             queue: .main
@@ -144,6 +168,14 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         customMenus[3].1.addItem(withTitle: "Modlitwy pojedyncze", action: #selector(MacMenuTarget.prayerList), keyEquivalent: "").target = menuTarget
         customMenus[3].1.addItem(withTitle: "Modlitwy złożone", action: #selector(MacMenuTarget.prayerList), keyEquivalent: "").target = menuTarget
         customMenus[3].1.addItem(withTitle: "Importuj modlitwy", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
+        for (index, category) in [PrayerTargetCategory.priest, .person, .prayer].enumerated() {
+            for entry in MacMenuCatalog.entries[category] ?? [] {
+                let item = NSMenuItem(title: entry.title, action: #selector(MacMenuTarget.selectTarget(_:)), keyEquivalent: "")
+                item.representedObject = entry.id.uuidString
+                item.target = menuTarget
+                customMenus[index + 1].1.addItem(item)
+            }
+        }
         customMenus[4].1.addItem(withTitle: "Zaloguj przez Apple", action: #selector(MacMenuTarget.syncSettings), keyEquivalent: "").target = menuTarget
         customMenus[4].1.addItem(withTitle: "Synchronizuj teraz", action: #selector(MacMenuTarget.syncNow), keyEquivalent: "").target = menuTarget
         customMenus[5].1.addItem(withTitle: "Księża", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget

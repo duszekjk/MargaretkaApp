@@ -96,6 +96,8 @@ extension Notification.Name {
     static let margaretkaSyncSettings = Notification.Name("margaretka.syncSettings")
     static let margaretkaPrayerList = Notification.Name("margaretka.prayerList")
     static let margaretkaToggleCompact = Notification.Name("margaretka.toggleCompact")
+    static let margaretkaSelectTarget = Notification.Name("margaretka.selectTarget")
+    static let margaretkaMenuNeedsRefresh = Notification.Name("margaretka.menuNeedsRefresh")
 }
 
 
