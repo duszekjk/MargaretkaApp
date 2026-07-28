@@ -82,6 +82,12 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
             self?.constrainMainWindow()
         }
     }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        DispatchQueue.main.async { [weak self] in
+            self?.configureMargaretkaMenu()
+        }
+    }
 #endif
 
 #if os(macOS)

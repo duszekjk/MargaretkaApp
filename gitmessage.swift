@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] install custom menu after WindowGroup appears
+codex conversation [20260728-macos] reinstall custom menu after macOS activation
 
-Remove competing SwiftUI command groups and install the explicit Margaretka
-macOS menu from the WindowGroup appearance callback after scene creation.
+Reinstall the explicit Margaretka macOS menu from applicationDidBecomeActive,
+after SwiftUI has finished rebuilding its default menu hierarchy.
