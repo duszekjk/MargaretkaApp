@@ -20,7 +20,18 @@ private typealias PlatformAppDelegate = UIApplicationDelegate
 private typealias PlatformAppDelegate = NSApplicationDelegate
 #endif
 
+#if os(macOS)
+private final class MacMenuTarget: NSObject {
+    @objc func newPerson() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil) }
+    @objc func settings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
+    @objc func about() { NotificationCenter.default.post(name: .margaretkaAbout, object: nil) }
+}
+#endif
+
 final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenterDelegate {
+#if os(macOS)
+    private let menuTarget = MacMenuTarget()
+#endif
 #if os(iOS) || os(tvOS) || os(visionOS)
     func application(
         _ application: UIApplication,
@@ -36,6 +47,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         UNUserNotificationCenter.current().delegate = self
         cleanStalePreferenceTemporaryFiles()
         cleanLegacyWebCachesIfNeeded()
+        configureMargaretkaMenu()
         NotificationCenter.default.addObserver(
             forName: NSWindow.didBecomeKeyNotification,
             object: nil,
@@ -50,12 +62,51 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
 #endif
 
 #if os(macOS)
-struct MacWindowConfigurator: NSViewRepresentable {
+    private func configureMargaretkaMenu() {
+        let menu = NSMenu()
+        let file = NSMenu(title: "Plik")
+        file.addItem(withTitle: "Dodaj osobę do modlitwy", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "n").target = menuTarget
+        file.addItem(.separator())
+        file.addItem(withTitle: "Zakończ Margaretkę", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q").target = NSApp
+
+        let view = NSMenu(title: "Widok")
+        view.addItem(withTitle: "Pełny ekran", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f").target = nil
+
+        let help = NSMenu(title: "Pomoc")
+        help.addItem(withTitle: "O aplikacji Margaretka", action: #selector(MacMenuTarget.about), keyEquivalent: "").target = menuTarget
+
+        let customMenus: [(String, NSMenu)] = [
+            ("Plik", file),
+            ("Księża", NSMenu(title: "Księża")),
+            ("Osoby", NSMenu(title: "Osoby")),
+            ("Modlitwy", NSMenu(title: "Modlitwy")),
+            ("Widok", view),
+            ("Pomoc", help)
+        ]
+        customMenus[1].1.addItem(withTitle: "Dodaj księdza", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "").target = menuTarget
+        customMenus[2].1.addItem(withTitle: "Dodaj osobę", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "").target = menuTarget
+        customMenus[3].1.addItem(withTitle: "Rozpocznij modlitwę", action: #selector(MacMenuTarget.settings), keyEquivalent: "").target = menuTarget
+        for (title, submenu) in customMenus {
+            let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+            item.submenu = submenu
+            menu.addItem(item)
+        }
+        let settings = NSMenuItem(title: "Ustawienia Margaretki", action: #selector(MacMenuTarget.settings), keyEquivalent: ",")
+        settings.keyEquivalentModifierMask = [.command]
+        settings.target = menuTarget
+        view.addItem(settings)
+        NSApp.mainMenu = menu
+    }
+
+    struct MacWindowConfigurator: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView { NSView(frame: .zero) }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        guard let window = nsView.window,
-              let screen = window.screen ?? NSScreen.main else { return }
+        guard let window = nsView.window else {
+            DispatchQueue.main.async { self.updateNSView(nsView, context: context) }
+            return
+        }
+        guard let screen = window.screen ?? NSScreen.main else { return }
         let visible = screen.visibleFrame
         let minimum = NSSize(width: 320, height: 256)
         let maximum = NSSize(

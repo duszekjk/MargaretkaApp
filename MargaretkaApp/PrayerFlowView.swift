@@ -577,7 +577,13 @@ struct PrayerFlowView: View {
         return min(max(furthestVisibleIndex ?? activeIndex, 0), count)
     }
 
-    var scrollerRowLength: Int { prayerCompactView ? 56 : 14 }
+    var scrollerRowLength: Int {
+#if os(macOS)
+        prayerCompactView ? 56 : 42
+#else
+        prayerCompactView ? 56 : 14
+#endif
+    }
 
     var arrangedInS: [[String]] {
         let flat = displayPrayerSymbols
@@ -1689,13 +1695,33 @@ struct PrayerTouchScrollerView: View {
     @State private var frames: [Int: CGRect] = [:]
     @State private var lastSwitchAt: TimeInterval = 0
 
+    private var beadSize: CGFloat {
+#if os(macOS)
+        compactView ? 11 : 42.75
+#else
+        compactView ? 11 : 45
+#endif
+    }
+
+    private var slotSize: CGFloat {
+#if os(macOS)
+        compactView ? 6 : 23.75
+#else
+        compactView ? 6 : 25
+#endif
+    }
+
     init(rows: [[String]], symbols: [String], prayerNames: [String?], compactView: Bool, activeIndex: Binding<Int>, onIndexChange: ((Int) -> Void)? = nil) {
         self.rows = rows
         self.symbols = symbols
         self.prayerNames = prayerNames
         self.compactView = compactView
         self._activeIndex = activeIndex
+#if os(macOS)
+        self.rowLength = compactView ? 56 : 42
+#else
         self.rowLength = compactView ? 56 : 14
+#endif
         self.onIndexChange = onIndexChange
     }
 
@@ -1730,7 +1756,7 @@ struct PrayerTouchScrollerView: View {
                                                 )
                                         }
                                     }
-                                    .frame(width: compactView ? 6 : 25, height: compactView ? 6 : 25)
+                                    .frame(width: slotSize, height: slotSize)
                                     if(isActive)
                                     {
                                         Group {
@@ -1740,7 +1766,7 @@ struct PrayerTouchScrollerView: View {
                                                     .resizable()
                                                     .scaledToFit()
                                                     .padding(compactView ? 2.5 : 10)
-                                                    .frame(width: compactView ? 11 : 45, height: compactView ? 11 : 45)
+                                                    .frame(width: beadSize, height: beadSize)
                                                     .clipShape(Circle())
                                                     .glassEffect()
                                             } else {
@@ -1748,7 +1774,7 @@ struct PrayerTouchScrollerView: View {
                                                     .resizable()
                                                     .scaledToFit()
                                                     .padding(compactView ? 2.5 : 10)
-                                                    .frame(width: compactView ? 11 : 45, height: compactView ? 11 : 45)
+                                                    .frame(width: beadSize, height: beadSize)
                                                     .clipShape(Circle())
                                                     .prayerFlowLegacyGlass(Color.green.opacity(0.4))
                                             }
@@ -1757,7 +1783,7 @@ struct PrayerTouchScrollerView: View {
                                                 .resizable()
                                                 .scaledToFit()
                                                 .padding(compactView ? 2.5 : 10)
-                                                .frame(width: compactView ? 11 : 45, height: compactView ? 11 : 45)
+                                                .frame(width: beadSize, height: beadSize)
                                                 .clipShape(Circle())
                                                 .glassEffect(.regular.tint(Color.green.opacity(0.4)))
 #endif
@@ -1771,7 +1797,7 @@ struct PrayerTouchScrollerView: View {
                                             .resizable()
                                             .scaledToFit()
                                             .padding(compactView ? 1.25 : 5)
-                                            .frame(width: compactView ? 6 : 25, height: compactView ? 6 : 25)
+                                            .frame(width: slotSize, height: slotSize)
                                             .clipShape(Circle())
                                             .glassEffect()
                                             .padding(.top, padding.top)
@@ -1781,7 +1807,7 @@ struct PrayerTouchScrollerView: View {
                             } else {
                                 
                                 Circle()
-                                    .frame(width: compactView ? 6 : 25, height: compactView ? 6 : 25)
+                                    .frame(width: slotSize, height: slotSize)
                                     .opacity(0)
                             }
                         }
