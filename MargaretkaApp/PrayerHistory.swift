@@ -142,6 +142,7 @@ struct HomeView: View {
     @State var showJakSie: Bool = false
     @State private var didLoadInitialData = false
     @State private var showImport = false
+    @State private var dataTransferRoute: DataTransferRoute = .overview
     @AppStorage("prayerCompactView") private var prayerCompactView = false
 
     var body: some View {
@@ -182,14 +183,21 @@ struct HomeView: View {
 #endif
             .sheet(isPresented: $showImport) {
                 NavigationStack {
-                    DataTransferView(targetStore: priestStore)
+                    DataTransferView(targetStore: priestStore, initialRoute: dataTransferRoute)
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaSettings)) { _ in
                 showSettings = true
             }
-            .onReceive(NotificationCenter.default.publisher(for: .margaretkaImport)) { _ in
+            .onReceive(NotificationCenter.default.publisher(for: .margaretkaImport)) { notification in
                 showSettings = false
+                switch notification.object as? String {
+                case "export": dataTransferRoute = .export
+                case "backup": dataTransferRoute = .backup
+                case "restore": dataTransferRoute = .restore
+                case "share": dataTransferRoute = .sharePrayers
+                default: dataTransferRoute = .overview
+                }
                 showImport = true
             }
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaNewPerson)) { _ in

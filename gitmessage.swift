@@ -1,5 +1,4 @@
-codex conversation [20260728-macos] expose backup and export menu actions
+codex conversation [20260728-macos] execute selected data transfer menu action
 
-Expose backup, restore, export, and prayer-sharing entries in the Plik menu.
-They open the existing DataTransferView, which contains the corresponding
-working operations and file/share controls.
+Route backup, restore, export, and prayer-sharing menu commands to distinct
+DataTransferView actions instead of merely opening its overview screen.

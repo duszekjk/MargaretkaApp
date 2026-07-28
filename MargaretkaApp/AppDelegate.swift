@@ -35,7 +35,11 @@ private enum MacMenuCatalog {
 private final class MacMenuTarget: NSObject, NSMenuItemValidation {
     @objc func newPerson() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil) }
     @objc func settings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
-    @objc func importPrayers() { NotificationCenter.default.post(name: .margaretkaImport, object: nil) }
+    @objc func importPrayers() { NotificationCenter.default.post(name: .margaretkaImport, object: "overview") }
+    @objc func exportData() { NotificationCenter.default.post(name: .margaretkaImport, object: "export") }
+    @objc func backupData() { NotificationCenter.default.post(name: .margaretkaImport, object: "backup") }
+    @objc func restoreBackup() { NotificationCenter.default.post(name: .margaretkaImport, object: "restore") }
+    @objc func sharePrayers() { NotificationCenter.default.post(name: .margaretkaImport, object: "share") }
     @objc func about() { NotificationCenter.default.post(name: .margaretkaAbout, object: nil) }
     @objc func howTo() { NotificationCenter.default.post(name: .margaretkaHowTo, object: nil) }
     @objc func syncNow() { NotificationCenter.default.post(name: .margaretkaSync, object: nil) }
@@ -63,7 +67,11 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
 #if os(iOS)
     @objc private func openNewPerson() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil) }
     @objc private func openSettings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
-    @objc private func openImport() { NotificationCenter.default.post(name: .margaretkaImport, object: nil) }
+    @objc private func openImport() { NotificationCenter.default.post(name: .margaretkaImport, object: "overview") }
+    @objc private func openExport() { NotificationCenter.default.post(name: .margaretkaImport, object: "export") }
+    @objc private func openBackup() { NotificationCenter.default.post(name: .margaretkaImport, object: "backup") }
+    @objc private func openRestore() { NotificationCenter.default.post(name: .margaretkaImport, object: "restore") }
+    @objc private func openSharePrayers() { NotificationCenter.default.post(name: .margaretkaImport, object: "share") }
     @objc private func openAbout() { NotificationCenter.default.post(name: .margaretkaAbout, object: nil) }
     @objc private func openHowTo() { NotificationCenter.default.post(name: .margaretkaHowTo, object: nil) }
     @objc private func openSync() { NotificationCenter.default.post(name: .margaretkaSync, object: nil) }
@@ -94,8 +102,10 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         builder.insertSibling(UIMenu(title: "Plik", children: [
             addPerson,
             UICommand(title: "Importuj modlitwy", action: #selector(openImport)),
-            UICommand(title: "Kopia zapasowa, przywracanie i eksport", action: #selector(openImport)),
-            UICommand(title: "Udostępnij modlitwy", action: #selector(openImport))
+            UICommand(title: "Utwórz kopię zapasową", action: #selector(openBackup)),
+            UICommand(title: "Przywróć kopię zapasową", action: #selector(openRestore)),
+            UICommand(title: "Eksportuj dane", action: #selector(openExport)),
+            UICommand(title: "Udostępnij modlitwy", action: #selector(openSharePrayers))
         ]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Księża", children: [UICommand(title: "Lista księży", action: #selector(openSettings)), UICommand(title: "Dodaj księdza", action: #selector(openNewPerson))]), afterMenu: .application)
         builder.insertSibling(UIMenu(title: "Osoby", children: [UICommand(title: "Lista osób", action: #selector(openSettings)), UICommand(title: "Dodaj osobę", action: #selector(openNewPerson))]), afterMenu: .application)
@@ -144,8 +154,10 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         let file = NSMenu(title: "Plik")
         file.addItem(withTitle: "Dodaj osobę do modlitwy", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "n").target = menuTarget
         file.addItem(withTitle: "Importuj modlitwy", action: #selector(MacMenuTarget.importPrayers), keyEquivalent: "").target = menuTarget
-        file.addItem(withTitle: "Kopia zapasowa, przywracanie i eksport", action: #selector(MacMenuTarget.importPrayers), keyEquivalent: "").target = menuTarget
-        file.addItem(withTitle: "Udostępnij modlitwy", action: #selector(MacMenuTarget.importPrayers), keyEquivalent: "").target = menuTarget
+        file.addItem(withTitle: "Utwórz kopię zapasową", action: #selector(MacMenuTarget.backupData), keyEquivalent: "").target = menuTarget
+        file.addItem(withTitle: "Przywróć kopię zapasową", action: #selector(MacMenuTarget.restoreBackup), keyEquivalent: "").target = menuTarget
+        file.addItem(withTitle: "Eksportuj dane", action: #selector(MacMenuTarget.exportData), keyEquivalent: "").target = menuTarget
+        file.addItem(withTitle: "Udostępnij modlitwy", action: #selector(MacMenuTarget.sharePrayers), keyEquivalent: "").target = menuTarget
         file.addItem(.separator())
         file.addItem(withTitle: "Zakończ Margaretkę", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q").target = NSApp
 

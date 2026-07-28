@@ -784,6 +784,14 @@ enum MargaretkaBackupService {
     }
 }
 
+enum DataTransferRoute {
+    case overview
+    case export
+    case backup
+    case restore
+    case sharePrayers
+}
+
 struct DataTransferView: View {
     private enum ImportIntent {
         case mergeData
@@ -791,6 +799,7 @@ struct DataTransferView: View {
     }
 
     @ObservedObject var targetStore: PriestStore
+    var initialRoute: DataTransferRoute = .overview
     @EnvironmentObject private var prayerStore: PrayerStore
     @EnvironmentObject private var offlineStore: OfflineBreviaryStore
     @EnvironmentObject private var scheduleData: ScheduleData<Priest>
@@ -859,6 +868,19 @@ struct DataTransferView: View {
             }
         }
         .navigationTitle("Import i eksport")
+        .onAppear {
+            switch initialRoute {
+            case .overview:
+                break
+            case .export, .sharePrayers:
+                showingExportSelection = true
+            case .backup:
+                exportArchive(purpose: .fullBackup)
+            case .restore:
+                importIntent = .restoreBackup
+                isImporting = true
+            }
+        }
         .disabled(epubProgress != nil)
         .overlay {
             if let progress = epubProgress {
