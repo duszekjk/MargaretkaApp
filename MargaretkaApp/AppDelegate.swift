@@ -139,7 +139,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         return true
     }
 #if os(iOS)
-    func application(_ application: UIApplication, buildMenuWith builder: UIMenuBuilder) {
+    func buildMenu(with builder: UIMenuBuilder) {
         guard builder.system == .main else { return }
         let customMenus = [
             IPadMenuIdentifier.file,
