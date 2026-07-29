@@ -188,7 +188,11 @@ struct HomeView: View {
 #endif
     }
 
-    private var baseContent: some View {
+    // Keep presentation and notification wiring in separate view expressions.
+    // Besides being easier to read, this prevents SwiftUI's generic type from
+    // growing into one expression that the compiler cannot finish checking.
+    private var presentationContent: AnyView {
+        AnyView(
         PrayerFlowView(showSettings: $showSettings, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie)
             .environmentObject(priestStore)
 #if !os(macOS)
@@ -250,6 +254,15 @@ struct HomeView: View {
                 .toolbar { MacSheetDismissButton() }
 #endif
             }
+        )
+    }
+
+    private var baseContent: AnyView {
+        AnyView(eventHandlingContent)
+    }
+
+    private var eventHandlingContent: some View {
+        presentationContent
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaSettings)) { _ in
                 showSettings = true
             }

@@ -1,4 +1,4 @@
-codex conversation [20260729-macos] preserve current project configuration edits
+codex conversation [20260729-macos] split HomeView modifier expressions
 
-Commit the current user changes to the Xcode project, breakpoints, and localized
-strings before further source edits. No files are discarded or rewritten.
+Separate HomeView presentation and notification modifier chains with type erasure.
+This preserves their behavior while allowing Swift to compile PrayerHistory again.
