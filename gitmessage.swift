@@ -1,4 +1,4 @@
-codex conversation [20260729-ipad] invoke the iPad menu delegate correctly
+codex conversation [20260729-ipad] checkpoint before clearing navigation toolbar
 
-Replace the unused application(_:buildMenuWith:) method with UIKit's actual
-buildMenu(with:) delegate callback, so the custom iPad menu is built at all.
+Checkpoint the current iPad menu and prayer-row fixes before moving the
+merged control row below the navigation toolbar's hit-test region.
