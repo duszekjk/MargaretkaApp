@@ -1,5 +1,4 @@
-codex conversation [20260729-macos] replace crashing settings navigation links
+codex conversation [20260729-macos] route macOS add actions by target type
 
-Replace deprecated state-driven NavigationLink initializers with explicit
-navigationDestination routes for people and help, preventing the fatal
-incomplete-NavigationLink crash from menu actions.
+Give the Księża, Osoby, and Modlitwy menu entries distinct add actions so each
+opens the correct editor category rather than the shared person route.

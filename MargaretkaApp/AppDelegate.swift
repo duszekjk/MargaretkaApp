@@ -34,7 +34,12 @@ enum MacMenuCatalog {
 }
 
 private final class MacMenuTarget: NSObject, NSMenuItemValidation {
-    @objc func newPerson() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil) }
+    private func newTarget(_ category: PrayerTargetCategory) {
+        NotificationCenter.default.post(name: .margaretkaNewPerson, object: category)
+    }
+    @objc func newPriest() { newTarget(.priest) }
+    @objc func newPerson() { newTarget(.person) }
+    @objc func newPrayer() { newTarget(.prayer) }
     @objc func settings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
     @objc func importPrayers() {
         let panel = NSOpenPanel()
@@ -199,10 +204,11 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
             ("Pomoc", help)
         ]
         addTargetItems(to: customMenus[1].1, category: .priest)
-        customMenus[1].1.addItem(withTitle: "Dodaj księdza", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "").target = menuTarget
+        customMenus[1].1.addItem(withTitle: "Dodaj księdza", action: #selector(MacMenuTarget.newPriest), keyEquivalent: "").target = menuTarget
         addTargetItems(to: customMenus[2].1, category: .person)
         customMenus[2].1.addItem(withTitle: "Dodaj osobę", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "").target = menuTarget
         addTargetItems(to: customMenus[3].1, category: .prayer)
+        customMenus[3].1.addItem(withTitle: "Dodaj modlitwę", action: #selector(MacMenuTarget.newPrayer), keyEquivalent: "").target = menuTarget
         customMenus[3].1.addItem(withTitle: "Importuj modlitwy", action: #selector(MacMenuTarget.importPrayers), keyEquivalent: "").target = menuTarget
         customMenus[4].1.addItem(withTitle: "Zaloguj przez Apple", action: #selector(MacMenuTarget.syncSettings), keyEquivalent: "").target = menuTarget
         customMenus[4].1.addItem(withTitle: "Synchronizuj teraz", action: #selector(MacMenuTarget.syncNow), keyEquivalent: "").target = menuTarget
