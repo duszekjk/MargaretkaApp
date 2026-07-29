@@ -1,6 +1,9 @@
 import Foundation
 import SwiftUI
 internal import UniformTypeIdentifiers
+#if os(macOS)
+import AppKit
+#endif
 
 struct MargaretkaBackup: Codable {
     static let currentSchemaVersion = 2
@@ -1171,6 +1174,7 @@ private struct ExportSelectionView: View {
                 }
             }
         }
+        .frame(minWidth: 600, minHeight: 480)
     }
 
     private var availableOfficeKeys: [BrewiarzPrayerKey] {
@@ -1346,10 +1350,43 @@ private struct ActivityShareView: UIViewControllerRepresentable {
 #else
 private struct ActivityShareView: View {
     let items: [Any]
+    @Environment(\.dismiss) private var dismiss
+    @State private var status = "Przygotowywanie zapisu…"
 
     var body: some View {
-        Text("Udostępnianie jest dostępne z poziomu Findera.")
-            .padding()
+        VStack(spacing: 16) {
+            Text(status)
+            Button("Zamknij") { dismiss() }
+        }
+        .frame(minWidth: 360, minHeight: 140)
+        .task { saveExportedFile() }
+    }
+
+    private func saveExportedFile() {
+        guard let sourceURL = items.first as? URL else {
+            status = "Nie udało się przygotować pliku do zapisu."
+            return
+        }
+
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = sourceURL.lastPathComponent
+        panel.canCreateDirectories = true
+        panel.isExtensionHidden = false
+        panel.begin { response in
+            guard response == .OK, let destinationURL = panel.url else {
+                status = "Zapis anulowany."
+                return
+            }
+            do {
+                if FileManager.default.fileExists(atPath: destinationURL.path) {
+                    try FileManager.default.removeItem(at: destinationURL)
+                }
+                try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+                status = "Zapisano: \(destinationURL.lastPathComponent)"
+            } catch {
+                status = "Nie udało się zapisać pliku: \(error.localizedDescription)"
+            }
+        }
     }
 }
 #endif
