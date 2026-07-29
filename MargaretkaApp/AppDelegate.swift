@@ -85,7 +85,20 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
     private let menuTarget = MacMenuTarget()
 #endif
 #if os(iOS)
+    private enum IPadMenuIdentifier {
+        static let file = UIMenu.Identifier("com.duszekjk.margaretka.file")
+        static let priests = UIMenu.Identifier("com.duszekjk.margaretka.priests")
+        static let people = UIMenu.Identifier("com.duszekjk.margaretka.people")
+        static let prayers = UIMenu.Identifier("com.duszekjk.margaretka.prayers")
+        static let sync = UIMenu.Identifier("com.duszekjk.margaretka.sync")
+        static let statistics = UIMenu.Identifier("com.duszekjk.margaretka.statistics")
+        static let view = UIMenu.Identifier("com.duszekjk.margaretka.view")
+        static let help = UIMenu.Identifier("com.duszekjk.margaretka.help")
+    }
+
+    @objc private func openNewPriest() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: PrayerTargetCategory.priest) }
     @objc private func openNewPerson() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: nil) }
+    @objc private func openNewPrayer() { NotificationCenter.default.post(name: .margaretkaNewPerson, object: PrayerTargetCategory.prayer) }
     @objc private func openSettings() { NotificationCenter.default.post(name: .margaretkaSettings, object: nil) }
     @objc private func openImport() { NotificationCenter.default.post(name: .margaretkaImport, object: "import") }
     @objc private func openExport() { NotificationCenter.default.post(name: .margaretkaImport, object: "export") }
@@ -113,28 +126,65 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
 #if os(iOS)
     func application(_ application: UIApplication, buildMenuWith builder: UIMenuBuilder) {
         guard builder.system == .main else { return }
-        for menu in [UIMenu.Identifier.file, .edit, .view, .window, .help] {
+        let customMenus = [
+            IPadMenuIdentifier.file,
+            IPadMenuIdentifier.priests,
+            IPadMenuIdentifier.people,
+            IPadMenuIdentifier.prayers,
+            IPadMenuIdentifier.sync,
+            IPadMenuIdentifier.statistics,
+            IPadMenuIdentifier.view,
+            IPadMenuIdentifier.help
+        ]
+        for menu in customMenus + [.file, .edit, .view, .window, .help] {
             builder.remove(menu: menu)
         }
+
         let addPerson = UIKeyCommand(input: "n", modifierFlags: .command, action: #selector(openNewPerson))
         addPerson.title = "Dodaj osobę do modlitwy"
         let syncCommand = UICommand(title: "Synchronizuj teraz", action: #selector(openSync))
         if !SyncService.shared.isSignedIn { syncCommand.attributes = [.disabled] }
-        builder.insertSibling(UIMenu(title: "Plik", children: [
+        let fileMenu = UIMenu(title: "Plik", identifier: IPadMenuIdentifier.file, children: [
             addPerson,
             UICommand(title: "Importuj modlitwy", action: #selector(openImport)),
             UICommand(title: "Utwórz kopię zapasową", action: #selector(openBackup)),
             UICommand(title: "Przywróć kopię zapasową", action: #selector(openRestore)),
             UICommand(title: "Eksportuj dane", action: #selector(openExport)),
             UICommand(title: "Udostępnij modlitwy", action: #selector(openSharePrayers))
-        ]), afterMenu: .application)
-        builder.insertSibling(UIMenu(title: "Księża", children: [UICommand(title: "Lista księży", action: #selector(openSettings)), UICommand(title: "Dodaj księdza", action: #selector(openNewPerson))]), afterMenu: .application)
-        builder.insertSibling(UIMenu(title: "Osoby", children: [UICommand(title: "Lista osób", action: #selector(openSettings)), UICommand(title: "Dodaj osobę", action: #selector(openNewPerson))]), afterMenu: .application)
-        builder.insertSibling(UIMenu(title: "Modlitwy", children: [UICommand(title: "Lista modlitw", action: #selector(openPrayerList)), UICommand(title: "Modlitwy pojedyncze", action: #selector(openPrayerList)), UICommand(title: "Modlitwy złożone", action: #selector(openPrayerList))]), afterMenu: .application)
-        builder.insertSibling(UIMenu(title: "Synchronizacja", children: [UICommand(title: "Zaloguj przez Apple", action: #selector(openSyncSettings)), syncCommand]), afterMenu: .application)
-        builder.insertSibling(UIMenu(title: "Statystyki", children: [UICommand(title: "Otwórz statystyki", action: #selector(openStatistics))]), afterMenu: .application)
-        builder.insertSibling(UIMenu(title: "Widok", children: [UICommand(title: "Compact view", action: #selector(toggleCompact))]), afterMenu: .application)
-        builder.insertSibling(UIMenu(title: "Pomoc", children: [UICommand(title: "Czym jest Margaretka?", action: #selector(openAbout)), UICommand(title: "Jak się modlić?", action: #selector(openHowTo))]), afterMenu: .application)
+        ])
+        let priestsMenu = UIMenu(title: "Księża", identifier: IPadMenuIdentifier.priests, children: [
+            UICommand(title: "Lista księży", action: #selector(openSettings)),
+            UICommand(title: "Dodaj księdza", action: #selector(openNewPriest))
+        ])
+        let peopleMenu = UIMenu(title: "Osoby", identifier: IPadMenuIdentifier.people, children: [
+            UICommand(title: "Lista osób", action: #selector(openSettings)),
+            UICommand(title: "Dodaj osobę", action: #selector(openNewPerson))
+        ])
+        let prayersMenu = UIMenu(title: "Modlitwy", identifier: IPadMenuIdentifier.prayers, children: [
+            UICommand(title: "Lista modlitw", action: #selector(openPrayerList)),
+            UICommand(title: "Dodaj modlitwę złożoną", action: #selector(openNewPrayer))
+        ])
+        let syncMenu = UIMenu(title: "Synchronizacja", identifier: IPadMenuIdentifier.sync, children: [
+            UICommand(title: "Zaloguj przez Apple", action: #selector(openSyncSettings)), syncCommand
+        ])
+        let statisticsMenu = UIMenu(title: "Statystyki", identifier: IPadMenuIdentifier.statistics, children: [
+            UICommand(title: "Otwórz statystyki", action: #selector(openStatistics))
+        ])
+        let viewMenu = UIMenu(title: "Widok", identifier: IPadMenuIdentifier.view, children: [
+            UICommand(title: "Compact view", action: #selector(toggleCompact))
+        ])
+        let helpMenu = UIMenu(title: "Pomoc", identifier: IPadMenuIdentifier.help, children: [
+            UICommand(title: "Czym jest Margaretka?", action: #selector(openAbout)),
+            UICommand(title: "Jak się modlić?", action: #selector(openHowTo))
+        ])
+        builder.insertSibling(fileMenu, afterMenu: .application)
+        builder.insertSibling(priestsMenu, afterMenu: IPadMenuIdentifier.file)
+        builder.insertSibling(peopleMenu, afterMenu: IPadMenuIdentifier.priests)
+        builder.insertSibling(prayersMenu, afterMenu: IPadMenuIdentifier.people)
+        builder.insertSibling(syncMenu, afterMenu: IPadMenuIdentifier.prayers)
+        builder.insertSibling(statisticsMenu, afterMenu: IPadMenuIdentifier.sync)
+        builder.insertSibling(viewMenu, afterMenu: IPadMenuIdentifier.statistics)
+        builder.insertSibling(helpMenu, afterMenu: IPadMenuIdentifier.view)
     }
 #endif
 #else
