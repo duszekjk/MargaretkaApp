@@ -1,4 +1,4 @@
-codex conversation [20260729-macos] separate target sheets from HomeView body
+codex conversation [20260729-macos] preserve current project configuration edits
 
-Move macOS new and edit target sheets outside HomeView's main modifier chain so
-Swift can type-check the view while retaining both menu editor routes.
+Commit the current user changes to the Xcode project, breakpoints, and localized
+strings before further source edits. No files are discarded or rewritten.
