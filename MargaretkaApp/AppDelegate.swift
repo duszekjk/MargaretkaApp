@@ -207,16 +207,23 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
             ("Widok", view),
             ("Pomoc", help)
         ]
-        let prayPriestMenu = NSMenu(title: "Pomódl się")
-        addTargetItems(to: prayPriestMenu, category: .priest, action: #selector(MacMenuTarget.selectTarget(_:)))
-        let editPriestMenu = NSMenu(title: "Edytuj")
-        addTargetItems(to: editPriestMenu, category: .priest, action: #selector(MacMenuTarget.editTarget(_:)))
-        let prayPriestItem = NSMenuItem(title: "Pomódl się", action: nil, keyEquivalent: "")
-        prayPriestItem.submenu = prayPriestMenu
-        customMenus[1].1.addItem(prayPriestItem)
-        let editPriestItem = NSMenuItem(title: "Edytuj", action: nil, keyEquivalent: "")
-        editPriestItem.submenu = editPriestMenu
-        customMenus[1].1.addItem(editPriestItem)
+        let praySection = NSMenuItem(title: "Pomódl się", action: nil, keyEquivalent: "")
+        praySection.isEnabled = false
+        customMenus[1].1.addItem(praySection)
+        addTargetItems(
+            to: customMenus[1].1,
+            category: .priest,
+            action: #selector(MacMenuTarget.selectTarget(_:))
+        )
+        customMenus[1].1.addItem(.separator())
+        let editSection = NSMenuItem(title: "Edytuj", action: nil, keyEquivalent: "")
+        editSection.isEnabled = false
+        customMenus[1].1.addItem(editSection)
+        addTargetItems(
+            to: customMenus[1].1,
+            category: .priest,
+            action: #selector(MacMenuTarget.editTarget(_:))
+        )
         customMenus[1].1.addItem(.separator())
         customMenus[1].1.addItem(withTitle: "Dodaj księdza", action: #selector(MacMenuTarget.newPriest), keyEquivalent: "").target = menuTarget
         addTargetItems(to: customMenus[2].1, category: .person)
