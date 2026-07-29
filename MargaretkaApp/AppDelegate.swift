@@ -146,6 +146,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
             object: nil,
             queue: .main
         ) { [weak self] _ in
+            self?.configureMargaretkaMenu()
             self?.constrainMainWindow()
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in

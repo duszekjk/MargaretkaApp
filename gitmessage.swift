@@ -1,4 +1,4 @@
-codex conversation [20260728-macos] align uniform type import visibility
+codex conversation [20260729-macos] reinstall menu when window becomes key
 
-Use the project's internal import visibility for UniformTypeIdentifiers so the
-macOS file panel content type filters compile with Swift 6.
+Reinstall the custom macOS menu when the app window becomes key, preventing
+SwiftUI scene setup from leaving the system menu until the window is refocused.
