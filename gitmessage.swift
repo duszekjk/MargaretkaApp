@@ -1,4 +1,4 @@
-codex conversation [20260729-macos] split HomeView modifier expressions
+codex conversation [20260729-macos] preserve current localization edits
 
-Separate HomeView presentation and notification modifier chains with type erasure.
-This preserves their behavior while allowing Swift to compile PrayerHistory again.
+Commit the current localized-string edits before the macOS menu adjustment.
+No existing user change is removed.
