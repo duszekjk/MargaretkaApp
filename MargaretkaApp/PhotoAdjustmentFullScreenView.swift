@@ -20,6 +20,35 @@ struct PhotoAdjustmentFullScreenView: View {
     private let maxScale: Double = 3.0
 
     var body: some View {
+#if os(macOS)
+        VStack(spacing: 0) {
+            HStack {
+                Button("Wróć do danych księdza") { dismiss() }
+                Spacer()
+                Button("Wycentruj") {
+                    scale = 1.0
+                    offset = .zero
+                }
+            }
+            .padding()
+
+            GeometryReader { geo in
+                AdjustableBackgroundImage(
+                    image: image,
+                    scale: clampedScale(scale * gestureScale),
+                    offset: CGSize(
+                        width: offset.width + gestureOffset.width,
+                        height: offset.height + gestureOffset.height
+                    ),
+                    size: geo.size
+                )
+                .contentShape(Rectangle())
+                .simultaneousGesture(dragGesture)
+                .simultaneousGesture(magnificationGesture)
+            }
+        }
+        .frame(minWidth: 720, minHeight: 560)
+#else
         GeometryReader { geo in
             ZStack {
                 AdjustableBackgroundImage(
@@ -59,6 +88,7 @@ struct PhotoAdjustmentFullScreenView: View {
                 .background(Color.black.opacity(0.35))
             }
         }
+#endif
     }
 
     private func previewOverlay(in size: CGSize) -> some View {

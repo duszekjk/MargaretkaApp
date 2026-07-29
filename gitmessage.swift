@@ -1,4 +1,4 @@
-codex conversation [20260729-macos] refresh schedule after macOS target save
+codex conversation [20260729-macos] make macOS photo adjustment usable
 
-Save macOS target edits into both PriestStore and ScheduleData immediately so
-PrayerFlowView and the dynamic menu refresh without an app restart.
+Use a full-size macOS photo adjustment sheet with a clear return-to-editor
+action, replacing the iPhone preview overlay that collapsed into a tiny panel.
