@@ -145,7 +145,6 @@ struct HomeView: View {
     @EnvironmentObject var scheduleData: ScheduleData<Priest>
     @EnvironmentObject var syncService: SyncService
     @EnvironmentObject var offlineStore: OfflineBreviaryStore
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
     
     
     @State var showSettings: Bool = false
@@ -163,7 +162,7 @@ struct HomeView: View {
 
     private var shouldInlinePrayerToolbar: Bool {
 #if os(iOS)
-        UIDevice.current.userInterfaceIdiom == .pad && verticalSizeClass == .compact
+        UIDevice.current.userInterfaceIdiom == .pad
 #else
         false
 #endif
