@@ -74,6 +74,130 @@ struct MargaretkaAppApp: App {
         .defaultSize(width: 1100, height: 800)
         .windowResizability(.automatic)
 #endif
+#if os(iOS)
+        .commands {
+            CommandGroup(replacing: .newItem) {
+                Button("Dodaj osobę do modlitwy") {
+                    NotificationCenter.default.post(name: .margaretkaNewPerson, object: PrayerTargetCategory.person)
+                }
+            }
+            CommandGroup(replacing: .saveItem) { }
+            CommandGroup(replacing: .importExport) {
+                Button("Importuj modlitwy") {
+                    NotificationCenter.default.post(name: .margaretkaImport, object: "import")
+                }
+                Button("Utwórz kopię zapasową") {
+                    NotificationCenter.default.post(name: .margaretkaImport, object: "backup")
+                }
+                Button("Przywróć kopię zapasową") {
+                    NotificationCenter.default.post(name: .margaretkaImport, object: "restore")
+                }
+                Button("Eksportuj dane") {
+                    NotificationCenter.default.post(name: .margaretkaImport, object: "export")
+                }
+                Button("Udostępnij modlitwy") {
+                    NotificationCenter.default.post(name: .margaretkaImport, object: "share")
+                }
+            }
+            CommandGroup(replacing: .printItem) { }
+            CommandGroup(replacing: .undoRedo) { }
+            CommandGroup(replacing: .pasteboard) { }
+            CommandGroup(replacing: .textEditing) { }
+            CommandGroup(replacing: .textFormatting) { }
+            CommandGroup(replacing: .toolbar) { }
+            CommandGroup(replacing: .sidebar) { }
+            CommandGroup(replacing: .windowSize) { }
+            CommandGroup(replacing: .windowArrangement) { }
+            CommandGroup(replacing: .help) {
+                Button("Czym jest Margaretka?") {
+                    NotificationCenter.default.post(name: .margaretkaAbout, object: nil)
+                }
+                Button("Jak się modlić?") {
+                    NotificationCenter.default.post(name: .margaretkaHowTo, object: nil)
+                }
+            }
+
+            CommandMenu("Księża") {
+                Section("Pomódl się") {
+                    ForEach(scheduleData.items.filter { $0.category == .priest }) { target in
+                        Button(target.displayName) {
+                            NotificationCenter.default.post(name: .margaretkaSelectTarget, object: target.id)
+                        }
+                    }
+                }
+                Section("Edytuj") {
+                    ForEach(scheduleData.items.filter { $0.category == .priest }) { target in
+                        Button(target.displayName) {
+                            NotificationCenter.default.post(name: .margaretkaEditTarget, object: target.id)
+                        }
+                    }
+                }
+                Divider()
+                Button("Dodaj księdza") {
+                    NotificationCenter.default.post(name: .margaretkaNewPerson, object: PrayerTargetCategory.priest)
+                }
+            }
+            CommandMenu("Osoby") {
+                Section("Pomódl się") {
+                    ForEach(scheduleData.items.filter { $0.category == .person }) { target in
+                        Button(target.displayName) {
+                            NotificationCenter.default.post(name: .margaretkaSelectTarget, object: target.id)
+                        }
+                    }
+                }
+                Section("Edytuj") {
+                    ForEach(scheduleData.items.filter { $0.category == .person }) { target in
+                        Button(target.displayName) {
+                            NotificationCenter.default.post(name: .margaretkaEditTarget, object: target.id)
+                        }
+                    }
+                }
+                Divider()
+                Button("Dodaj osobę") {
+                    NotificationCenter.default.post(name: .margaretkaNewPerson, object: PrayerTargetCategory.person)
+                }
+            }
+            CommandMenu("Modlitwy") {
+                Section("Pomódl się") {
+                    ForEach(scheduleData.items.filter { $0.category == .prayer }) { target in
+                        Button(target.displayName) {
+                            NotificationCenter.default.post(name: .margaretkaSelectTarget, object: target.id)
+                        }
+                    }
+                }
+                Section("Edytuj") {
+                    ForEach(scheduleData.items.filter { $0.category == .prayer }) { target in
+                        Button(target.displayName) {
+                            NotificationCenter.default.post(name: .margaretkaEditTarget, object: target.id)
+                        }
+                    }
+                }
+                Divider()
+                Button("Dodaj modlitwę złożoną") {
+                    NotificationCenter.default.post(name: .margaretkaNewPerson, object: PrayerTargetCategory.prayer)
+                }
+            }
+            CommandMenu("Synchronizacja") {
+                Button("Zaloguj przez Apple") {
+                    NotificationCenter.default.post(name: .margaretkaSyncSettings, object: nil)
+                }
+                Button("Synchronizuj teraz") {
+                    NotificationCenter.default.post(name: .margaretkaSync, object: nil)
+                }
+                .disabled(!syncService.isSignedIn || syncService.isWorking)
+            }
+            CommandMenu("Statystyki") {
+                Button("Otwórz statystyki") {
+                    NotificationCenter.default.post(name: .margaretkaStatistics, object: nil)
+                }
+            }
+            CommandMenu("Widok") {
+                Button("Compact view") {
+                    NotificationCenter.default.post(name: .margaretkaToggleCompact, object: nil)
+                }
+            }
+        }
+#endif
     }
 
     private func scheduleNotificationRefresh() {

@@ -1,5 +1,4 @@
-codex conversation [20260729-ipad] remove iPad vertical stack inset
+codex conversation [20260730-ipad] define menus in the SwiftUI scene
 
-Remove the outer 35-point vertical inset from the iPad prayer flow so the
-inline controls can occupy the toolbar-height row directly. Keep the inset on
-iPhone layouts.
+Attach the full Margaretka command hierarchy directly to the iPad WindowGroup.
+Replace standard command groups and provide the same target sections as macOS.
