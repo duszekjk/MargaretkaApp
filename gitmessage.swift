@@ -1,4 +1,4 @@
-codex conversation [20260729-ipad] match the macOS target menus
+codex conversation [20260729-ipad] checkpoint before full-screen row geometry fix
 
-Use the same target catalog on iPadOS and macOS. Księża, Osoby, and Modlitwy
-now expose direct Pomódl się and Edytuj sections and refresh when data changes.
+Checkpoint the current iPad hit-testing changes before removing the fixed
+full-window width from the merged control row.
