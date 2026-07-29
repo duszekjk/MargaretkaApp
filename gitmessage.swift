@@ -1,4 +1,4 @@
-codex conversation [20260729-ipad] keep landscape toolbar hidden
+codex conversation [20260729-ipad] checkpoint before unconditional iPad controls
 
-Keep the child prayer view from re-enabling its navigation toolbar in compact
-iPad layouts, so the inline settings control remains the only gear there.
+Checkpoint the iPad toolbar layout before removing its unreliable orientation
+condition.
