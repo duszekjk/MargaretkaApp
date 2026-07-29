@@ -1,4 +1,4 @@
-codex conversation [20260729-macos] make macOS photo adjustment usable
+codex conversation [20260729-macos] separate priest menu actions
 
-Use a full-size macOS photo adjustment sheet with a clear return-to-editor
-action, replacing the iPhone preview overlay that collapsed into a tiny panel.
+Split the macOS Księża menu into Pomódl się and Edytuj sections, each listing
+the saved priests with the appropriate action.

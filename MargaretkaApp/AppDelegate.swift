@@ -66,6 +66,10 @@ private final class MacMenuTarget: NSObject, NSMenuItemValidation {
         guard let id = sender.representedObject as? UUID else { return }
         NotificationCenter.default.post(name: .margaretkaSelectTarget, object: id)
     }
+    @objc func editTarget(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? UUID else { return }
+        NotificationCenter.default.post(name: .margaretkaEditTarget, object: id)
+    }
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(syncNow) {
@@ -203,7 +207,17 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
             ("Widok", view),
             ("Pomoc", help)
         ]
-        addTargetItems(to: customMenus[1].1, category: .priest)
+        let prayPriestMenu = NSMenu(title: "Pomódl się")
+        addTargetItems(to: prayPriestMenu, category: .priest, action: #selector(MacMenuTarget.selectTarget(_:)))
+        let editPriestMenu = NSMenu(title: "Edytuj")
+        addTargetItems(to: editPriestMenu, category: .priest, action: #selector(MacMenuTarget.editTarget(_:)))
+        let prayPriestItem = NSMenuItem(title: "Pomódl się", action: nil, keyEquivalent: "")
+        prayPriestItem.submenu = prayPriestMenu
+        customMenus[1].1.addItem(prayPriestItem)
+        let editPriestItem = NSMenuItem(title: "Edytuj", action: nil, keyEquivalent: "")
+        editPriestItem.submenu = editPriestMenu
+        customMenus[1].1.addItem(editPriestItem)
+        customMenus[1].1.addItem(.separator())
         customMenus[1].1.addItem(withTitle: "Dodaj księdza", action: #selector(MacMenuTarget.newPriest), keyEquivalent: "").target = menuTarget
         addTargetItems(to: customMenus[2].1, category: .person)
         customMenus[2].1.addItem(withTitle: "Dodaj osobę", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "").target = menuTarget
@@ -226,13 +240,13 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         NSApp.mainMenu = menu
     }
 
-    private func addTargetItems(to menu: NSMenu, category: PrayerTargetCategory) {
+    private func addTargetItems(to menu: NSMenu, category: PrayerTargetCategory, action: Selector = #selector(MacMenuTarget.selectTarget(_:))) {
         let items = MacMenuCatalog.entries[category] ?? []
         if items.isEmpty {
             menu.addItem(withTitle: "Brak zapisanych elementów", action: nil, keyEquivalent: "").isEnabled = false
         } else {
             for (id, title) in items {
-                let item = menu.addItem(withTitle: title, action: #selector(MacMenuTarget.selectTarget(_:)), keyEquivalent: "")
+                let item = menu.addItem(withTitle: title, action: action, keyEquivalent: "")
                 item.target = menuTarget
                 item.representedObject = id
             }
