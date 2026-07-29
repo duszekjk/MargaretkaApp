@@ -247,6 +247,7 @@ struct PrayerFlowView: View {
     @State private var sessionTargetCategory: PrayerTargetCategory = .priest
     @State private var sessionCompletion: PrayerSessionCompletion = .finished
     @State private var sessionForcedEndDate: Date?
+    @State private var fontNow: CGFloat = 19.0
     
     @Binding var showSettings: Bool
     @Binding var showEditor: Bool
@@ -260,7 +261,7 @@ struct PrayerFlowView: View {
     @Namespace private var brewiarzNamespace
     @State private var didLogAppear = false
     @AppStorage("prayerSwipeMode") private var prayerSwipeModeRaw: String = PrayerSwipeMode.both.rawValue
-    @AppStorage("prayerCompactView") private var prayerCompactView: Bool = false
+    @AppStorage("prayerCompactView") private var prayerCompactView: Bool = true
     @GestureState private var prayerSwipeTranslation: CGSize = .zero
     @State private var isIPadPortrait = false
     @State private var hasMeasuredIPadOrientation = false
@@ -339,21 +340,33 @@ struct PrayerFlowView: View {
         let screenHeight = UIScreen.main.bounds.height
 #endif
         if isIPad {
-            let baseHeight = max(562, min(screenHeight - 208, 982))
-            let orientationScale: CGFloat = isIPadPortrait ? 1.15 : 1.06
-            return min(baseHeight * orientationScale, screenHeight - 100)
+            if(prayerCompactView)
+            {
+                let baseHeight = max(562, min(screenHeight - 208, 982))
+                let orientationScale: CGFloat = isIPadPortrait ? 1.25 : 1.15
+                return min(baseHeight * orientationScale, screenHeight - 100)
+            }
+            else
+            {
+                let baseHeight = max(512, min(screenHeight - 256, 920))
+                let orientationScale: CGFloat = isIPadPortrait ? 1.02 : 0.95
+                return min(baseHeight * orientationScale, screenHeight - 128)
+            }
         }
         return min(screenHeight * 0.72, 680)
     }
 
     var currentPrayerCardFontSize: CGFloat {
-        let baseSize: CGFloat = isComplexPrayerCard ? 23 : 19
+        var baseSize: CGFloat = isComplexPrayerCard ? 22 : 19
+        if let card = currentOfflineCard {
+            baseSize = baseSize * (1.0 - (CGFloat(card.lines.count) * 0.02))
+        }
         guard isIPad else { return baseSize }
-        return isIPadPortrait ? baseSize * 1.25 : baseSize * 1.1
+        return isIPadPortrait ? baseSize * 1.6 : baseSize * 2.4
     }
 
     var currentPrayerMinimumScaleFactor: CGFloat {
-        isComplexPrayerCard ? 17 / 23 : 0.8
+        0.6
     }
 
     private func moveToIndex(_ index: Int, animated: Bool) {
@@ -366,6 +379,13 @@ struct PrayerFlowView: View {
         } else {
             activeIndex = index
         }
+        fontNow = currentPrayerCardFontSize
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute:
+                                        {
+            withAnimation(.easeInOut(duration: 0.35)) {
+                fontNow = currentPrayerCardFontSize
+                        }
+        })
     }
 
     private func handleKeyPress(_ keyPress: KeyPress) -> KeyPress.Result {
@@ -656,7 +676,7 @@ struct PrayerFlowView: View {
             Text(startPageText)
         } else if let card = currentOfflineCard {
             let cards = visibleOfflineCards.isEmpty ? [card] : visibleOfflineCards
-            BreviaryPrayerCardText(cards: cards)
+            BreviaryPrayerCardText(cards: cards, maxHeight: currentPrayerCardHeight)
         } else if activeIndex <= flattenedPrayerSymbols.count,
                   let prayer = allPrayers[flattenedPrayerIds[activeIndex - 1]] {
             Text(prayer.text + "\n\n" + prayer.name)
@@ -669,10 +689,11 @@ struct PrayerFlowView: View {
     private var sizedPrayerCardText: some View {
         if currentOfflineCard != nil {
             prayerCardText
-                .modifier(AnimatedPrayerFont(size: currentPrayerCardFontSize))
+                .modifier(AnimatedPrayerFont(size: fontNow))
+                .minimumScaleFactor(currentPrayerMinimumScaleFactor)
         } else {
             prayerCardText
-                .modifier(AnimatedPrayerFont(size: currentPrayerCardFontSize))
+                .modifier(AnimatedPrayerFont(size: fontNow))
                 .minimumScaleFactor(currentPrayerMinimumScaleFactor)
         }
     }
@@ -1196,17 +1217,35 @@ struct PrayerFlowView: View {
                     }
 
                 if selectedPriest != nil {
-                    PrayerTouchScrollerView(
-                        rows: arrangedInS,
-                        symbols: displayPrayerSymbols,
-                        prayerNames: displayPrayerNames,
-                        compactView: prayerCompactView,
-                        activeIndex: $activeIndex,
-                        onIndexChange: { index in
-                            moveToIndex(index, animated: true)
-                        }
-                    )
-                    .padding(.bottom, 60.0)
+                    if(isIPad)
+                    {
+                        PrayerTouchScrollerView(
+                            rows: arrangedInS,
+                            symbols: displayPrayerSymbols,
+                            prayerNames: displayPrayerNames,
+                            compactView: prayerCompactView,
+                            activeIndex: $activeIndex,
+                            onIndexChange: { index in
+                                moveToIndex(index, animated: true)
+                            }
+                        )
+                        .padding(.bottom, -4.0)
+                        .padding(.top, -15.0)
+                    }
+                    else
+                    {
+                        PrayerTouchScrollerView(
+                                rows: arrangedInS,
+                                symbols: displayPrayerSymbols,
+                                prayerNames: displayPrayerNames,
+                                compactView: prayerCompactView,
+                                activeIndex: $activeIndex,
+                                onIndexChange: { index in
+                                    moveToIndex(index, animated: true)
+                                }
+                            )
+                            .padding(.bottom, 60.0)
+                    }
                 }
                 else
                 {
@@ -1705,7 +1744,7 @@ struct ImagePlaygroundPreparationOverlay: View {
     }
 }
 
-private struct AnimatedPrayerFont: AnimatableModifier {
+struct AnimatedPrayerFont: AnimatableModifier {
     var size: CGFloat
 
     var animatableData: CGFloat {
@@ -1718,15 +1757,18 @@ private struct AnimatedPrayerFont: AnimatableModifier {
     }
 }
 
-private struct BreviaryPrayerCardText: View {
+struct BreviaryPrayerCardText: View {
     let lines: [OfflineBreviaryLine]
+    var maxHeight: Double
 
-    init(card: OfflineBreviaryCard) {
+    init(card: OfflineBreviaryCard, maxHeight: Double) {
         lines = card.lines
+        self.maxHeight  = maxHeight
     }
 
-    init(cards: [OfflineBreviaryCard]) {
+    init(cards: [OfflineBreviaryCard], maxHeight: Double) {
         lines = cards.flatMap(\.lines)
+        self.maxHeight  = maxHeight
     }
 
     var body: some View {
@@ -1744,7 +1786,7 @@ private struct BreviaryPrayerCardText: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity, maxHeight: maxHeight, alignment: .center)
     }
 
     private func choirLine(_ line: OfflineBreviaryLine) -> some View {

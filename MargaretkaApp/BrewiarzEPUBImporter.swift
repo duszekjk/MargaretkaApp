@@ -496,7 +496,7 @@ nonisolated enum BrewiarzEPUBImporter {
         initialTitle: String? = nil
     ) -> [OfflineBreviaryCard] {
         let maxCharacters = 1024
-        let maxLines = 14
+        let maxLines = 12
         var cards: [OfflineBreviaryCard] = []
         var current: [OfflineBreviaryLine] = []
         var characterCount = 0
@@ -551,7 +551,7 @@ nonisolated enum BrewiarzEPUBImporter {
                 nextFlush = true
             }
             if(line.text.range(
-                of: #"^\s*[147]\s+"#,
+                of: #"^\s*[13579]\s+"#,
                 options: .regularExpression
             ) != nil)
             {
