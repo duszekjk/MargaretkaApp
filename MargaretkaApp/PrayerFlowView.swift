@@ -255,7 +255,6 @@ struct PrayerFlowView: View {
     @Binding var showJakSie: Bool
 
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.supportsImagePlayground) private var supportsImagePlayground
     @Namespace private var namespace
     @Namespace private var brewiarzNamespace
@@ -532,10 +531,6 @@ struct PrayerFlowView: View {
 
     var isIPad: Bool {
         UIDevice.current.userInterfaceIdiom == .pad
-    }
-
-    private var isLandscapeIPad: Bool {
-        isIPad && verticalSizeClass == .compact
     }
 
     var visiblePrayerStepIndices: [Int] {
@@ -836,6 +831,18 @@ struct PrayerFlowView: View {
                             .foregroundStyle(.primary)
                             
                         }
+                        GlassEffectContainer(spacing: 0) {
+                            Button {
+                                showSettings = true
+                            } label: {
+                                Image(systemName: "gear")
+                                    .padding(12)
+                            }
+                            .glassEffect()
+                            .contentShape(Rectangle())
+                            .symbolRenderingMode(.monochrome)
+                            .foregroundStyle(.primary)
+                        }
                         Spacer()
                         if(selectedPriest != nil)
                         {
@@ -953,26 +960,12 @@ struct PrayerFlowView: View {
                                 }
                             }
 
-                            if isLandscapeIPad {
-                                GlassEffectContainer(spacing: 0) {
-                                    Button {
-                                        showSettings = true
-                                    } label: {
-                                        Image(systemName: "gear")
-                                            .padding(12)
-                                    }
-                                    .glassEffect()
-                                    .contentShape(Rectangle())
-                                    .symbolRenderingMode(.monochrome)
-                                    .foregroundStyle(.primary)
-                                }
-                            }
                         }
                         Spacer(minLength: 64.0)
                     }
                     .padding(.horizontal, 16.0)
                     .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
-                    .padding(.top, isIPad && !isFullscreen && !isLandscapeIPad ? 48.0 : (flattenedPrayerSymbols.count > 0 ? 0.0 : -12.0))
+                    .padding(.top, isFullscreen ? 0.0 : (flattenedPrayerSymbols.count > 0 ? 0.0 : -12.0))
                     .frame(maxWidth: .infinity)
                     .contentShape(Rectangle())
                     .zIndex(20)
@@ -1430,7 +1423,7 @@ struct PrayerFlowView: View {
         .animation(.easeInOut(duration: 0.25), value: isFullscreen)
         .safeStatusBarHidden(isFullscreen)
         .persistentSystemOverlays(isFullscreen ? .hidden : .visible)
-        .safeNavigationChrome(isFullscreen: isFullscreen || isLandscapeIPad)
+        .safeNavigationChrome(isFullscreen: isFullscreen || isIPad)
     }
 
     private func startSession() {
