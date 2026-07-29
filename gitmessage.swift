@@ -1,4 +1,4 @@
-codex conversation [20260729-ipad] checkpoint before inline landscape toolbar
+codex conversation [20260729-ipad] hide iPad landscape navigation toolbar
 
-Checkpoint the validated iPad prayer-flow layout before moving settings into
-the landscape control row.
+Keep the navigation gear in portrait while hiding the redundant navigation
+toolbar in compact-height iPad layouts, where prayer controls will be inline.

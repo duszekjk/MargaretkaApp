@@ -145,6 +145,7 @@ struct HomeView: View {
     @EnvironmentObject var scheduleData: ScheduleData<Priest>
     @EnvironmentObject var syncService: SyncService
     @EnvironmentObject var offlineStore: OfflineBreviaryStore
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     
     
     @State var showSettings: Bool = false
@@ -159,6 +160,14 @@ struct HomeView: View {
     @State private var showStatistics = false
     @State private var showSyncSettings = false
     @State private var menuTargetCategory: PrayerTargetCategory?
+
+    private var shouldInlinePrayerToolbar: Bool {
+#if os(iOS)
+        UIDevice.current.userInterfaceIdiom == .pad && verticalSizeClass == .compact
+#else
+        false
+#endif
+    }
 #if os(macOS)
     @State private var newTargetCategory: PrayerTargetCategory?
     @State private var editingTarget: Priest?
@@ -193,9 +202,10 @@ struct HomeView: View {
     // growing into one expression that the compiler cannot finish checking.
     private var presentationContent: AnyView {
         AnyView(
-        PrayerFlowView(showSettings: $showSettings, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie)
+            PrayerFlowView(showSettings: $showSettings, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie)
             .environmentObject(priestStore)
 #if !os(macOS)
+            .toolbar(shouldInlinePrayerToolbar ? .hidden : .visible, for: .navigationBar)
             .toolbar {
                 NavigationLink(destination: SettingsMenuView(priestStore: priestStore, availablePrayers: $prayerStore.prayers, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie, menuTargetCategory: $menuTargetCategory),
                                isActive: $showSettings) {
