@@ -1,4 +1,5 @@
-codex conversation [20260729-macos] reapply menu after scene setup
+codex conversation [20260729-macos] make macOS sheets dismissible
 
-Reapply the custom macOS menu five and ten seconds after launch, after SwiftUI
-has finished its own scene menu setup, and clarify the application quit title.
+Give Settings, Statistics, and Synchronization their own close controls on
+macOS, open sync directly instead of via the iPhone settings screen, and defer
+settings navigation state until its NavigationStack exists.

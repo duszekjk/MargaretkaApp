@@ -8,6 +8,18 @@
 import SwiftUI
 internal import Combine
 
+#if os(macOS)
+private struct MacSheetDismissButton: ToolbarContent {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button("Zamknij") { dismiss() }
+        }
+    }
+}
+#endif
+
 struct PrayerHistory: Identifiable {
     let id = UUID()
     let date: Date
@@ -145,6 +157,7 @@ struct HomeView: View {
     @State private var dataTransferRoute: DataTransferRoute = .overview
     @State private var pendingImportFile: URL?
     @State private var showStatistics = false
+    @State private var showSyncSettings = false
     @AppStorage("prayerCompactView") private var prayerCompactView = false
 
     var body: some View {
@@ -180,6 +193,9 @@ struct HomeView: View {
                         showJakSie: $showJakSie
                     )
                 }
+#if os(macOS)
+                .toolbar { MacSheetDismissButton() }
+#endif
                 .frame(minWidth: 520, minHeight: 480)
             }
 #endif
@@ -193,6 +209,17 @@ struct HomeView: View {
                 NavigationStack {
                     StatsView()
                 }
+#if os(macOS)
+                .toolbar { MacSheetDismissButton() }
+#endif
+            }
+            .sheet(isPresented: $showSyncSettings) {
+                NavigationStack {
+                    SyncSettingsView()
+                }
+#if os(macOS)
+                .toolbar { MacSheetDismissButton() }
+#endif
             }
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaSettings)) { _ in
                 showSettings = true
@@ -222,20 +249,23 @@ struct HomeView: View {
                 showStatistics = true
             }
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaNewPerson)) { _ in
-                showEditor = true
-                showOsoby = true
                 showSettings = true
+                DispatchQueue.main.async {
+                    showOsoby = true
+                    DispatchQueue.main.async { showEditor = true }
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaHowTo)) { _ in
-                showJakSie = true
                 showSettings = true
+                DispatchQueue.main.async { showJakSie = true }
             }
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaAbout)) { _ in
-                showCzymJest = true
                 showSettings = true
+                DispatchQueue.main.async { showCzymJest = true }
             }
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaSyncSettings)) { _ in
-                showSettings = true
+                showSettings = false
+                showSyncSettings = true
             }
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaPrayerList)) { _ in
                 showSettings = true
