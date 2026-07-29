@@ -158,6 +158,7 @@ struct HomeView: View {
     @State private var pendingImportFile: URL?
     @State private var showStatistics = false
     @State private var showSyncSettings = false
+    @State private var menuTargetCategory: PrayerTargetCategory?
     @AppStorage("prayerCompactView") private var prayerCompactView = false
 
     var body: some View {
@@ -165,7 +166,7 @@ struct HomeView: View {
             .environmentObject(priestStore)
 #if !os(macOS)
             .toolbar {
-                NavigationLink(destination: SettingsMenuView(priestStore: priestStore, availablePrayers: $prayerStore.prayers, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie),
+                NavigationLink(destination: SettingsMenuView(priestStore: priestStore, availablePrayers: $prayerStore.prayers, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie, menuTargetCategory: $menuTargetCategory),
                                isActive: $showSettings) {
                     Image(systemName: "gear")
                 }
@@ -190,7 +191,8 @@ struct HomeView: View {
                         showEditor: $showEditor,
                         showOsoby: $showOsoby,
                         showCzymJest: $showCzymJest,
-                        showJakSie: $showJakSie
+                        showJakSie: $showJakSie,
+                        menuTargetCategory: $menuTargetCategory
                     )
                 }
 #if os(macOS)
@@ -248,11 +250,11 @@ struct HomeView: View {
                 showImport = false
                 showStatistics = true
             }
-            .onReceive(NotificationCenter.default.publisher(for: .margaretkaNewPerson)) { _ in
+            .onReceive(NotificationCenter.default.publisher(for: .margaretkaNewPerson)) { notification in
+                let category = (notification.object as? PrayerTargetCategory) ?? .person
                 showSettings = true
                 DispatchQueue.main.async {
-                    showOsoby = true
-                    DispatchQueue.main.async { showEditor = true }
+                    menuTargetCategory = category
                 }
             }
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaHowTo)) { _ in

@@ -17,6 +17,7 @@ struct SettingsMenuView: View {
     @Binding var showOsoby: Bool
     @Binding var showCzymJest: Bool
     @Binding var showJakSie: Bool
+    @Binding var menuTargetCategory: PrayerTargetCategory?
     @AppStorage("prayerSwipeMode") private var prayerSwipeModeRaw: String = PrayerSwipeMode.both.rawValue
     @AppStorage("prayerCompactView") private var prayerCompactView: Bool = true
 
@@ -206,6 +207,21 @@ struct SettingsMenuView: View {
         }
         .navigationDestination(isPresented: $showJakSie) {
             JakSieModlicView()
+        }
+        .navigationDestination(isPresented: Binding(
+            get: { menuTargetCategory != nil },
+            set: { if !$0 { menuTargetCategory = nil } }
+        )) {
+            if let category = menuTargetCategory {
+                PriestListView(
+                    store: priestStore,
+                    availablePrayers: $availablePrayers,
+                    showEditor: $showEditor,
+                    category: category,
+                    title: category.displayName,
+                    requestedAddCategory: $menuTargetCategory
+                )
+            }
         }
     }
 

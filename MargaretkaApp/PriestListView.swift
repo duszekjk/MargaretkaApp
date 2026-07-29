@@ -13,6 +13,7 @@ struct PriestListView: View {
     @State var selectedPriest: Priest?
     let category: PrayerTargetCategory
     let title: String
+    var requestedAddCategory: Binding<PrayerTargetCategory?>? = nil
     var body: some View {
 
         ScheduleList<Priest>(
@@ -52,6 +53,11 @@ struct PriestListView: View {
             filter: { $0.category == category },
             showingForm: $showEditor
         )
+        .onAppear {
+            guard requestedAddCategory?.wrappedValue == category else { return }
+            requestedAddCategory?.wrappedValue = nil
+            DispatchQueue.main.async { showEditor = true }
+        }
 
 
     }

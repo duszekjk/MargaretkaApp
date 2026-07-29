@@ -1,4 +1,4 @@
-codex conversation [20260729-macos] route macOS add actions by target type
+codex conversation [20260729-macos] open correct editor for menu add actions
 
-Give the Księża, Osoby, and Modlitwy menu entries distinct add actions so each
-opens the correct editor category rather than the shared person route.
+Route each macOS Add command through the active Settings navigation stack and
+open the matching priest, person, or prayer editor only after its list exists.
