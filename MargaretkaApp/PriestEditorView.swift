@@ -289,6 +289,65 @@ struct PriestEditorView: View {
 }
 
 #if os(macOS)
+struct MacNewTargetEditorSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var store: PriestStore
+    @Binding var availablePrayers: [Prayer]
+    @State private var draft: Priest
+
+    init(
+        store: PriestStore,
+        availablePrayers: Binding<[Prayer]>,
+        category: PrayerTargetCategory
+    ) {
+        self.store = store
+        self._availablePrayers = availablePrayers
+        _draft = State(initialValue: Priest(
+            id: UUID(),
+            firstName: "",
+            lastName: "",
+            title: "",
+            category: category,
+            assignedPrayerGroups: [],
+            schedule: SchedulePlan(),
+            lastModified: .now,
+            notificationTitle: category.notificationTitle(for: ""),
+            notificationMessage: category.notificationMessage(for: "")
+        ))
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                PriestEditorView(store: store, priest: $draft, availablePrayers: $availablePrayers)
+                    .padding()
+            }
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Anuluj") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Zapisz") { save() }
+                        .disabled(draft.firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+        .frame(minWidth: 560, minHeight: 680)
+    }
+
+    private func save() {
+        let name = draft.displayName
+        draft.lastModified = .now
+        draft.notificationTitle = draft.category.notificationTitle(for: name)
+        draft.notificationMessage = draft.category.notificationMessage(for: name)
+        draft.save()
+        store.addOrUpdate(draft)
+        dismiss()
+    }
+}
+#endif
+
+#if os(macOS)
 private extension View {
     func photoAdjustmentSheet<Content: View>(
         isPresented: Binding<Bool>,
