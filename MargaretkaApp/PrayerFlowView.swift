@@ -339,8 +339,8 @@ struct PrayerFlowView: View {
         let screenHeight = UIScreen.main.bounds.height
 #endif
         if isIPad {
-            let baseHeight = max(520, min(screenHeight - 250, 920))
-            let orientationScale: CGFloat = isIPadPortrait ? 1.15 : 1.04
+            let baseHeight = max(562, min(screenHeight - 208, 982))
+            let orientationScale: CGFloat = isIPadPortrait ? 1.15 : 1.06
             return min(baseHeight * orientationScale, screenHeight - 100)
         }
         return min(screenHeight * 0.72, 680)
@@ -349,7 +349,7 @@ struct PrayerFlowView: View {
     var currentPrayerCardFontSize: CGFloat {
         let baseSize: CGFloat = isComplexPrayerCard ? 23 : 19
         guard isIPad else { return baseSize }
-        return isIPadPortrait ? baseSize * 1.1 : baseSize * 0.92
+        return isIPadPortrait ? baseSize * 1.25 : baseSize * 1.1
     }
 
     var currentPrayerMinimumScaleFactor: CGFloat {
@@ -537,7 +537,7 @@ struct PrayerFlowView: View {
         PrayerFlowPagePairing.visibleStepIndices(
             activeStepIndex: activeIndex - 1,
             steps: prayerSteps,
-            enabled: isIPad
+            enabled: isIPad && (UIDevice.current.orientation == .portrait || UIDevice.current.orientation == .portraitUpsideDown)
         )
     }
 
@@ -731,10 +731,6 @@ struct PrayerFlowView: View {
     }
 
     var body: some View {
-        prayerFlowLayout
-    }
-
-    private var prayerFlowLayout: some View {
         let layoutFamily: PhotoLayoutFamily = UIDevice.current.userInterfaceIdiom == .pad ? .iPad : .iPhone
         let photoPlacement = selectedPriest?.photoPlacement(for: layoutFamily) ?? .centered
 #if os(macOS)
@@ -776,15 +772,190 @@ struct PrayerFlowView: View {
                 }
                 .ignoresSafeArea()
             }
-//            else {
-//                Color.white.ignoresSafeArea()
-//            }
 
             VStack {
-                if(selectedPriest != nil)
+                
+                if isIPad {
+                    HStack(spacing: 14) {
+                        
+                        GlassEffectContainer(spacing: 0) {
+                            
+                            Menu {
+                                Section("Pokaż") {
+                                    Button {
+                                        userSelectedCategory = true
+                                        selectedCategory = .priest
+                                    } label: {
+                                        Label("Księża", systemImage: selectedCategory == .priest ? "checkmark" : "")
+                                    }
+                                    
+                                    Button {
+                                        userSelectedCategory = true
+                                        selectedCategory = .person
+                                    } label: {
+                                        Label("Osoby", systemImage: selectedCategory == .person ? "checkmark" : "")
+                                    }
+                                    
+                                    Button {
+                                        userSelectedCategory = true
+                                        selectedCategory = .prayer
+                                    } label: {
+                                        Label("Modlitwy", systemImage: selectedCategory == .prayer ? "checkmark" : "")
+                                    }
+                                }
+                                
+                                
+                                
+                                ForEach(priestsAndPrayers, id: \.id) { priest in
+                                    Button(action: {
+                                        withAnimation()
+                                        {
+                                            selectedPriest = priest
+                                        }
+                                    }) {
+                                        Label(priest.displayName, systemImage: selectedPriest?.id == priest.id ? "checkmark" : "")
+                                            .cornerRadius(16)
+                                    }
+                                }
+                            } label: {
+                                Image(
+                                    systemName: "list.star"
+                                )
+                                .padding((selectedPriest != nil) ? 12 : 14)
+                                .cornerRadius(16)
+                            }
+                            .cornerRadius(16)
+                            .glassEffect()
+                            .symbolRenderingMode(.monochrome)
+                            .foregroundStyle(.primary)
+                            
+                        }
+                        Spacer()
+                        if(selectedPriest != nil)
+                        {
+                            Text(selectedPriest?.displayName ?? "")
+                                .lineLimit(4)
+                                .padding(3)
+                                .glassEffect()
+                            if supportsImagePlayground,
+                               let office = backgroundOfflineOffice,
+                               office.imageFilename == nil {
+                                Button {
+                                    Task {
+                                        await presentImagePlayground(
+                                            for: office
+                                        )
+                                    }
+                                } label: {
+                                    if isPreparingImagePlayground,
+                                       imagePlaygroundOfficeID == office.id {
+                                        HStack(spacing: 8) {
+                                            ProgressView()
+                                            Text("Przygotowuję tło…")
+                                        }
+                                    } else {
+                                        Label("Utwórz tło", systemImage: "photo.badge.plus")
+                                    }
+                                }
+                                .disabled(isPreparingImagePlayground)
+                                .padding(8)
+                                .glassEffect()
+                            }
+                            Spacer()
+                                .frame(height: 12)
+                        }
+                        Spacer()
+                        if(flattenedPrayerSymbols.count>0)
+                        {
+                            GlassEffectContainer(spacing: 0) {
+                                HStack(spacing: 0) {
+                                    Text("\(displayProgress)/\(flattenedPrayerSymbols.count)")
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 10)
+                                        .glassEffect()
+                                        .glassEffectUnion(id: "restartGroup", namespace: namespace)
+                                        .foregroundStyle(.primary)
+                                    
+                                    Button(action: {
+                                        moveToIndex(0, animated: true)
+                                    }) {
+                                        Image(systemName: "arrow.triangle.2.circlepath")
+                                            .padding(12)
+                                    }
+                                    .glassEffect()
+                                    .glassEffectUnion(id: "restartGroup", namespace: namespace)
+                                    .symbolRenderingMode(.monochrome)
+                                    .foregroundStyle(.primary)
+                                }
+                                .padding(4)
+                            }
+                            
+                            GlassEffectContainer(spacing: 0) {
+                                if(finished)
+                                {
+                                    Group {
+#if os(macOS)
+                                        if #available(macOS 26.0, *) {
+                                            Image(systemName: "checkmark")
+                                                .padding(12)
+                                                .glassEffect()
+                                        } else {
+                                            Image(systemName: "checkmark")
+                                                .padding(12)
+                                                .prayerFlowLegacyGlass(.green)
+                                        }
+#else
+                                        Image(systemName: "checkmark")
+                                            .padding(12)
+                                            .glassEffect(.regular.tint(.green))
+#endif
+                                    }
+                                    .symbolRenderingMode(.monochrome)
+                                    .foregroundStyle(.primary)
+                                }
+                                else
+                                {
+                                    Button(action: {
+                                        moveToIndex(lastDisplayIndex, animated: true)
+                                    }) {
+                                        Image(systemName: "checkmark")
+                                            .padding(12)
+                                    }
+                                    .glassEffect()
+                                    .symbolRenderingMode(.monochrome)
+                                    .foregroundStyle(.primary)
+                                }
+                            }
+                            
+                            if isCurrentPrayerWeb {
+                                GlassEffectContainer(spacing: 0) {
+                                    Button(action: {
+                                        withAnimation(.easeInOut(duration: 0.25)) {
+                                            isFullscreen = true
+                                        }
+                                    }) {
+                                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                            .padding(12)
+                                    }
+                                    .glassEffect()
+                                    .symbolRenderingMode(.monochrome)
+                                    .foregroundStyle(.primary)
+                                }
+                            }
+                        }
+                        Spacer(minLength: 64.0)
+                    }
+                    .padding(.horizontal, 16.0)
+                    .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
+                    .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
+                    .modifier(PrayerFlowAdaptiveWidth(width: viewportWidth))
+                    
+                    
+                }
+                else
                 {
-//                    if(selectedPriest?.photoData == nil)
-//                    {
+                    if(selectedPriest != nil)
+                    {
                         Text(selectedPriest?.displayName ?? "")
                             .lineLimit(4)
                             .padding(3)
@@ -813,161 +984,155 @@ struct PrayerFlowView: View {
                             .padding(8)
                             .glassEffect()
                         }
-//                    }
-                    if isIPad {
-                        Spacer()
-                            .frame(height: 12)
-                    } else {
-                        Spacer()
+                        //                    }
+                        if isIPad {
+                            Spacer()
+                                .frame(height: 12)
+                        } else {
+                            Spacer()
+                        }
                     }
-                }
-                HStack(spacing: 14) {
-                    
-                    GlassEffectContainer(spacing: 0) {
+                    HStack(spacing: 14) {
                         
-                        Menu {
-                            Section("Pokaż") {
-                                Button {
-                                    userSelectedCategory = true
-                                    selectedCategory = .priest
-                                } label: {
-                                    Label("Księża", systemImage: selectedCategory == .priest ? "checkmark" : "")
-                                }
-
-                                Button {
-                                    userSelectedCategory = true
-                                    selectedCategory = .person
-                                } label: {
-                                    Label("Osoby", systemImage: selectedCategory == .person ? "checkmark" : "")
-                                }
-
-                                Button {
-                                    userSelectedCategory = true
-                                    selectedCategory = .prayer
-                                } label: {
-                                    Label("Modlitwy", systemImage: selectedCategory == .prayer ? "checkmark" : "")
-                                }
-                            }
-
-//                            if selectedPriest != nil {
-//                                Button("Deselect") {
-//                                    selectedPriest = nil
-//                                }
-//                                .cornerRadius(16)
-//                            }
-
+                        GlassEffectContainer(spacing: 0) {
                             
-                            ForEach(priestsAndPrayers, id: \.id) { priest in
-                                Button(action: {
-                                    withAnimation()
-                                    {
-                                        selectedPriest = priest
+                            Menu {
+                                Section("Pokaż") {
+                                    Button {
+                                        userSelectedCategory = true
+                                        selectedCategory = .priest
+                                    } label: {
+                                        Label("Księża", systemImage: selectedCategory == .priest ? "checkmark" : "")
                                     }
-                                }) {
-                                    Label(priest.displayName, systemImage: selectedPriest?.id == priest.id ? "checkmark" : "")
-                                        .cornerRadius(16)
+                                    
+                                    Button {
+                                        userSelectedCategory = true
+                                        selectedCategory = .person
+                                    } label: {
+                                        Label("Osoby", systemImage: selectedCategory == .person ? "checkmark" : "")
+                                    }
+                                    
+                                    Button {
+                                        userSelectedCategory = true
+                                        selectedCategory = .prayer
+                                    } label: {
+                                        Label("Modlitwy", systemImage: selectedCategory == .prayer ? "checkmark" : "")
+                                    }
                                 }
-                            }
-                        } label: {
-                            Image(
-                                systemName: "list.star"
-                            )
-                            .padding((selectedPriest != nil) ? 12 : 14)
-                            .cornerRadius(16)
-                        }
-                        .cornerRadius(16)
-                        .glassEffect() 
-                        .symbolRenderingMode(.monochrome)
-                        .foregroundStyle(.primary)
-
-                    }
-                    Spacer()
-                    
-                    if(flattenedPrayerSymbols.count>0)
-                    {
-                        GlassEffectContainer(spacing: 0) {
-                            HStack(spacing: 0) {
-                                Text("\(displayProgress)/\(flattenedPrayerSymbols.count)")
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 10)
-                                    .glassEffect() 
-                                    .glassEffectUnion(id: "restartGroup", namespace: namespace)
-                                    .foregroundStyle(.primary)
                                 
-                                Button(action: {
-                                    moveToIndex(0, animated: true)
-                                }) {
-                                    Image(systemName: "arrow.triangle.2.circlepath")
-                                        .padding(12)
-                                }
-                                .glassEffect() 
-                                .glassEffectUnion(id: "restartGroup", namespace: namespace)
-                                .symbolRenderingMode(.monochrome)
-                                .foregroundStyle(.primary)
-                            }
-                            .padding(4) 
-                        }
-                        
-                        GlassEffectContainer(spacing: 0) {
-                            if(finished)
-                            {
-                                Group {
-#if os(macOS)
-                                    if #available(macOS 26.0, *) {
-                                        Image(systemName: "checkmark")
-                                            .padding(12)
-                                            .glassEffect()
-                                    } else {
-                                        Image(systemName: "checkmark")
-                                            .padding(12)
-                                            .prayerFlowLegacyGlass(.green)
+                                
+                                
+                                ForEach(priestsAndPrayers, id: \.id) { priest in
+                                    Button(action: {
+                                        withAnimation()
+                                        {
+                                            selectedPriest = priest
+                                        }
+                                    }) {
+                                        Label(priest.displayName, systemImage: selectedPriest?.id == priest.id ? "checkmark" : "")
+                                            .cornerRadius(16)
                                     }
-#else
-                                    Image(systemName: "checkmark")
-                                        .padding(12)
-                                        .glassEffect(.regular.tint(.green))
-#endif
                                 }
+                            } label: {
+                                Image(
+                                    systemName: "list.star"
+                                )
+                                .padding((selectedPriest != nil) ? 12 : 14)
+                                .cornerRadius(16)
+                            }
+                            .cornerRadius(16)
+                            .glassEffect()
+                            .symbolRenderingMode(.monochrome)
+                            .foregroundStyle(.primary)
+                            
+                        }
+                        Spacer()
+                        
+                        if(flattenedPrayerSymbols.count>0)
+                        {
+                            GlassEffectContainer(spacing: 0) {
+                                HStack(spacing: 0) {
+                                    Text("\(displayProgress)/\(flattenedPrayerSymbols.count)")
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 10)
+                                        .glassEffect()
+                                        .glassEffectUnion(id: "restartGroup", namespace: namespace)
+                                        .foregroundStyle(.primary)
+                                    
+                                    Button(action: {
+                                        moveToIndex(0, animated: true)
+                                    }) {
+                                        Image(systemName: "arrow.triangle.2.circlepath")
+                                            .padding(12)
+                                    }
+                                    .glassEffect()
+                                    .glassEffectUnion(id: "restartGroup", namespace: namespace)
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundStyle(.primary)
-                            }
-                            else
-                            {
-                                Button(action: {
-                                    moveToIndex(lastDisplayIndex, animated: true)
-                                }) {
-                                    Image(systemName: "checkmark")
-                                        .padding(12)
                                 }
-                                .glassEffect() 
-                                .symbolRenderingMode(.monochrome)
-                                .foregroundStyle(.primary)
+                                .padding(4)
                             }
-                        }
-
-                        if isCurrentPrayerWeb {
+                            
                             GlassEffectContainer(spacing: 0) {
-                                Button(action: {
-                                    withAnimation(.easeInOut(duration: 0.25)) {
-                                        isFullscreen = true
+                                if(finished)
+                                {
+                                    Group {
+#if os(macOS)
+                                        if #available(macOS 26.0, *) {
+                                            Image(systemName: "checkmark")
+                                                .padding(12)
+                                                .glassEffect()
+                                        } else {
+                                            Image(systemName: "checkmark")
+                                                .padding(12)
+                                                .prayerFlowLegacyGlass(.green)
+                                        }
+#else
+                                        Image(systemName: "checkmark")
+                                            .padding(12)
+                                            .glassEffect(.regular.tint(.green))
+#endif
                                     }
-                                }) {
-                                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                        .padding(12)
+                                    .symbolRenderingMode(.monochrome)
+                                    .foregroundStyle(.primary)
                                 }
-                                .glassEffect()
-                                .symbolRenderingMode(.monochrome)
-                                .foregroundStyle(.primary)
+                                else
+                                {
+                                    Button(action: {
+                                        moveToIndex(lastDisplayIndex, animated: true)
+                                    }) {
+                                        Image(systemName: "checkmark")
+                                            .padding(12)
+                                    }
+                                    .glassEffect()
+                                    .symbolRenderingMode(.monochrome)
+                                    .foregroundStyle(.primary)
+                                }
+                            }
+                            
+                            if isCurrentPrayerWeb {
+                                GlassEffectContainer(spacing: 0) {
+                                    Button(action: {
+                                        withAnimation(.easeInOut(duration: 0.25)) {
+                                            isFullscreen = true
+                                        }
+                                    }) {
+                                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                                            .padding(12)
+                                    }
+                                    .glassEffect()
+                                    .symbolRenderingMode(.monochrome)
+                                    .foregroundStyle(.primary)
+                                }
                             }
                         }
                     }
+                    .padding(.horizontal, 16.0)
+                    .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
+                    .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
+                    .modifier(PrayerFlowAdaptiveWidth(width: viewportWidth))
+                    
                 }
-                .padding(.horizontal, 16.0)
-                .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
-                .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
-                .modifier(PrayerFlowAdaptiveWidth(width: viewportWidth))
-
-
 
 
                 
@@ -1554,6 +1719,7 @@ private struct BreviaryPrayerCardText: View {
                         .bold(line.emphasized)
                         .italic(line.italic)
                         .multilineTextAlignment(.leading)
+                        .minimumScaleFactor(0.6)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
@@ -1577,6 +1743,7 @@ private struct BreviaryPrayerCardText: View {
                 .bold(line.emphasized)
                 .italic(line.italic)
                 .multilineTextAlignment(.leading)
+                .minimumScaleFactor(0.6)
                 .fixedSize(horizontal: false, vertical: true)
             
             if line.role == .choirLeft {
