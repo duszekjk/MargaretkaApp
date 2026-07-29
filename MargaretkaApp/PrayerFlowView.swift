@@ -1430,7 +1430,7 @@ struct PrayerFlowView: View {
         .animation(.easeInOut(duration: 0.25), value: isFullscreen)
         .safeStatusBarHidden(isFullscreen)
         .persistentSystemOverlays(isFullscreen ? .hidden : .visible)
-        .safeNavigationChrome(isFullscreen: isFullscreen)
+        .safeNavigationChrome(isFullscreen: isFullscreen || isLandscapeIPad)
     }
 
     private func startSession() {
