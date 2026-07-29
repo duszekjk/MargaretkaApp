@@ -226,9 +226,9 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         )
         customMenus[1].1.addItem(.separator())
         customMenus[1].1.addItem(withTitle: "Dodaj księdza", action: #selector(MacMenuTarget.newPriest), keyEquivalent: "").target = menuTarget
-        addTargetItems(to: customMenus[2].1, category: .person)
+        addTargetSections(to: customMenus[2].1, category: .person)
         customMenus[2].1.addItem(withTitle: "Dodaj osobę", action: #selector(MacMenuTarget.newPerson), keyEquivalent: "").target = menuTarget
-        addTargetItems(to: customMenus[3].1, category: .prayer)
+        addTargetSections(to: customMenus[3].1, category: .prayer)
         customMenus[3].1.addItem(withTitle: "Dodaj modlitwę", action: #selector(MacMenuTarget.newPrayer), keyEquivalent: "").target = menuTarget
         customMenus[3].1.addItem(withTitle: "Importuj modlitwy", action: #selector(MacMenuTarget.importPrayers), keyEquivalent: "").target = menuTarget
         customMenus[4].1.addItem(withTitle: "Zaloguj przez Apple", action: #selector(MacMenuTarget.syncSettings), keyEquivalent: "").target = menuTarget
@@ -258,6 +258,27 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
                 item.representedObject = id
             }
         }
+    }
+
+    private func addTargetSections(to menu: NSMenu, category: PrayerTargetCategory) {
+        let praySection = NSMenuItem(title: "Pomódl się", action: nil, keyEquivalent: "")
+        praySection.isEnabled = false
+        menu.addItem(praySection)
+        addTargetItems(
+            to: menu,
+            category: category,
+            action: #selector(MacMenuTarget.selectTarget(_:))
+        )
+        menu.addItem(.separator())
+        let editSection = NSMenuItem(title: "Edytuj", action: nil, keyEquivalent: "")
+        editSection.isEnabled = false
+        menu.addItem(editSection)
+        addTargetItems(
+            to: menu,
+            category: category,
+            action: #selector(MacMenuTarget.editTarget(_:))
+        )
+        menu.addItem(.separator())
     }
 
     struct MacWindowConfigurator: NSViewRepresentable {

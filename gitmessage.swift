@@ -1,4 +1,4 @@
-codex conversation [20260729-macos] show priest menu sections inline
+codex conversation [20260729-macos] add inline target sections to all menus
 
-Replace the Księża submenu hierarchy with inline Pomódl się and Edytuj sections.
-Each priest action is now one direct menu item.
+Give Osoby and Modlitwy the same direct Pomódl się and Edytuj sections as Księża.
+The listed targets are no longer nested in submenus.
