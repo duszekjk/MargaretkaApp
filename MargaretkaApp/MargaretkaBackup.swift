@@ -802,6 +802,7 @@ struct DataTransferView: View {
     @ObservedObject var targetStore: PriestStore
     var initialRoute: DataTransferRoute = .overview
     var initialFileURL: URL?
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var prayerStore: PrayerStore
     @EnvironmentObject private var offlineStore: OfflineBreviaryStore
     @EnvironmentObject private var scheduleData: ScheduleData<Priest>
@@ -870,6 +871,11 @@ struct DataTransferView: View {
             }
         }
         .navigationTitle("Import i eksport")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Zamknij") { dismiss() }
+            }
+        }
         .onAppear {
             DispatchQueue.main.async {
                 if let initialFileURL {

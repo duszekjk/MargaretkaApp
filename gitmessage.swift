@@ -1,4 +1,4 @@
-codex conversation [20260729-macos] reinstall menu when window becomes key
+codex conversation [20260729-macos] add transfer sheet close action
 
-Reinstall the custom macOS menu when the app window becomes key, preventing
-SwiftUI scene setup from leaving the system menu until the window is refocused.
+Add an explicit close button to the Import and export sheet so macOS users can
+dismiss it after a selected file is processed or when no transfer is needed.
