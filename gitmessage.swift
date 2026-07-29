@@ -1,4 +1,4 @@
-codex conversation [20260729-macos] add transfer sheet close action
+codex conversation [20260729-macos] reapply menu after scene setup
 
-Add an explicit close button to the Import and export sheet so macOS users can
-dismiss it after a selected file is processed or when no transfer is needed.
+Reapply the custom macOS menu five and ten seconds after launch, after SwiftUI
+has finished its own scene menu setup, and clarify the application quit title.

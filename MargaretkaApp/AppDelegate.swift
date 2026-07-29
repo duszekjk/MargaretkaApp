@@ -152,6 +152,12 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
             self?.constrainMainWindow()
         }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+            self?.configureMargaretkaMenu()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
+            self?.configureMargaretkaMenu()
+        }
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
@@ -172,7 +178,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         file.addItem(withTitle: "Eksportuj dane", action: #selector(MacMenuTarget.exportData), keyEquivalent: "").target = menuTarget
         file.addItem(withTitle: "Udostępnij modlitwy", action: #selector(MacMenuTarget.sharePrayers), keyEquivalent: "").target = menuTarget
         file.addItem(.separator())
-        file.addItem(withTitle: "Zakończ Margaretkę", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q").target = NSApp
+        file.addItem(withTitle: "Zakończ aplikację", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q").target = NSApp
 
         let view = NSMenu(title: "Widok")
         view.addItem(withTitle: "Pełny ekran", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f").target = nil
