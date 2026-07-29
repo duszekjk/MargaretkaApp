@@ -826,6 +826,7 @@ struct PrayerFlowView: View {
                             }
                             .cornerRadius(16)
                             .glassEffect()
+                            .contentShape(Rectangle())
                             .symbolRenderingMode(.monochrome)
                             .foregroundStyle(.primary)
                             
@@ -860,6 +861,7 @@ struct PrayerFlowView: View {
                                 .disabled(isPreparingImagePlayground)
                                 .padding(8)
                                 .glassEffect()
+                                .contentShape(Rectangle())
                             }
                             Spacer()
                                 .frame(height: 12)
@@ -884,6 +886,7 @@ struct PrayerFlowView: View {
                                     }
                                     .glassEffect()
                                     .glassEffectUnion(id: "restartGroup", namespace: namespace)
+                                    .contentShape(Rectangle())
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundStyle(.primary)
                                 }
@@ -922,6 +925,7 @@ struct PrayerFlowView: View {
                                             .padding(12)
                                     }
                                     .glassEffect()
+                                    .contentShape(Rectangle())
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundStyle(.primary)
                                 }
@@ -938,6 +942,7 @@ struct PrayerFlowView: View {
                                             .padding(12)
                                     }
                                     .glassEffect()
+                                    .contentShape(Rectangle())
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundStyle(.primary)
                                 }
@@ -949,6 +954,8 @@ struct PrayerFlowView: View {
                     .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
                     .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
                     .modifier(PrayerFlowAdaptiveWidth(width: viewportWidth))
+                    .contentShape(Rectangle())
+                    .zIndex(20)
                     
                     
                 }

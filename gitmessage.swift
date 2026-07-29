@@ -1,4 +1,6 @@
-codex conversation [20260729-ipad] checkpoint before restoring iPad row hit testing
+codex conversation [20260729-ipad] restore iPad prayer row hit testing
 
-Checkpoint the clean iPad design commit before adjusting hit testing for the
-merged prayer flow control row.
+Give the merged iPad prayer-flow row an explicit rectangular hit-test shape
+and a higher z-index than the prayer content/gesture layers. Add the same
+explicit hit shape to its Menu, background, restart, finish, and fullscreen
+controls so the visible buttons receive touches after the layout merge.
