@@ -21,8 +21,8 @@ private typealias PlatformAppDelegate = UIApplicationDelegate
 private typealias PlatformAppDelegate = NSApplicationDelegate
 #endif
 
-#if os(macOS)
-enum MacMenuCatalog {
+#if os(macOS) || os(iOS)
+enum AppMenuCatalog {
     static var entries: [PrayerTargetCategory: [(UUID, String)]] = [:]
 
     static func update(_ targets: [Priest]) {
@@ -30,9 +30,15 @@ enum MacMenuCatalog {
             (category, targets.filter { $0.category == category }.map { ($0.id, $0.displayName) })
         })
         NotificationCenter.default.post(name: .margaretkaMenuNeedsRefresh, object: nil)
+#if os(iOS)
+        UIMenuSystem.main.setNeedsRebuild()
+#endif
     }
 }
 
+#endif
+
+#if os(macOS)
 private final class MacMenuTarget: NSObject, NSMenuItemValidation {
     private func newTarget(_ category: PrayerTargetCategory) {
         NotificationCenter.default.post(name: .margaretkaNewPerson, object: category)
@@ -112,6 +118,15 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
     @objc private func openSyncSettings() { NotificationCenter.default.post(name: .margaretkaSyncSettings, object: nil) }
     @objc private func openPrayerList() { NotificationCenter.default.post(name: .margaretkaPrayerList, object: nil) }
     @objc private func toggleCompact() { NotificationCenter.default.post(name: .margaretkaToggleCompact, object: nil) }
+    @objc private func selectTarget(_ command: UICommand) {
+        guard let rawID = command.propertyList as? String, let id = UUID(uuidString: rawID) else { return }
+        NotificationCenter.default.post(name: .margaretkaSelectTarget, object: id)
+    }
+    @objc private func editTarget(_ command: UICommand) {
+        guard let rawID = command.propertyList as? String, let id = UUID(uuidString: rawID) else { return }
+        NotificationCenter.default.post(name: .margaretkaEditTarget, object: id)
+    }
+    @objc private func menuSectionTitle() {}
 #endif
 #if os(iOS) || os(tvOS) || os(visionOS)
     func application(
@@ -153,15 +168,18 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
             UICommand(title: "Udostępnij modlitwy", action: #selector(openSharePrayers))
         ])
         let priestsMenu = UIMenu(title: "Księża", identifier: IPadMenuIdentifier.priests, children: [
-            UICommand(title: "Lista księży", action: #selector(openSettings)),
+            iPadTargetSection("Pomódl się", category: .priest, action: #selector(selectTarget(_:))),
+            iPadTargetSection("Edytuj", category: .priest, action: #selector(editTarget(_:))),
             UICommand(title: "Dodaj księdza", action: #selector(openNewPriest))
         ])
         let peopleMenu = UIMenu(title: "Osoby", identifier: IPadMenuIdentifier.people, children: [
-            UICommand(title: "Lista osób", action: #selector(openSettings)),
+            iPadTargetSection("Pomódl się", category: .person, action: #selector(selectTarget(_:))),
+            iPadTargetSection("Edytuj", category: .person, action: #selector(editTarget(_:))),
             UICommand(title: "Dodaj osobę", action: #selector(openNewPerson))
         ])
         let prayersMenu = UIMenu(title: "Modlitwy", identifier: IPadMenuIdentifier.prayers, children: [
-            UICommand(title: "Lista modlitw", action: #selector(openPrayerList)),
+            iPadTargetSection("Pomódl się", category: .prayer, action: #selector(selectTarget(_:))),
+            iPadTargetSection("Edytuj", category: .prayer, action: #selector(editTarget(_:))),
             UICommand(title: "Dodaj modlitwę złożoną", action: #selector(openNewPrayer))
         ])
         let syncMenu = UIMenu(title: "Synchronizacja", identifier: IPadMenuIdentifier.sync, children: [
@@ -185,6 +203,30 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
         builder.insertSibling(statisticsMenu, afterMenu: IPadMenuIdentifier.sync)
         builder.insertSibling(viewMenu, afterMenu: IPadMenuIdentifier.statistics)
         builder.insertSibling(helpMenu, afterMenu: IPadMenuIdentifier.view)
+    }
+
+    private func iPadTargetSection(
+        _ title: String,
+        category: PrayerTargetCategory,
+        action: Selector
+    ) -> UIMenu {
+        let entries = AppMenuCatalog.entries[category] ?? []
+        let commands: [UIMenuElement]
+        if entries.isEmpty {
+            let empty = UICommand(title: "Brak zapisanych elementów", action: #selector(menuSectionTitle))
+            empty.attributes = [.disabled]
+            commands = [empty]
+        } else {
+            commands = entries.map { id, displayName in
+                UICommand(
+                    title: displayName,
+                    image: nil,
+                    action: action,
+                    propertyList: id.uuidString
+                )
+            }
+        }
+        return UIMenu(title: title, options: .displayInline, children: commands)
     }
 #endif
 #else
@@ -298,7 +340,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
     }
 
     private func addTargetItems(to menu: NSMenu, category: PrayerTargetCategory, action: Selector = #selector(MacMenuTarget.selectTarget(_:))) {
-        let items = MacMenuCatalog.entries[category] ?? []
+        let items = AppMenuCatalog.entries[category] ?? []
         if items.isEmpty {
             menu.addItem(withTitle: "Brak zapisanych elementów", action: nil, keyEquivalent: "").isEnabled = false
         } else {

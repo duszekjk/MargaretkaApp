@@ -206,14 +206,16 @@ struct HomeView: View {
             .onAppear {
                 let now = CFAbsoluteTimeGetCurrent()
                 print("HomeView onAppear at \(String(format: "%.3f", now))")
-#if os(macOS)
-                MacMenuCatalog.update(scheduleData.items)
+#if os(macOS) || os(iOS)
+                AppMenuCatalog.update(scheduleData.items)
 #endif
             }
-#if os(macOS)
+#if os(macOS) || os(iOS)
             .onChange(of: scheduleData.items) { _, items in
-                MacMenuCatalog.update(items)
+                AppMenuCatalog.update(items)
             }
+#endif
+#if os(macOS)
             .sheet(isPresented: $showSettings) {
                 NavigationStack {
                     SettingsMenuView(

@@ -1,4 +1,4 @@
-codex conversation [20260729-ipad] replace persistent default iPad menus
+codex conversation [20260729-ipad] match the macOS target menus
 
-Remove previous custom and standard iPad menu identifiers before rebuilding the
-app menu in stable order. Add platform-correct priest and composite-prayer actions.
+Use the same target catalog on iPadOS and macOS. Księża, Osoby, and Modlitwy
+now expose direct Pomódl się and Edytuj sections and refresh when data changes.
