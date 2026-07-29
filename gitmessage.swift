@@ -1,4 +1,4 @@
-codex conversation [20260729-macos] open macOS target editor directly
+codex conversation [20260729-macos] allow saving incomplete macOS targets
 
-Make macOS menu Add actions present the dedicated full editor directly instead
-of routing through the iPhone-oriented Settings and ScheduleList views.
+Keep Save active in the macOS target editor so selecting prayer groups or
+starting a draft does not prevent the user from saving it for later completion.

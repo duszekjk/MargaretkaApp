@@ -328,7 +328,6 @@ struct MacNewTargetEditorSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Zapisz") { save() }
-                        .disabled(draft.firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
         }
