@@ -161,6 +161,7 @@ struct HomeView: View {
     @State private var menuTargetCategory: PrayerTargetCategory?
 #if os(macOS)
     @State private var newTargetCategory: PrayerTargetCategory?
+    @State private var editingTarget: Priest?
 #endif
     @AppStorage("prayerCompactView") private var prayerCompactView = false
 
@@ -234,6 +235,14 @@ struct HomeView: View {
                     category: category
                 )
             }
+            .sheet(item: $editingTarget) { target in
+                MacNewTargetEditorSheet(
+                    store: priestStore,
+                    availablePrayers: $prayerStore.prayers,
+                    category: target.category,
+                    existing: target
+                )
+            }
 #endif
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaSettings)) { _ in
                 showSettings = true
@@ -272,6 +281,13 @@ struct HomeView: View {
                 DispatchQueue.main.async {
                     menuTargetCategory = category
                 }
+#endif
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .margaretkaEditTarget)) { notification in
+#if os(macOS)
+                guard let id = notification.object as? UUID else { return }
+                editingTarget = priestStore.priests.first(where: { $0.id == id })
+                    ?? scheduleData.items.first(where: { $0.id == id })
 #endif
             }
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaHowTo)) { _ in

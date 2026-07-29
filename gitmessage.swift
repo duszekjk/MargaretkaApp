@@ -1,4 +1,4 @@
-codex conversation [20260729-macos] add priest editor notification route
+codex conversation [20260729-macos] open saved priests from macOS menu
 
-Add the notification channel used by the macOS Księża Edit section to open a
-saved priest in the full editor.
+Handle the macOS Księża Edit action by presenting the selected saved priest in
+the full editor, with immediate store and schedule refresh on save.
