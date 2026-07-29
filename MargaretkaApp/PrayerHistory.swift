@@ -166,6 +166,29 @@ struct HomeView: View {
     @AppStorage("prayerCompactView") private var prayerCompactView = false
 
     var body: some View {
+#if os(macOS)
+        baseContent
+            .sheet(item: $newTargetCategory) { category in
+                MacNewTargetEditorSheet(
+                    store: priestStore,
+                    availablePrayers: $prayerStore.prayers,
+                    category: category
+                )
+            }
+            .sheet(item: $editingTarget) { target in
+                MacNewTargetEditorSheet(
+                    store: priestStore,
+                    availablePrayers: $prayerStore.prayers,
+                    category: target.category,
+                    existing: target
+                )
+            }
+#else
+        baseContent
+#endif
+    }
+
+    private var baseContent: some View {
         PrayerFlowView(showSettings: $showSettings, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie)
             .environmentObject(priestStore)
 #if !os(macOS)
@@ -227,23 +250,6 @@ struct HomeView: View {
                 .toolbar { MacSheetDismissButton() }
 #endif
             }
-#if os(macOS)
-            .sheet(item: $newTargetCategory) { category in
-                MacNewTargetEditorSheet(
-                    store: priestStore,
-                    availablePrayers: $prayerStore.prayers,
-                    category: category
-                )
-            }
-            .sheet(item: $editingTarget) { target in
-                MacNewTargetEditorSheet(
-                    store: priestStore,
-                    availablePrayers: $prayerStore.prayers,
-                    category: target.category,
-                    existing: target
-                )
-            }
-#endif
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaSettings)) { _ in
                 showSettings = true
             }
