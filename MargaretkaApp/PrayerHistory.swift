@@ -159,6 +159,9 @@ struct HomeView: View {
     @State private var showStatistics = false
     @State private var showSyncSettings = false
     @State private var menuTargetCategory: PrayerTargetCategory?
+#if os(macOS)
+    @State private var newTargetCategory: PrayerTargetCategory?
+#endif
     @AppStorage("prayerCompactView") private var prayerCompactView = false
 
     var body: some View {
@@ -223,6 +226,15 @@ struct HomeView: View {
                 .toolbar { MacSheetDismissButton() }
 #endif
             }
+#if os(macOS)
+            .sheet(item: $newTargetCategory) { category in
+                MacNewTargetEditorSheet(
+                    store: priestStore,
+                    availablePrayers: $prayerStore.prayers,
+                    category: category
+                )
+            }
+#endif
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaSettings)) { _ in
                 showSettings = true
             }
@@ -252,10 +264,15 @@ struct HomeView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaNewPerson)) { notification in
                 let category = (notification.object as? PrayerTargetCategory) ?? .person
+#if os(macOS)
+                showSettings = false
+                newTargetCategory = category
+#else
                 showSettings = true
                 DispatchQueue.main.async {
                     menuTargetCategory = category
                 }
+#endif
             }
             .onReceive(NotificationCenter.default.publisher(for: .margaretkaHowTo)) { _ in
                 showSettings = true

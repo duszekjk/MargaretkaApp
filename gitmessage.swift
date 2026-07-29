@@ -1,4 +1,4 @@
-codex conversation [20260729-macos] add dedicated macOS target editor
+codex conversation [20260729-macos] open macOS target editor directly
 
-Provide a native macOS Add sheet with the full target editor and explicit Save
-and Cancel actions, independent of the iPhone scheduling form.
+Make macOS menu Add actions present the dedicated full editor directly instead
+of routing through the iPhone-oriented Settings and ScheduleList views.
