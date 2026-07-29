@@ -953,7 +953,7 @@ struct PrayerFlowView: View {
                     .padding(.horizontal, 16.0)
                     .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
                     .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
-                    .modifier(PrayerFlowAdaptiveWidth(width: viewportWidth))
+                    .frame(maxWidth: .infinity)
                     .contentShape(Rectangle())
                     .zIndex(20)
                     
