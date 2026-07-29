@@ -97,6 +97,7 @@ extension Notification.Name {
     static let margaretkaPrayerList = Notification.Name("margaretka.prayerList")
     static let margaretkaToggleCompact = Notification.Name("margaretka.toggleCompact")
     static let margaretkaSelectTarget = Notification.Name("margaretka.selectTarget")
+    static let margaretkaEditTarget = Notification.Name("margaretka.editTarget")
     static let margaretkaMenuNeedsRefresh = Notification.Name("margaretka.menuNeedsRefresh")
     static let margaretkaImport = Notification.Name("margaretka.import")
     static let margaretkaImportFile = Notification.Name("margaretka.importFile")
