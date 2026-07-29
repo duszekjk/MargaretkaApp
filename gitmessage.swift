@@ -1,4 +1,4 @@
-codex conversation [20260729-macos] allow saving incomplete macOS targets
+codex conversation [20260729-macos] refresh schedule after macOS target save
 
-Keep Save active in the macOS target editor so selecting prayer groups or
-starting a draft does not prevent the user from saving it for later completion.
+Save macOS target edits into both PriestStore and ScheduleData immediately so
+PrayerFlowView and the dynamic menu refresh without an app restart.

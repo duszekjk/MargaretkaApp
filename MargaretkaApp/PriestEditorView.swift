@@ -293,16 +293,18 @@ struct MacNewTargetEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var store: PriestStore
     @Binding var availablePrayers: [Prayer]
+    @EnvironmentObject private var scheduleData: ScheduleData<Priest>
     @State private var draft: Priest
 
     init(
         store: PriestStore,
         availablePrayers: Binding<[Prayer]>,
-        category: PrayerTargetCategory
+        category: PrayerTargetCategory,
+        existing: Priest? = nil
     ) {
         self.store = store
         self._availablePrayers = availablePrayers
-        _draft = State(initialValue: Priest(
+        _draft = State(initialValue: existing ?? Priest(
             id: UUID(),
             firstName: "",
             lastName: "",
@@ -341,6 +343,11 @@ struct MacNewTargetEditorSheet: View {
         draft.notificationMessage = draft.category.notificationMessage(for: name)
         draft.save()
         store.addOrUpdate(draft)
+        if scheduleData.items.contains(where: { $0.id == draft.id }) {
+            scheduleData.update(draft)
+        } else {
+            scheduleData.add(draft)
+        }
         dismiss()
     }
 }
