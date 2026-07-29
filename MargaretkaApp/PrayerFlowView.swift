@@ -1213,7 +1213,7 @@ struct PrayerFlowView: View {
                     StartView(showSettings: $showSettings, showEditor: $showEditor, showOsoby: $showOsoby, showCzymJest: $showCzymJest, showJakSie: $showJakSie)
                 }
             }
-            .padding(.vertical, 35)
+            .padding(.vertical, isIPad ? 0 : 35)
 
             if isPreparingImagePlayground {
                 ImagePlaygroundPreparationOverlay()

@@ -1,4 +1,5 @@
-codex conversation [20260729-ipad] checkpoint before removing iPad stack inset
+codex conversation [20260729-ipad] remove iPad vertical stack inset
 
-Checkpoint the inline iPad settings layout before removing the outer stack
-inset that still consumed vertical space.
+Remove the outer 35-point vertical inset from the iPad prayer flow so the
+inline controls can occupy the toolbar-height row directly. Keep the inset on
+iPhone layouts.
