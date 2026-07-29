@@ -1,5 +1,5 @@
-codex conversation [20260729-macos] make macOS sheets dismissible
+codex conversation [20260729-macos] replace crashing settings navigation links
 
-Give Settings, Statistics, and Synchronization their own close controls on
-macOS, open sync directly instead of via the iPhone settings screen, and defer
-settings navigation state until its NavigationStack exists.
+Replace deprecated state-driven NavigationLink initializers with explicit
+navigationDestination routes for people and help, preventing the fatal
+incomplete-NavigationLink crash from menu actions.

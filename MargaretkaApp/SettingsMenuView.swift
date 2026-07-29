@@ -51,16 +51,9 @@ struct SettingsMenuView: View {
                     Text("Księża")
                 }
                 
-                NavigationLink(
-                    destination: PriestListView(
-                        store: priestStore,
-                        availablePrayers: $availablePrayers,
-                        showEditor: $showEditor,
-                        category: .person,
-                        title: "Osoby"
-                    ),
-                    isActive: $showOsoby
-                ) {
+                NavigationLink {
+                    peopleList
+                } label: {
                     Text("Osoby")
                 }
 
@@ -76,17 +69,15 @@ struct SettingsMenuView: View {
                     Text("Modlitwy złożone")
                 }
                 
-                NavigationLink(
-                    destination: CzymJestMargaretkaView(),
-                    isActive: $showCzymJest
-                ) {
+                NavigationLink {
+                    CzymJestMargaretkaView()
+                } label: {
                     Text("Czym jest „Margaretka”?")
                 }
                 
-                NavigationLink(
-                    destination: JakSieModlicView(),
-                    isActive: $showJakSie
-                ) {
+                NavigationLink {
+                    JakSieModlicView()
+                } label: {
                     Text("Jak się modlić w Margaretce?")
                 }
                 NavigationLink("Statystyki", destination: StatsView())
@@ -207,5 +198,24 @@ struct SettingsMenuView: View {
                 }
         }
         .navigationTitle("Ustawienia")
+        .navigationDestination(isPresented: $showOsoby) {
+            peopleList
+        }
+        .navigationDestination(isPresented: $showCzymJest) {
+            CzymJestMargaretkaView()
+        }
+        .navigationDestination(isPresented: $showJakSie) {
+            JakSieModlicView()
+        }
+    }
+
+    private var peopleList: some View {
+        PriestListView(
+            store: priestStore,
+            availablePrayers: $availablePrayers,
+            showEditor: $showEditor,
+            category: .person,
+            title: "Osoby"
+        )
     }
 }
