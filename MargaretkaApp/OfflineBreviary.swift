@@ -245,6 +245,7 @@ nonisolated struct OfflineBreviaryDay: Codable, Hashable, Identifiable, Sendable
     var date: BreviaryCivilDate
     var variantIdentifier: String
     var variantName: String
+    var languageCode: String?
     var celebrationName: String?
     var liturgicalColor: String?
     var saintBiography: OfflineSaintBiography?
@@ -259,6 +260,7 @@ nonisolated struct OfflineBreviaryDay: Codable, Hashable, Identifiable, Sendable
         date: BreviaryCivilDate,
         variantIdentifier: String,
         variantName: String,
+        languageCode: String? = "pl",
         celebrationName: String? = nil,
         liturgicalColor: String? = nil,
         saintBiography: OfflineSaintBiography? = nil,
@@ -272,6 +274,7 @@ nonisolated struct OfflineBreviaryDay: Codable, Hashable, Identifiable, Sendable
         self.date = date
         self.variantIdentifier = variantIdentifier
         self.variantName = variantName
+        self.languageCode = languageCode
         self.celebrationName = celebrationName
         self.liturgicalColor = liturgicalColor
         self.saintBiography = saintBiography
@@ -283,7 +286,7 @@ nonisolated struct OfflineBreviaryDay: Codable, Hashable, Identifiable, Sendable
     }
 
     var stableIdentity: String {
-        "\(date.id)|\(variantIdentifier.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "pl_PL")))"
+        "\(date.id)|\(languageCode ?? "pl")|\(variantIdentifier.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "pl_PL")))"
     }
 }
 

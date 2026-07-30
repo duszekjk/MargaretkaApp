@@ -79,7 +79,12 @@ struct OfflineBreviaryManagerView: View {
                         }
                     } header: {
                         VStack(alignment: .leading) {
-                            Text("\(day.date.id) — \(day.variantName)")
+                            HStack {
+                                Text("\(day.date.id) — \(day.variantName)")
+                                Text(day.languageCode ?? "pl")
+                                    .font(.caption2.monospaced())
+                                    .foregroundStyle(.secondary)
+                            }
                             if let celebration = day.celebrationName {
                                 Text(celebration).font(.caption)
                             }
@@ -163,9 +168,7 @@ struct OfflineBreviaryManagerView: View {
 
 struct BreviaryVariantOrderView: View {
     @State private var variantOrder = BreviaryVariantPreferences.load()
-#if os(macOS)
-    @State private var macEditing = false
-#endif
+    @State private var editMode: EditMode = .inactive
 
     var body: some View {
         List {
@@ -177,13 +180,12 @@ struct BreviaryVariantOrderView: View {
                 BreviaryVariantPreferences.save(variantOrder)
             }
         }
+        .environment(\.editMode, $editMode)
         .navigationTitle("Warianty oficjum")
         .toolbar {
-#if os(macOS)
-            Button(macEditing ? "Gotowe" : "Edytuj") { macEditing.toggle() }
-#else
-            EditButton()
-#endif
+            Button(editMode == .active ? "Gotowe" : "Edytuj") {
+                editMode = editMode == .active ? .inactive : .active
+            }
         }
     }
 }

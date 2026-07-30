@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] preserve existing multilingual import work
+codex conversation [20260730-ipad] prepare offline offices for multiple languages
 
-Save the current uncommitted project, importer, and localization changes before
-continuing the Universalis EPUB integration.
+Store a language code with each offline day while retaining existing Polish
+data, and make the office-variant ordering genuinely editable.
