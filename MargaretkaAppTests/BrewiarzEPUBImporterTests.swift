@@ -55,7 +55,8 @@ struct BrewiarzEPUBImporterTests {
         #expect(morningPrayer.cards.count >= 15)
         #expect(morningPrayer.cards.allSatisfy { $0.lines.count <= 12 })
         let lines = morningPrayer.cards.flatMap(\.lines)
-        #expect(!lines.contains { $0.role == .choirLeft || $0.role == .choirRight })
+        let choirLines = lines.filter { $0.role == .choirLeft || $0.role == .choirRight }
+        #expect(choirLines.isEmpty, "Unexpected choir lines: \(choirLines.map(\.text))")
     }
 
     @Test func parsesDatedOfficeChoirsAndCanonicalPrayerReference() throws {
