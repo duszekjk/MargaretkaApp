@@ -70,6 +70,12 @@ nonisolated enum BrewiarzEPUBImporter {
         let access = url.startAccessingSecurityScopedResource()
         defer { if access { url.stopAccessingSecurityScopedResource() } }
         let archive = try SimpleZIPArchive(data: Data(contentsOf: url))
+        if archive.entryNames.contains(where: { $0.hasSuffix("contents.xhtml") }),
+           let contentsData = try? archive.data(for: archive.entryNames.first(where: { $0.hasSuffix("contents.xhtml") })!),
+           let contents = String(data: contentsData, encoding: .utf8),
+           contents.contains("universalis.css") {
+            return try await importUniversalisEPUB(from: archive, sourceURL: url, contents: contents, progress: progress)
+        }
         let allCandidates = archive.entryNames.filter(isDailyBreviaryDocument)
         guard !allCandidates.isEmpty else { throw BrewiarzEPUBImportError.noBreviaryDocuments }
         let candidates = preferredVariantOrder.map {
@@ -153,6 +159,63 @@ nonisolated enum BrewiarzEPUBImporter {
             sourceTitle: url.deletingPathExtension().lastPathComponent,
             skippedDocumentCount: skipped
         )
+    }
+
+    private static func importUniversalisEPUB(
+        from archive: SimpleZIPArchive,
+        sourceURL: URL,
+        contents: String,
+        progress: (@MainActor @Sendable (BrewiarzEPUBImportProgress) -> Void)?
+    ) async throws -> BrewiarzEPUBImportResult {
+        let languageCode = contents.contains("Index dierum") ? "la" : "en"
+        let links = captures(in: contents, pattern: #"href=\"([^\"]*u\d+\.xhtml)\"[^>]*>([^<]+)<"#)
+        let importID = UUID()
+        let sourceTitle = sourceURL.deletingPathExtension().lastPathComponent
+        var days: [OfflineBreviaryDay] = []
+        for (index, link) in links.enumerated() where link.count == 2 {
+            guard let date = universalisDate(link[1]) else { continue }
+            let base = URL(fileURLWithPath: link[0]).deletingLastPathComponent().path == "/" ? link[0] : "OEBPS/\(link[0])"
+            guard let data = try? archive.data(for: base), let dayPage = String(data: data, encoding: .utf8) else { continue }
+            var offices: [OfflineBreviaryOffice] = []
+            for officeLink in captures(in: dayPage, pattern: #"href=\"([^\"]+\.xhtml)\"[^>]*>([^<]+)<"#) where officeLink.count == 2 {
+                guard let key = universalisOfficeKey(officeLink[1]),
+                      let officeData = try? archive.data(for: "OEBPS/\(officeLink[0])"),
+                      let officePage = String(data: officeData, encoding: .utf8) else { continue }
+                let lines = discardNavigationAndMetadata(XHTMLPrayerLineParser.parse(officePage), officeTitle: officeLink[1])
+                guard !lines.isEmpty else { continue }
+                offices.append(OfflineBreviaryOffice(key: key, title: officeLink[1], cards: paginate(lines), contentFingerprint: stableFingerprint(lines)))
+            }
+            if !offices.isEmpty {
+                days.append(OfflineBreviaryDay(date: date, variantIdentifier: "universalis", variantName: "Universalis", languageCode: languageCode, celebrationName: nil, liturgicalColor: nil, offices: offices, sourceImportID: importID, sourceIdentifier: sourceURL.lastPathComponent, sourceTitle: sourceTitle))
+            }
+            if let progress { await progress(.init(completedDocuments: index + 1, totalDocuments: links.count, elapsed: 0)) }
+        }
+        guard !days.isEmpty else { throw BrewiarzEPUBImportError.noOffices }
+        return .init(days: days, sourceTitle: sourceTitle, skippedDocumentCount: links.count - days.count)
+    }
+
+    private static func universalisOfficeKey(_ title: String) -> BrewiarzPrayerKey? {
+        let text = title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "en_US"))
+        if text.contains("morning prayer") || text.contains("laudes") { return .jutrznia }
+        if text.contains("evening prayer") || text.contains("vesper") { return .nieszpory }
+        if text.contains("night prayer") || text.contains("completor") { return .kompleta }
+        if text.contains("office of readings") || text.contains("officium lectionis") { return .godzinaCzytan }
+        return nil
+    }
+
+    private static func universalisDate(_ text: String) -> BreviaryCivilDate? {
+        let months = ["january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6, "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12, "ianuarii": 1, "februarii": 2, "martii": 3, "aprilis": 4, "maii": 5, "iunii": 6, "iulii": 7, "augusti": 8, "septembris": 9, "octobris": 10, "novembris": 11, "decembris": 12]
+        let normalized = text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "en_US"))
+        guard let match = captures(in: normalized, pattern: #"(\d{1,2})\s+([a-z]+)\s+(\d{4})"#).first, match.count == 3,
+              let day = Int(match[0]), let month = months[match[1]], let year = Int(match[2]) else { return nil }
+        return .init(year: year, month: month, day: day)
+    }
+
+    private static func captures(in text: String, pattern: String) -> [[String]] {
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+        return regex.matches(in: text, range: NSRange(text.startIndex..., in: text)).compactMap { match in
+            (1..<match.numberOfRanges).compactMap { Range(match.range(at: $0), in: text).map { String(text[$0]) } }
+        }
     }
 
     static func parseDailyDocument(
