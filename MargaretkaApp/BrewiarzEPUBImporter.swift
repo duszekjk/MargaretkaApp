@@ -249,7 +249,7 @@ nonisolated enum BrewiarzEPUBImporter {
         return OfflineBreviaryOffice(
             key: key,
             title: title,
-            cards: paginate(lines, maximumLines: 5),
+            cards: paginate(lines, maximumLines: 8),
             contentFingerprint: stableFingerprint(lines)
         )
     }
@@ -1200,6 +1200,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         var rubric = false
         var leftAligned = false
         var navigationLink = false
+        var choirRole: OfflineBreviaryLineRole?
     }
 
     private var styleStack: [Style] = [Style()]
@@ -1252,6 +1253,12 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         if name == "b" || name == "strong" { style.emphasized = true }
         if name == "i" || name == "em" { style.italic = true }
         if name == "a", attributeDict["href"] != nil { style.navigationLink = true }
+        let cssClasses = Set((attributeDict["class"] ?? "").split(whereSeparator: { $0.isWhitespace }).map(String.init))
+        if !cssClasses.isDisjoint(with: ["v", "vgb"]) {
+            style.choirRole = .choirLeft
+        } else if !cssClasses.isDisjoint(with: ["vi", "vigb"]) {
+            style.choirRole = .choirRight
+        }
         let inlineStyle = attributeDict["style"]?.lowercased() ?? ""
         if inlineStyle.contains("font-weight:bold") || inlineStyle.contains("font-weight: bold") {
             style.emphasized = true
@@ -1326,6 +1333,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
             if folded.hasPrefix("k.") { role = .leader }
             else if folded.hasPrefix("w.") { role = .response }
             else if folded.hasPrefix("ant.") || Self.isNumberedAntiphon(text) { role = .antiphon }
+            else if let choirRole = style.choirRole { role = choirRole }
             else if leadingChoirIndent { role = .choirRight }
             else if Self.isReadingProclamation(text) { role = .body }
             else if isUppercaseHeading || Self.isSemanticPrayerHeading(text) { role = .heading }

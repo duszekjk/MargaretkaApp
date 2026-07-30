@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] parse Universalis HTML entities
+codex conversation [20260730-ipad] preserve Universalis page and choir structure
 
-Normalize the Universalis middle-dot entity before XML parsing so navigation
-does not stop the parser before the imported Morning Prayer text.
+Interpret Universalis verse CSS classes as left and right choir lines, and
+paginate imported Universalis offices at eight source lines per card.

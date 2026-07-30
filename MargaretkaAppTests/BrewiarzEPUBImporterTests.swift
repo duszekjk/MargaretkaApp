@@ -49,10 +49,14 @@ struct BrewiarzEPUBImporterTests {
             $0.date == BreviaryCivilDate(year: 2026, month: 7, day: 30)
         }
         #expect(!variants.isEmpty)
-        let morningPrayerCardCounts = variants.compactMap {
-            $0.offices.first(where: { $0.key == .jutrznia })?.cards.count
-        }
-        #expect(morningPrayerCardCounts.contains { $0 >= 15 })
+        let morningPrayer = try #require(
+            variants.first?.offices.first(where: { $0.key == .jutrznia })
+        )
+        #expect(morningPrayer.cards.count >= 15)
+        #expect(morningPrayer.cards.allSatisfy { $0.lines.count <= 8 })
+        let lines = morningPrayer.cards.flatMap(\.lines)
+        #expect(lines.contains { $0.role == .choirLeft })
+        #expect(lines.contains { $0.role == .choirRight })
     }
 
     @Test func parsesDatedOfficeChoirsAndCanonicalPrayerReference() throws {
