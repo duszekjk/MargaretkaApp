@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] map translated Universalis office names
+codex conversation [20260730-ipad] map multilingual office-variant categories
 
-Recognize English and Latin names for every canonical office so equivalent
-offices always import under the same internal prayer key.
+Recognize equivalent Polish, English, and Latin commemorations under the same
+semantic priority category, including Dominican and optional memorial variants.

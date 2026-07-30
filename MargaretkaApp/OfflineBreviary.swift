@@ -57,10 +57,10 @@ nonisolated enum BreviaryVariantPreferences {
         ("jezuici", "U jezuitów", ["U jezuitów"]),
         ("benedyktyni", "W zakonach benedyktyńskich", ["W zakonach benedyktyńskich", "W zakonie benedyktyńskim"]),
         ("opolskie-gliwickie", "W diecezjach opolskiej i gliwickiej", ["W diecezjach opolskiej i gliwickiej"]),
-        ("dominikanie", "W zakonie dominikańskim", ["W zakonie dominikańskim"]),
+        ("dominikanie", "W zakonie dominikańskim", ["W zakonie dominikańskim", "Dominican", "Order of Preachers", "Ordo Praedicatorum", "Ordinis Praedicatorum"]),
     ] + polishDioceseDefinitions + [
-        ("wspomnienie-dowolne", "Wspomnienie dowolne patrona dnia", ["Wsp. dowolne", "Wspomnienie dowolne"]),
-        ("wspomnienie-obowiazkowe", "Wspomnienie obowiązkowe", ["Wsp. obowiązkowe", "Wspomnienie obowiązkowe"]),
+        ("wspomnienie-dowolne", "Wspomnienie dowolne patrona dnia", ["Wsp. dowolne", "Wspomnienie dowolne", "Optional Memorial", "Optional Commemoration", "Memoria ad libitum", "Memoria facultativa"]),
+        ("wspomnienie-obowiazkowe", "Wspomnienie obowiązkowe", ["Wsp. obowiązkowe", "Wspomnienie obowiązkowe", "Memorial", "Memoria"]),
         ("wspolnoty-zakonne", "W innych wspólnotach zakonnych", ["U ", "W II Zakonie Franciszkańskim", "W zakonach ", "W zakonie ", "W prowincjach OFM", "W Rodzinie św. Pawła", "W zgromadzeniach "]),
         ("diecezje", "W diecezjach i metropoliach", ["W diec.", "W diecezji ", "W archidiecezji ", "W metropolii "]),
         ("koscioly", "W kościołach i bazylikach", ["W kościele ", "W bazylice "]),
