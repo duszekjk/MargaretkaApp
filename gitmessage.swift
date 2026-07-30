@@ -1,5 +1,4 @@
-codex conversation [20260730-ipad] separate Universalis sections and Our Father
+codex conversation [20260731-ipad] checkpoint before English Our Father prayer
 
-Start Short Responsory and Prayers and intercessions on their own cards, keep
-Canticle as a section boundary, and reuse Ojcze nasz for English Our Father
-rather than importing its full text.
+Save the existing English Office boundaries before adding Our Father as a
+separate reusable simple prayer.
