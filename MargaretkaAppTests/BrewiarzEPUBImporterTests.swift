@@ -94,7 +94,7 @@ struct BrewiarzEPUBImporterTests {
         #expect(day.variantName == "Tekst podstawowy")
     }
 
-    @Test func selectsFirstAvailableVariantForEachDateBeforeParsing() {
+    @Test func selectsFirstAvailableNamedVariantsForEachDate() {
         let documents = [
             "OEBPS/Text/1708p.xhtml",
             "OEBPS/Text/1708w1.xhtml",
@@ -105,22 +105,35 @@ struct BrewiarzEPUBImporterTests {
             "OEBPS/Text/kartka_170826.xhtml"
         ]
 
+        let source = [
+            "OEBPS/Text/1708p.xhtml": "<div class=\"spis2\">Dzień powszedni</div>",
+            "OEBPS/Text/1708w1.xhtml": "<div class=\"spis2\">Wsp. dowolne św. Jana Eudesa</div>",
+            "OEBPS/Text/1708w2.xhtml": "<div class=\"spis2\">W zakonach benedyktyńskich: Święto</div>",
+            "OEBPS/Text/1808p.xhtml": "<div class=\"spis2\">Dzień powszedni</div>",
+            "OEBPS/Text/1808w2.xhtml": "<div class=\"spis2\">W zakonie dominikańskim: Wspomnienie</div>",
+            "OEBPS/Text/1908w2.xhtml": "<div class=\"spis2\">W zakonach benedyktyńskich: Wspomnienie</div>"
+        ]
         let ownFirst = BrewiarzEPUBImporter.selectedDailyDocuments(
             from: documents,
-            preferenceOrder: ["w2", "w1", "p"]
+            preferenceOrder: ["benedyktyni", "dominikanie", "wspomnienie-dowolne", "primary"],
+            maximumVariantsPerDay: 2,
+            documentText: { source[$0] }
         )
         let primaryFallback = BrewiarzEPUBImporter.selectedDailyDocuments(
             from: documents,
-            preferenceOrder: ["w1", "p", "w2"]
+            preferenceOrder: ["primary", "wspomnienie-dowolne"],
+            maximumVariantsPerDay: 1,
+            documentText: { source[$0] }
         )
 
         #expect(ownFirst == [
-            "OEBPS/Text/1708w2.xhtml",
+            "OEBPS/Text/1708w2.xhtml", "OEBPS/Text/1708w1.xhtml",
             "OEBPS/Text/1808w2.xhtml",
+            "OEBPS/Text/1808p.xhtml",
             "OEBPS/Text/1908w2.xhtml"
         ])
         #expect(primaryFallback == [
-            "OEBPS/Text/1708w1.xhtml",
+            "OEBPS/Text/1708p.xhtml",
             "OEBPS/Text/1808p.xhtml",
             "OEBPS/Text/1908w2.xhtml"
         ])

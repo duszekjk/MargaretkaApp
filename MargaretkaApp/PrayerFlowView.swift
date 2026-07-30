@@ -248,6 +248,7 @@ struct PrayerFlowView: View {
     @State private var sessionCompletion: PrayerSessionCompletion = .finished
     @State private var sessionForcedEndDate: Date?
     @State private var fontNow: CGFloat = 19.0
+    @State private var selectedOfflineBreviaryDayID: UUID?
     
     @Binding var showSettings: Bool
     @Binding var showEditor: Bool
@@ -537,7 +538,7 @@ struct PrayerFlowView: View {
     }
 
     var prayerSteps: [PrayerFlowStep] {
-        let selectedDay = offlineBreviaryStore.day(for: .now)
+        let selectedDay = selectedOfflineBreviaryDay
         let offices = Dictionary(uniqueKeysWithValues: BrewiarzPrayerKey.allCases.compactMap { key in
             selectedDay?.offices.first(where: { $0.key == key }).map { (key, $0) }
         })
@@ -547,6 +548,43 @@ struct PrayerFlowView: View {
             offlineOffices: offices,
             saintBiography: selectedDay?.saintBiography
         )
+    }
+
+    private var availableOfflineBreviaryDays: [OfflineBreviaryDay] {
+        offlineBreviaryStore.matchingDays(for: .now)
+    }
+
+    private var selectedOfflineBreviaryDay: OfflineBreviaryDay? {
+        availableOfflineBreviaryDays.first(where: { $0.id == selectedOfflineBreviaryDayID })
+            ?? availableOfflineBreviaryDays.first
+    }
+
+    @ViewBuilder
+    private var breviaryVariantPicker: some View {
+        if availableOfflineBreviaryDays.count > 1 {
+            GlassEffectContainer(spacing: 0) {
+                Menu {
+                    ForEach(availableOfflineBreviaryDays) { day in
+                        Button {
+                            selectedOfflineBreviaryDayID = day.id
+                            activeIndex = 0
+                        } label: {
+                            Label(
+                                day.variantName,
+                                systemImage: day.id == selectedOfflineBreviaryDay?.id ? "checkmark" : "book.closed"
+                            )
+                        }
+                    }
+                } label: {
+                    Label(selectedOfflineBreviaryDay?.variantName ?? "Oficjum", systemImage: "books.vertical")
+                        .lineLimit(1)
+                        .padding(12)
+                }
+                .glassEffect()
+                .symbolRenderingMode(.monochrome)
+                .foregroundStyle(.primary)
+            }
+        }
     }
 
     var isIPad: Bool {
@@ -864,6 +902,7 @@ struct PrayerFlowView: View {
                             .symbolRenderingMode(.monochrome)
                             .foregroundStyle(.primary)
                         }
+                        breviaryVariantPicker
                         Spacer()
                         if(selectedPriest != nil)
                         {
@@ -1087,6 +1126,7 @@ struct PrayerFlowView: View {
                             .foregroundStyle(.primary)
                             
                         }
+                        breviaryVariantPicker
                         Spacer()
                         
                         if(flattenedPrayerSymbols.count>0)

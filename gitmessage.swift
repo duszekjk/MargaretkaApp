@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] classify all inspected Brewiarz variants
+codex conversation [20260730-ipad] choose retained Brewiarz office in prayer
 
-Cover every observed EPUB variant with a predefined, name-based category. The
-import priority remains editable and no longer depends on w-number filenames.
+Show a name-based picker in the PrayerFlow top controls when a day has more
+than one imported office, and cover the priority rule with a focused test.
