@@ -1,4 +1,5 @@
-codex conversation [20260730-ipad] checkpoint before Universalis EPUB follow-up
+codex conversation [20260730-ipad] preserve Universalis sections and hymns
 
-Save the verified importer state before extending English canticle choir
-recognition and semantic pagination.
+Use English EPUB section headers to start semantic cards, identify Canticles
+whose titles do not say "Canticle", and retain visual spacing between hymn
+stanzas. Tests cover the real July Universalis morning prayer.

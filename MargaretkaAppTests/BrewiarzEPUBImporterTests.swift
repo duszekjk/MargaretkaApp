@@ -59,6 +59,11 @@ struct BrewiarzEPUBImporterTests {
         #expect(lines.contains { $0.role == .choirLeft && $0.text == "for in you my soul has taken refuge." })
         #expect(lines.contains { $0.role == .choirRight && $0.text == "In the shadow of your wings I take refuge" })
         #expect(lines.contains { $0.role == .choirRight && $0.text == "till the storms of destruction pass by." })
+        #expect(lines.contains { $0.role == .choirLeft && $0.text == "O nations, hear the word of the Lord," })
+        #expect(lines.contains { $0.role == .choirLeft && $0.text == "proclaim it to the far-off coasts." })
+        #expect(lines.contains { $0.text == "\nWho are these of dazzling brightness," })
+        #expect(lines.contains { $0.role == .heading && $0.text == "Hymn" })
+        #expect(lines.contains { $0.role == .heading && $0.text == "Canticle" })
     }
 
     @Test func parsesDatedOfficeChoirsAndCanonicalPrayerReference() throws {

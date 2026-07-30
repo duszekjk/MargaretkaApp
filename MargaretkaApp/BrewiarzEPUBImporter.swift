@@ -1205,6 +1205,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         var rubric = false
         var leftAligned = false
         var navigationLink = false
+        var universalisSectionHeader = false
         var isVerseContinuation = false
         var universalisVerseLayout: UniversalisVerseLayout?
     }
@@ -1217,6 +1218,8 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
     private var lines: [OfflineBreviaryLine] = []
     private var isInUniversalisPsalm = false
     private var activeUniversalisChoir: OfflineBreviaryLineRole?
+    private var isInUniversalisHymn = false
+    private var isFirstUniversalisHymnStanza = true
 
     static func parse(_ xhtml: String) -> [OfflineBreviaryLine] {
         let sanitized = sanitize(xhtml)
@@ -1256,11 +1259,14 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         attributes attributeDict: [String: String] = [:]
     ) {
         let name = elementName.lowercased()
-        if name == "br" { flush() }
+        if name == "br" || name == "th" { flush() }
         var style = styleStack.last ?? Style()
         if name == "b" || name == "strong" { style.emphasized = true }
         if name == "i" || name == "em" { style.italic = true }
         if name == "a", attributeDict["href"] != nil { style.navigationLink = true }
+        if name == "th", attributeDict["align"]?.lowercased() == "left" {
+            style.universalisSectionHeader = true
+        }
         let cssClasses = Set((attributeDict["class"] ?? "").split(whereSeparator: { $0.isWhitespace }).map(String.init))
         if !cssClasses.isDisjoint(with: ["v", "vgb"]) {
             style.universalisVerseLayout = .groupStart
@@ -1273,6 +1279,8 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         if name == "table", cssClasses.contains("each") {
             isInUniversalisPsalm = false
             activeUniversalisChoir = nil
+            isInUniversalisHymn = false
+            isFirstUniversalisHymnStanza = true
         }
         let inlineStyle = attributeDict["style"]?.lowercased() ?? ""
         if inlineStyle.contains("font-weight:bold") || inlineStyle.contains("font-weight: bold") {
@@ -1322,7 +1330,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         qualifiedName qName: String?
     ) {
         let name = elementName.lowercased()
-        if ["div", "p", "li", "h1", "h2", "h3", "h4"].contains(name) { flush() }
+        if ["div", "p", "li", "h1", "h2", "h3", "h4", "th"].contains(name) { flush() }
         if styleStack.count > 1 { styleStack.removeLast() }
     }
 
@@ -1337,7 +1345,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         guard !style.navigationLink else { return }
         for rawLine in raw.split(separator: "\n", omittingEmptySubsequences: false) {
             let leadingChoirIndent = rawLine.prefix { $0 == "\u{00A0}" }.count >= 4
-            let text = rawLine
+            var text = rawLine
                 .replacingOccurrences(of: "\u{00A0}", with: " ")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             guard !text.isEmpty else { continue }
@@ -1364,6 +1372,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
                     role = activeUniversalisChoir ?? .choirLeft
                 }
             }
+            else if style.universalisSectionHeader { role = .heading }
             else if leadingChoirIndent && !style.isVerseContinuation { role = .choirRight }
             else if Self.isReadingProclamation(text) { role = .body }
             else if isUppercaseHeading || Self.isSemanticPrayerHeading(text) { role = .heading }
@@ -1371,6 +1380,14 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
             else if style.leftAligned { role = .choirLeft }
             else if style.emphasized && text.count < 100 { role = .heading }
             else { role = .body }
+            if isInUniversalisHymn,
+               !style.italic,
+               style.universalisVerseLayout == .groupStart {
+                if !isFirstUniversalisHymnStanza {
+                    text = "\n" + text
+                }
+                isFirstUniversalisHymnStanza = false
+            }
             lines.append(
                 OfflineBreviaryLine(
                     role: role,
@@ -1379,9 +1396,17 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
                     italic: style.italic
                 )
             )
-            if role == .heading, Self.isUniversalisPsalmHeading(text) {
-                isInUniversalisPsalm = true
-                activeUniversalisChoir = nil
+            if role == .heading {
+                if Self.isUniversalisPsalmHeading(text) || Self.isUniversalisPsalmSectionHeading(text) {
+                    isInUniversalisPsalm = true
+                    activeUniversalisChoir = nil
+                    isInUniversalisHymn = false
+                } else if Self.isUniversalisHymnSectionHeading(text) {
+                    isInUniversalisPsalm = false
+                    activeUniversalisChoir = nil
+                    isInUniversalisHymn = true
+                    isFirstUniversalisHymnStanza = true
+                }
             }
         }
     }
@@ -1398,6 +1423,17 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
             of: #"(?i)^(psalm|canticle)\s"#,
             options: .regularExpression
         ) != nil
+    }
+
+    private static func isUniversalisPsalmSectionHeading(_ text: String) -> Bool {
+        text.range(
+            of: #"(?i)^(invitatory\s+psalm|canticle)$"#,
+            options: .regularExpression
+        ) != nil
+    }
+
+    private static func isUniversalisHymnSectionHeading(_ text: String) -> Bool {
+        text.range(of: #"(?i)^hymn$"#, options: .regularExpression) != nil
     }
 
     private static func isReadingProclamation(_ text: String) -> Bool {
