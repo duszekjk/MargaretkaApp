@@ -74,7 +74,14 @@ nonisolated enum BrewiarzEPUBImporter {
            let contentsData = try? archive.data(for: archive.entryNames.first(where: { $0.hasSuffix("contents.xhtml") })!),
            let contents = String(data: contentsData, encoding: .utf8),
            contents.contains("universalis.css") {
-            return try await importUniversalisEPUB(from: archive, sourceURL: url, contents: contents, progress: progress)
+            return try await importUniversalisEPUB(
+                from: archive,
+                sourceURL: url,
+                contents: contents,
+                preferredVariantOrder: preferredVariantOrder ?? BreviaryVariantPreferences.load(),
+                maximumVariantsPerDay: maximumVariantsPerDay,
+                progress: progress
+            )
         }
         let allCandidates = archive.entryNames.filter(isDailyBreviaryDocument)
         guard !allCandidates.isEmpty else { throw BrewiarzEPUBImportError.noBreviaryDocuments }
@@ -165,6 +172,8 @@ nonisolated enum BrewiarzEPUBImporter {
         from archive: SimpleZIPArchive,
         sourceURL: URL,
         contents: String,
+        preferredVariantOrder: [String],
+        maximumVariantsPerDay: Int,
         progress: (@MainActor @Sendable (BrewiarzEPUBImportProgress) -> Void)?
     ) async throws -> BrewiarzEPUBImportResult {
         let languageCode = contents.contains("Index dierum") ? "la" : "en"
@@ -176,27 +185,45 @@ nonisolated enum BrewiarzEPUBImporter {
             guard let date = universalisDate(link[1]) else { continue }
             guard let base = universalisEntryName(for: link[0], in: archive) else { continue }
             guard let data = try? archive.data(for: base), let dayPage = String(data: data, encoding: .utf8) else { continue }
-            var offices: [OfflineBreviaryOffice] = []
+            var officesByVariant: [String: [OfflineBreviaryOffice]] = [:]
+            var variantCategories: [String: String] = [:]
             for officeLink in captures(in: dayPage, pattern: #"href=\"([^\"]+\.xhtml)\"[^>]*>([^<]+)<"#) where officeLink.count == 2 {
                 guard let key = universalisOfficeKey(officeLink[1]),
                       let officeEntry = universalisEntryName(for: officeLink[0], in: archive),
                       let officeData = try? archive.data(for: officeEntry),
                       let officePage = String(data: officeData, encoding: .utf8) else { continue }
-                let parsedLines = XHTMLPrayerLineParser.parse(officePage)
-                let filteredLines = discardNavigationAndMetadata(parsedLines, officeTitle: officeLink[1])
-                let lines = filteredLines.isEmpty ? parsedLines.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } : filteredLines
-                guard !lines.isEmpty else { continue }
-                offices.append(OfflineBreviaryOffice(key: key, title: officeLink[1], cards: paginate(lines), contentFingerprint: stableFingerprint(lines)))
+                let baseName = universalisCelebration(in: officePage) ?? officeLink[1]
+                if let office = universalisOffice(key: key, title: officeLink[1], page: officePage) {
+                    officesByVariant[baseName, default: []].append(office)
+                    variantCategories[baseName] = universalisVariantCategory(for: baseName)
+                }
+                for alternative in universalisAlternativeLinks(in: officePage) {
+                    guard let alternativeEntry = universalisEntryName(for: alternative.href, in: archive),
+                          let alternativeData = try? archive.data(for: alternativeEntry),
+                          let alternativePage = String(data: alternativeData, encoding: .utf8),
+                          let office = universalisOffice(key: key, title: officeLink[1], page: alternativePage) else { continue }
+                    let name = universalisCelebration(in: alternativePage) ?? alternative.name
+                    officesByVariant[name, default: []].append(office)
+                    variantCategories[name] = "wspomnienie-dowolne"
+                }
             }
-            if !offices.isEmpty {
+            let selectedNames = selectedUniversalisVariants(
+                from: officesByVariant.keys.sorted(),
+                categories: variantCategories,
+                preferenceOrder: preferredVariantOrder,
+                maximumVariantsPerDay: maximumVariantsPerDay
+            )
+            for name in selectedNames {
+                guard let offices = officesByVariant[name], !offices.isEmpty else { continue }
+                let category = variantCategories[name] ?? "wspomnienie-dowolne"
                 days.append(OfflineBreviaryDay(
                     date: date,
-                    variantIdentifier: "p",
-                    variantName: "Tekst podstawowy",
+                    variantIdentifier: universalisVariantIdentifier(name: name, category: category),
+                    variantName: name,
                     languageCode: languageCode,
-                    celebrationName: universalisCelebration(in: dayPage),
+                    celebrationName: name,
                     liturgicalColor: nil,
-                    offices: offices,
+                    offices: mergedUniversalisOffices(offices),
                     sourceImportID: importID,
                     sourceIdentifier: sourceURL.lastPathComponent,
                     sourceTitle: sourceTitle
@@ -204,9 +231,82 @@ nonisolated enum BrewiarzEPUBImporter {
             }
             if let progress { await progress(.init(completedDocuments: index + 1, totalDocuments: links.count, elapsed: 0)) }
         }
-        let mergedDays = mergedUniversalisDays(days)
-        guard !mergedDays.isEmpty else { throw BrewiarzEPUBImportError.noOffices }
-        return .init(days: mergedDays, sourceTitle: sourceTitle, skippedDocumentCount: links.count - days.count)
+        guard !days.isEmpty else { throw BrewiarzEPUBImportError.noOffices }
+        return .init(days: days, sourceTitle: sourceTitle, skippedDocumentCount: links.count - days.count)
+    }
+
+    private static func universalisOffice(
+        key: BrewiarzPrayerKey,
+        title: String,
+        page: String
+    ) -> OfflineBreviaryOffice? {
+        let parsedLines = XHTMLPrayerLineParser.parse(page)
+        let filteredLines = discardNavigationAndMetadata(parsedLines, officeTitle: title)
+        let lines = filteredLines.isEmpty
+            ? parsedLines.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            : filteredLines
+        guard !lines.isEmpty else { return nil }
+        return OfflineBreviaryOffice(
+            key: key,
+            title: title,
+            cards: paginate(lines),
+            contentFingerprint: stableFingerprint(lines)
+        )
+    }
+
+    private static func universalisAlternativeLinks(in xhtml: String) -> [(href: String, name: String)] {
+        captures(
+            in: xhtml,
+            pattern: #"<(?:em|i)>\s*(?:see also|vide etiam)\s*</(?:em|i)>\s*<a href=\"([^\"]+)\"[^>]*>([^<]+)<"#
+        ).compactMap { match in
+            guard match.count == 2 else { return nil }
+            return (match[0], match[1].trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+    }
+
+    private static func universalisVariantCategory(for name: String) -> String {
+        let normalized = name.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "en_US"))
+        if normalized.contains("week") || normalized.contains("feria") || normalized.contains("sabbatum") || normalized.contains("dominica") {
+            return "primary"
+        }
+        return "wspomnienie-dowolne"
+    }
+
+    private static func universalisVariantIdentifier(name: String, category: String) -> String {
+        guard category == "wspomnienie-dowolne" else { return "primary" }
+        let normalized = name.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "en_US"))
+        let slug = normalized.unicodeScalars.map { CharacterSet.alphanumerics.contains($0) ? String($0) : "-" }.joined()
+            .split(separator: "-").joined(separator: "-")
+        return "wspomnienie-dowolne-\(slug)"
+    }
+
+    private static func selectedUniversalisVariants(
+        from names: [String],
+        categories: [String: String],
+        preferenceOrder: [String],
+        maximumVariantsPerDay: Int
+    ) -> [String] {
+        var selected: [String] = []
+        var selectedCategories = 0
+        for category in BreviaryVariantPreferences.normalizedOrder(preferenceOrder) {
+            let matching = names.filter { categories[$0] == category }
+            guard !matching.isEmpty else { continue }
+            if category == "wspomnienie-dowolne" {
+                selected.append(contentsOf: matching)
+            } else if let first = matching.first {
+                selected.append(first)
+            }
+            selectedCategories += 1
+            if selectedCategories >= max(1, maximumVariantsPerDay) { break }
+        }
+        return selected.isEmpty ? names.prefix(1).map { $0 } : selected
+    }
+
+    private static func mergedUniversalisOffices(_ offices: [OfflineBreviaryOffice]) -> [OfflineBreviaryOffice] {
+        Dictionary(grouping: offices, by: \.key).values.compactMap { matches in
+            matches.max(by: { $0.cards.count < $1.cards.count })
+        }
+        .sorted { $0.key.rawValue < $1.key.rawValue }
     }
 
     private static func mergedUniversalisDays(_ days: [OfflineBreviaryDay]) -> [OfflineBreviaryDay] {
