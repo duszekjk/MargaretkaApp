@@ -743,7 +743,7 @@ nonisolated enum BrewiarzEPUBImporter {
     }
 
     private static func isPsalmOrCanticleHeading(_ text: String) -> Bool {
-        text.range(
+        return text.range(
             of: #"(?i)^(psalm|pieśń|kantyk)(\s|$)"#,
             options: [.regularExpression, .diacriticInsensitive]
         ) != nil
@@ -756,7 +756,7 @@ nonisolated enum BrewiarzEPUBImporter {
         ) != nil {
             return true
         }
-        text.range(
+        return text.range(
             of: #"(?i)^((pierwsze|drugie|trzecie|[123]\.?|i{1,3}\.?)\s+czytanie|antyfona|wprowadzenie|akt pokuty|kolekta|psalm|pieśń|kantyk|hymn|czytanie|aklamacja|ewangelia|responsorium|prośby|modlitwa|prefacja|przed błogosławieństwem|propozycja śpiewów|te deum)(\s|$)"#,
             options: [.regularExpression, .diacriticInsensitive]
         ) != nil

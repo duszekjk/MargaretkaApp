@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] checkpoint before compiler return fix
+codex conversation [20260730-ipad] return semantic English section detection
 
-Save the current importer state before correcting the Boolean return introduced
-by the English Canticle section recognition.
+Fix the compiler error in the Boolean section-heading helper while preserving
+the explicit English Canticle and Invitatory Psalm boundary detection.
