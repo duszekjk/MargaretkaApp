@@ -22,6 +22,17 @@ struct BrewiarzEPUBImporterTests {
             #expect(!imported.days.isEmpty, "\(fixture.filename) should import at least one day")
             #expect(imported.days.contains { ($0.languageCode ?? "pl") == fixture.language })
             #expect(imported.days.contains { !$0.offices.isEmpty })
+
+            if fixture.filename == "PolishBrewiarz" {
+                let morningPrayerCards = imported.days.compactMap {
+                    $0.offices.first(where: { $0.key == .jutrznia })?.cards.count
+                }
+                #expect(morningPrayerCards.contains { $0 >= 15 })
+            } else {
+                #expect(imported.days.count == 31)
+                #expect(imported.days.allSatisfy { $0.variantName == "Tekst podstawowy" })
+                #expect(imported.days.allSatisfy { $0.variantIdentifier == "p" })
+            }
         }
     }
 
