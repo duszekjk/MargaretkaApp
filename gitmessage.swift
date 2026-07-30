@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] map multilingual office-variant categories
+codex conversation [20260730-ipad] match multilingual variant terms anywhere
 
-Recognize equivalent Polish, English, and Latin commemorations under the same
-semantic priority category, including Dominican and optional memorial variants.
+Recognize translated commemorations even when their liturgical type appears
+after the saint name rather than at the start of the source heading.

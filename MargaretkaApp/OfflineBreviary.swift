@@ -121,7 +121,7 @@ nonisolated enum BreviaryVariantPreferences {
         let normalizedName = variantName.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "pl_PL"))
         return definitions.first(where: { definition in
             !definition.prefixes.isEmpty && definition.prefixes.contains { prefix in
-                normalizedName.hasPrefix(prefix.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "pl_PL")))
+                normalizedName.contains(prefix.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "pl_PL")))
             }
         })?.identifier ?? "pozostale"
     }
