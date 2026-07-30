@@ -64,7 +64,17 @@ nonisolated enum BreviaryVariantPreferences {
         ("opolskie-gliwickie", "W diecezjach opolskiej i gliwickiej", ["W diecezjach opolskiej i gliwickiej"]),
         ("dominikanie", "W zakonie dominikańskim", ["W zakonie dominikańskim"]),
         ("wspomnienie-dowolne", "Wspomnienie dowolne", ["Wsp. dowolne", "Wspomnienie dowolne"]),
-        ("pozostale", "Pozostałe oficja lokalne", [])
+        ("wspomnienie-obowiazkowe", "Wspomnienie obowiązkowe", ["Wsp. obowiązkowe", "Wspomnienie obowiązkowe"]),
+        ("wspolnoty-zakonne", "W innych wspólnotach zakonnych", ["U ", "W II Zakonie Franciszkańskim", "W zakonach ", "W zakonie ", "W prowincjach OFM", "W Rodzinie św. Pawła", "W zgromadzeniach "]),
+        ("diecezje", "W diecezjach i metropoliach", ["W diec.", "W diecezji ", "W archidiecezji ", "W metropolii "]),
+        ("koscioly", "W kościołach i bazylikach", ["W kościele ", "W bazylice "]),
+        ("miejsca", "W miastach i miejscach lokalnych", ["W Kalwarii ", "W Lub", "W Lęborku", "W Pelplinie", "W powiecie ", "W Sokołowie", "W Starym", "W Tucholi", "W Wodzisławiu", "We Wrocławiu", "We Wschowie"]),
+        ("poza-polska", "Poza Polską lub Europą", ["Poza Polską", "Poza Europą", "W niektórych krajach"]),
+        ("swieto", "Święto", ["ŚWIĘTO ", "Święto "]),
+        ("uroczystosc", "Uroczystość", ["UROCZYSTOŚĆ ", "Uroczystość "]),
+        ("dzien-powszedni", "Dzień powszedni", ["Dzień powszedni"]),
+        ("niedziela", "Niedziela zwykła", ["XV", "XIX", "XX"]),
+        ("pozostale", "Pozostałe oficja", [])
     ]
 
     static func load(from defaults: UserDefaults = .standard) -> [String] {

@@ -1,5 +1,4 @@
-codex conversation [20260730-ipad] import selected Brewiarz variants
+codex conversation [20260730-ipad] classify all inspected Brewiarz variants
 
-Import the requested number of predefined Brewiarz variant positions for each
-day, retain every selected daily office, and allow choosing a retained variant
-while praying.
+Cover every observed EPUB variant with a predefined, name-based category. The
+import priority remains editable and no longer depends on w-number filenames.
