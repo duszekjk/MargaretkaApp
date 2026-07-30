@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] checkpoint before Canticle page boundary fix
+codex conversation [20260730-ipad] make Canticle an explicit section boundary
 
-Save the verified hymn stanza spacing before making English Canticle headings
-an explicit pagination and choir boundary.
+Recognize English Canticle and Invitatory Psalm labels even if the EPUB table
+structure is not retained, so each starts a new card and its choir context.

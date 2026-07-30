@@ -750,6 +750,12 @@ nonisolated enum BrewiarzEPUBImporter {
     }
 
     private static func isSemanticSectionHeading(_ text: String) -> Bool {
+        if text.range(
+            of: #"(?i)^(canticle|invitatory\s+psalm)(\s|$)"#,
+            options: .regularExpression
+        ) != nil {
+            return true
+        }
         text.range(
             of: #"(?i)^((pierwsze|drugie|trzecie|[123]\.?|i{1,3}\.?)\s+czytanie|antyfona|wprowadzenie|akt pokuty|kolekta|psalm|pieśń|kantyk|hymn|czytanie|aklamacja|ewangelia|responsorium|prośby|modlitwa|prefacja|przed błogosławieństwem|propozycja śpiewów|te deum)(\s|$)"#,
             options: [.regularExpression, .diacriticInsensitive]
