@@ -243,7 +243,13 @@
     "Do" : {
 
     },
+    "Dodaj księdza" : {
+
+    },
     "Dodaj modlitwę" : {
+
+    },
+    "Dodaj modlitwę złożoną" : {
 
     },
     "Dodaj nową grupę" : {
@@ -253,6 +259,9 @@
 
     },
     "Dodaj nową podgrupę" : {
+
+    },
+    "Dodaj osobę" : {
 
     },
     "Dodaj osobę do modlitwy" : {
@@ -294,6 +303,9 @@
 
     },
     "Eksport może zawierać pojedynczą modlitwę, konkretną osobę lub księdza albo wybraną godzinę brewiarza. Nie zawiera historii, statystyk ani ustawień. Import JSON zachowuje obecne dane, scala dokładne odpowiedniki i pyta o podejrzane podobieństwa. Można tu również importować EPUB z brewiarz.pl." : {
+
+    },
+    "Eksportuj dane" : {
 
     },
     "Eksportuj wybrane dane" : {
@@ -363,6 +375,9 @@
 
     },
     "Importuj i połącz dane" : {
+
+    },
+    "Importuj modlitwy" : {
 
     },
     "Intencja: **konkretny kapłan** (imię i nazwisko)." : {
@@ -547,6 +562,9 @@
     "Otwórz brewiarz w przeglądarce" : {
 
     },
+    "Otwórz statystyki" : {
+
+    },
     "Pełna kopia zapasowa" : {
 
     },
@@ -566,6 +584,9 @@
 
     },
     "Pomoc" : {
+
+    },
+    "Pomódl się" : {
 
     },
     "Pora dnia modlitwy" : {
@@ -614,6 +635,9 @@
 
     },
     "Przykładowe komendy" : {
+
+    },
+    "Przywróć kopię zapasową" : {
 
     },
     "Przywróć pełną kopię" : {
@@ -706,6 +730,9 @@
 
     },
     "Święty dnia" : {
+
+    },
+    "Synchronizacja" : {
 
     },
     "Synchronizacja przez Apple" : {
@@ -1202,6 +1229,9 @@
     "Udostępnij" : {
 
     },
+    "Udostępnij modlitwy" : {
+
+    },
     "Unit" : {
       "localizations" : {
         "pl" : {
@@ -1252,6 +1282,9 @@
 
     },
     "Utwórz i udostępnij kopię" : {
+
+    },
+    "Utwórz kopię zapasową" : {
 
     },
     "Utwórz tło" : {
@@ -1356,6 +1389,9 @@
 
     },
     "Zakres" : {
+
+    },
+    "Zaloguj przez Apple" : {
 
     },
     "Zamknij" : {
