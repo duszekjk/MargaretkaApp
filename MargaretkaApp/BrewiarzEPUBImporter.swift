@@ -1296,6 +1296,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         bufferStyle.rubric = bufferStyle.rubric || style.rubric
         bufferStyle.leftAligned = bufferStyle.leftAligned || style.leftAligned
         bufferStyle.navigationLink = bufferStyle.navigationLink || style.navigationLink
+        bufferStyle.choirRole = bufferStyle.choirRole ?? style.choirRole
     }
 
     func parser(
