@@ -249,7 +249,7 @@ nonisolated enum BrewiarzEPUBImporter {
         return OfflineBreviaryOffice(
             key: key,
             title: title,
-            cards: paginate(lines),
+            cards: paginate(lines, maximumLines: 5),
             contentFingerprint: stableFingerprint(lines)
         )
     }
@@ -761,7 +761,7 @@ nonisolated enum BrewiarzEPUBImporter {
         initialTitle: String? = nil
     ) -> [OfflineBreviaryCard] {
         let maxCharacters = 1024
-        let maxLines = 8
+        let maxLines = maximumLines
         var cards: [OfflineBreviaryCard] = []
         var current: [OfflineBreviaryLine] = []
         var characterCount = 0

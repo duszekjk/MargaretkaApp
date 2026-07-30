@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] preserve July Morning Prayer pagination
+codex conversation [20260730-ipad] paginate Universalis offices independently
 
-Reduce the offline card line limit so the July Universalis Morning Prayer is
-split into at least 15 usable cards rather than being compressed too heavily.
+Keep the existing offline-card layout for Polish EPUBs while splitting
+Universalis Morning Prayer into smaller cards required for usable imports.
