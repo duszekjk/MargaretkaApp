@@ -1,5 +1,5 @@
-codex conversation [20260730-ipad] verify named Universalis office variants
+codex conversation [20260730-ipad] classify Universalis base offices by source
 
-Update fixture assertions so imported Universalis variants must use a source
-name and can never regress to the synthetic Universalis or Tekst podstawowy
-labels.
+Treat the office directly linked from the daily index as the base office,
+regardless of its translated name. Only see-also and vide-etiam pages are
+optional memorials.

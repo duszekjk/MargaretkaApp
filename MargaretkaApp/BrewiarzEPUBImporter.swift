@@ -195,7 +195,7 @@ nonisolated enum BrewiarzEPUBImporter {
                 let baseName = universalisCelebration(in: officePage) ?? officeLink[1]
                 if let office = universalisOffice(key: key, title: officeLink[1], page: officePage) {
                     officesByVariant[baseName, default: []].append(office)
-                    variantCategories[baseName] = universalisVariantCategory(for: baseName)
+                    variantCategories[baseName] = "primary"
                 }
                 for alternative in universalisAlternativeLinks(in: officePage) {
                     guard let alternativeEntry = universalisEntryName(for: alternative.href, in: archive),
@@ -262,14 +262,6 @@ nonisolated enum BrewiarzEPUBImporter {
             guard match.count == 2 else { return nil }
             return (match[0], match[1].trimmingCharacters(in: .whitespacesAndNewlines))
         }
-    }
-
-    private static func universalisVariantCategory(for name: String) -> String {
-        let normalized = name.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "en_US"))
-        if normalized.contains("week") || normalized.contains("feria") || normalized.contains("sabbatum") || normalized.contains("dominica") {
-            return "primary"
-        }
-        return "wspomnienie-dowolne"
     }
 
     private static func universalisVariantIdentifier(name: String, category: String) -> String {
