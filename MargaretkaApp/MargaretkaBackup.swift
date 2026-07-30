@@ -820,6 +820,7 @@ struct DataTransferView: View {
     @State private var message: String?
     @State private var errorMessage: String?
     @State private var epubProgress: BrewiarzEPUBImportProgress?
+    @State private var importedVariantCount = 1
 
     var body: some View {
         List {
@@ -827,6 +828,10 @@ struct DataTransferView: View {
                 NavigationLink("Zarządzaj zapisanymi dniami") {
                     OfflineBreviaryManagerView()
                 }
+                Stepper("Importuj pierwsze \(importedVariantCount) warianty z kolejności", value: $importedVariantCount, in: 1...BreviaryVariantPreferences.defaultOrder.count)
+                Text("Dla każdego dnia aplikacja rozpoznaje wariant po jego nazwie, a nie po numerze pliku, i importuje tylko pierwsze dostępne pozycje z ustawionej kolejności.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Import i eksport danych") {
@@ -1013,7 +1018,8 @@ struct DataTransferView: View {
             do {
                 let imported = try await BrewiarzEPUBImporter.importEPUB(
                     from: url,
-                    preferredVariantOrder: BreviaryVariantPreferences.load()
+                    preferredVariantOrder: BreviaryVariantPreferences.load(),
+                    maximumVariantsPerDay: importedVariantCount
                 ) { progress in
                     withAnimation(.linear(duration: 0.2)) {
                         epubProgress = progress

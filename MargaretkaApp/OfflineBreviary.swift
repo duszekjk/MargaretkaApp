@@ -50,7 +50,22 @@ extension Calendar {
 nonisolated enum BreviaryVariantPreferences {
     static let storageKey = "preferredBreviaryVariantOrder"
     static let legacyStorageKey = "preferredBreviaryVariant"
-    static let defaultOrder = ["p"] + (1...12).map { "w\($0)" }
+    static let defaultOrder = [
+        "primary", "bonifratrzy", "kapucyni", "jezuici", "benedyktyni",
+        "opolskie-gliwickie", "dominikanie", "wspomnienie-dowolne", "pozostale"
+    ]
+
+    static let definitions: [(identifier: String, name: String, prefixes: [String])] = [
+        ("primary", "Tekst podstawowy", []),
+        ("bonifratrzy", "U bonifratrów", ["U bonifratrów"]),
+        ("kapucyni", "U kapucynów", ["U kapucynów"]),
+        ("jezuici", "U jezuitów", ["U jezuitów"]),
+        ("benedyktyni", "W zakonach benedyktyńskich", ["W zakonach benedyktyńskich", "W zakonie benedyktyńskim"]),
+        ("opolskie-gliwickie", "W diecezjach opolskiej i gliwickiej", ["W diecezjach opolskiej i gliwickiej"]),
+        ("dominikanie", "W zakonie dominikańskim", ["W zakonie dominikańskim"]),
+        ("wspomnienie-dowolne", "Wspomnienie dowolne", ["Wsp. dowolne", "Wspomnienie dowolne"]),
+        ("pozostale", "Pozostałe oficja lokalne", [])
+    ]
 
     static func load(from defaults: UserDefaults = .standard) -> [String] {
         let stored = defaults.stringArray(forKey: storageKey) ?? []
@@ -76,14 +91,17 @@ nonisolated enum BreviaryVariantPreferences {
     }
 
     static func displayName(for identifier: String, knownDays: [OfflineBreviaryDay] = []) -> String {
-        if let name = knownDays.first(where: { $0.variantIdentifier == identifier })?.variantName {
-            return "\(name) (\(identifier.uppercased()))"
-        }
-        if identifier == "p" { return "Tekst podstawowy (P)" }
-        if identifier.hasPrefix("w"), let number = Int(identifier.dropFirst()) {
-            return "Wariant własny \(number) (\(identifier.uppercased()))"
-        }
-        return identifier.uppercased()
+        definitions.first(where: { $0.identifier == identifier })?.name ?? identifier
+    }
+
+    static func categoryIdentifier(for variantName: String, technicalIdentifier: String) -> String {
+        if technicalIdentifier == "p" { return "primary" }
+        let normalizedName = variantName.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "pl_PL"))
+        return definitions.first(where: { definition in
+            !definition.prefixes.isEmpty && definition.prefixes.contains { prefix in
+                normalizedName.hasPrefix(prefix.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "pl_PL")))
+            }
+        })?.identifier ?? "pozostale"
     }
 
     static func preferredDay(from days: [OfflineBreviaryDay], order: [String]) -> OfflineBreviaryDay? {

@@ -64,6 +64,7 @@ nonisolated enum BrewiarzEPUBImporter {
     nonisolated static func importEPUB(
         from url: URL,
         preferredVariantOrder: [String]? = nil,
+        maximumVariantsPerDay: Int = 1,
         progress: (@MainActor @Sendable (BrewiarzEPUBImportProgress) -> Void)? = nil
     ) async throws -> BrewiarzEPUBImportResult {
         let access = url.startAccessingSecurityScopedResource()
@@ -72,7 +73,15 @@ nonisolated enum BrewiarzEPUBImporter {
         let allCandidates = archive.entryNames.filter(isDailyBreviaryDocument)
         guard !allCandidates.isEmpty else { throw BrewiarzEPUBImportError.noBreviaryDocuments }
         let candidates = preferredVariantOrder.map {
-            selectedDailyDocuments(from: allCandidates, preferenceOrder: $0)
+            selectedDailyDocuments(
+                from: allCandidates,
+                preferenceOrder: $0,
+                maximumVariantsPerDay: maximumVariantsPerDay,
+                documentText: { name in
+                    guard let data = try? archive.data(for: name) else { return nil }
+                    return String(data: data, encoding: .utf8)
+                }
+            )
         } ?? allCandidates
 
         let startedAt = Date()
@@ -221,25 +230,40 @@ nonisolated enum BrewiarzEPUBImporter {
             && stem.dropFirst(4).allSatisfy { $0.isLetter || $0.isNumber }
     }
 
-    static func selectedDailyDocuments(from names: [String], preferenceOrder: [String]) -> [String] {
+    static func selectedDailyDocuments(
+        from names: [String],
+        preferenceOrder: [String],
+        maximumVariantsPerDay: Int = 1,
+        documentText: (String) -> String? = { _ in nil }
+    ) -> [String] {
         let daily = names.filter(isDailyBreviaryDocument)
         let grouped = Dictionary(grouping: daily) { name in
             let stem = URL(fileURLWithPath: name).deletingPathExtension().lastPathComponent.lowercased()
             return String(stem.prefix(4))
         }
-        let order = BreviaryVariantPreferences.normalizedOrder(
-            preferenceOrder,
-            including: daily.map(parseVariantIdentifier)
-        )
         return grouped.keys.sorted().compactMap { dateKey in
             let documents = grouped[dateKey, default: []].sorted()
-            for identifier in order {
-                if let document = documents.first(where: { parseVariantIdentifier($0) == identifier }) {
-                    return document
-                }
+            var selected: [String] = []
+            var usedCategories = Set<String>()
+            for category in BreviaryVariantPreferences.normalizedOrder(preferenceOrder) {
+                guard let document = documents.first(where: { document in
+                    let identifier = parseVariantIdentifier(document)
+                    let title = documentText(document).flatMap(parseVariantName) ?? ""
+                    return BreviaryVariantPreferences.categoryIdentifier(
+                        for: title,
+                        technicalIdentifier: identifier
+                    ) == category && !usedCategories.contains(category)
+                }) else { continue }
+                selected.append(document)
+                usedCategories.insert(category)
+                if selected.count == max(1, maximumVariantsPerDay) { break }
             }
-            return documents.first
+            if selected.isEmpty, let fallback = documents.first {
+                selected.append(fallback)
+            }
+            return selected
         }
+        .flatMap { $0 }
     }
 
     private static func parseVariantIdentifier(_ entryName: String) -> String {
@@ -254,6 +278,7 @@ nonisolated enum BrewiarzEPUBImporter {
     }
 
     private static func variantName(identifier: String, xhtml: String) -> String {
+        if let name = parseVariantName(xhtml) { return name }
         let prefix = xhtml.range(of: "U paulinów", options: [.caseInsensitive, .diacriticInsensitive]) != nil
             ? "U paulinów"
             : nil
@@ -262,6 +287,18 @@ nonisolated enum BrewiarzEPUBImporter {
         case "w": return prefix ?? "Wspomnienie"
         default: return prefix ?? "Wariant \(identifier.uppercased())"
         }
+    }
+
+    private static func parseVariantName(_ xhtml: String) -> String? {
+        guard let match = xhtml.range(of: #"class=[\"']spis2[\"'][^>]*>(.*?)</div>"#, options: [.regularExpression, .caseInsensitive]) else {
+            return nil
+        }
+        let raw = String(xhtml[match])
+            .replacingOccurrences(of: #"^[^>]*>"#, with: "", options: .regularExpression)
+            .replacingOccurrences(of: #"<[^>]+>"#, with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "&nbsp;", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return raw.isEmpty ? nil : raw
     }
 
     private static func parseCivilDate(_ plain: String) -> BreviaryCivilDate? {
