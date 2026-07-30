@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] return semantic English section detection
+codex conversation [20260730-ipad] checkpoint before Universalis office boundaries
 
-Fix the compiler error in the Boolean section-heading helper while preserving
-the explicit English Canticle and Invitatory Psalm boundary detection.
+Save the compiling importer before adding English office sections and the
+canonical Our Father reference.
