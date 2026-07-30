@@ -240,12 +240,7 @@ nonisolated enum BrewiarzEPUBImporter {
         title: String,
         page: String
     ) -> OfflineBreviaryOffice? {
-        let parsedLines = XHTMLPrayerLineParser.parse(page).map { line in
-            guard line.role == .choirLeft || line.role == .choirRight else { return line }
-            var normalizedLine = line
-            normalizedLine.role = .body
-            return normalizedLine
-        }
+        let parsedLines = XHTMLPrayerLineParser.parse(page)
         let filteredLines = discardNavigationAndMetadata(parsedLines, officeTitle: title)
         let lines = filteredLines.isEmpty
             ? parsedLines.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -1199,6 +1194,11 @@ nonisolated enum BrewiarzEPUBImporter {
 }
 
 nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelegate {
+    private enum UniversalisVerseLayout {
+        case groupStart
+        case continuation
+    }
+
     private struct Style {
         var emphasized = false
         var italic = false
@@ -1206,6 +1206,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         var leftAligned = false
         var navigationLink = false
         var isVerseContinuation = false
+        var universalisVerseLayout: UniversalisVerseLayout?
     }
 
     private var styleStack: [Style] = [Style()]
@@ -1214,6 +1215,8 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
     private var bufferHasRubricText = false
     private var bufferHasPrayerText = false
     private var lines: [OfflineBreviaryLine] = []
+    private var isInUniversalisPsalm = false
+    private var activeUniversalisChoir: OfflineBreviaryLineRole?
 
     static func parse(_ xhtml: String) -> [OfflineBreviaryLine] {
         let sanitized = sanitize(xhtml)
@@ -1259,8 +1262,17 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         if name == "i" || name == "em" { style.italic = true }
         if name == "a", attributeDict["href"] != nil { style.navigationLink = true }
         let cssClasses = Set((attributeDict["class"] ?? "").split(whereSeparator: { $0.isWhitespace }).map(String.init))
+        if !cssClasses.isDisjoint(with: ["v", "vgb"]) {
+            style.universalisVerseLayout = .groupStart
+        } else if !cssClasses.isDisjoint(with: ["vi", "vigb"]) {
+            style.universalisVerseLayout = .continuation
+        }
         if !cssClasses.isDisjoint(with: ["vi", "vigb"]) {
             style.isVerseContinuation = true
+        }
+        if name == "table", cssClasses.contains("each") {
+            isInUniversalisPsalm = false
+            activeUniversalisChoir = nil
         }
         let inlineStyle = attributeDict["style"]?.lowercased() ?? ""
         if inlineStyle.contains("font-weight:bold") || inlineStyle.contains("font-weight: bold") {
@@ -1300,6 +1312,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         bufferStyle.leftAligned = bufferStyle.leftAligned || style.leftAligned
         bufferStyle.navigationLink = bufferStyle.navigationLink || style.navigationLink
         bufferStyle.isVerseContinuation = bufferStyle.isVerseContinuation || style.isVerseContinuation
+        bufferStyle.universalisVerseLayout = bufferStyle.universalisVerseLayout ?? style.universalisVerseLayout
     }
 
     func parser(
@@ -1337,6 +1350,20 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
             if folded.hasPrefix("k.") { role = .leader }
             else if folded.hasPrefix("w.") { role = .response }
             else if folded.hasPrefix("ant.") || Self.isNumberedAntiphon(text) { role = .antiphon }
+            else if !style.italic,
+                    isInUniversalisPsalm,
+                    let verseLayout = style.universalisVerseLayout {
+                switch verseLayout {
+                case .groupStart:
+                    let nextRole: OfflineBreviaryLineRole = activeUniversalisChoir == .choirLeft
+                        ? .choirRight
+                        : .choirLeft
+                    activeUniversalisChoir = nextRole
+                    role = nextRole
+                case .continuation:
+                    role = activeUniversalisChoir ?? .choirLeft
+                }
+            }
             else if leadingChoirIndent && !style.isVerseContinuation { role = .choirRight }
             else if Self.isReadingProclamation(text) { role = .body }
             else if isUppercaseHeading || Self.isSemanticPrayerHeading(text) { role = .heading }
@@ -1352,6 +1379,10 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
                     italic: style.italic
                 )
             )
+            if role == .heading, Self.isUniversalisPsalmHeading(text) {
+                isInUniversalisPsalm = true
+                activeUniversalisChoir = nil
+            }
         }
     }
 
@@ -1359,6 +1390,13 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         text.range(
             of: #"(?i)^((pierwsze|drugie|trzecie|[123]\.?|i{1,3}\.?)\s+czytanie|antyfona|wprowadzenie|akt pokuty|kolekta|psalm|pieśń|kantyk|hymn|czytanie|aklamacja|ewangelia|responsorium|prośby|modlitwa|prefacja|przed błogosławieństwem|propozycja śpiewów|te deum)(\s|$)"#,
             options: [.regularExpression, .diacriticInsensitive]
+        ) != nil
+    }
+
+    private static func isUniversalisPsalmHeading(_ text: String) -> Bool {
+        text.range(
+            of: #"(?i)^(psalm|canticle)\s"#,
+            options: .regularExpression
         ) != nil
     }
 

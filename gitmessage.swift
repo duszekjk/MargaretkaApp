@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] keep Universalis verse roles neutral
+codex conversation [20260730-ipad] reconstruct Universalis psalm choirs
 
-Clear residual choir roles when importing Universalis because its English
-EPUB encodes verse layout but no actual left or right choir information.
+Use the English EPUB's unindented verse starts and indented continuations to
+alternate choir groups inside psalms, while leaving non-psalm sections neutral.
