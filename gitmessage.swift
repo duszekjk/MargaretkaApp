@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] add verified English and Latin EPUB guides
+codex conversation [20260730-ipad] complete the English Universalis EPUB guide
 
-Link directly to the Universalis free English monthly EPUB and free Latin EPUB
-flows, with instructions verified from their respective download pages.
+Document the required calendar selection and monthly Create and send action in
+the free English Universalis EPUB flow.

@@ -31,7 +31,7 @@ struct OfflineBreviaryManagerView: View {
                 Link(destination: URL(string: "https://universalis.com/ebooks.htm")!) {
                     Label("Angielski — miesięczny EPUB", systemImage: "envelope.badge")
                 }
-                Text("Wpisz adres e-mail na stronie Universalis. Co miesiąc otrzymasz bezpłatny EPUB z czytaniami, Jutrznią i Nieszporami. Otwórz wiadomość, pobierz załączony EPUB i zaimportuj go w aplikacji.")
+                Text("Wpisz adres e-mail, wybierz region i kalendarz liturgiczny (dla Polski: Rest of the world → Poland), a potem wybierz Create and send the e-book dla potrzebnego miesiąca. Tworzenie trwa około 20–30 sekund. Z wiadomości e-mail pobierz EPUB i zaimportuj go w aplikacji.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
 
