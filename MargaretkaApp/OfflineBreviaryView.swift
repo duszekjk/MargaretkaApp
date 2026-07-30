@@ -187,7 +187,6 @@ struct OfflineBreviaryManagerView: View {
 
 struct BreviaryVariantOrderView: View {
     @State private var variantOrder = BreviaryVariantPreferences.load()
-    @State private var editMode: EditMode = .inactive
 
     var body: some View {
         List {
@@ -199,12 +198,7 @@ struct BreviaryVariantOrderView: View {
                 BreviaryVariantPreferences.save(variantOrder)
             }
         }
-        .environment(\.editMode, $editMode)
         .navigationTitle("Warianty oficjum")
-        .toolbar {
-            Button(editMode == .active ? "Gotowe" : "Edytuj") {
-                editMode = editMode == .active ? .inactive : .active
-            }
-        }
+        .environment(\.editMode, .constant(.active))
     }
 }

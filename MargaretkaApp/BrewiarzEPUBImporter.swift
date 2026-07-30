@@ -181,7 +181,9 @@ nonisolated enum BrewiarzEPUBImporter {
                 guard let key = universalisOfficeKey(officeLink[1]),
                       let officeData = try? archive.data(for: "OEBPS/\(officeLink[0])"),
                       let officePage = String(data: officeData, encoding: .utf8) else { continue }
-                let lines = discardNavigationAndMetadata(XHTMLPrayerLineParser.parse(officePage), officeTitle: officeLink[1])
+                let parsedLines = XHTMLPrayerLineParser.parse(officePage)
+                let filteredLines = discardNavigationAndMetadata(parsedLines, officeTitle: officeLink[1])
+                let lines = filteredLines.isEmpty ? parsedLines.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } : filteredLines
                 guard !lines.isEmpty else { continue }
                 offices.append(OfflineBreviaryOffice(key: key, title: officeLink[1], cards: paginate(lines), contentFingerprint: stableFingerprint(lines)))
             }

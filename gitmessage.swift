@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] complete Universalis EPUB download steps
+codex conversation [20260730-ipad] make officium order direct and retain Universalis text
 
-Document the verified email-attachment download flow and clarify that English
-monthly e-books are requested manually, not sent automatically.
+Allow immediate variant reordering and prevent Universalis office pages from
+being discarded wholesale by the brewiarz.pl-specific metadata filter.
