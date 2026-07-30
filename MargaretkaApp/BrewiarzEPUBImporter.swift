@@ -1206,6 +1206,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         var leftAligned = false
         var navigationLink = false
         var universalisSectionHeader = false
+        var universalisHymnStanzaStart = false
         var isVerseContinuation = false
         var universalisVerseLayout: UniversalisVerseLayout?
     }
@@ -1276,6 +1277,9 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         if !cssClasses.isDisjoint(with: ["vi", "vigb"]) {
             style.isVerseContinuation = true
         }
+        if cssClasses.contains("vgb") {
+            style.universalisHymnStanzaStart = true
+        }
         if name == "table", cssClasses.contains("each") {
             isInUniversalisPsalm = false
             activeUniversalisChoir = nil
@@ -1319,6 +1323,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         bufferStyle.rubric = bufferStyle.rubric || style.rubric
         bufferStyle.leftAligned = bufferStyle.leftAligned || style.leftAligned
         bufferStyle.navigationLink = bufferStyle.navigationLink || style.navigationLink
+        bufferStyle.universalisHymnStanzaStart = bufferStyle.universalisHymnStanzaStart || style.universalisHymnStanzaStart
         bufferStyle.isVerseContinuation = bufferStyle.isVerseContinuation || style.isVerseContinuation
         bufferStyle.universalisVerseLayout = bufferStyle.universalisVerseLayout ?? style.universalisVerseLayout
     }
@@ -1382,7 +1387,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
             else { role = .body }
             if isInUniversalisHymn,
                !style.italic,
-               style.universalisVerseLayout == .groupStart {
+               style.universalisHymnStanzaStart {
                 if !isFirstUniversalisHymnStanza {
                     text = "\n" + text
                 }

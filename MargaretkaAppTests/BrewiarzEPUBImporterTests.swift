@@ -62,6 +62,8 @@ struct BrewiarzEPUBImporterTests {
         #expect(lines.contains { $0.role == .choirLeft && $0.text == "O nations, hear the word of the Lord," })
         #expect(lines.contains { $0.role == .choirLeft && $0.text == "proclaim it to the far-off coasts." })
         #expect(lines.contains { $0.text == "\nWho are these of dazzling brightness," })
+        #expect(lines.contains { $0.text == "these, before God's throne who stand?" })
+        #expect(!lines.contains { $0.text == "\nthese, before God's throne who stand?" })
         #expect(lines.contains { $0.role == .heading && $0.text == "Hymn" })
         #expect(lines.contains { $0.role == .heading && $0.text == "Canticle" })
     }

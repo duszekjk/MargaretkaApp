@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] checkpoint before hymn stanza spacing fix
+codex conversation [20260730-ipad] space only Universalis hymn stanzas
 
-Save the current Universalis section parsing before narrowing hymn spacing to
-actual stanza starts.
+Keep choir group detection unchanged, but add a blank line only before vgb,
+the EPUB marker for the start of a new hymn stanza, not before every v line.
