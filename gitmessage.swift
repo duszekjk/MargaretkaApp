@@ -1,4 +1,5 @@
-codex conversation [20260730-ipad] preserve EPUB importer changes
+codex conversation [20260730-ipad] fix iPad menu command builder
 
-Commit the existing EPUB importer edits before correcting the iPad command builder.
-No user work is removed.
+Group the iPad menu commands into two Commands containers so SwiftUI's result
+builder does not exceed its ten-child overload. The menu entries and actions
+are unchanged.

@@ -76,7 +76,8 @@ struct MargaretkaAppApp: App {
 #endif
 #if os(iOS)
         .commands {
-            CommandGroup(replacing: .newItem) {
+            Group {
+                CommandGroup(replacing: .newItem) {
                 Button("Dodaj osobę do modlitwy") {
                     NotificationCenter.default.post(name: .margaretkaNewPerson, object: PrayerTargetCategory.person)
                 }
@@ -105,10 +106,12 @@ struct MargaretkaAppApp: App {
             CommandGroup(replacing: .textEditing) { }
             CommandGroup(replacing: .textFormatting) { }
             CommandGroup(replacing: .toolbar) { }
-            CommandGroup(replacing: .sidebar) { }
-            CommandGroup(replacing: .windowSize) { }
-            CommandGroup(replacing: .windowArrangement) { }
-            CommandGroup(replacing: .help) {
+                CommandGroup(replacing: .sidebar) { }
+            }
+            Group {
+                CommandGroup(replacing: .windowSize) { }
+                CommandGroup(replacing: .windowArrangement) { }
+                CommandGroup(replacing: .help) {
                 Button("Czym jest Margaretka?") {
                     NotificationCenter.default.post(name: .margaretkaAbout, object: nil)
                 }
@@ -117,7 +120,7 @@ struct MargaretkaAppApp: App {
                 }
             }
 
-            CommandMenu("Księża") {
+                CommandMenu("Księża") {
                 Section("Pomódl się") {
                     ForEach(scheduleData.items.filter { $0.category == .priest }) { target in
                         Button(target.displayName) {
@@ -137,7 +140,7 @@ struct MargaretkaAppApp: App {
                     NotificationCenter.default.post(name: .margaretkaNewPerson, object: PrayerTargetCategory.priest)
                 }
             }
-            CommandMenu("Osoby") {
+                CommandMenu("Osoby") {
                 Section("Pomódl się") {
                     ForEach(scheduleData.items.filter { $0.category == .person }) { target in
                         Button(target.displayName) {
@@ -157,7 +160,7 @@ struct MargaretkaAppApp: App {
                     NotificationCenter.default.post(name: .margaretkaNewPerson, object: PrayerTargetCategory.person)
                 }
             }
-            CommandMenu("Modlitwy") {
+                CommandMenu("Modlitwy") {
                 Section("Pomódl się") {
                     ForEach(scheduleData.items.filter { $0.category == .prayer }) { target in
                         Button(target.displayName) {
@@ -177,7 +180,7 @@ struct MargaretkaAppApp: App {
                     NotificationCenter.default.post(name: .margaretkaNewPerson, object: PrayerTargetCategory.prayer)
                 }
             }
-            CommandMenu("Synchronizacja") {
+                CommandMenu("Synchronizacja") {
                 Button("Zaloguj przez Apple") {
                     NotificationCenter.default.post(name: .margaretkaSyncSettings, object: nil)
                 }
@@ -186,14 +189,15 @@ struct MargaretkaAppApp: App {
                 }
                 .disabled(!syncService.isSignedIn || syncService.isWorking)
             }
-            CommandMenu("Statystyki") {
+                CommandMenu("Statystyki") {
                 Button("Otwórz statystyki") {
                     NotificationCenter.default.post(name: .margaretkaStatistics, object: nil)
                 }
             }
-            CommandMenu("Widok") {
+                CommandMenu("Widok") {
                 Button("Compact view") {
                     NotificationCenter.default.post(name: .margaretkaToggleCompact, object: nil)
+                }
                 }
             }
         }
