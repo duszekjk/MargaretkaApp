@@ -569,16 +569,23 @@ struct PrayerFlowView: View {
                             selectedOfflineBreviaryDayID = day.id
                             activeIndex = 0
                         } label: {
-                            Label(
-                                day.variantName,
-                                systemImage: day.id == selectedOfflineBreviaryDay?.id ? "checkmark" : "book.closed"
-                            )
+                            HStack {
+                                Label(day.variantName, systemImage: day.id == selectedOfflineBreviaryDay?.id ? "checkmark" : "book.closed")
+                                Text(day.languageCode ?? "pl")
+                                    .font(.caption2.monospaced())
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
                 } label: {
-                    Label(selectedOfflineBreviaryDay?.variantName ?? "Oficjum", systemImage: "books.vertical")
-                        .lineLimit(1)
-                        .padding(12)
+                    HStack(spacing: 5) {
+                        Image(systemName: "books.vertical")
+                        Text(selectedOfflineBreviaryDay?.variantName ?? "Oficjum").lineLimit(1)
+                        Text(selectedOfflineBreviaryDay?.languageCode ?? "pl")
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(12)
                 }
                 .glassEffect()
                 .symbolRenderingMode(.monochrome)
