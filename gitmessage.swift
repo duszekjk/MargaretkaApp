@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] complete the English Universalis EPUB guide
+codex conversation [20260730-ipad] complete Universalis EPUB download steps
 
-Document the required calendar selection and monthly Create and send action in
-the free English Universalis EPUB flow.
+Document the verified email-attachment download flow and clarify that English
+monthly e-books are requested manually, not sent automatically.
