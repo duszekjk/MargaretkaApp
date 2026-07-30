@@ -50,14 +50,6 @@ extension Calendar {
 nonisolated enum BreviaryVariantPreferences {
     static let storageKey = "preferredBreviaryVariantOrder"
     static let legacyStorageKey = "preferredBreviaryVariant"
-    static let defaultOrder = [
-        "primary", "bonifratrzy", "kapucyni", "jezuici", "benedyktyni",
-        "opolskie-gliwickie", "dominikanie", "wspomnienie-dowolne",
-        "wspomnienie-obowiazkowe", "wspolnoty-zakonne", "diecezje", "koscioly",
-        "miejsca", "poza-polska", "swieto", "uroczystosc", "dzien-powszedni",
-        "niedziela", "pozostale"
-    ]
-
     static let definitions: [(identifier: String, name: String, prefixes: [String])] = [
         ("primary", "Tekst podstawowy", []),
         ("bonifratrzy", "U bonifratrów", ["U bonifratrów"]),
@@ -66,6 +58,7 @@ nonisolated enum BreviaryVariantPreferences {
         ("benedyktyni", "W zakonach benedyktyńskich", ["W zakonach benedyktyńskich", "W zakonie benedyktyńskim"]),
         ("opolskie-gliwickie", "W diecezjach opolskiej i gliwickiej", ["W diecezjach opolskiej i gliwickiej"]),
         ("dominikanie", "W zakonie dominikańskim", ["W zakonie dominikańskim"]),
+    ] + polishDioceseDefinitions + [
         ("wspomnienie-dowolne", "Wspomnienie dowolne patrona dnia", ["Wsp. dowolne", "Wspomnienie dowolne"]),
         ("wspomnienie-obowiazkowe", "Wspomnienie obowiązkowe", ["Wsp. obowiązkowe", "Wspomnienie obowiązkowe"]),
         ("wspolnoty-zakonne", "W innych wspólnotach zakonnych", ["U ", "W II Zakonie Franciszkańskim", "W zakonach ", "W zakonie ", "W prowincjach OFM", "W Rodzinie św. Pawła", "W zgromadzeniach "]),
@@ -79,6 +72,19 @@ nonisolated enum BreviaryVariantPreferences {
         ("niedziela", "Niedziela zwykła", ["XV", "XIX", "XX"]),
         ("pozostale", "Pozostałe oficja", [])
     ]
+
+    static let defaultOrder = definitions.map(\.identifier)
+
+    private static let polishDioceseDefinitions: [(identifier: String, name: String, prefixes: [String])] = [
+        "białostockiej", "częstochowskiej", "gdańskiej", "gnieźnieńskiej", "katowickiej", "krakowskiej", "lubelskiej", "łódzkiej", "poznańskiej", "przemyskiej", "szczecińsko-kamieńskiej", "warmińskiej", "warszawskiej", "wrocławskiej",
+        "bielsko-żywieckiej", "bydgoskiej", "drohiczyńskiej", "elbląskiej", "ełckiej", "gliwickiej", "kaliskiej", "kieleckiej", "koszalińsko-kołobrzeskiej", "legnickiej", "łomżyńskiej", "łowickiej", "opolskiej", "pelplińskiej", "płockiej", "radomskiej", "rzeszowskiej", "sandomierskiej", "siedleckiej", "sosnowieckiej", "świdnickiej", "tarnowskiej", "toruńskiej", "warszawsko-praskiej", "włocławskiej", "zamojsko-lubaczowskiej", "zielonogórsko-gorzowskiej"
+    ].map { adjective in
+        (
+            "diecezja-\(adjective)",
+            "W diecezji lub archidiecezji \(adjective)",
+            ["W diecezji \(adjective)", "W diecezjach \(adjective)", "W diec. \(adjective)", "W archidiecezji \(adjective)"]
+        )
+    }
 
     static func load(from defaults: UserDefaults = .standard) -> [String] {
         let stored = defaults.stringArray(forKey: storageKey) ?? []

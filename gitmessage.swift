@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] activate every predefined Brewiarz category
+codex conversation [20260730-ipad] add all Polish diocesan variants
 
-Make every inspected category available in the default import order and migrate
-obsolete filename-based preferences to the new name-based list.
+Provide a separate name-based import category for every Polish Latin diocese
+and archdiocese, ahead of the general diocesan fallback.
