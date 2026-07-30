@@ -2,10 +2,6 @@ import SwiftUI
 
 struct OfflineBreviaryManagerView: View {
     @EnvironmentObject private var store: OfflineBreviaryStore
-    @State private var variantOrder = BreviaryVariantPreferences.load()
-#if os(macOS)
-    @State private var macEditing = false
-#endif
     @State private var rangeStart = Date.now
     @State private var rangeEnd = Date.now
     @State private var importToDelete: UUID?
@@ -13,19 +9,11 @@ struct OfflineBreviaryManagerView: View {
 
     var body: some View {
         List {
-            Section("Kolejność wariantów") {
-                ForEach(variantOrder, id: \.self) { identifier in
-                    Label(
-                        BreviaryVariantPreferences.displayName(for: identifier),
-                        systemImage: "line.3.horizontal"
-                    )
+            Section("Import wariantów") {
+                NavigationLink("Kolejność wariantów") {
+                    BreviaryVariantOrderView()
                 }
-                .onMove { source, destination in
-                    variantOrder.move(fromOffsets: source, toOffset: destination)
-                    BreviaryVariantPreferences.save(variantOrder)
-                }
-
-                Text("Dla każdej daty podczas importu zostanie zapisany tylko pierwszy dostępny wariant z tej listy. Przeciągnij warianty w trybie edycji, aby ustawić priorytety.")
+                Text("Dla każdej daty importowane są pierwsze dostępne warianty z tej kolejności.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -118,24 +106,6 @@ struct OfflineBreviaryManagerView: View {
             }
         }
         .navigationTitle("Brewiarz offline")
-        .toolbar {
-#if os(macOS)
-            Button(macEditing ? "Gotowe" : "Edytuj") {
-                withAnimation {
-                    macEditing.toggle()
-                }
-            }
-#else
-            EditButton()
-#endif
-        }
-        .onAppear {
-            variantOrder = BreviaryVariantPreferences.normalizedOrder(
-                BreviaryVariantPreferences.load(),
-                including: store.days.map(\.variantIdentifier)
-            )
-            BreviaryVariantPreferences.save(variantOrder)
-        }
         .alert("Usunąć cały import?", isPresented: Binding(
             get: { importToDelete != nil },
             set: { if !$0 { importToDelete = nil } }
@@ -169,6 +139,33 @@ struct OfflineBreviaryManagerView: View {
         case .nieszpory: return "sunset"
         case .kompleta: return "moon.stars"
         default: return "book.pages"
+        }
+    }
+}
+
+struct BreviaryVariantOrderView: View {
+    @State private var variantOrder = BreviaryVariantPreferences.load()
+#if os(macOS)
+    @State private var macEditing = false
+#endif
+
+    var body: some View {
+        List {
+            ForEach(variantOrder, id: \.self) { identifier in
+                Label(BreviaryVariantPreferences.displayName(for: identifier), systemImage: "line.3.horizontal")
+            }
+            .onMove { source, destination in
+                variantOrder.move(fromOffsets: source, toOffset: destination)
+                BreviaryVariantPreferences.save(variantOrder)
+            }
+        }
+        .navigationTitle("Kolejność wariantów")
+        .toolbar {
+#if os(macOS)
+            Button(macEditing ? "Gotowe" : "Edytuj") { macEditing.toggle() }
+#else
+            EditButton()
+#endif
         }
     }
 }
