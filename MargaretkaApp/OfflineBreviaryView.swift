@@ -20,7 +20,8 @@ struct OfflineBreviaryManagerView: View {
                     Text("1. Aby kupić teksty, wybierz KUPUJĘ.")
                     Text("2. Na kolejnej stronie wybierz okres dostępu i opłać zakup.")
                     Text("3. Po opłaceniu wybierz format EPUB i pobierz plik na urządzenie.")
-                    Text("4. W Ustawieniach otwórz Import i eksport, ustaw liczbę wariantów oficjum, wybierz Importuj i połącz dane, a następnie wskaż pobrany EPUB.")
+                    Text("4. W aplikacji otwórz Ustawienia → Brewiarz offline → Kolejność wariantów oficjum i ustaw priorytet wariantów.")
+                    Text("5. Następnie w Ustawieniach wybierz Import i eksport → Importuj i połącz dane, a w wyborze pliku wskaż pobrany EPUB.")
                 }
                 .font(.footnote)
                 .foregroundStyle(.secondary)

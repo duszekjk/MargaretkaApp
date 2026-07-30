@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] align EPUB import instructions with the app
+codex conversation [20260730-ipad] put officium order before EPUB import
 
-Name the actual settings route and import action that opens the EPUB file
-picker, including the variant-count setting.
+Correct the guide so app users set the order of office variants first and only
+then follow the import flow to choose their downloaded EPUB.
