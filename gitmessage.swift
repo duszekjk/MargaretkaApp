@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] add bundled EPUB import fixtures
+codex conversation [20260730-ipad] remove codesign-blocking icon metadata
 
-Keep Polish, English, and Latin sample EPUBs in the test bundle so importer
-coverage runs independently from the Downloads folder.
+Remove Finder metadata from application icon bundles so the widget extension
+can be codesigned for the physical-device EPUB import test.
