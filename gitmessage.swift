@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] restore repository index after stale lock
+codex conversation [20260730-ipad] preserve Xcode project fixture updates
 
-Restore all project files after a stale Git index lock caused a transient
-untracked state. The preceding fixture path correction remains included.
+Record Xcode's recovered EPUB fixture references and the validated build-number
+increment without discarding local project changes.

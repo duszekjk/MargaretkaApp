@@ -7,10 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		F10000000000000000000011 /* PolishBrewiarz.epub in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000014 /* PolishBrewiarz.epub */; };
-		F10000000000000000000012 /* EnglishUniversalis.epub in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000015 /* EnglishUniversalis.epub */; };
-		F10000000000000000000013 /* LatinUniversalis.epub in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000016 /* LatinUniversalis.epub */; };
 		F1000000000000000000000D /* MargaretkaWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = F10000000000000000000001 /* MargaretkaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F10000000000000000000011 /* MargaretkaAppTests/Fixtures/PolishBrewiarz.epub in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000014 /* MargaretkaAppTests/Fixtures/PolishBrewiarz.epub */; };
+		F10000000000000000000012 /* MargaretkaAppTests/Fixtures/EnglishUniversalis.epub in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000015 /* MargaretkaAppTests/Fixtures/EnglishUniversalis.epub */; };
+		F10000000000000000000013 /* MargaretkaAppTests/Fixtures/LatinUniversalis.epub in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000016 /* MargaretkaAppTests/Fixtures/LatinUniversalis.epub */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -55,10 +55,10 @@
 		E07CA1AA2E21619000AB58D7 /* MargaretkaApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MargaretkaApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E07CA1B72E21619600AB58D7 /* MargaretkaAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MargaretkaAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E07CA1C12E21619600AB58D7 /* MargaretkaAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MargaretkaAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		F10000000000000000000014 /* PolishBrewiarz.epub */ = {isa = PBXFileReference; explicitFileType = file; path = MargaretkaAppTests/Fixtures/PolishBrewiarz.epub; sourceTree = SOURCE_ROOT; };
-		F10000000000000000000015 /* EnglishUniversalis.epub */ = {isa = PBXFileReference; explicitFileType = file; path = MargaretkaAppTests/Fixtures/EnglishUniversalis.epub; sourceTree = SOURCE_ROOT; };
-		F10000000000000000000016 /* LatinUniversalis.epub */ = {isa = PBXFileReference; explicitFileType = file; path = MargaretkaAppTests/Fixtures/LatinUniversalis.epub; sourceTree = SOURCE_ROOT; };
 		F10000000000000000000001 /* MargaretkaWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MargaretkaWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		F10000000000000000000014 /* MargaretkaAppTests/Fixtures/PolishBrewiarz.epub */ = {isa = PBXFileReference; explicitFileType = file; path = MargaretkaAppTests/Fixtures/PolishBrewiarz.epub; sourceTree = SOURCE_ROOT; };
+		F10000000000000000000015 /* MargaretkaAppTests/Fixtures/EnglishUniversalis.epub */ = {isa = PBXFileReference; explicitFileType = file; path = MargaretkaAppTests/Fixtures/EnglishUniversalis.epub; sourceTree = SOURCE_ROOT; };
+		F10000000000000000000016 /* MargaretkaAppTests/Fixtures/LatinUniversalis.epub */ = {isa = PBXFileReference; explicitFileType = file; path = MargaretkaAppTests/Fixtures/LatinUniversalis.epub; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -156,6 +156,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		E02E8343301BD1F2000BB825 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				F10000000000000000000014 /* MargaretkaAppTests/Fixtures/PolishBrewiarz.epub */,
+				F10000000000000000000015 /* MargaretkaAppTests/Fixtures/EnglishUniversalis.epub */,
+				F10000000000000000000016 /* MargaretkaAppTests/Fixtures/LatinUniversalis.epub */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		E07CA1A12E21619000AB58D7 = {
 			isa = PBXGroup;
 			children = (
@@ -165,6 +175,7 @@
 				E07CA1BA2E21619600AB58D7 /* MargaretkaAppTests */,
 				E07CA1C42E21619600AB58D7 /* MargaretkaAppUITests */,
 				E07CA1AB2E21619000AB58D7 /* Products */,
+				E02E8343301BD1F2000BB825 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -336,9 +347,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F10000000000000000000011 /* PolishBrewiarz.epub in Resources */,
-				F10000000000000000000012 /* EnglishUniversalis.epub in Resources */,
-				F10000000000000000000013 /* LatinUniversalis.epub in Resources */,
+				F10000000000000000000011 /* MargaretkaAppTests/Fixtures/PolishBrewiarz.epub in Resources */,
+				F10000000000000000000012 /* MargaretkaAppTests/Fixtures/EnglishUniversalis.epub in Resources */,
+				F10000000000000000000013 /* MargaretkaAppTests/Fixtures/LatinUniversalis.epub in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -534,7 +545,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = MargaretkaApp/MargaretkaApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 56;
+				CURRENT_PROJECT_VERSION = 57;
 				DEVELOPMENT_TEAM = QASSY2FVRR;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -586,7 +597,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = MargaretkaApp/MargaretkaApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 56;
+				CURRENT_PROJECT_VERSION = 57;
 				DEVELOPMENT_TEAM = QASSY2FVRR;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
