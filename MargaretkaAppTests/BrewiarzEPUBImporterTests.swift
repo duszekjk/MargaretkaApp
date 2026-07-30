@@ -37,6 +37,23 @@ struct BrewiarzEPUBImporterTests {
         }
     }
 
+    @Test func importsJulyUniversalisMorningPrayerForToday() async throws {
+        let url = try #require(
+            Bundle(for: BrewiarzEPUBImporterTestBundle.self).url(
+                forResource: "JulyUniversalis",
+                withExtension: "epub"
+            )
+        )
+        let imported = try await BrewiarzEPUBImporter.importEPUB(from: url)
+        let day = try #require(imported.days.first {
+            $0.date == BreviaryCivilDate(year: 2026, month: 7, day: 30)
+        })
+        let morningPrayer = try #require(day.offices.first { $0.key == .jutrznia })
+
+        #expect(!morningPrayer.cards.isEmpty)
+        #expect(morningPrayer.cards.flatMap(\.lines).count >= 15)
+    }
+
     @Test func parsesDatedOfficeChoirsAndCanonicalPrayerReference() throws {
         let xhtml = """
         <?xml version="1.0" encoding="UTF-8"?>
