@@ -27,6 +27,22 @@ struct OfflineBreviaryManagerView: View {
                 .foregroundStyle(.secondary)
             }
 
+            Section("Bezpłatne EPUB Universalis") {
+                Link(destination: URL(string: "https://universalis.com/ebooks.htm")!) {
+                    Label("Angielski — miesięczny EPUB", systemImage: "envelope.badge")
+                }
+                Text("Wpisz adres e-mail na stronie Universalis. Co miesiąc otrzymasz bezpłatny EPUB z czytaniami, Jutrznią i Nieszporami. Otwórz wiadomość, pobierz załączony EPUB i zaimportuj go w aplikacji.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                Link(destination: URL(string: "https://universalis.com/latin-epub.htm")!) {
+                    Label("Łacina — Liturgia Horarum EPUB", systemImage: "text.book.closed")
+                }
+                Text("Otwórz tę stronę i wybierz link „Liturgia horarum”. Przeglądarka pobierze bezpłatny EPUB; potem wskaż go podczas importu w aplikacji.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Warianty oficjum") {
                 NavigationLink("Kolejność wariantów oficjum") {
                     BreviaryVariantOrderView()

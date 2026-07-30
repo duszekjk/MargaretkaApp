@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] import every optional memorial for its day
+codex conversation [20260730-ipad] add verified English and Latin EPUB guides
 
-Treat the optional-memorial priority as one position while retaining all of its
-available daily offices, including multiple patrons on the same date.
+Link directly to the Universalis free English monthly EPUB and free Latin EPUB
+flows, with instructions verified from their respective download pages.
