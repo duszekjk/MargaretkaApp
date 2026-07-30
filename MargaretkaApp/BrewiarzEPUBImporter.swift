@@ -249,7 +249,7 @@ nonisolated enum BrewiarzEPUBImporter {
         return OfflineBreviaryOffice(
             key: key,
             title: title,
-            cards: paginate(lines, maximumLines: 8),
+            cards: paginate(lines),
             contentFingerprint: stableFingerprint(lines)
         )
     }

@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] retain Universalis choir CSS in text lines
+codex conversation [20260730-ipad] align Universalis page length with Polish EPUB
 
-Carry the parsed Universalis choir class into the buffered line style so both
-left and right choir roles survive XML parsing.
+Use the standard twelve-line offline card limit for Universalis now that its
+HTML entity parsing is complete.
