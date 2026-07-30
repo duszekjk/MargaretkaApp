@@ -63,7 +63,7 @@ nonisolated enum BreviaryVariantPreferences {
         ("benedyktyni", "W zakonach benedyktyńskich", ["W zakonach benedyktyńskich", "W zakonie benedyktyńskim"]),
         ("opolskie-gliwickie", "W diecezjach opolskiej i gliwickiej", ["W diecezjach opolskiej i gliwickiej"]),
         ("dominikanie", "W zakonie dominikańskim", ["W zakonie dominikańskim"]),
-        ("wspomnienie-dowolne", "Wspomnienie dowolne", ["Wsp. dowolne", "Wspomnienie dowolne"]),
+        ("wspomnienie-dowolne", "Wspomnienie dowolne patrona dnia", ["Wsp. dowolne", "Wspomnienie dowolne"]),
         ("wspomnienie-obowiazkowe", "Wspomnienie obowiązkowe", ["Wsp. obowiązkowe", "Wspomnienie obowiązkowe"]),
         ("wspolnoty-zakonne", "W innych wspólnotach zakonnych", ["U ", "W II Zakonie Franciszkańskim", "W zakonach ", "W zakonie ", "W prowincjach OFM", "W Rodzinie św. Pawła", "W zgromadzeniach "]),
         ("diecezje", "W diecezjach i metropoliach", ["W diec.", "W diecezji ", "W archidiecezji ", "W metropolii "]),
