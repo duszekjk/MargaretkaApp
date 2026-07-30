@@ -189,12 +189,32 @@ nonisolated enum BrewiarzEPUBImporter {
                 offices.append(OfflineBreviaryOffice(key: key, title: officeLink[1], cards: paginate(lines), contentFingerprint: stableFingerprint(lines)))
             }
             if !offices.isEmpty {
-                days.append(OfflineBreviaryDay(date: date, variantIdentifier: "universalis", variantName: "Universalis", languageCode: languageCode, celebrationName: nil, liturgicalColor: nil, offices: offices, sourceImportID: importID, sourceIdentifier: sourceURL.lastPathComponent, sourceTitle: sourceTitle))
+                days.append(OfflineBreviaryDay(
+                    date: date,
+                    variantIdentifier: "p",
+                    variantName: "Tekst podstawowy",
+                    languageCode: languageCode,
+                    celebrationName: universalisCelebration(in: dayPage),
+                    liturgicalColor: nil,
+                    offices: offices,
+                    sourceImportID: importID,
+                    sourceIdentifier: sourceURL.lastPathComponent,
+                    sourceTitle: sourceTitle
+                ))
             }
             if let progress { await progress(.init(completedDocuments: index + 1, totalDocuments: links.count, elapsed: 0)) }
         }
         guard !days.isEmpty else { throw BrewiarzEPUBImportError.noOffices }
         return .init(days: days, sourceTitle: sourceTitle, skippedDocumentCount: links.count - days.count)
+    }
+
+    private static func universalisCelebration(in xhtml: String) -> String? {
+        guard let match = captures(in: xhtml, pattern: #"<strong>([^<]+)</strong>"#).first,
+              let title = match.first?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !title.isEmpty else {
+            return nil
+        }
+        return title
     }
 
     private static func universalisEntryName(

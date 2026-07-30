@@ -1027,27 +1027,53 @@ struct DataTransferView: View {
                     return
                 }
                 prayerStore.ensureDefaultPrayers()
-                let breviaryTargets = BreviaryPrayerTargetFactory.missingTargets(
-                    for: retained,
-                    prayers: prayerStore.prayers,
-                    existingTargets: targetStore.priests
-                )
-                prepareImport(MargaretkaBackup(
-                    schemaVersion: MargaretkaBackup.currentSchemaVersion,
-                    exportedAt: .now,
-                    purpose: .dataTransfer,
-                    preferences: nil,
-                    prayers: [],
-                    targets: breviaryTargets,
-                    sessions: [],
-                    offlineBreviaryDays: retained,
-                    assets: []
-                ))
+                applyEPUBImport(retained, skippedDocuments: imported.skippedDocumentCount)
             } catch {
                 epubProgress = nil
                 errorMessage = error.localizedDescription
             }
         }
+    }
+
+    private func applyEPUBImport(
+        _ importedDays: [OfflineBreviaryDay],
+        skippedDocuments: Int
+    ) {
+        var mergedDays = offlineStore.days
+        let importedStableIdentities = Set(importedDays.map(\.stableIdentity))
+        let importedLanguages = Set(importedDays.compactMap(\.languageCode))
+        let importedDates = Set(importedDays.map(\.date))
+
+        // Versions created by the first Universalis importer used a made-up
+        // "Universalis" variant. A re-import replaces only that legacy data.
+        mergedDays.removeAll { day in
+            day.variantIdentifier == "universalis"
+                && importedLanguages.contains(day.languageCode ?? "pl")
+                && importedDates.contains(day.date)
+        }
+        mergedDays.removeAll { importedStableIdentities.contains($0.stableIdentity) }
+        mergedDays.append(contentsOf: importedDays)
+        offlineStore.replaceAll(with: mergedDays)
+        offlineStore.removeUnreferencedImages()
+
+        let targets = BreviaryPrayerTargetFactory.missingTargets(
+            for: importedDays,
+            prayers: prayerStore.prayers,
+            existingTargets: targetStore.priests
+        )
+        if !targets.isEmpty {
+            targetStore.priests.append(contentsOf: targets)
+            scheduleData.items = targetStore.priests
+            scheduleData.save()
+        }
+
+        let dateCount = Set(importedDays.map(\.date)).count
+        let variantCount = importedDays.count
+        var summary = "Zaimportowano i zapisano \(dateCount) \(dateCount == 1 ? "dzień" : "dni") oraz \(variantCount) \(variantCount == 1 ? "wariant oficjum" : "wariantów oficjum")."
+        if skippedDocuments > 0 {
+            summary += " Pominięto \(skippedDocuments) nieczytelnych dokumentów."
+        }
+        message = summary
     }
 
     private func prepareImport(_ backup: MargaretkaBackup) {

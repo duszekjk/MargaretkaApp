@@ -559,9 +559,14 @@ struct PrayerFlowView: View {
             ?? availableOfflineBreviaryDays.first
     }
 
+    private var showsBreviaryVariantPicker: Bool {
+        availableOfflineBreviaryDays.count > 1
+            && prayerSteps.contains(where: { $0.offlineOffice != nil })
+    }
+
     @ViewBuilder
     private var breviaryVariantPicker: some View {
-        if availableOfflineBreviaryDays.count > 1 {
+        if showsBreviaryVariantPicker {
             GlassEffectContainer(spacing: 0) {
                 Menu {
                     ForEach(availableOfflineBreviaryDays) { day in
