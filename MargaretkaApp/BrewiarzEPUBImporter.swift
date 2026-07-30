@@ -174,12 +174,13 @@ nonisolated enum BrewiarzEPUBImporter {
         var days: [OfflineBreviaryDay] = []
         for (index, link) in links.enumerated() where link.count == 2 {
             guard let date = universalisDate(link[1]) else { continue }
-            let base = URL(fileURLWithPath: link[0]).deletingLastPathComponent().path == "/" ? link[0] : "OEBPS/\(link[0])"
+            guard let base = universalisEntryName(for: link[0], in: archive) else { continue }
             guard let data = try? archive.data(for: base), let dayPage = String(data: data, encoding: .utf8) else { continue }
             var offices: [OfflineBreviaryOffice] = []
             for officeLink in captures(in: dayPage, pattern: #"href=\"([^\"]+\.xhtml)\"[^>]*>([^<]+)<"#) where officeLink.count == 2 {
                 guard let key = universalisOfficeKey(officeLink[1]),
-                      let officeData = try? archive.data(for: "OEBPS/\(officeLink[0])"),
+                      let officeEntry = universalisEntryName(for: officeLink[0], in: archive),
+                      let officeData = try? archive.data(for: officeEntry),
                       let officePage = String(data: officeData, encoding: .utf8) else { continue }
                 let parsedLines = XHTMLPrayerLineParser.parse(officePage)
                 let filteredLines = discardNavigationAndMetadata(parsedLines, officeTitle: officeLink[1])
@@ -194,6 +195,19 @@ nonisolated enum BrewiarzEPUBImporter {
         }
         guard !days.isEmpty else { throw BrewiarzEPUBImportError.noOffices }
         return .init(days: days, sourceTitle: sourceTitle, skippedDocumentCount: links.count - days.count)
+    }
+
+    private static func universalisEntryName(
+        for href: String,
+        in archive: SimpleZIPArchive
+    ) -> String? {
+        let path = href
+            .split(separator: "#", maxSplits: 1)
+            .first
+            .map(String.init) ?? href
+        guard !path.isEmpty else { return nil }
+        if archive.entryNames.contains(path) { return path }
+        return archive.entryNames.first { $0.hasSuffix("/\(path)") }
     }
 
     private static func universalisOfficeKey(_ title: String) -> BrewiarzPrayerKey? {

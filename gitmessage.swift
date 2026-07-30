@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] add real EPUB import integration coverage
+codex conversation [20260730-ipad] resolve Universalis EPUB chapter paths
 
-Exercise the Polish brewiarz.pl and English and Latin Universalis EPUB files
-when the local test corpus is available.
+Resolve Universalis day and office links against the entries actually stored in
+the EPUB archive, so imports do not depend on a guessed OEBPS path.
