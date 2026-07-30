@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] document Brewiarz EPUB purchase and import
+codex conversation [20260730-ipad] correct Brewiarz purchase instructions
 
-Add the official Brewiarz download link and concise in-app instructions for
-buying, downloading, and importing an EPUB office.
+Clarify that the EPUB link is a demo, purchase starts with KUPUJĘ, the period
+is selected next, and EPUB format is selected after that.

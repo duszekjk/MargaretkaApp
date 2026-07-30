@@ -17,9 +17,9 @@ struct OfflineBreviaryManagerView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Jak dodać oficjum offline")
                         .font(.headline)
-                    Text("1. Na stronie brewiarz.pl wybierz EPUB, a następnie KUPUJĘ przy wybranym tygodniu.")
-                    Text("2. Po zakupie pobierz plik EPUB na urządzenie.")
-                    Text("3. W Ustawieniach wybierz Import i eksport danych, ustaw liczbę wariantów oficjum i wskaż pobrany plik EPUB.")
+                    Text("1. Przycisk EPUB na stronie pokazuje tylko plik przykładowy. Aby kupić teksty, wybierz KUPUJĘ.")
+                    Text("2. Na kolejnej stronie wybierz okres dostępu, a następnie format EPUB.")
+                    Text("3. Pobierz plik EPUB na urządzenie. W Ustawieniach wybierz Import i eksport danych, ustaw liczbę wariantów oficjum i wskaż plik.")
                 }
                 .font(.footnote)
                 .foregroundStyle(.secondary)
