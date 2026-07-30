@@ -1,4 +1,4 @@
-codex conversation [20260731-ipad] force Universalis section page boundaries
+codex conversation [20260731-photo-cache] preserve existing workspace changes
 
-Normalize English Universalis section labels immediately after XHTML parsing so
-Canticle, Short Responsory and Prayers and intercessions always start new cards.
+Capture the existing project-version correction before investigating prayer photo
+selection and persistence.
