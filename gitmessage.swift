@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] make Canticle an explicit section boundary
+codex conversation [20260730-ipad] checkpoint before compiler return fix
 
-Recognize English Canticle and Invitatory Psalm labels even if the EPUB table
-structure is not retained, so each starts a new card and its choir context.
+Save the current importer state before correcting the Boolean return introduced
+by the English Canticle section recognition.
