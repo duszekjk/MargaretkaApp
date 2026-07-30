@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] add July Universalis import regression test
+codex conversation [20260730-ipad] persist imported offices through offline store
 
-Bundle the exact July Universalis EPUB used on iPad and verify that its
-30 July Morning Prayer has imported cards instead of a placeholder.
+Use OfflineBreviaryStore upsert for EPUB data and verify the persisted office
+days before showing a successful import message.

@@ -1039,22 +1039,25 @@ struct DataTransferView: View {
         _ importedDays: [OfflineBreviaryDay],
         skippedDocuments: Int
     ) {
-        var mergedDays = offlineStore.days
-        let importedStableIdentities = Set(importedDays.map(\.stableIdentity))
         let importedLanguages = Set(importedDays.compactMap(\.languageCode))
         let importedDates = Set(importedDays.map(\.date))
 
         // Versions created by the first Universalis importer used a made-up
         // "Universalis" variant. A re-import replaces only that legacy data.
-        mergedDays.removeAll { day in
+        let legacyDays = offlineStore.days.filter { day in
             day.variantIdentifier == "universalis"
                 && importedLanguages.contains(day.languageCode ?? "pl")
                 && importedDates.contains(day.date)
         }
-        mergedDays.removeAll { importedStableIdentities.contains($0.stableIdentity) }
-        mergedDays.append(contentsOf: importedDays)
-        offlineStore.replaceAll(with: mergedDays)
+        legacyDays.forEach { offlineStore.delete(dayID: $0.id) }
+        offlineStore.upsert(importedDays)
         offlineStore.removeUnreferencedImages()
+
+        let persistedIdentities = Set(offlineStore.days.map(\.stableIdentity))
+        guard Set(importedDays.map(\.stableIdentity)).isSubset(of: persistedIdentities) else {
+            errorMessage = "EPUB został odczytany, ale nie udało się zapisać oficjów offline."
+            return
+        }
 
         let targets = BreviaryPrayerTargetFactory.missingTargets(
             for: importedDays,
