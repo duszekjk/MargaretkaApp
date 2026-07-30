@@ -1,0 +1,1257 @@
+//
+//  Schedulable.swift
+//  MargaretkaApp
+//
+//  Created by Jacek Kałużny on 15/08/2025.
+//
+
+
+
+//  Created by Jacek Kałużny on 12/07/2025.
+//  Schedules.swift
+import SwiftUI
+
+import Foundation
+internal import Combine
+import UserNotifications
+
+let schedulingHorizon: DateComponents = DateComponents(month: 12) 
+let maxOccurrencesPerTime = 4
+let maxNotificationsToSchedule = 40
+let notificationCategoryId = "SCHEDULABLE_TASK"
+let notificationActionMarkDone = "MARK_AS_DONE"
+let notificationActionRestart = "RESTART_PRAYER"
+
+
+
+enum FrequencyUnit: String, Codable {
+    case daily, weekly, monthly
+    func every(_ n:Int) -> String {
+        if(n == 0)
+        {
+            switch self {
+            case .daily: return "day"
+            case .weekly: return "week"
+            case .monthly: return "month"
+            }
+        }
+        switch self {
+        case .daily: return "days"
+            
+        case .weekly: return "weeks"
+        case .monthly: return "months"
+        }
+        return "times"
+    }
+}
+private func computedEnd(start: Date, explicitEnd: Date?) -> Date {
+    if let end = explicitEnd { return end }
+    return Calendar.current.date(byAdding: schedulingHorizon, to: max(start, Date()))!
+}
+
+protocol Schedulable: Identifiable, Codable {
+    var schedule: SchedulePlan { get set }
+    var lastModified: Date { get set }
+    
+    var notificationIds: [String] { get set }
+    var notificationIdsFinished: [String] { get set }
+    
+    
+    var notificationTitle: String { get set }
+    var notificationMessage: String { get set }
+    var notificationSound: String? { get set }
+    
+    var notificationTypeId: String { get }
+}
+
+enum TimeTypes: String, Codable, CaseIterable, Identifiable, Hashable, Equatable {
+    case minutes, hours, days, weeks, months
+    var id: String { rawValue }
+
+    var localizedName: String {
+        switch self {
+        case .minutes:
+            return String(localized: "time.unit.minutes", defaultValue: "minuty", comment: "Time unit: minutes")
+        case .hours:
+            return String(localized: "time.unit.hours", defaultValue: "godziny", comment: "Time unit: hours")
+        case .days:
+            return String(localized: "time.unit.days", defaultValue: "dni", comment: "Time unit: days")
+        case .weeks:
+            return String(localized: "time.unit.weeks", defaultValue: "tygodnie", comment: "Time unit: weeks")
+        case .months:
+            return String(localized: "time.unit.months", defaultValue: "miesiące", comment: "Time unit: months")
+        }
+    }
+
+    var component: Calendar.Component {
+        switch self {
+        case .minutes: return .minute
+        case .hours:   return .hour
+        case .days:    return .day
+        case .weeks:   return .weekOfYear
+        case .months:  return .month
+        }
+    }
+
+    
+    func dateComponents(_ n: Int, direction: OffsetDirection = .before) -> DateComponents {
+        let signed = (direction == .before) ? -n : n
+        switch self {
+        case .minutes: return DateComponents(minute: signed)
+        case .hours:   return DateComponents(hour: signed)
+        case .days:    return DateComponents(day: signed)
+        case .weeks:   return DateComponents(weekOfYear: signed)
+        case .months:  return DateComponents(month: signed)
+        }
+    }
+
+    
+
+    func before(_ n: Int) -> String {
+        switch self {
+        case .minutes:
+            return String(localized: "time.before.minutes \(n)", table: "Localizable", comment: "n minutes before an event")
+        case .hours:
+            return String(localized: "time.before.hours \(n)", table: "Localizable", comment: "n hours before an event")
+        case .days:
+            return String(localized: "time.before.days \(n)", table: "Localizable", comment: "n days before an event")
+        case .weeks:
+            return String(localized: "time.before.weeks \(n)", table: "Localizable", comment: "n weeks before an event")
+        case .months:
+            return String(localized: "time.before.months \(n)", table: "Localizable", comment: "n months before an event")
+        }
+    }
+
+    func text(_ n: Int) -> String {
+        switch self {
+        case .minutes:
+            return String(localized: "time.in.minutes \(n)", table: "Localizable", comment: "in n minutes")
+        case .hours:
+            return String(localized: "time.in.hours \(n)", table: "Localizable", comment: "in n hours")
+        case .days:
+            return String(localized: "time.in.days \(n)", table: "Localizable", comment: "in n days")
+        case .weeks:
+            return String(localized: "time.in.weeks \(n)", table: "Localizable", comment: "in n weeks")
+        case .months:
+            return String(localized: "time.in.months \(n)", table: "Localizable", comment: "in n months")
+        }
+    }
+}
+
+struct NotificationBefore: Codable, Equatable, Hashable, Identifiable {
+    var id: UUID = UUID()
+    var value: Int
+    var active: Bool = true
+    var timeType: TimeTypes
+}
+
+enum OffsetDirection { case before, after }
+
+extension Calendar {
+    func date(byAdding offset: NotificationBefore,
+              to date: Date,
+              direction: OffsetDirection = .before) -> Date? {
+        let comps = offset.timeType.dateComponents(offset.value, direction: direction)
+        return self.date(byAdding: comps, to: date)
+    }
+}
+
+struct NotificationBeforeEditor: View {
+    @Binding var model: NotificationBefore
+    var valueRange: ClosedRange<Int> = 0...365   
+
+    var body: some View {
+        HStack {
+            Picker("Unit", selection: $model.timeType) {
+                ForEach(TimeTypes.allCases, id: \.self) { unit in
+                    Text(unit.localizedName.capitalized).tag(unit)
+                }
+            }
+            .pickerStyle(.menu)
+            .id(model.timeType)
+
+            Picker("Value", selection: $model.value) {
+                ForEach(valueRange, id: \.self) { n in
+                    Text(model.timeType.before(n)).tag(n)
+                }
+            }
+            .pickerStyle(.menu)
+            .id(model.value) 
+        }
+    }
+}
+
+struct SchedulePlan: Codable, Hashable {
+    
+    var frequencyUnit: FrequencyUnit = .daily
+    var everyN: Int = 1
+
+    var daysOfWeek: [Weekday] = []       
+    var daysOfMonth: [Int] = []         
+    var times: [NotificationTimes] = [NotificationTimes(event: DateComponents(hour: 11, minute: 0))]    
+    var timeSelectionSource: ScheduleTimeSelectionSource? = .suggested
+
+    var startDate: Date = Calendar.current.date(byAdding: .day, value: -7, to: .now) ?? .now
+    var endDate: Date? =  Calendar.current.date(byAdding: .year, value: 1, to: .now)
+}
+
+enum ScheduleTimeSelectionSource: String, Codable, Hashable {
+    case suggested
+    case user
+}
+
+struct PrayerTimeSuggestion: Equatable {
+    let hour: Int
+    let minute: Int
+
+    var dateComponents: DateComponents {
+        DateComponents(hour: hour, minute: minute)
+    }
+
+    static func matching(_ prayerName: String) -> PrayerTimeSuggestion? {
+        let name = prayerName
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "pl_PL"))
+            .lowercased()
+            .replacingOccurrences(of: "ł", with: "l")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !name.isEmpty else { return nil }
+
+        if name.contains("koronka") || name.contains("godzina milosierdzia") {
+            return PrayerTimeSuggestion(hour: 15, minute: 0)
+        }
+        if name.contains("aniol panski") || name.contains("modlitwa poludniowa") {
+            return PrayerTimeSuggestion(hour: 12, minute: 0)
+        }
+        if name.contains("apel jasnogorski") {
+            return PrayerTimeSuggestion(hour: 21, minute: 0)
+        }
+        if name.contains("jutrznia") || name.contains("modlitwa poranna") {
+            return PrayerTimeSuggestion(hour: 7, minute: 0)
+        }
+        if name.contains("modlitwa przedpoludniowa") {
+            return PrayerTimeSuggestion(hour: 9, minute: 0)
+        }
+        if name.contains("modlitwa popoludniowa") {
+            return PrayerTimeSuggestion(hour: 15, minute: 0)
+        }
+        if name.contains("nieszpory") {
+            return PrayerTimeSuggestion(hour: 18, minute: 0)
+        }
+        if name.contains("kompleta") || name.contains("modlitwa wieczorna") {
+            return PrayerTimeSuggestion(hour: 21, minute: 0)
+        }
+        if name.contains("rozaniec") {
+            return PrayerTimeSuggestion(hour: 20, minute: 0)
+        }
+
+        return nil
+    }
+}
+
+extension SchedulePlan {
+    static func suggested(forPrayerName prayerName: String) -> SchedulePlan {
+        var plan = SchedulePlan()
+        plan.applyPrayerTimeSuggestion(for: prayerName)
+        return plan
+    }
+
+    static func suggested(forBreviaryKey key: BrewiarzPrayerKey) -> SchedulePlan {
+        guard key == .jutrznia || key == .nieszpory else {
+            var plan = SchedulePlan()
+            plan.times = []
+            return plan
+        }
+        return suggested(forPrayerName: key.displayName)
+    }
+
+    mutating func applyPrayerTimeSuggestion(for prayerName: String) {
+        guard timeSelectionSource == .suggested,
+              let suggestion = PrayerTimeSuggestion.matching(prayerName) else { return }
+
+        if times.isEmpty {
+            times = [NotificationTimes(event: suggestion.dateComponents)]
+        } else {
+            times[0].event = suggestion.dateComponents
+        }
+    }
+
+    mutating func markTimeAsUserSelected() {
+        timeSelectionSource = .user
+    }
+}
+
+struct NotificationTimes: Codable, Hashable, Identifiable {
+    var id: UUID = UUID()
+    
+    var event :DateComponents
+    var notifications :[NotificationBefore] = []
+}
+extension SchedulePlan {
+    var nextDueDate: Date {
+        let now = Date()
+        let calendar = Calendar.current
+        return times
+            .compactMap { calendar.date(bySettingHour: $0.event.hour ?? 11, minute: $0.event.minute ?? 0, second: 0, of: now) }
+            .sorted { abs($0.timeIntervalSinceNow) < abs($1.timeIntervalSinceNow) }
+            .first ?? now
+    }
+}
+func makeTitleToken(_ title: String) -> String {
+    title
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        .replacingOccurrences(of: "\\s+", with: "-", options: .regularExpression)
+}
+
+func makeID(with title: String, eventTime: Date, notificationTime:Date) -> String {
+    
+    let cleanTitle = makeTitleToken(title)
+    let formatter = DateFormatter()
+    formatter.dateFormat = "dd.MM.yyyy-HH:mm"
+    let dateStringEvent = formatter.string(from: eventTime)
+    let dateStringNotification = formatter.string(from: notificationTime)
+    
+    return "\(cleanTitle)-\(dateStringEvent)&\(dateStringNotification)"
+}
+func makeIDShort(with title: String, eventTime: Date) -> String {
+    
+    let cleanTitle = makeTitleToken(title)
+    
+    let formatter = DateFormatter()
+    formatter.dateFormat = "dd.MM.yyyy-HH:mm"
+    let dateStringEvent = formatter.string(from: eventTime)
+    
+    return "\(cleanTitle)-\(dateStringEvent)"
+}
+class ScheduleData<T: Schedulable>: ObservableObject {
+    @Published var items: [T] = []
+    let saveKey: String
+    private var isLoading = false
+    
+    private struct Scheduled {
+        let itemId: T.ID
+        let typeId: String
+        let title: String
+        let message: String
+        let sound: String?
+        let eventDate: Date
+        let notificationDate: Date
+        let id: String
+        let payload: [String: Any]?
+    }
+
+
+    init(saveKey: String) {
+        self.saveKey = saveKey
+        load()
+    }
+
+    func load() {
+        guard !isLoading else { return }
+        isLoading = true
+        let dispatchStart = CFAbsoluteTimeGetCurrent()
+        DispatchQueue.global(qos: .utility).async {
+            let loadStart = CFAbsoluteTimeGetCurrent()
+            let loaded: [T] = LocalDatabase.shared.load(from: self.saveKey)
+            let loadDuration = CFAbsoluteTimeGetCurrent() - loadStart
+            DispatchQueue.main.async {
+                let mainStart = CFAbsoluteTimeGetCurrent()
+                self.items = loaded
+                self.isLoading = false
+                let mainDuration = CFAbsoluteTimeGetCurrent() - mainStart
+                let dispatchDuration = CFAbsoluteTimeGetCurrent() - dispatchStart
+                print("ScheduleData.load \(self.saveKey): dispatch \(String(format: "%.3f", dispatchDuration))s, load \(String(format: "%.3f", loadDuration))s, main \(String(format: "%.3f", mainDuration))s")
+            }
+        }
+    }
+
+    func save() {
+        LocalDatabase.shared.save(items, as: saveKey)
+    }
+
+    private func saveAsync() {
+        DispatchQueue.global(qos: .utility).async {
+            self.save()
+        }
+    }
+
+    func add(_ item: T) {
+        items.append(item)
+        rescheduleAll()
+    }
+
+    func update(_ item: T) {
+        if let index = items.firstIndex(where: { $0.id == item.id }) {
+            items[index] = item
+            rescheduleAll()
+        }
+    }
+    public func refresh()
+    {
+        rescheduleAll()
+    }
+
+    @MainActor
+    func markDayDone(itemID: T.ID, on date: Date = Date()) {
+        guard let index = items.firstIndex(where: { $0.id == itemID }) else { return }
+        let titleToken = makeTitleToken(items[index].notificationTitle)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd.MM.yyyy"
+        let dateString = formatter.string(from: date)
+        let prefix = "\(titleToken)-\(dateString)"
+
+        let idsToRemove = items[index].notificationIds.filter { $0.contains(prefix) }
+        guard !idsToRemove.isEmpty else { return }
+
+        removeScheduledNotifications(for: idsToRemove)
+        items[index].notificationIds.removeAll { idsToRemove.contains($0) }
+        for id in idsToRemove where !items[index].notificationIdsFinished.contains(id) {
+            items[index].notificationIdsFinished.append(id)
+        }
+
+        update(items[index])
+    }
+
+    @MainActor
+    func unmarkDayDone(itemID: T.ID, on date: Date = Date()) {
+        guard let index = items.firstIndex(where: { $0.id == itemID }) else { return }
+        let titleToken = makeTitleToken(items[index].notificationTitle)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd.MM.yyyy"
+        let dateString = formatter.string(from: date)
+        let prefix = "\(titleToken)-\(dateString)"
+
+        items[index].notificationIdsFinished.removeAll { $0.contains(prefix) }
+        update(items[index])
+    }
+
+    func delete(at offsets: IndexSet) {
+        for index in offsets {
+            let item = items[index]
+            removeScheduledNotifications(for: item.notificationIds)
+        }
+        items.remove(atOffsets: offsets)
+        save()
+    }
+
+    func removeAllNotificationsForEvent(with title: String, eventTime: Date)
+    {
+        let idNow = makeIDShort(with: title, eventTime: eventTime)
+        for (ix, item) in items.enumerated()
+        {
+            var idsToRemove : [String] = []
+            for notificationId in item.notificationIds {
+                if(notificationId.contains(idNow))
+                {
+                    idsToRemove.append(notificationId)
+                }
+            }
+            removeScheduledNotifications(for: idsToRemove)
+            items[ix].notificationIds.removeAll(where: {$0.contains(idNow)})
+        }
+    }
+    func rescheduleAll() {
+        let itemsSnapshot = items
+        Task.detached(priority: .background) {
+            let rescheduleStart = CFAbsoluteTimeGetCurrent()
+            print("📅 ScheduleData.rescheduleAll start: \(self.saveKey), items \(itemsSnapshot.count)")
+            let now = Date()
+            let calendar = Calendar.current
+            let notificationCenter = UNUserNotificationCenter.current()
+
+            let completeAction = UNNotificationAction(
+                identifier: notificationActionMarkDone,
+                title: "Mark as Done",
+                options: []
+            )
+            let restartAction = UNNotificationAction(
+                identifier: notificationActionRestart,
+                title: "Restart",
+                options: [.foreground]
+            )
+            let category = UNNotificationCategory(
+                identifier: notificationCategoryId,
+                actions: [completeAction, restartAction],
+                intentIdentifiers: [],
+                options: []
+            )
+            notificationCenter.setNotificationCategories([category])
+
+            var scheduled: [Scheduled] = []
+            let buildStart = CFAbsoluteTimeGetCurrent()
+            for (index, item) in itemsSnapshot.enumerated() {
+                print("📅 ScheduleData building item \(index + 1)/\(itemsSnapshot.count): \(item.notificationTitle)")
+                let upcoming = self.buildUpcomingNotifications(for: item, title: item.notificationTitle, now: now, calendar: calendar)
+                for entry in upcoming {
+                    if item.notificationIdsFinished.contains(entry.id) { continue }
+                    if let end = item.schedule.endDate, entry.notificationDate > end { continue }
+                    if entry.notificationDate < now { continue }
+
+                    let payload: [String: Any]?
+                    if let encoded = try? JSONEncoder().encode(item),
+                       let json = try? JSONSerialization.jsonObject(with: encoded) as? [String: Any] {
+                        payload = json
+                    } else {
+                        payload = nil
+                    }
+
+                    scheduled.append(Scheduled(
+                        itemId: item.id,
+                        typeId: item.notificationTypeId,
+                        title: item.notificationTitle,
+                        message: item.notificationMessage,
+                        sound: item.notificationSound,
+                        eventDate: entry.eventDate,
+                        notificationDate: entry.notificationDate,
+                        id: entry.id,
+                        payload: payload
+                    ))
+                }
+                if index.isMultiple(of: 4) {
+                    await Task.yield()
+                }
+            }
+            let buildDuration = CFAbsoluteTimeGetCurrent() - buildStart
+            print("📅 ScheduleData built \(scheduled.count) notifications in \(String(format: "%.3f", buildDuration))s")
+
+            scheduled.sort { $0.notificationDate < $1.notificationDate }
+            if scheduled.count > maxNotificationsToSchedule {
+                scheduled = Array(scheduled.prefix(maxNotificationsToSchedule))
+            }
+            var idsByItem: [T.ID: [String]] = [:]
+            let scheduledIds = Set(scheduled.map { $0.id })
+            let pendingStart = CFAbsoluteTimeGetCurrent()
+            notificationCenter.getPendingNotificationRequests { requests in
+                let pendingDuration = CFAbsoluteTimeGetCurrent() - pendingStart
+                let pendingIds = Set(requests.map { $0.identifier })
+                let needsReschedule = pendingIds != scheduledIds
+
+                let scheduleStart = CFAbsoluteTimeGetCurrent()
+                if needsReschedule {
+                    notificationCenter.removeAllPendingNotificationRequests()
+                }
+
+                for entry in scheduled {
+                    if needsReschedule {
+                        let content = UNMutableNotificationContent()
+                        content.title = entry.title
+                        content.body = entry.message
+                        if entry.sound == nil {
+                            content.sound = .default
+                        } else if let sound = entry.sound,
+                                  let _ = Bundle.main.url(forResource: sound, withExtension: "wav") {
+                            content.sound = UNNotificationSound(named: UNNotificationSoundName("\(sound).wav"))
+                        } else if let _ = Bundle.main.url(forResource: "default", withExtension: "wav") {
+                            content.sound = UNNotificationSound(named: UNNotificationSoundName("default.wav"))
+                        } else {
+                            content.sound = .default
+                        }
+                        content.categoryIdentifier = notificationCategoryId
+                        content.userInfo = [
+                            "type": entry.typeId,
+                            "itemId": String(describing: entry.itemId),
+                            "eventTime": entry.eventDate.timeIntervalSince1970,
+                            "payload": entry.payload ?? [:]
+                        ]
+
+                        let triggerDate = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: entry.notificationDate)
+                        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+                        let request = UNNotificationRequest(identifier: entry.id, content: content, trigger: trigger)
+                        notificationCenter.add(request) { error in
+                            if let error = error {
+                                print("Error scheduling notification: \(error.localizedDescription)")
+                            }
+                        }
+                    }
+                    idsByItem[entry.itemId, default: []].append(entry.id)
+                }
+                let scheduleDuration = CFAbsoluteTimeGetCurrent() - scheduleStart
+
+                DispatchQueue.main.async {
+                    let mainStart = CFAbsoluteTimeGetCurrent()
+                    for index in self.items.indices {
+                        let itemId = self.items[index].id
+                        self.items[index].notificationIds = idsByItem[itemId] ?? []
+                    }
+                    self.saveAsync()
+                    let mainDuration = CFAbsoluteTimeGetCurrent() - mainStart
+                    let totalDuration = CFAbsoluteTimeGetCurrent() - rescheduleStart
+                    print("ScheduleData.rescheduleAll \(self.saveKey): build \(String(format: "%.3f", buildDuration))s, pending \(String(format: "%.3f", pendingDuration))s, schedule \(String(format: "%.3f", scheduleDuration))s, main \(String(format: "%.3f", mainDuration))s, total \(String(format: "%.3f", totalDuration))s, needsReschedule \(needsReschedule)")
+                }
+            }
+        }
+    }
+
+    func buildUpcomingNotifications(
+        for item: some Schedulable,
+        title: String,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> [(eventDate: Date, notificationDate: Date, id: String)] {
+        computeUpcomingNotifications(for: item, title: title, now: now, calendar: calendar)
+    }
+    func removeScheduledNotifications(for ids: [String]) {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
+    }
+
+}
+func ensureNotificationAuthorization() {
+    let center = UNUserNotificationCenter.current()
+    center.getNotificationSettings { settings in
+        switch settings.authorizationStatus {
+        case .notDetermined:
+            center.requestAuthorization(options: [.alert, .sound, .badge]) { _, error in
+                if let error = error {
+                    print("Permission error: \(error)")
+                }
+            }
+        case .denied:
+            print("Notification permission denied")
+        default:
+            break
+        }
+    }
+}
+struct SchedulableForm<T: Schedulable>: View {
+    @Environment(\.dismiss) var dismiss
+    @State var item: T
+    @State var savingNow: Bool = false
+    var forceFrequency: FrequencyUnit?
+    var forever: Bool = false
+    var onSave: (T) -> Void
+    var content: (Binding<T>) -> AnyView
+
+    var body: some View {
+        NavigationView {
+            ScrollView
+            {
+                VStack {
+                    
+                    if(savingNow)
+                    {
+                        ProgressView()
+                        Text("Saving...")
+                    }
+                    else
+                    {
+                        content($item)
+                            .padding()
+                        
+                        
+                        SchedulingView(schedule: $item.schedule, forceFrequency: forceFrequency, forever: forever)
+                            .padding()
+                        Spacer()
+                    }
+                }
+                .navigationTitle("Edit")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
+                    }
+                    if(item.schedule.times.count > 0)
+                    {
+                        if(!savingNow)
+                        {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Save") {
+                                    savingNow = true
+                                    DispatchQueue.main.async {
+                                        ensureNotificationAuthorization()
+                                        item.lastModified = Date()
+                                        onSave(item)
+                                        dismiss()
+                                        savingNow = false
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+struct ScheduleList<T: Schedulable>: View {
+    @StateObject public var data: ScheduleData<T>
+    @State private var editingItem: T?
+    @Binding var showingForm:Bool
+
+    var title: String
+    var saveKey: String
+    var forceFrequency: FrequencyUnit?
+    var forever: Bool
+    var itemSummary: (T) -> String
+    var formBuilder: (T?) -> T
+    var formFields: (Binding<T>) -> AnyView
+    var onAdd: (T) -> (Void)
+    var filter: (T) -> Bool
+
+    init(
+        title: String,
+        saveKey: String,
+        forceFrequency: FrequencyUnit?,
+        forever: Bool = false,
+        itemSummary: @escaping (T) -> String,
+        formBuilder: @escaping (T?) -> T,
+        formFields: @escaping (Binding<T>) -> AnyView,
+        onAdd: @escaping (T) -> (Void),
+        filter: @escaping (T) -> Bool = { _ in true },
+        showingForm: Binding<Bool> 
+    ) {
+        _data = StateObject(wrappedValue: ScheduleData<T>(saveKey: saveKey))
+        self.title = title
+        self.saveKey = saveKey
+        self.forever = forever
+        self.forceFrequency = forceFrequency
+        self.formBuilder = formBuilder
+        self.itemSummary = itemSummary
+        self.formFields = formFields
+        self.onAdd = onAdd
+        self.filter = filter
+        self._showingForm = showingForm 
+    }
+    let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.locale = .current
+        return formatter
+    }()
+
+    func formattedTimes(_ times: [NotificationTimes]) -> String {
+        let calendar = Calendar.current
+        return times.compactMap { calendar.date(from: $0.event) }
+            .map { timeFormatter.string(from: $0) }
+            .joined(separator: ", ")
+    }
+
+
+    private var filteredItems: [T] {
+        data.items.filter(filter)
+    }
+
+    private func deleteFiltered(at offsets: IndexSet) {
+        let idsToDelete = offsets.map { filteredItems[$0].id }
+        let indices = data.items.enumerated().compactMap { index, item in
+            idsToDelete.contains(item.id) ? index : nil
+        }
+        guard !indices.isEmpty else { return }
+        data.delete(at: IndexSet(indices))
+    }
+
+    var body: some View {
+        NavigationView {
+            List {
+                ForEach(filteredItems) { item in
+                    Button {
+                        editingItem = item
+                    } label: {
+                        VStack(alignment: .leading) {
+                            HStack
+                            {
+                                VStack(alignment: .leading) {
+                                    Text(itemSummary(item))
+                                    Text("\(item.schedule.frequencyUnit.rawValue.capitalized) \(formattedTimes(item.schedule.times))")
+                                        .font(.caption)
+                                        .foregroundStyle(.gray)
+                                }
+                            }
+                        }
+                    }
+                }
+                .onDelete(perform: deleteFiltered)
+            }
+            .navigationTitle(title)
+            .toolbar {
+                let addPlacement: ToolbarItemPlacement = {
+#if os(macOS)
+                    .automatic
+#else
+                    .navigationBarTrailing
+#endif
+                }()
+                ToolbarItem(placement: addPlacement) {
+                    Button {
+                        editingItem = nil
+                        showingForm = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showingForm) {
+                SchedulableForm(
+                        item: editingItem ?? formBuilder(editingItem),
+                        forceFrequency: forceFrequency,
+                        forever: forever,
+                        onSave: { newItem in
+                            if editingItem != nil {
+                                data.update(newItem)
+                            } else {
+                                data.add(newItem)
+                            }
+                            onAdd(newItem)
+                        },
+                        content: formFields
+                    )
+            }
+            .sheet(item: $editingItem) { item in
+                    SchedulableForm(
+                        item: item ?? formBuilder(editingItem),
+                        forceFrequency: forceFrequency,
+                        forever: forever,
+                        onSave: { newItem in
+                            if editingItem != nil {
+                                data.update(newItem)
+                            } else {
+                                data.add(newItem)
+                            }
+                            onAdd(newItem)
+                            editingItem = nil
+                        },
+                        content: formFields
+                    )
+            }
+            .onAppear()
+            {
+                if(editingItem == nil)
+                {
+                    data.load()
+                }
+            }
+        }
+    }
+}
+
+//
+
+
+struct SchedulingView: View {
+    @Binding var schedule: SchedulePlan
+    @State var refreshUI: Int = 0
+    var forceFrequency: FrequencyUnit?
+    var forever: Bool = false
+    public var onlyWeek = false
+    let weekdays = Weekday.allCases
+    let monthdays = Array(1...31)
+    
+    let timer = Timer.publish(every: 0.2, on: .main, in: .common).autoconnect() 
+    
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text("Schedule")
+                .font(.title2)
+                .onAppear()
+            {
+                if(forceFrequency != nil)
+                {
+                    schedule.frequencyUnit = forceFrequency!
+                    schedule.everyN = 1
+                }
+                if(forever)
+                {
+                    schedule.endDate = nil
+                }
+            }
+            
+            if(forceFrequency == nil)
+            {
+                Picker(LocalizedStringKey("frequency_label"), selection: $schedule.frequencyUnit) {
+                    Text("daily").tag(FrequencyUnit.daily)
+                    Text("weekly").tag(FrequencyUnit.weekly)
+                    Text("monthly").tag(FrequencyUnit.monthly)
+                }
+                
+                Stepper("every \(schedule.everyN) \(schedule.frequencyUnit.every(schedule.everyN))", value: $schedule.everyN, in: 1...30)
+            }
+
+            if schedule.frequencyUnit == .weekly {
+                Section(header: Text("Days of week").font(.headline)) {
+                    ForEach(weekdays, id: \.self) { day in
+                        Toggle(day.displayName, isOn: Binding(
+                            get: { schedule.daysOfWeek.contains(day) },
+                            set: { on in
+                                if on {
+                                    schedule.daysOfWeek.append(day)
+                                } else {
+                                    schedule.daysOfWeek.removeAll { $0 == day }
+                                }
+                            }
+                        ))
+                    }
+                }.padding()
+            }
+
+            if schedule.frequencyUnit == .monthly {
+                Section(header: Text("Days of month").font(.headline)) {
+                    LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 7)) {
+                        ForEach(monthdays, id: \.self) { day in
+                            Button(action: {
+                                if schedule.daysOfMonth.contains(day) {
+                                    schedule.daysOfMonth.removeAll { $0 == day }
+                                } else {
+                                    schedule.daysOfMonth.append(day)
+                                }
+                            }) {
+                                Text("\(day)")
+                                    .padding(6)
+                                    .background(schedule.daysOfMonth.contains(day) ? Color.accentColor : Color.gray.opacity(0.2))
+                                    .clipShape(Circle())
+                                    .foregroundColor(.white)
+                            }
+                        }
+                    }.padding(.vertical)
+                }.padding()
+            }
+            Section(header: Text("At times").font(.headline)) {
+                VStack(spacing: 1) {
+                    ForEach(schedule.times.indices, id: \.self) { index in
+                        
+                        let timeBinding = Binding<NotificationTimes>(
+                            get: { schedule.times[index] },
+                            set: { schedule.times[index] = $0; schedule = schedule }
+                        )
+
+                        DatePicker(
+                            "Time:",
+                            selection: Binding(
+                                get: {
+                                    dateFromComponents(schedule.times[index].event)
+                                },
+                                set: { newDate in
+                                    schedule.times[index].event = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                                    schedule.markTimeAsUserSelected()
+                                    schedule = schedule
+                                }
+                            ),
+                            displayedComponents: [.hourAndMinute]
+                        )
+
+                        Text("Extra notifications:")
+
+                        VStack {
+                            ForEach(schedule.times[index].notifications.indices, id: \.self) { notifIndex in
+                                NotificationBeforeEditor(
+                                    model: Binding<NotificationBefore>(
+                                        get: {
+                                            schedule.times[index].notifications[notifIndex]
+                                        },
+                                        set: { newValue in
+                                            schedule.times[index].notifications[notifIndex] = newValue
+                                            schedule = schedule
+                                        }
+                                    )
+                                )
+                            }
+
+                            HStack {
+                                if !schedule.times[index].notifications.isEmpty {
+                                    Button {
+                                        schedule.times[index].notifications.removeLast()
+                                        schedule = schedule
+                                    } label: {
+                                        Image(systemName: "minus.circle.fill")
+                                            .foregroundStyle(.red)
+                                            .font(.title)
+                                    }
+                                    .padding()
+                                }
+
+                                Button {
+                                    schedule.times[index].notifications.append(NotificationBefore(value: 15, timeType: .minutes))
+                                    schedule = schedule
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .foregroundStyle(.green)
+                                        .font(.title)
+                                }
+                            }
+                        }
+                    }
+
+                    
+                    HStack {
+                        Button("Add time") {
+                            schedule.times.append(NotificationTimes(event: DateComponents(hour: 11, minute: 0)))
+                            schedule.markTimeAsUserSelected()
+                            schedule = schedule
+                        }
+
+                        if !schedule.times.isEmpty {
+                            Button("Remove last") {
+                                schedule.times.removeLast()
+                                schedule.markTimeAsUserSelected()
+                                schedule = schedule
+                            }
+                            .foregroundColor(.red)
+                            .padding()
+                        }
+                    }
+                }
+            }
+            .padding()
+            if(!forever)
+            {
+                Section(header: Text("Active period").font(.headline)) {
+                    DatePicker("start date",
+                               selection: $schedule.startDate,
+                               displayedComponents: .date)
+                    
+                    DatePicker("end date",
+                               selection: Binding(
+                                get: { schedule.endDate ?? schedule.startDate },
+                                set: { schedule.endDate = $0 }
+                               ),
+                               displayedComponents: .date)
+                }
+            }
+                    
+        }
+        .padding()
+    }
+
+    private func dateFromComponents(_ components: DateComponents) -> Date {
+        Calendar.current.date(from: components) ?? Date()
+    }
+}
+func computeUpcomingNotifications(
+    for item: some Schedulable,
+    title: String,
+    now: Date = Date(),
+    calendar: Calendar = .current
+) -> [(eventDate: Date, notificationDate: Date, id: String)] {
+    var upcoming: [(Date, Date, String)] = []
+    // Legacy schedules may contain zero or negative intervals. Without this
+    // guard the cursor in the daily/weekly/monthly loops never advances.
+    let interval = max(1, item.schedule.everyN)
+
+    for time in item.schedule.times {
+        if time.event.hour == nil && time.event.minute == nil {
+            continue
+        }
+        if upcoming.count >= maxNotificationsToSchedule {
+            break
+        }
+        let todayAtTime = calendar.date(bySettingHour: time.event.hour ?? 11, minute: time.event.minute ?? 0, second: 0, of: now)
+
+        switch item.schedule.frequencyUnit {
+        case .daily:
+            let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
+            var cursor = max(todayAtTime ?? now, item.schedule.startDate)
+            var catchUpSteps = 0
+            while cursor < now {
+                catchUpSteps += 1
+                if catchUpSteps > 10_000 {
+                    print("⚠️ Notification schedule catch-up capped: \(title), start \(item.schedule.startDate)")
+                    cursor = now
+                    break
+                }
+                guard let next = calendar.date(byAdding: .day, value: interval, to: cursor) else { break }
+                cursor = next
+            }
+            var emitted = 0
+
+            while cursor <= end && emitted < maxOccurrencesPerTime {
+                let eventId = makeID(with: title, eventTime: cursor, notificationTime: cursor)
+                upcoming.append((cursor, cursor, eventId))
+                for notif in time.notifications {
+                    if let dateN = calendar.date(byAdding: notif, to: cursor, direction: .before) {
+                        let notifId = makeID(with: title, eventTime: cursor, notificationTime: dateN)
+                        upcoming.append((cursor, dateN, notifId))
+                    }
+                }
+                guard let next = calendar.date(byAdding: .day, value: interval, to: cursor) else { break }
+                cursor = next
+                emitted += 1
+            }
+
+        case .weekly:
+            let selectedWeekdays: [Weekday] = {
+                if item.schedule.daysOfWeek.isEmpty {
+                    return [Weekday.today]
+                }
+                return Weekday.allCases.filter { item.schedule.daysOfWeek.contains($0) }
+            }()
+
+            let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
+            let hour = time.event.hour ?? 11
+            let minute = time.event.minute ?? 0
+            var emitted = 0
+
+            let baseStart = max(now, item.schedule.startDate)
+            let initialDate = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: baseStart) ?? baseStart
+            let firstCandidateAtTime = calendar.date(byAdding: .day, value: -7, to: initialDate) ?? initialDate
+
+            var weekCursor = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: firstCandidateAtTime))
+                ?? firstCandidateAtTime
+
+            while weekCursor <= end && emitted < maxOccurrencesPerTime {
+                for wd in selectedWeekdays {
+                    var comps = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: weekCursor)
+                    comps.weekday = wd.calendarWeekday
+                    comps.hour = hour
+                    comps.minute = minute
+
+                    if let candidate = calendar.date(from: comps) {
+                        if candidate >= firstCandidateAtTime && candidate <= end {
+                            if candidate < now { continue }
+                            let eventId = makeID(with: title, eventTime: candidate, notificationTime: candidate)
+                            upcoming.append((candidate, candidate, eventId))
+                            for notif in time.notifications {
+                                if let dateN = calendar.date(byAdding: notif, to: candidate, direction: .before) {
+                                    let notifId = makeID(with: title, eventTime: candidate, notificationTime: dateN)
+                                    upcoming.append((candidate, dateN, notifId))
+                                }
+                            }
+                            emitted += 1
+                            if emitted >= maxOccurrencesPerTime { break }
+                        }
+                    }
+                }
+                if let nextWeek = calendar.date(byAdding: .weekOfYear, value: interval, to: weekCursor) {
+                    weekCursor = nextWeek
+                } else {
+                    break
+                }
+            }
+
+        case .monthly:
+            let selectedDays: [Int] = {
+                if item.schedule.daysOfMonth.isEmpty {
+                    let d = calendar.component(.day, from: item.schedule.startDate)
+                    return [d]
+                }
+                return item.schedule.daysOfMonth.sorted()
+            }()
+
+            let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
+            let hour = time.event.hour ?? 11
+            let minute = time.event.minute ?? 0
+            var emitted = 0
+
+            let firstAnchor = max(now, item.schedule.startDate)
+            let firstAtTime = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: firstAnchor) ?? firstAnchor
+            var monthCursorComps = calendar.dateComponents([.year, .month], from: firstAtTime)
+            var monthCursor = calendar.date(from: monthCursorComps) ?? firstAtTime
+
+            while monthCursor <= end && emitted < maxOccurrencesPerTime {
+                let ym = calendar.dateComponents([.year, .month], from: monthCursor)
+                for day in selectedDays {
+                    var comps = DateComponents()
+                    comps.year = ym.year
+                    comps.month = ym.month
+                    comps.day = day
+                    comps.hour = hour
+                    comps.minute = minute
+
+                    if let candidate = calendar.date(from: comps) {
+                        if candidate >= firstAtTime && candidate <= end {
+                            if candidate < now { continue }
+                            let eventId = makeID(with: title, eventTime: candidate, notificationTime: candidate)
+                            upcoming.append((candidate, candidate, eventId))
+                            for notif in time.notifications {
+                                if let dateN = calendar.date(byAdding: notif, to: candidate, direction: .before) {
+                                    let notifId = makeID(with: title, eventTime: candidate, notificationTime: dateN)
+                                    upcoming.append((candidate, dateN, notifId))
+                                }
+                            }
+                            emitted += 1
+                            if emitted >= maxOccurrencesPerTime { break }
+                        }
+                    }
+                }
+                if let nextMonth = calendar.date(byAdding: .month, value: interval, to: monthCursor) {
+                    monthCursor = nextMonth
+                } else {
+                    break
+                }
+            }
+        }
+    }
+
+    return upcoming
+}
+
+func scheduleNotificationsFor(_ item: Schedulable) -> [String] {
+    computeUpcomingNotifications(for: item, title: item.notificationTitle).map { $0.id }
+}
+
+private struct DummySchedulable: Schedulable {
+    var id: Int = 0
+    var schedule: SchedulePlan = .init()
+    var lastModified: Date = .now
+    var notificationIds: [String] = []
+    var notificationIdsFinished: [String] = []
+    var notificationTitle: String = ""
+    var notificationMessage: String = ""
+    var notificationSound: String? = nil
+    var notificationTypeId: String = "Dummy"
+}
+
+extension ScheduleData {
+    
+    @MainActor
+    func markNotificationFinished(_ requestId: String) {
+        guard let idx = items.firstIndex(where: { $0.notificationIds.contains(requestId) }) else { return }
+        items[idx].notificationIds.removeAll { $0 == requestId }
+        if !items[idx].notificationIdsFinished.contains(requestId) {
+            items[idx].notificationIdsFinished.append(requestId)
+        }
+        save()
+    }
+
+    
+    @MainActor
+    func markEventDone(itemID: T.ID, eventTime: Date) {
+        guard let i = items.firstIndex(where: { $0.id == itemID }) else { return }
+        let prefix = makeIDShort(with: items[i].notificationTitle, eventTime: eventTime)
+
+        
+        let toRemove = items[i].notificationIds.filter { $0.contains(prefix) }
+        removeScheduledNotifications(for: toRemove)
+
+        
+        items[i].notificationIds.removeAll { $0.contains(prefix) }
+        items[i].notificationIdsFinished.append(contentsOf: toRemove)
+
+        save()
+    }
+}
+
+enum Weekday: String, CaseIterable, Identifiable, Codable {
+    case monday, tuesday, wednesday, thursday, friday, saturday, sunday
+    var id: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .monday: return "Poniedziałek"
+        case .tuesday: return "Wtorek"
+        case .wednesday: return "Środa"
+        case .thursday: return "Czwartek"
+        case .friday: return "Piątek"
+        case .saturday: return "Sobota"
+        case .sunday: return "Niedziela"
+        }
+    }
+    
+    init?(from int: Int) {
+        guard int >= 1 && int <= 7 else { return nil }
+        self = Weekday.allCases[int - 1]
+    }
+    
+    static var today: Weekday {
+        let weekdayNumber = Calendar.current.component(.weekday, from: Date())
+        
+        
+        let adjusted = weekdayNumber == 1 ? 7 : weekdayNumber - 1
+        return Weekday(from: adjusted)!
+    }
+    
+    var toInt: Int {
+        return Weekday.allCases.firstIndex(of: self)! + 1
+    }
+
+    var calendarWeekday: Int {
+        let weekday = toInt
+        return weekday == 7 ? 1 : weekday + 1
+    }
+}

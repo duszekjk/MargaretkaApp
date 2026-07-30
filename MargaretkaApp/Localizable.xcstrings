@@ -1,0 +1,1489 @@
+{
+  "sourceLanguage" : "pl",
+  "strings" : {
+    "" : {
+
+    },
+    "%@" : {
+
+    },
+    "%@ — %@" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ — %2$@"
+          }
+        }
+      }
+    },
+    "%@ %@" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%lld" : {
+
+    },
+    "%lld kart" : {
+
+    },
+    "%lld priests, people, or complex prayers" : {
+
+    },
+    "%lld tyg" : {
+
+    },
+    "%lld wariantów dziennych" : {
+
+    },
+    "%lld/%lld" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "• %@" : {
+
+    },
+    "© 2025\nDUSZEKJK Jacek Kałużny\nSoftware Development.\nAll rights reserved." : {
+
+    },
+    "© 2025 DUSZEKJK Jacek Kałużny" : {
+
+    },
+    "▶️ Odtwórz audio" : {
+
+    },
+    "🔊 Nagranie zostanie wygenerowane na żywo z tekstu modlitwy podczas odtwarzania." : {
+
+    },
+    "1. Aby kupić teksty, wybierz KUPUJĘ." : {
+
+    },
+    "1. Otwórz aplikację Skróty na iPhonie." : {
+
+    },
+    "2. Dodaj skrót z akcją Heptadaisy i wybierz konkretną osobę albo modlitwę." : {
+
+    },
+    "2. Na kolejnej stronie wybierz okres dostępu i opłać zakup." : {
+
+    },
+    "3. Po opłaceniu wybierz format EPUB i pobierz plik na urządzenie." : {
+
+    },
+    "3. Powiedz Siri gotową angielską frazę albo uruchom skrót z automatyzacji NFC." : {
+
+    },
+    "4. W aplikacji otwórz Ustawienia → Brewiarz offline → Kolejność wariantów oficjum i ustaw priorytet wariantów." : {
+
+    },
+    "5. Następnie w Ustawieniach wybierz Import i eksport → Importuj i połącz dane, a w wyborze pliku wskaż pobrany EPUB." : {
+
+    },
+    "7 osób = 7 dni tygodnia. Każda osoba modli się w swoim dniu." : {
+
+    },
+    "Aby otoczyć kapłana wierną, codzienną modlitwą i wsparciem – szczególnie w wierności powołaniu, świętości życia i gorliwości duszpasterskiej." : {
+
+    },
+    "Active period" : {
+
+    },
+    "Add time" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodaj  godzinę"
+          }
+        }
+      }
+    },
+    "Aktualne dane zostaną zastąpione stanem z %@. Tej operacji nie można cofnąć bez innej kopii zapasowej." : {
+
+    },
+    "Angielski — miesięczny EPUB" : {
+
+    },
+    "Anuluj" : {
+
+    },
+    "Aplikacja robi to automatycznie: wpis znika na początku trzeciego dnia po dacie modlitwy." : {
+
+    },
+    "At times" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O godzinie"
+          }
+        }
+      }
+    },
+    "Audio" : {
+
+    },
+    "Audio niedostępne dla modlitw online." : {
+
+    },
+    "Average prayer duration" : {
+
+    },
+    "Bezpłatne EPUB Universalis" : {
+
+    },
+    "Błąd" : {
+
+    },
+    "Brak" : {
+
+    },
+    "Brak brewiarza offline" : {
+
+    },
+    "Brak dodatkowych modlitw w tym okresie." : {
+
+    },
+    "Brewiarz offline" : {
+
+    },
+    "Całe importy" : {
+
+    },
+    "Cancel" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anuluj"
+          }
+        }
+      }
+    },
+    "Check average prayer duration" : {
+
+    },
+    "Check prayer streak" : {
+
+    },
+    "Checkpointy tygodniowe" : {
+
+    },
+    "Chór lewy. %@" : {
+
+    },
+    "Chór prawy. %@" : {
+
+    },
+    "Co wyeksportować?" : {
+
+    },
+    "Codzienna propozycja (minimum)" : {
+
+    },
+    "Compact view" : {
+
+    },
+    "Czas: %@" : {
+
+    },
+    "Czym jest „Margaretka”?" : {
+
+    },
+    "Czym jest Margaretka?" : {
+
+    },
+    "daily" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "codziennie"
+          }
+        }
+      }
+    },
+    "Dane osobowe" : {
+
+    },
+    "Dane zmieniły się jednocześnie na tym urządzeniu i w chmurze. Wybierz, które zachować." : {
+
+    },
+    "Days of month" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dni miesiąca"
+          }
+        }
+      }
+    },
+    "Days of week" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dni tygodnia"
+          }
+        }
+      }
+    },
+    "Decyzja" : {
+
+    },
+    "Deselect" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Odznacz"
+          }
+        }
+      }
+    },
+    "Diagram Margaretki: siedem płatków – dni tygodnia – wokół kapłana." : {
+
+    },
+    "Dla każdego dnia aplikacja rozpoznaje wariant po jego nazwie, a nie po numerze pliku, i importuje tylko pierwsze dostępne pozycje z kolejności ustawionej w Brewiarzu offline." : {
+
+    },
+    "Dla każdej daty importowane są pierwsze dostępne warianty z tej kolejności." : {
+
+    },
+    "Do" : {
+
+    },
+    "Dodaj księdza" : {
+
+    },
+    "Dodaj modlitwę" : {
+
+    },
+    "Dodaj modlitwę złożoną" : {
+
+    },
+    "Dodaj nową grupę" : {
+
+    },
+    "Dodaj nową modlitwę" : {
+
+    },
+    "Dodaj nową podgrupę" : {
+
+    },
+    "Dodaj osobę" : {
+
+    },
+    "Dodaj osobę do modlitwy" : {
+
+    },
+    "Dokument %lld z %lld" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Dokument %1$lld z %2$lld"
+          }
+        }
+      }
+    },
+    "Duration in minutes" : {
+
+    },
+    "E-mail" : {
+
+    },
+    "Edit" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edytuj"
+          }
+        }
+      }
+    },
+    "Edytuj" : {
+
+    },
+    "Edytuj kolejność modlitw" : {
+
+    },
+    "Edytuj modlitwę" : {
+
+    },
+    "Eksport może zawierać pojedynczą modlitwę, konkretną osobę lub księdza albo wybraną godzinę brewiarza. Nie zawiera historii, statystyk ani ustawień. Import JSON zachowuje obecne dane, scala dokładne odpowiedniki i pyta o podejrzane podobieństwa. Można tu również importować EPUB z brewiarz.pl." : {
+
+    },
+    "Eksportuj dane" : {
+
+    },
+    "Eksportuj wybrane dane" : {
+
+    },
+    "end date" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "data zakończenia"
+          }
+        }
+      }
+    },
+    "every %lld %@" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "co %1$lld %2$@"
+          }
+        }
+      }
+    },
+    "Extra notifications:" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dodatkowe powiadomienia"
+          }
+        }
+      }
+    },
+    "For whom should I check the average prayer duration?" : {
+
+    },
+    "Forma modlitwy: np. dziesiątka różańca, krótka modlitwa własnymi słowami; można dołączyć Komunię św., post, dobre uczynki." : {
+
+    },
+    "frequency_label" : {
+
+    },
+    "Gotowe" : {
+
+    },
+    "Ikona" : {
+
+    },
+    "Image Playground może potrzebować kilkunastu sekund." : {
+
+    },
+    "Imię" : {
+
+    },
+    "Import i eksport" : {
+
+    },
+    "Import i eksport danych" : {
+
+    },
+    "Importowanie brewiarza" : {
+
+    },
+    "Importuj" : {
+
+    },
+    "Importuj i połącz dane" : {
+
+    },
+    "Importuj modlitwy" : {
+
+    },
+    "Importuj pierwsze %lld warianty oficjum" : {
+
+    },
+    "Intencja: **konkretny kapłan** (imię i nazwisko)." : {
+
+    },
+    "Jak dodać oficjum offline" : {
+
+    },
+    "Jak się modlić w Margaretce?" : {
+
+    },
+    "Jak się modlić?" : {
+
+    },
+    "Jak to działa" : {
+
+    },
+    "Jak to działa (w skrócie)" : {
+
+    },
+    "Kapłan" : {
+
+    },
+    "Kolejność wariantów oficjum" : {
+
+    },
+    "Konflikt synchronizacji" : {
+
+    },
+    "Koniec 🙏" : {
+
+    },
+    "Konto" : {
+
+    },
+    "Konto oraz wszystkie zsynchronizowane dane i zdjęcia zostaną trwale usunięte z serwera. Dane zapisane lokalnie na tym urządzeniu pozostaną bez zmian." : {
+
+    },
+    "Kontynuuj" : {
+
+    },
+    "Kopia zawiera wszystkie modlitwy pojedyncze i złożone, osoby, księży, harmonogramy, wykonania i statystyki, zdjęcia, audio, brewiarz offline, jego obrazy oraz ustawienia widoku. Przywrócenie zastępuje aktualny stan aplikacji stanem z kopii." : {
+
+    },
+    "Kopiuj" : {
+
+    },
+    "Kroki startowe" : {
+
+    },
+    "Księża" : {
+
+    },
+    "Kup lub pobierz EPUB z brewiarz.pl" : {
+
+    },
+    "Łacina — Liturgia Horarum EPUB" : {
+
+    },
+    "Ładowanie..." : {
+
+    },
+    "Log completed prayer" : {
+
+    },
+    "Log prayer" : {
+
+    },
+    "Logged completed prayer for %@.%@" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Logged completed prayer for %1$@.%2$@"
+          }
+        }
+      }
+    },
+    "Logs a completed prayer without opening the app. Duration is optional." : {
+
+    },
+    "Modlitwa Margaretka" : {
+
+    },
+    "Modlitwa online z brewiarz.pl" : {
+
+    },
+    "Modlitwy" : {
+
+    },
+    "Modlitwy (pojedyncze)" : {
+
+    },
+    "Modlitwy pojedyncze" : {
+
+    },
+    "Modlitwy złożone" : {
+
+    },
+    "monthly" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "co miesiąc"
+          }
+        }
+      }
+    },
+    "Możesz przykleić znacznik NFC w miejscu modlitwy, przy różańcu, na biurku albo w samochodzie. W aplikacji Skróty utwórz automatyzację NFC, dodaj akcję Heptadaisy i wskaż w niej konkretną osobę albo modlitwę złożoną. Po dotknięciu iPhone'a tag uruchomi ten skrót." : {
+
+    },
+    "Można dołączyć (opcjonalnie)" : {
+
+    },
+    "Najdłuższa: %lld tyg" : {
+
+    },
+    "Najmocniejszy miesiąc: %@" : {
+
+    },
+    "Nazwa" : {
+
+    },
+    "Nazwa modlitwy" : {
+
+    },
+    "Nazwisko" : {
+
+    },
+    "NFC — po co to?" : {
+
+    },
+    "NFC → automatyzacja Skrótów → Heptadaisy → wybrana modlitwa" : {
+
+    },
+    "Nie udało się" : {
+
+    },
+    "Nieznana modlitwa" : {
+
+    },
+    "Nieznana podgrupa" : {
+
+    },
+    "Nowa modlitwa" : {
+
+    },
+    "O aplikacji Margaretka" : {
+
+    },
+    "Obejmuje modlitwy, osoby, księży, modlitwy złożone i brewiarz offline, ale bez historii, statystyk i ustawień." : {
+
+    },
+    "Obliczanie czasu…" : {
+
+    },
+    "Od" : {
+
+    },
+    "Odblokowane" : {
+
+    },
+    "Odblokuj telefon i dotknij Kontynuuj, aby rozpoczac." : {
+
+    },
+    "Odczytywanie archiwum…" : {
+
+    },
+    "OK" : {
+
+    },
+    "Opening prayer for %@." : {
+
+    },
+    "Opens a saved priest, person, or complex prayer at the beginning." : {
+
+    },
+    "Optional prayer duration. Leave it at zero when it was not measured." : {
+
+    },
+    "Osoby" : {
+
+    },
+    "Ostatni osiągnięty: %@" : {
+
+    },
+    "Ostatnia synchronizacja" : {
+
+    },
+    "Otwórz brewiarz w przeglądarce" : {
+
+    },
+    "Otwórz statystyki" : {
+
+    },
+    "Otwórz tę stronę i wybierz link „Liturgia horarum”. Przeglądarka pobierze bezpłatny EPUB; potem wskaż go podczas importu w aplikacji." : {
+
+    },
+    "Pełna kopia zapasowa" : {
+
+    },
+    "Pełny ekran" : {
+
+    },
+    "Po co?" : {
+
+    },
+    "Pobierz teksty Liturgii Godzin" : {
+
+    },
+    "Podejrzane podobieństwa wymagają decyzji. Porównaj obecną i importowaną wersję." : {
+
+    },
+    "Podstawowe informacje" : {
+
+    },
+    "Pokaż" : {
+
+    },
+    "Pomoc" : {
+
+    },
+    "Pomódl się" : {
+
+    },
+    "Pora dnia modlitwy" : {
+
+    },
+    "Porównaj dane" : {
+
+    },
+    "Powtórz %lldx" : {
+
+    },
+    "Pozostało około %@" : {
+
+    },
+    "Praktyczne wskazówki" : {
+
+    },
+    "Praktyka może się nieco różnić w poszczególnych wspólnotach/parafiach – dostosuj do lokalnych zwyczajów. Istota pozostaje ta sama: **stała modlitwa za kapłana**." : {
+
+    },
+    "Prayer streak" : {
+
+    },
+    "priest, person, or complex prayer" : {
+
+    },
+    "Priest, person, or complex prayer" : {
+
+    },
+    "Przeciągnij zdjęcie, żeby zmienić pozycję" : {
+
+    },
+    "Przesuwanie modlitw" : {
+
+    },
+    "Przygotowuję generator…" : {
+
+    },
+    "Przygotowuję tło…" : {
+
+    },
+    "Przygotowuję tworzenie obrazu" : {
+
+    },
+    "Przygotowuję tworzenie obrazu…" : {
+
+    },
+    "Przykładowe komendy" : {
+
+    },
+    "Przywróć kopię zapasową" : {
+
+    },
+    "Przywróć pełną kopię" : {
+
+    },
+    "Przywrócić pełną kopię?" : {
+
+    },
+    "Remove last" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usuń ostatnie"
+          }
+        }
+      }
+    },
+    "Reports the average measured duration of completed prayers for a saved target." : {
+
+    },
+    "Reports the number of consecutive weeks with a completed prayer for a saved target." : {
+
+    },
+    "Rozpocznij nagrywanie" : {
+
+    },
+    "Save" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapisz"
+          }
+        }
+      }
+    },
+    "Saving..." : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zapisywanie…"
+          }
+        }
+      }
+    },
+    "Schedule" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plan"
+          }
+        }
+      }
+    },
+    "Sesje: %lld" : {
+
+    },
+    "Siri → Heptadaisy → wybrana modlitwa" : {
+
+    },
+    "Siri w tej aplikacji używa języka angielskiego, ponieważ Siri nie obsługuje języka polskiego. Wbudowane frazy zawierają nazwę Heptadaisy. Własnemu skrótowi możesz nadać krótszą nazwę." : {
+
+    },
+    "Siri, Skróty i NFC" : {
+
+    },
+    "Skopiowano" : {
+
+    },
+    "Skrót w skrócie" : {
+
+    },
+    "start date" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "data początkowa"
+          }
+        }
+      }
+    },
+    "Start prayer" : {
+
+    },
+    "Statystyki" : {
+
+    },
+    "Święty dnia" : {
+
+    },
+    "Synchronizacja" : {
+
+    },
+    "Synchronizacja przez Apple" : {
+
+    },
+    "Synchronizowane są modlitwy, osoby, harmonogramy, historia, ustawienia, dane brewiarza i zdjęcia w pełnej rozdzielczości." : {
+
+    },
+    "Synchronizuj" : {
+
+    },
+    "Synchronizuj teraz" : {
+
+    },
+    "Synchronizuję…" : {
+
+    },
+    "Tekst modlitwy" : {
+
+    },
+    "Testy UI uruchomione" : {
+
+    },
+    "The average prayer duration for %@ is %@." : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The average prayer duration for %1$@ is %2$@."
+          }
+        }
+      }
+    },
+    "The current streak for %@ is %lld weeks." : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The current streak for %1$@ is %2$lld weeks."
+          }
+        }
+      }
+    },
+    "The current streak for %@ is one week." : {
+
+    },
+    "There is no current streak for %@ yet." : {
+
+    },
+    "There is no measured prayer duration for %@ yet." : {
+
+    },
+    "Time:" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Czas:"
+          }
+        }
+      }
+    },
+    "time.before.days %lld" : {
+      "comment" : "n days before an event",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld dni przed"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld dni przed"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld dzień przed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld dni przed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.before.hours %lld" : {
+      "comment" : "n hours before an event",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld godziny przed"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld godzin przed"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld godzinę przed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld godzin przed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.before.minutes %lld" : {
+      "comment" : "n minutes before an event",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld minuty przed"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld minut przed"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld minutę przed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld minut przed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.before.months %lld" : {
+      "comment" : "n months before an event",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld miesiące przed"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld miesięcy przed"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld miesiąc przed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld miesięcy przed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.before.weeks %lld" : {
+      "comment" : "n weeks before an event",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld tygodnie przed"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld tygodni przed"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld tydzień przed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%1$lld tygodni przed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.in.days %lld" : {
+      "comment" : "in n days",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld dni"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld dni"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld dzień"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld dni"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.in.hours %lld" : {
+      "comment" : "in n hours",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld godziny"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld godzin"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld godzinę"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld godzin"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.in.minutes %lld" : {
+      "comment" : "in n minutes",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld minuty"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld minut"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld minutę"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld minut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.in.months %lld" : {
+      "comment" : "in n months",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld miesiące"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld miesięcy"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld miesiąc"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld miesięcy"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.in.weeks %lld" : {
+      "comment" : "in n weeks",
+      "localizations" : {
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld tygodnie"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld tygodni"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld tydzień"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "za %1$lld tygodni"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time.unit.days" : {
+      "comment" : "Time unit: days",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "dni"
+          }
+        }
+      }
+    },
+    "time.unit.hours" : {
+      "comment" : "Time unit: hours",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "godziny"
+          }
+        }
+      }
+    },
+    "time.unit.minutes" : {
+      "comment" : "Time unit: minutes",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "minuty"
+          }
+        }
+      }
+    },
+    "time.unit.months" : {
+      "comment" : "Time unit: months",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "miesiące"
+          }
+        }
+      }
+    },
+    "time.unit.weeks" : {
+      "comment" : "Time unit: weeks",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "tygodnie"
+          }
+        }
+      }
+    },
+    "To modlitwa siedmiu osób za **jednego konkretnego kapłana** – każda osoba obejmuje go modlitwą w wybrany dzień tygodnia. Razem tworzą „stokrotkę” (7 płatków) z kapłanem w środku. Zobowiązanie ma charakter **stały** (długoterminowy)." : {
+
+    },
+    "To samo konto Apple daje dostęp do tych samych danych na wszystkich Twoich urządzeniach." : {
+
+    },
+    "To szybki sposób na uruchamianie modlitwy głosem albo jednym dotknięciem telefonu do znacznika NFC." : {
+
+    },
+    "Tryb" : {
+
+    },
+    "Tryb statystyk" : {
+
+    },
+    "Typ" : {
+
+    },
+    "Tytuł" : {
+
+    },
+    "Udostępnij" : {
+
+    },
+    "Udostępnij modlitwy" : {
+
+    },
+    "Unit" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jednostka"
+          }
+        }
+      }
+    },
+    "Ustalcie formę modlitwy (minimum poniżej)." : {
+
+    },
+    "Ustawienia" : {
+
+    },
+    "Ustawienia Margaretki" : {
+
+    },
+    "Usuń" : {
+
+    },
+    "Usuń cały dzień" : {
+
+    },
+    "Usuń dni z zakresu" : {
+
+    },
+    "Usuń konto i dane z chmury" : {
+
+    },
+    "Usuń obraz" : {
+
+    },
+    "Usuń wygasłe teraz" : {
+
+    },
+    "Usunąć cały import?" : {
+
+    },
+    "Usunąć konto synchronizacji?" : {
+
+    },
+    "Usunąć wybrany zakres?" : {
+
+    },
+    "Usuwanie zakresu" : {
+
+    },
+    "Utwórz i udostępnij kopię" : {
+
+    },
+    "Utwórz kopię zapasową" : {
+
+    },
+    "Utwórz tło" : {
+
+    },
+    "Uwaga" : {
+
+    },
+    "Użytkownik" : {
+
+    },
+    "Value" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wartość"
+          }
+        }
+      }
+    },
+    "W e-mailu użyj przycisku pobrania przy załączniku EPUB i zapisz plik w Plikach — nie otwieraj go w czytniku. Takie wiadomości nie przychodzą automatycznie: dla każdego miesiąca ponownie wybierz Create and send. Następnie zaimportuj zapisany EPUB w aplikacji." : {
+
+    },
+    "W górę działa jak TikTok, w prawo jak Instagram Stories, a oba pozwala na oba gesty." : {
+
+    },
+    "W razie lokalnych zwyczajów/parafialnych wytycznych – dostosuj formę, zachowując sens: **stała modlitwa za kapłana**." : {
+
+    },
+    "W toku" : {
+
+    },
+    "Warianty oficjum" : {
+
+    },
+    "weekly" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "cotygodniowo"
+          }
+        }
+      }
+    },
+    "Wersja chmurowa: %lld" : {
+
+    },
+    "Which priest, person, or complex prayer do you mean?" : {
+
+    },
+    "Who or which complex prayer should I log?" : {
+
+    },
+    "Who or which complex prayer should I start?" : {
+
+    },
+    "Whose prayer streak should I check?" : {
+
+    },
+    "Widok" : {
+
+    },
+    "Wpisz adres e-mail, wybierz region i kalendarz liturgiczny (dla Polski: Rest of the world → Poland), a potem wybierz Create and send the e-book dla potrzebnego miesiąca. Tworzenie trwa około 20–30 sekund." : {
+
+    },
+    "Wróć do danych księdza" : {
+
+    },
+    "Wspieraj duchowo kapłanów\nprzez codzienną modlitwę." : {
+
+    },
+    "Wybierz kapłana (imię i nazwisko)." : {
+
+    },
+    "Wybierz plik audio" : {
+
+    },
+    "Wybierz zdjęcie" : {
+
+    },
+    "Wybierz…" : {
+
+    },
+    "Wybrano: %@" : {
+
+    },
+    "Wycentruj" : {
+
+    },
+    "Wycentruj zdjęcie" : {
+
+    },
+    "Wygeneruj obraz" : {
+
+    },
+    "Wyloguj" : {
+
+    },
+    "Zachowaj dane z chmury" : {
+
+    },
+    "Zachowaj dane z tego urządzenia" : {
+
+    },
+    "Zachowaj obie wersje" : {
+
+    },
+    "Zaimportuj eksport EPUB z brewiarz.pl." : {
+
+    },
+    "Zakres" : {
+
+    },
+    "Zaloguj przez Apple" : {
+
+    },
+    "Zamknij" : {
+
+    },
+    "Zapisano jako: %@" : {
+
+    },
+    "Zapisz" : {
+
+    },
+    "Zapisz imiona, dzień i datę rozpoczęcia." : {
+
+    },
+    "Zastąp aktualny stan" : {
+
+    },
+    "Zastępstwo: jeśli nie możesz w danym dniu, postaraj się znaleźć zastępstwo lub odmów modlitwę wcześniej/później." : {
+
+    },
+    "Zatrzymaj nagrywanie" : {
+
+    },
+    "Zbierz 7 osób i przydziel dni tygodnia." : {
+
+    },
+    "Zdjęcie" : {
+
+    },
+    "Zmniejsza elementy listy modlitw" : {
+
+    },
+    "Zostaną usunięte wszystkie dni i wygenerowane obrazy należące tylko do tego importu." : {
+
+    },
+    "Źródło audio" : {
+
+    },
+    "Źródło: %@" : {
+
+    }
+  },
+  "version" : "1.1"
+}

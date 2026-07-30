@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] locate bundled EPUB fixtures correctly
+codex conversation [20260730-ipad] restore repository index after stale lock
 
-Read EPUB resources from the root of the test bundle, where Xcode copies
-resources from the test target.
+Restore all project files after a stale Git index lock caused a transient
+untracked state. The preceding fixture path correction remains included.
