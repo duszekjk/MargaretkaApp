@@ -9,8 +9,8 @@ struct OfflineBreviaryManagerView: View {
 
     var body: some View {
         List {
-            Section("Import wariantów") {
-                NavigationLink("Kolejność wariantów") {
+            Section("Warianty oficjum") {
+                NavigationLink("Kolejność wariantów oficjum") {
                     BreviaryVariantOrderView()
                 }
                 Text("Dla każdej daty importowane są pierwsze dostępne warianty z tej kolejności.")
@@ -159,7 +159,7 @@ struct BreviaryVariantOrderView: View {
                 BreviaryVariantPreferences.save(variantOrder)
             }
         }
-        .navigationTitle("Kolejność wariantów")
+        .navigationTitle("Warianty oficjum")
         .toolbar {
 #if os(macOS)
             Button(macEditing ? "Gotowe" : "Edytuj") { macEditing.toggle() }

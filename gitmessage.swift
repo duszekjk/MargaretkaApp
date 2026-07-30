@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] move variant order to its own settings view
+codex conversation [20260730-ipad] use liturgical officium terminology
 
-Keep the Brewiarz offline manager concise by presenting the long, editable
-name-based import order in a dedicated navigation view.
+Name the dedicated settings flow with the professional Polish term for the
+ordered variants of a daily office.
