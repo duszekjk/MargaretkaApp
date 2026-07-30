@@ -5,16 +5,20 @@ import UIKit
 
 struct BrewiarzEPUBImporterTests {
     @Test func importsLocalPolishEnglishAndLatinEPUBs() async throws {
-        let directory = URL(fileURLWithPath: "/Volumes/Macintosh HD2/Downloads/brewiarz", isDirectory: true)
         let fixtures: [(filename: String, language: String)] = [
-            ("27072026-02082026.epub", "pl"),
-            ("August 2026 - Universalis.epub", "en"),
-            ("Liturgia Horarum 2026 - Universalis.epub", "la")
+            ("PolishBrewiarz", "pl"),
+            ("EnglishUniversalis", "en"),
+            ("LatinUniversalis", "la")
         ]
 
         for fixture in fixtures {
-            let url = directory.appendingPathComponent(fixture.filename)
-            guard FileManager.default.fileExists(atPath: url.path) else { continue }
+            let url = try #require(
+                Bundle(for: BrewiarzEPUBImporterTestBundle.self).url(
+                    forResource: fixture.filename,
+                    withExtension: "epub",
+                    subdirectory: "Fixtures"
+                )
+            )
             let imported = try await BrewiarzEPUBImporter.importEPUB(from: url)
             #expect(!imported.days.isEmpty, "\(fixture.filename) should import at least one day")
             #expect(imported.days.contains { ($0.languageCode ?? "pl") == fixture.language })
@@ -1029,3 +1033,5 @@ struct BrewiarzEPUBImporterTests {
         }
     }
 }
+
+private final class BrewiarzEPUBImporterTestBundle: NSObject {}

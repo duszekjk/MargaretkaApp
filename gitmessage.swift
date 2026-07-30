@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] resolve Universalis EPUB chapter paths
+codex conversation [20260730-ipad] add bundled EPUB import fixtures
 
-Resolve Universalis day and office links against the entries actually stored in
-the EPUB archive, so imports do not depend on a guessed OEBPS path.
+Keep Polish, English, and Latin sample EPUBs in the test bundle so importer
+coverage runs independently from the Downloads folder.
