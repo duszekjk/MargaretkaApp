@@ -1318,7 +1318,7 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         bufferHasPrayerText = false
         guard !style.navigationLink else { return }
         for rawLine in raw.split(separator: "\n", omittingEmptySubsequences: false) {
-            let leadingChoirIndent = rawLine.prefix { $0 == "\u{00A0}" || $0 == " " }.count >= 4
+            let leadingChoirIndent = rawLine.prefix { $0 == "\u{00A0}" }.count >= 4
             let text = rawLine
                 .replacingOccurrences(of: "\u{00A0}", with: " ")
                 .trimmingCharacters(in: .whitespacesAndNewlines)

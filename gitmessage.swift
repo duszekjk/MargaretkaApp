@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] diagnose residual Universalis choir roles
+codex conversation [20260730-ipad] distinguish choir indentation from XHTML whitespace
 
-Make the English Universalis regression report the exact source lines that
-still reach a choir role so its remaining classification can be corrected.
+Recognize a right choir only from non-breaking spaces emitted by source
+content, never from ordinary whitespace used to format XHTML.
