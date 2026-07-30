@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] match multilingual variant terms anywhere
+codex conversation [20260730-ipad] import every optional memorial for its day
 
-Recognize translated commemorations even when their liturgical type appears
-after the saint name rather than at the start of the source heading.
+Treat the optional-memorial priority as one position while retaining all of its
+available daily offices, including multiple patrons on the same date.

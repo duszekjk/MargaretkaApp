@@ -313,18 +313,25 @@ nonisolated enum BrewiarzEPUBImporter {
             let documents = grouped[dateKey, default: []].sorted()
             var selected: [String] = []
             var usedCategories = Set<String>()
+            var selectedCategoryCount = 0
             for category in BreviaryVariantPreferences.normalizedOrder(preferenceOrder) {
-                guard let document = documents.first(where: { document in
+                let matchingDocuments = documents.filter { document in
                     let identifier = parseVariantIdentifier(document)
                     let title = documentText(document).flatMap(parseVariantName) ?? ""
                     return BreviaryVariantPreferences.categoryIdentifier(
                         for: title,
                         technicalIdentifier: identifier
                     ) == category && !usedCategories.contains(category)
-                }) else { continue }
-                selected.append(document)
+                }
+                guard !matchingDocuments.isEmpty else { continue }
+                if category == "wspomnienie-dowolne" {
+                    selected.append(contentsOf: matchingDocuments)
+                } else if let document = matchingDocuments.first {
+                    selected.append(document)
+                }
                 usedCategories.insert(category)
-                if selected.count == max(1, maximumVariantsPerDay) { break }
+                selectedCategoryCount += 1
+                if selectedCategoryCount == max(1, maximumVariantsPerDay) { break }
             }
             if selected.isEmpty, let fallback = documents.first {
                 selected.append(fallback)
