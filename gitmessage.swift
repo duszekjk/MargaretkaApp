@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] show office language in the prayer picker
+codex conversation [20260730-ipad] map translated Universalis office names
 
-Distinguish imported Polish, English, and Latin offices in the compact
-PrayerFlow variant selector.
+Recognize English and Latin names for every canonical office so equivalent
+offices always import under the same internal prayer key.

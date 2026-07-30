@@ -196,10 +196,15 @@ nonisolated enum BrewiarzEPUBImporter {
 
     private static func universalisOfficeKey(_ title: String) -> BrewiarzPrayerKey? {
         let text = title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "en_US"))
+        if text.contains("readings at mass") || text.contains("missa") { return .msza }
+        if text.contains("invitatory") || text.contains("invitatorium") { return .wezwanie }
+        if text.contains("office of readings") || text.contains("officium lectionis") { return .godzinaCzytan }
         if text.contains("morning prayer") || text.contains("laudes") { return .jutrznia }
+        if text.contains("mid-morning") || text.contains("tertiam") || text.contains("tertia") { return .modlitwaPrzedpoludniowa }
+        if text.contains("midday") || text.contains("sextam") || text.contains("sexta") { return .modlitwaPoludniowa }
+        if text.contains("afternoon prayer") || text.contains("nonam") || text.contains("nona") { return .modlitwaPopoludniowa }
         if text.contains("evening prayer") || text.contains("vesper") { return .nieszpory }
         if text.contains("night prayer") || text.contains("completor") { return .kompleta }
-        if text.contains("office of readings") || text.contains("officium lectionis") { return .godzinaCzytan }
         return nil
     }
 
