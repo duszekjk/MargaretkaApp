@@ -1,3 +1,4 @@
-codex conversation [20260730-ipad] state the Brewiarz purchase sequence
+codex conversation [20260730-ipad] align EPUB import instructions with the app
 
-Correct the in-app steps so EPUB format selection happens only after payment.
+Name the actual settings route and import action that opens the EPUB file
+picker, including the variant-count setting.

@@ -20,7 +20,7 @@ struct OfflineBreviaryManagerView: View {
                     Text("1. Aby kupić teksty, wybierz KUPUJĘ.")
                     Text("2. Na kolejnej stronie wybierz okres dostępu i opłać zakup.")
                     Text("3. Po opłaceniu wybierz format EPUB i pobierz plik na urządzenie.")
-                    Text("4. W Ustawieniach wybierz Import i eksport danych, ustaw liczbę wariantów oficjum i wskaż plik.")
+                    Text("4. W Ustawieniach otwórz Import i eksport, ustaw liczbę wariantów oficjum, wybierz Importuj i połącz dane, a następnie wskaż pobrany EPUB.")
                 }
                 .font(.footnote)
                 .foregroundStyle(.secondary)
