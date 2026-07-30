@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] generalize optional patron memorial
+codex conversation [20260730-ipad] activate every predefined Brewiarz category
 
-Name the predefined optional-memorial category for the patron of the day while
-continuing to match every source heading beginning with Wsp. dowolne.
+Make every inspected category available in the default import order and migrate
+obsolete filename-based preferences to the new name-based list.

@@ -52,7 +52,10 @@ nonisolated enum BreviaryVariantPreferences {
     static let legacyStorageKey = "preferredBreviaryVariant"
     static let defaultOrder = [
         "primary", "bonifratrzy", "kapucyni", "jezuici", "benedyktyni",
-        "opolskie-gliwickie", "dominikanie", "wspomnienie-dowolne", "pozostale"
+        "opolskie-gliwickie", "dominikanie", "wspomnienie-dowolne",
+        "wspomnienie-obowiazkowe", "wspolnoty-zakonne", "diecezje", "koscioly",
+        "miejsca", "poza-polska", "swieto", "uroczystosc", "dzien-powszedni",
+        "niedziela", "pozostale"
     ]
 
     static let definitions: [(identifier: String, name: String, prefixes: [String])] = [
@@ -80,8 +83,10 @@ nonisolated enum BreviaryVariantPreferences {
     static func load(from defaults: UserDefaults = .standard) -> [String] {
         let stored = defaults.stringArray(forKey: storageKey) ?? []
         let legacy = defaults.string(forKey: legacyStorageKey)
-        if !stored.isEmpty { return normalizedOrder(stored) }
-        return normalizedOrder([legacy ?? "p"] + defaultOrder)
+        let normalizedStored = normalizedOrder(stored)
+        if !normalizedStored.isEmpty { return normalizedStored }
+        let normalizedLegacy = normalizedOrder([legacy ?? ""])
+        return normalizedLegacy.isEmpty ? defaultOrder : normalizedLegacy + defaultOrder
     }
 
     static func save(_ order: [String], to defaults: UserDefaults = .standard) {
@@ -93,9 +98,10 @@ nonisolated enum BreviaryVariantPreferences {
     static func normalizedOrder(_ order: [String], including available: [String] = []) -> [String] {
         var seen = Set<String>()
         let requested = order + available
+        let validIdentifiers = Set(definitions.map(\.identifier))
         return requested.compactMap { raw in
             let identifier = raw.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !identifier.isEmpty, seen.insert(identifier).inserted else { return nil }
+            guard validIdentifiers.contains(identifier), seen.insert(identifier).inserted else { return nil }
             return identifier
         }
     }
