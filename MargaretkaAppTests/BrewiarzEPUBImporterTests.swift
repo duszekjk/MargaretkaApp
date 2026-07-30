@@ -66,6 +66,9 @@ struct BrewiarzEPUBImporterTests {
         #expect(!lines.contains { $0.text == "\nthese, before God's throne who stand?" })
         #expect(lines.contains { $0.role == .heading && $0.text == "Hymn" })
         #expect(lines.contains { $0.role == .heading && $0.text == "Canticle" })
+        #expect(lines.contains { $0.role == .heading && $0.text == "Short Responsory" })
+        #expect(lines.contains { $0.role == .heading && $0.text == "Prayers and intercessions" })
+        #expect(lines.contains { $0.role == .prayerReference && $0.canonicalPrayerName == "Ojcze nasz" })
     }
 
     @Test func parsesDatedOfficeChoirsAndCanonicalPrayerReference() throws {

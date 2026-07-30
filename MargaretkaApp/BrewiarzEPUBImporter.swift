@@ -711,7 +711,7 @@ nonisolated enum BrewiarzEPUBImporter {
                 if line.role == .heading {
                     discardingCanonicalPrayer = false
                 } else {
-                    if lower.contains("ale nas zbaw ode złego") {
+                    if lower.contains("ale nas zbaw ode złego") || lower.contains("but deliver us from evil") {
                         discardingCanonicalPrayer = false
                     }
                     continue
@@ -728,11 +728,17 @@ nonisolated enum BrewiarzEPUBImporter {
                result.last.map({ normalizedForComparison($0.text) }) == normalizedLine {
                 continue
             }
-            if lower == "ojcze nasz..." || lower == "ojcze nasz…" || lower.hasPrefix("ojcze nasz,") {
+            let isOurFather = lower == "ojcze nasz..."
+                || lower == "ojcze nasz…"
+                || lower.hasPrefix("ojcze nasz,")
+                || lower == "our father..."
+                || lower == "our father…"
+                || lower.hasPrefix("our father,")
+            if isOurFather {
                 line.role = .prayerReference
                 line.canonicalPrayerName = "Ojcze nasz"
                 line.text = "Ojcze nasz"
-                discardingCanonicalPrayer = lower.hasPrefix("ojcze nasz,")
+                discardingCanonicalPrayer = lower.hasPrefix("ojcze nasz,") || lower.hasPrefix("our father,")
             }
             result.append(line)
         }
@@ -751,7 +757,7 @@ nonisolated enum BrewiarzEPUBImporter {
 
     private static func isSemanticSectionHeading(_ text: String) -> Bool {
         if text.range(
-            of: #"(?i)^(canticle|invitatory\s+psalm)(\s|$)"#,
+            of: #"(?i)^(canticle|invitatory\s+psalm|short\s+responsory|prayers\s+and\s+intercessions)(\s|$)"#,
             options: .regularExpression
         ) != nil {
             return true
