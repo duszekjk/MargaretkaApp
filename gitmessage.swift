@@ -1,4 +1,4 @@
-codex conversation [20260731-ipad] add reusable English Our Father prayer
+codex conversation [20260731-ipad] force Universalis section page boundaries
 
-Add Our Father to the app's simple prayer templates and resolve English office
-references to it, rather than the Polish Ojcze Nasz.
+Normalize English Universalis section labels immediately after XHTML parsing so
+Canticle, Short Responsory and Prayers and intercessions always start new cards.

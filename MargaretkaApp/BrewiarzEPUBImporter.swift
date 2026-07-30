@@ -240,7 +240,7 @@ nonisolated enum BrewiarzEPUBImporter {
         title: String,
         page: String
     ) -> OfflineBreviaryOffice? {
-        let parsedLines = XHTMLPrayerLineParser.parse(page)
+        let parsedLines = markUniversalisSectionHeadings(in: XHTMLPrayerLineParser.parse(page))
         let filteredLines = discardNavigationAndMetadata(parsedLines, officeTitle: title)
         let lines = filteredLines.isEmpty
             ? parsedLines.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -252,6 +252,25 @@ nonisolated enum BrewiarzEPUBImporter {
             cards: paginate(lines),
             contentFingerprint: stableFingerprint(lines)
         )
+    }
+
+    private static func markUniversalisSectionHeadings(
+        in lines: [OfflineBreviaryLine]
+    ) -> [OfflineBreviaryLine] {
+        let sectionLabels: Set<String> = [
+            "invitatory psalm",
+            "hymn",
+            "canticle",
+            "short responsory",
+            "prayers and intercessions"
+        ]
+        return lines.map { line in
+            var line = line
+            if sectionLabels.contains(normalizedForComparison(line.text)) {
+                line.role = .heading
+            }
+            return line
+        }
     }
 
     private static func universalisAlternativeLinks(in xhtml: String) -> [(href: String, name: String)] {
