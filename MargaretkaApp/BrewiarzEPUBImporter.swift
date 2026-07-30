@@ -761,7 +761,7 @@ nonisolated enum BrewiarzEPUBImporter {
         initialTitle: String? = nil
     ) -> [OfflineBreviaryCard] {
         let maxCharacters = 1024
-        let maxLines = 12
+        let maxLines = 8
         var cards: [OfflineBreviaryCard] = []
         var current: [OfflineBreviaryLine] = []
         var characterCount = 0
