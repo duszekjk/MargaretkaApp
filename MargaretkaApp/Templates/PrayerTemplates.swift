@@ -10,6 +10,7 @@ import SwiftUI
 
 private let templatePrayerIds: [String: UUID] = [
     "Ojcze Nasz": UUID(uuidString: "bf79f12e-0ccd-4ff6-93cc-d80a051d139a")!,
+    "Our Father": UUID(uuidString: "f9c43a2d-762e-4a3a-b100-a93e8f292dd7")!,
     "Zdrowaś Mario": UUID(uuidString: "965670c5-cd79-4cde-8cb6-8bfda47ae6cf")!,
     "Chwała Ojcu": UUID(uuidString: "7b134385-e206-4101-9cc8-7be53cdc72ae")!,
     "O mój Jezu": UUID(uuidString: "7631b14f-60ee-408f-a62c-ab8b33e13405")!,
@@ -43,6 +44,19 @@ private let templatePrayerIds: [String: UUID] = [
 ]
 
 var prayersTemplate : [String:Prayer] = [
+    "Our Father":
+    Prayer(id: templatePrayerIds["Our Father"]!, name: "Our Father", text: """
+           Our Father, who art in heaven,
+           hallowed be thy name.
+           Thy kingdom come, thy will be done,
+           on earth as it is in heaven.
+           Give us this day our daily bread,
+           and forgive us our trespasses,
+           as we forgive those who trespass against us.
+           And lead us not into temptation,
+           but deliver us from evil.
+           Amen.
+           """, symbol: "heart", audioFilename: nil, audioSource: nil, timestampedLines: nil),
     "Ojcze Nasz":
     Prayer(id: templatePrayerIds["Ojcze Nasz"]!, name: "Ojcze Nasz", text: """
            Ojcze nasz,

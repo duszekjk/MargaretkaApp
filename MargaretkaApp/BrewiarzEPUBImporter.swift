@@ -736,8 +736,9 @@ nonisolated enum BrewiarzEPUBImporter {
                 || lower.hasPrefix("our father,")
             if isOurFather {
                 line.role = .prayerReference
-                line.canonicalPrayerName = "Ojcze nasz"
-                line.text = "Ojcze nasz"
+                let isEnglishOurFather = lower == "our father..." || lower == "our father…" || lower.hasPrefix("our father,")
+                line.canonicalPrayerName = isEnglishOurFather ? "Our Father" : "Ojcze Nasz"
+                line.text = line.canonicalPrayerName ?? "Ojcze Nasz"
                 discardingCanonicalPrayer = lower.hasPrefix("ojcze nasz,") || lower.hasPrefix("our father,")
             }
             result.append(line)
