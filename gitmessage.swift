@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] use liturgical officium terminology
+codex conversation [20260730-ipad] expose Brewiarz offline in settings
 
-Name the dedicated settings flow with the professional Polish term for the
-ordered variants of a daily office.
+Move the Brewiarz offline entry from the import-and-export flow to the main
+settings list so its day and variant controls are directly discoverable.

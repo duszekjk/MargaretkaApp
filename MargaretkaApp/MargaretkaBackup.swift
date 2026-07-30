@@ -824,17 +824,11 @@ struct DataTransferView: View {
 
     var body: some View {
         List {
-            Section("Brewiarz offline") {
-                NavigationLink("Zarządzaj zapisanymi dniami") {
-                    OfflineBreviaryManagerView()
-                }
-                Stepper("Importuj pierwsze \(importedVariantCount) warianty z kolejności", value: $importedVariantCount, in: 1...BreviaryVariantPreferences.defaultOrder.count)
-                Text("Dla każdego dnia aplikacja rozpoznaje wariant po jego nazwie, a nie po numerze pliku, i importuje tylko pierwsze dostępne pozycje z ustawionej kolejności.")
+            Section("Import i eksport danych") {
+                Stepper("Importuj pierwsze \(importedVariantCount) warianty oficjum", value: $importedVariantCount, in: 1...BreviaryVariantPreferences.defaultOrder.count)
+                Text("Dla każdego dnia aplikacja rozpoznaje wariant po jego nazwie, a nie po numerze pliku, i importuje tylko pierwsze dostępne pozycje z kolejności ustawionej w Brewiarzu offline.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-            }
-
-            Section("Import i eksport danych") {
                 Button {
                     showingExportSelection = true
                 } label: {

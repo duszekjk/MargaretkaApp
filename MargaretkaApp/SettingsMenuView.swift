@@ -92,6 +92,12 @@ struct SettingsMenuView: View {
                     Label("Synchronizuj", systemImage: "arrow.triangle.2.circlepath.icloud")
                 }
 
+                NavigationLink {
+                    OfflineBreviaryManagerView()
+                } label: {
+                    Label("Brewiarz offline", systemImage: "book.closed")
+                }
+
                 NavigationLink(
                     destination: DataTransferView(targetStore: priestStore)
                 ) {
