@@ -1226,7 +1226,9 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
     }
 
     private static func sanitize(_ xhtml: String) -> String {
-        var value = xhtml.replacingOccurrences(of: "&nbsp;", with: "\u{00A0}")
+        var value = xhtml
+            .replacingOccurrences(of: "&nbsp;", with: "\u{00A0}")
+            .replacingOccurrences(of: "&middot;", with: "·")
         if let doctypeStart = value.range(of: "<!DOCTYPE", options: .caseInsensitive),
            let doctypeEnd = value[doctypeStart.lowerBound...].range(of: ">") {
             value.removeSubrange(doctypeStart.lowerBound...doctypeEnd.lowerBound)
