@@ -113,6 +113,9 @@
     "Aktualne dane zostaną zastąpione stanem z %@. Tej operacji nie można cofnąć bez innej kopii zapasowej." : {
 
     },
+    "Angielski — miesięczny EPUB" : {
+
+    },
     "Anuluj" : {
 
     },
@@ -136,6 +139,9 @@
 
     },
     "Average prayer duration" : {
+
+    },
+    "Bezpłatne EPUB Universalis" : {
 
     },
     "Błąd" : {
@@ -455,6 +461,9 @@
     "Kup lub pobierz EPUB z brewiarz.pl" : {
 
     },
+    "Łacina — Liturgia Horarum EPUB" : {
+
+    },
     "Ładowanie..." : {
 
     },
@@ -590,6 +599,9 @@
 
     },
     "Otwórz statystyki" : {
+
+    },
+    "Otwórz tę stronę i wybierz link „Liturgia horarum”. Przeglądarka pobierze bezpłatny EPUB; potem wskaż go podczas importu w aplikacji." : {
 
     },
     "Pełna kopia zapasowa" : {
@@ -1336,6 +1348,9 @@
         }
       }
     },
+    "W e-mailu użyj przycisku pobrania przy załączniku EPUB i zapisz plik w Plikach — nie otwieraj go w czytniku. Takie wiadomości nie przychodzą automatycznie: dla każdego miesiąca ponownie wybierz Create and send. Następnie zaimportuj zapisany EPUB w aplikacji." : {
+
+    },
     "W górę działa jak TikTok, w prawo jak Instagram Stories, a oba pozwala na oba gesty." : {
 
     },
@@ -1374,6 +1389,9 @@
 
     },
     "Widok" : {
+
+    },
+    "Wpisz adres e-mail, wybierz region i kalendarz liturgiczny (dla Polski: Rest of the world → Poland), a potem wybierz Create and send the e-book dla potrzebnego miesiąca. Tworzenie trwa około 20–30 sekund." : {
 
     },
     "Wróć do danych księdza" : {

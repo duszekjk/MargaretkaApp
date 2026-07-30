@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] make officium order direct and retain Universalis text
+codex conversation [20260730-ipad] preserve current localization changes
 
-Allow immediate variant reordering and prevent Universalis office pages from
-being discarded wholesale by the brewiarz.pl-specific metadata filter.
+Save the uncommitted localization work before adding real EPUB integration
+tests for Polish, English, and Latin imports.
