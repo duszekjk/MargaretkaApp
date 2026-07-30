@@ -555,6 +555,7 @@ nonisolated enum BrewiarzEPUBImporter {
                 options: .regularExpression
             ) != nil)
             {
+                line.text = "\n"+line.text
                 flush()
             }
             if line.role == .heading {

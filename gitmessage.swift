@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] define menus in the SwiftUI scene
+codex conversation [20260730-ipad] preserve EPUB importer changes
 
-Attach the full Margaretka command hierarchy directly to the iPad WindowGroup.
-Replace standard command groups and provide the same target sections as macOS.
+Commit the existing EPUB importer edits before correcting the iPad command builder.
+No user work is removed.
