@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] reconstruct Universalis psalm choirs
+codex conversation [20260730-ipad] checkpoint before Universalis EPUB follow-up
 
-Use the English EPUB's unindented verse starts and indented continuations to
-alternate choir groups inside psalms, while leaving non-psalm sections neutral.
+Save the verified importer state before extending English canticle choir
+recognition and semantic pagination.
