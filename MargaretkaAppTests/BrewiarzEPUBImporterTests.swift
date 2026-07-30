@@ -45,13 +45,14 @@ struct BrewiarzEPUBImporterTests {
             )
         )
         let imported = try await BrewiarzEPUBImporter.importEPUB(from: url)
-        let day = try #require(imported.days.first {
+        let variants = imported.days.filter {
             $0.date == BreviaryCivilDate(year: 2026, month: 7, day: 30)
-        })
-        let morningPrayer = try #require(day.offices.first { $0.key == .jutrznia })
-
-        #expect(!morningPrayer.cards.isEmpty)
-        #expect(morningPrayer.cards.flatMap(\.lines).count >= 15)
+        }
+        #expect(!variants.isEmpty)
+        let morningPrayerCardCounts = variants.compactMap {
+            $0.offices.first(where: { $0.key == .jutrznia })?.cards.count
+        }
+        #expect(morningPrayerCardCounts.contains { $0 >= 15 })
     }
 
     @Test func parsesDatedOfficeChoirsAndCanonicalPrayerReference() throws {

@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] persist imported offices through offline store
+codex conversation [20260730-ipad] require usable July Morning Prayer cards
 
-Use OfflineBreviaryStore upsert for EPUB data and verify the persisted office
-days before showing a successful import message.
+Make the July Universalis regression test require at least one imported
+variant and at least 15 Morning Prayer cards, not merely parsed text lines.
