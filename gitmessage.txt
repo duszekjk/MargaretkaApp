@@ -1,1 +1,0 @@
-fix: accept iii officium index and meta-refresh fallback

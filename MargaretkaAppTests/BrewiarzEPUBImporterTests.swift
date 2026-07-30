@@ -15,8 +15,7 @@ struct BrewiarzEPUBImporterTests {
             let url = try #require(
                 Bundle(for: BrewiarzEPUBImporterTestBundle.self).url(
                     forResource: fixture.filename,
-                    withExtension: "epub",
-                    subdirectory: "Fixtures"
+                    withExtension: "epub"
                 )
             )
             let imported = try await BrewiarzEPUBImporter.importEPUB(from: url)
