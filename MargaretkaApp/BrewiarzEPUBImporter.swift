@@ -592,8 +592,14 @@ nonisolated enum BrewiarzEPUBImporter {
                 options: .regularExpression
             ) != nil)
             {
-                line.text = "\n"+line.text
                 flush()
+            }
+            if(line.text.range(
+                of: #"^\s*[2468]\s+"#,
+                options: .regularExpression
+            ) != nil)
+            {
+                line.text = "\n"+line.text
             }
             if line.role == .heading {
                 if inIntercessions && isIntercessionContinuation(line.text) {
@@ -684,7 +690,7 @@ nonisolated enum BrewiarzEPUBImporter {
             of: #"^\s*\d+\s+ant\."#,
             options: [.regularExpression, .caseInsensitive]
         ) != nil || text.range(
-            of: #"^\s*Psalm\s+\d+\,"#,
+            of: #"^\s*Psalm\s+\d+"#,
             options: [.regularExpression, .caseInsensitive]
         ) != nil || text.range(
             of: #"^\s*Pieśń\s+\("#,

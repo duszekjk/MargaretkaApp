@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] put officium order before EPUB import
+codex conversation [20260730-ipad] preserve existing multilingual import work
 
-Correct the guide so app users set the order of office variants first and only
-then follow the import flow to choose their downloaded EPUB.
+Save the current uncommitted project, importer, and localization changes before
+continuing the Universalis EPUB integration.

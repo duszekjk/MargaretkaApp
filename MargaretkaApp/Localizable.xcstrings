@@ -67,13 +67,28 @@
     "🔊 Nagranie zostanie wygenerowane na żywo z tekstu modlitwy podczas odtwarzania." : {
 
     },
+    "1. Aby kupić teksty, wybierz KUPUJĘ." : {
+
+    },
     "1. Otwórz aplikację Skróty na iPhonie." : {
 
     },
     "2. Dodaj skrót z akcją Heptadaisy i wybierz konkretną osobę albo modlitwę." : {
 
     },
+    "2. Na kolejnej stronie wybierz okres dostępu i opłać zakup." : {
+
+    },
+    "3. Po opłaceniu wybierz format EPUB i pobierz plik na urządzenie." : {
+
+    },
     "3. Powiedz Siri gotową angielską frazę albo uruchom skrót z automatyzacji NFC." : {
+
+    },
+    "4. W aplikacji otwórz Ustawienia → Brewiarz offline → Kolejność wariantów oficjum i ustaw priorytet wariantów." : {
+
+    },
+    "5. Następnie w Ustawieniach wybierz Import i eksport → Importuj i połącz dane, a w wyborze pliku wskaż pobrany EPUB." : {
 
     },
     "7 osób = 7 dni tygodnia. Każda osoba modli się w swoim dniu." : {
@@ -237,7 +252,10 @@
     "Diagram Margaretki: siedem płatków – dni tygodnia – wokół kapłana." : {
 
     },
-    "Dla każdej daty podczas importu zostanie zapisany tylko pierwszy dostępny wariant z tej listy. Przeciągnij warianty w trybie edycji, aby ustawić priorytety." : {
+    "Dla każdego dnia aplikacja rozpoznaje wariant po jego nazwie, a nie po numerze pliku, i importuje tylko pierwsze dostępne pozycje z kolejności ustawionej w Brewiarzu offline." : {
+
+    },
+    "Dla każdej daty importowane są pierwsze dostępne warianty z tej kolejności." : {
 
     },
     "Do" : {
@@ -380,7 +398,13 @@
     "Importuj modlitwy" : {
 
     },
+    "Importuj pierwsze %lld warianty oficjum" : {
+
+    },
     "Intencja: **konkretny kapłan** (imię i nazwisko)." : {
+
+    },
+    "Jak dodać oficjum offline" : {
 
     },
     "Jak się modlić w Margaretce?" : {
@@ -398,7 +422,7 @@
     "Kapłan" : {
 
     },
-    "Kolejność wariantów" : {
+    "Kolejność wariantów oficjum" : {
 
     },
     "Konflikt synchronizacji" : {
@@ -426,6 +450,9 @@
 
     },
     "Księża" : {
+
+    },
+    "Kup lub pobierz EPUB z brewiarz.pl" : {
 
     },
     "Ładowanie..." : {
@@ -572,6 +599,9 @@
 
     },
     "Po co?" : {
+
+    },
+    "Pobierz teksty Liturgii Godzin" : {
 
     },
     "Podejrzane podobieństwa wymagają decyzji. Porównaj obecną i importowaną wersję." : {
@@ -1315,6 +1345,9 @@
     "W toku" : {
 
     },
+    "Warianty oficjum" : {
+
+    },
     "weekly" : {
       "localizations" : {
         "pl" : {
@@ -1404,9 +1437,6 @@
 
     },
     "Zapisz imiona, dzień i datę rozpoczęcia." : {
-
-    },
-    "Zarządzaj zapisanymi dniami" : {
 
     },
     "Zastąp aktualny stan" : {
