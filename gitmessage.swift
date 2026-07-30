@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] expose Brewiarz offline in settings
+codex conversation [20260730-ipad] document Brewiarz EPUB purchase and import
 
-Move the Brewiarz offline entry from the import-and-export flow to the main
-settings list so its day and variant controls are directly discoverable.
+Add the official Brewiarz download link and concise in-app instructions for
+buying, downloading, and importing an EPUB office.

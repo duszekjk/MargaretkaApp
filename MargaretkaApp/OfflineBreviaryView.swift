@@ -9,6 +9,22 @@ struct OfflineBreviaryManagerView: View {
 
     var body: some View {
         List {
+            Section("Pobierz teksty Liturgii Godzin") {
+                Link(destination: URL(string: "https://brewiarz.pl/down.php3")!) {
+                    Label("Kup lub pobierz EPUB z brewiarz.pl", systemImage: "arrow.up.right.square")
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Jak dodać oficjum offline")
+                        .font(.headline)
+                    Text("1. Na stronie brewiarz.pl wybierz EPUB, a następnie KUPUJĘ przy wybranym tygodniu.")
+                    Text("2. Po zakupie pobierz plik EPUB na urządzenie.")
+                    Text("3. W Ustawieniach wybierz Import i eksport danych, ustaw liczbę wariantów oficjum i wskaż pobrany plik EPUB.")
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            }
+
             Section("Warianty oficjum") {
                 NavigationLink("Kolejność wariantów oficjum") {
                     BreviaryVariantOrderView()
