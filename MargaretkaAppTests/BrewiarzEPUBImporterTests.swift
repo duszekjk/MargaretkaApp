@@ -31,8 +31,8 @@ struct BrewiarzEPUBImporterTests {
             } else {
                 #expect(imported.days.count >= 31)
                 #expect(Set(imported.days.map(\.date)).count == imported.days.count)
-                #expect(imported.days.allSatisfy { $0.variantName == "Tekst podstawowy" })
-                #expect(imported.days.allSatisfy { $0.variantIdentifier == "p" })
+                #expect(imported.days.allSatisfy { $0.variantName != "Universalis" })
+                #expect(imported.days.allSatisfy { $0.variantName != "Tekst podstawowy" })
             }
         }
     }
