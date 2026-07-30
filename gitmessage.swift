@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] stop inventing Universalis choir divisions
+codex conversation [20260730-ipad] keep Universalis verse indentation out of choirs
 
-Treat Universalis v and vi classes as verse indentation rather than left and
-right choir markers because the English EPUB does not encode choral splits.
+Prevent the four-space verse continuation class used by Universalis from
+triggering the Polish right-choir heuristic.
