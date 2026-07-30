@@ -1,4 +1,5 @@
-codex conversation [20260730-ipad] preserve existing local changes
+codex conversation [20260730-ipad] import selected Brewiarz variants
 
-Save the pre-existing uncommitted localization changes before starting the
-Brewiarz offline variant-import work.
+Import the requested number of predefined Brewiarz variant positions for each
+day, retain every selected daily office, and allow choosing a retained variant
+while praying.
