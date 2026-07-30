@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] preserve current localization changes
+codex conversation [20260730-ipad] add real EPUB import integration coverage
 
-Save the uncommitted localization work before adding real EPUB integration
-tests for Polish, English, and Latin imports.
+Exercise the Polish brewiarz.pl and English and Latin Universalis EPUB files
+when the local test corpus is available.

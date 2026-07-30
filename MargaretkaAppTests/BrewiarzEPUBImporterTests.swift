@@ -4,6 +4,24 @@ import UIKit
 @testable import MargaretkaApp
 
 struct BrewiarzEPUBImporterTests {
+    @Test func importsLocalPolishEnglishAndLatinEPUBs() async throws {
+        let directory = URL(fileURLWithPath: "/Volumes/Macintosh HD2/Downloads/brewiarz", isDirectory: true)
+        let fixtures: [(filename: String, language: String)] = [
+            ("27072026-02082026.epub", "pl"),
+            ("August 2026 - Universalis.epub", "en"),
+            ("Liturgia Horarum 2026 - Universalis.epub", "la")
+        ]
+
+        for fixture in fixtures {
+            let url = directory.appendingPathComponent(fixture.filename)
+            guard FileManager.default.fileExists(atPath: url.path) else { continue }
+            let imported = try await BrewiarzEPUBImporter.importEPUB(from: url)
+            #expect(!imported.days.isEmpty, "\(fixture.filename) should import at least one day")
+            #expect(imported.days.contains { ($0.languageCode ?? "pl") == fixture.language })
+            #expect(imported.days.contains { !$0.offices.isEmpty })
+        }
+    }
+
     @Test func parsesDatedOfficeChoirsAndCanonicalPrayerReference() throws {
         let xhtml = """
         <?xml version="1.0" encoding="UTF-8"?>
