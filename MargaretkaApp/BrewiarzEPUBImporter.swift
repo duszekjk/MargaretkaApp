@@ -240,7 +240,12 @@ nonisolated enum BrewiarzEPUBImporter {
         title: String,
         page: String
     ) -> OfflineBreviaryOffice? {
-        let parsedLines = XHTMLPrayerLineParser.parse(page)
+        let parsedLines = XHTMLPrayerLineParser.parse(page).map { line in
+            guard line.role == .choirLeft || line.role == .choirRight else { return line }
+            var normalizedLine = line
+            normalizedLine.role = .body
+            return normalizedLine
+        }
         let filteredLines = discardNavigationAndMetadata(parsedLines, officeTitle: title)
         let lines = filteredLines.isEmpty
             ? parsedLines.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }

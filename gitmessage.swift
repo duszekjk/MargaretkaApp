@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] distinguish choir indentation from XHTML whitespace
+codex conversation [20260730-ipad] keep Universalis verse roles neutral
 
-Recognize a right choir only from non-breaking spaces emitted by source
-content, never from ordinary whitespace used to format XHTML.
+Clear residual choir roles when importing Universalis because its English
+EPUB encodes verse layout but no actual left or right choir information.
