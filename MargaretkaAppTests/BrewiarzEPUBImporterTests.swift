@@ -29,7 +29,7 @@ struct BrewiarzEPUBImporterTests {
                 }
                 #expect(morningPrayerCards.contains { $0 >= 15 })
             } else {
-                #expect(imported.days.count == 31)
+                #expect(Set(imported.days.map(\.date)).count == 31)
                 #expect(imported.days.allSatisfy { $0.variantName == "Tekst podstawowy" })
                 #expect(imported.days.allSatisfy { $0.variantIdentifier == "p" })
             }

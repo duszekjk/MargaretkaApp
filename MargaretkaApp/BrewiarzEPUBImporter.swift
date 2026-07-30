@@ -204,8 +204,33 @@ nonisolated enum BrewiarzEPUBImporter {
             }
             if let progress { await progress(.init(completedDocuments: index + 1, totalDocuments: links.count, elapsed: 0)) }
         }
-        guard !days.isEmpty else { throw BrewiarzEPUBImportError.noOffices }
-        return .init(days: days, sourceTitle: sourceTitle, skippedDocumentCount: links.count - days.count)
+        let mergedDays = mergedUniversalisDays(days)
+        guard !mergedDays.isEmpty else { throw BrewiarzEPUBImportError.noOffices }
+        return .init(days: mergedDays, sourceTitle: sourceTitle, skippedDocumentCount: links.count - days.count)
+    }
+
+    private static func mergedUniversalisDays(_ days: [OfflineBreviaryDay]) -> [OfflineBreviaryDay] {
+        var result: [BreviaryCivilDate: OfflineBreviaryDay] = [:]
+        for day in days {
+            guard var existing = result[day.date] else {
+                result[day.date] = day
+                continue
+            }
+            for office in day.offices {
+                guard let index = existing.offices.firstIndex(where: { $0.key == office.key }) else {
+                    existing.offices.append(office)
+                    continue
+                }
+                if office.cards.count > existing.offices[index].cards.count {
+                    existing.offices[index] = office
+                }
+            }
+            if existing.celebrationName == nil {
+                existing.celebrationName = day.celebrationName
+            }
+            result[day.date] = existing
+        }
+        return result.values.sorted { $0.date < $1.date }
     }
 
     private static func universalisCelebration(in xhtml: String) -> String? {

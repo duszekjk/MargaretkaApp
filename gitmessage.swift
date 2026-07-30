@@ -1,4 +1,4 @@
-codex conversation [20260730-ipad] verify complete local EPUB imports
+codex conversation [20260730-ipad] merge duplicate Universalis day links
 
-Add fixture assertions for the complete Universalis month, the absence of the
-made-up Universalis variant, and a properly paginated Polish Morning Prayer.
+Combine Universalis links for the same civil date into one office day. The
+Latin EPUB indexes individual hours, not 190 independent variants.
