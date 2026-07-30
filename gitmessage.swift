@@ -1,4 +1,3 @@
-codex conversation [20260730-ipad] simplify Brewiarz purchase instructions
+codex conversation [20260730-ipad] state the Brewiarz purchase sequence
 
-Describe only the relevant purchase path: KUPUJĘ, period, EPUB format,
-download, and import.
+Correct the in-app steps so EPUB format selection happens only after payment.

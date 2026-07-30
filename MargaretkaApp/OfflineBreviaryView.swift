@@ -18,8 +18,9 @@ struct OfflineBreviaryManagerView: View {
                     Text("Jak dodać oficjum offline")
                         .font(.headline)
                     Text("1. Aby kupić teksty, wybierz KUPUJĘ.")
-                    Text("2. Na kolejnej stronie wybierz okres dostępu, a następnie format EPUB.")
-                    Text("3. Pobierz plik EPUB na urządzenie. W Ustawieniach wybierz Import i eksport danych, ustaw liczbę wariantów oficjum i wskaż plik.")
+                    Text("2. Na kolejnej stronie wybierz okres dostępu i opłać zakup.")
+                    Text("3. Po opłaceniu wybierz format EPUB i pobierz plik na urządzenie.")
+                    Text("4. W Ustawieniach wybierz Import i eksport danych, ustaw liczbę wariantów oficjum i wskaż plik.")
                 }
                 .font(.footnote)
                 .foregroundStyle(.secondary)
