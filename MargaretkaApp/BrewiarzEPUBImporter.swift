@@ -695,7 +695,6 @@ nonisolated enum BrewiarzEPUBImporter {
             normalizedForComparison($0.text) == normalizedOfficeTitle
         }
         var discardingCanonicalPrayer = false
-        var discardingPsalmComment = false
         var result: [OfflineBreviaryLine] = []
         for var line in lines {
             let lower = line.text.lowercased()
@@ -716,17 +715,6 @@ nonisolated enum BrewiarzEPUBImporter {
                 locale: Locale(identifier: "pl_PL")
             )
             if line.role == .heading && folded.hasPrefix("psalmodia") { continue }
-            if isPsalmOrCanticleHeading(line.text) {
-                discardingPsalmComment = true
-            } else if discardingPsalmComment && isSemanticSectionHeading(line.text) {
-                // In Polish EPUBs headings such as "Czytanie" are sometimes
-                // formatted as rubrics. Their text, not just the line role,
-                // must end psalm-comment filtering so the reading is retained.
-                discardingPsalmComment = false
-            } else if discardingPsalmComment {
-                if line.italic { continue }
-                discardingPsalmComment = false
-            }
             if discardingCanonicalPrayer {
                 if line.role == .heading {
                     discardingCanonicalPrayer = false
