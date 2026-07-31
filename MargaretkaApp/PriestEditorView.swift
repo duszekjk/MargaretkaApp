@@ -64,21 +64,25 @@ struct PriestEditorView: View {
     }
 
     private func storePhoto(_ image: UIImage, originalData: Data? = nil) {
-        guard let photoData = image.storageJPEGData(),
+        guard let photoData = image.storageJPEGData(
+            maxDimension: UIImage.storagePhotoMaxDimension
+        ),
               let storedImage = UIImage(data: photoData) else { return }
-        let assetID = priest.photoAssetID ?? UUID()
+        // A replacement must get a new ID so another device recognizes that
+        // it needs the new synchronized original rather than using its old one.
+        let assetID = UUID()
         let fullResolutionData = originalData ?? image.jpegData(compressionQuality: 1)
         if let fullResolutionData {
             do {
                 try SyncedPhotoStorage.shared.saveOriginal(fullResolutionData, assetID: assetID)
                 priest.photoAssetID = assetID
-                priest.photoUpdatedAt = .now
             } catch {
                 print("Failed to preserve original photo: \(error.localizedDescription)")
             }
         }
         photo = storedImage
         priest.photoData = photoData
+        priest.photoUpdatedAt = .now
         photoScale = 1.0
         photoOffset = .zero
         priest.photoPlacements = [.iPhone: .centered, .iPad: .centered]
@@ -376,6 +380,7 @@ private extension View {
 #if os(iOS) || os(tvOS) || os(visionOS)
 extension UIImage {
     static let storagePhotoByteLimit = 160_000
+    static let storagePhotoMaxDimension: CGFloat = 552
 
     func resized(maxDimension: CGFloat) -> UIImage {
         let w = size.width, h = size.height
@@ -392,14 +397,14 @@ extension UIImage {
     }
 
     nonisolated func storageJPEGData(
-        maxDimension: CGFloat = 480,
+        maxDimension: CGFloat = storagePhotoMaxDimension,
         byteLimit: Int = storagePhotoByteLimit
     ) -> Data? {
         let dimensionCandidates: [CGFloat] = [
             maxDimension,
-            min(maxDimension, 400),
-            min(maxDimension, 320),
-            min(maxDimension, 240)
+            maxDimension * (5.0 / 6.0),
+            maxDimension * (2.0 / 3.0),
+            maxDimension * 0.5
         ]
         let qualityCandidates: [CGFloat] = [0.92, 0.88, 0.84, 0.78, 0.72, 0.66, 0.60]
         var fallback: Data?

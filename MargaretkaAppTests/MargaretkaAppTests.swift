@@ -38,7 +38,29 @@ struct MargaretkaAppTests {
         let storedImage = try #require(UIImage(data: data))
 
         #expect(data.count <= UIImage.storagePhotoByteLimit)
-        #expect(max(storedImage.size.width, storedImage.size.height) <= 480)
+        #expect(max(storedImage.size.width, storedImage.size.height) <= 552)
+    }
+
+    @Test func displayPhotoCacheKeysSeparateDifferentTargetsAndAssets() {
+        let updatedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let firstAssetID = UUID()
+        let first = Priest(
+            id: UUID(), firstName: "Pierwsza", lastName: "", title: "",
+            category: .prayer, photoAssetID: firstAssetID, photoUpdatedAt: updatedAt,
+            assignedPrayerGroups: [], schedule: SchedulePlan(), lastModified: updatedAt,
+            notificationTitle: "", notificationMessage: ""
+        )
+        let second = Priest(
+            id: UUID(), firstName: "Druga", lastName: "", title: "",
+            category: .prayer, photoUpdatedAt: updatedAt,
+            assignedPrayerGroups: [], schedule: SchedulePlan(), lastModified: updatedAt,
+            notificationTitle: "", notificationMessage: ""
+        )
+
+        #expect(first.displayPhotoCacheKey != second.displayPhotoCacheKey)
+        var replacement = first
+        replacement.photoAssetID = UUID()
+        #expect(first.displayPhotoCacheKey != replacement.displayPhotoCacheKey)
     }
 
     @Test func bundledPrayerArtworkIsNotPersisted() {

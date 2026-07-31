@@ -476,20 +476,28 @@ extension Priest {
     }
 
     var displayPhoto: UIImage? {
-        if let photoData {
-            let version = photoUpdatedAt?.timeIntervalSince1970 ?? 0
-            let key = "(id.uuidString.lowercased()):(version):(photoData.count)" as NSString
-            if let cached = displayPhotoCache.object(forKey: key) {
-                return cached
-            }
-            if let image = UIImage(data: photoData) {
-                displayPhotoCache.setObject(image, forKey: key)
-                print("🖼️ displayPhoto cache miss: \(id.uuidString), bytes \(photoData.count), size \(Int(image.size.width))x\(Int(image.size.height))")
-                return image
-            }
+        let key = displayPhotoCacheKey
+        if let cached = displayPhotoCache.object(forKey: key) {
+            return cached
+        }
+        let syncedOriginal = photoAssetID.flatMap { try? SyncedPhotoStorage.shared.data(for: $0) }
+        if let data = syncedOriginal ?? photoData,
+           let image = UIImage(data: data) {
+            displayPhotoCache.setObject(image, forKey: key)
+            print("🖼️ displayPhoto cache miss: \(id.uuidString), bytes \(data.count), size \(Int(image.size.width))x\(Int(image.size.height))")
+            return image
         }
         guard let bundledPhotoAssetName else { return nil }
         return UIImage(named: bundledPhotoAssetName)
+    }
+
+    var displayPhotoCacheKey: NSString {
+        let version = photoUpdatedAt?.timeIntervalSince1970 ?? 0
+        let assetID = photoAssetID?.uuidString.lowercased() ?? "no-asset"
+        let originalFingerprint = photoAssetID.flatMap {
+            SyncedPhotoStorage.shared.fingerprint(for: $0)
+        } ?? "preview"
+        return "\(id.uuidString.lowercased()):\(version):\(assetID):\(originalFingerprint)" as NSString
     }
 
     func photoPlacement(for family: PhotoLayoutFamily) -> PhotoPlacement {

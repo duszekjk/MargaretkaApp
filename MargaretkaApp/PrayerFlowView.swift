@@ -584,11 +584,12 @@ struct PrayerFlowView: View {
                     }
                 } label: {
                     HStack(spacing: 5) {
-                        Image(systemName: "books.vertical")
+//                        Image(systemName: "books.vertical")
                         Text(selectedOfflineBreviaryDay?.variantName ?? "Oficjum").lineLimit(1)
-                        Text(selectedOfflineBreviaryDay?.languageCode ?? "pl")
-                            .font(.caption2.monospaced())
-                            .foregroundStyle(.secondary)
+                            .minimumScaleFactor(0.75)
+//                        Text(selectedOfflineBreviaryDay?.languageCode ?? "pl")
+//                            .font(.caption2.monospaced())
+//                            .foregroundStyle(.secondary)
                     }
                     .padding(12)
                 }
@@ -1076,12 +1077,11 @@ struct PrayerFlowView: View {
                             .padding(8)
                             .glassEffect()
                         }
-                        //                    }
-                        if isIPad {
-                            Spacer()
-                                .frame(height: 12)
-                        } else {
-                            Spacer()
+                        
+                        Spacer()
+                        if(selectedCategory != .prayer)
+                        {
+                            Spacer(minLength: 128.0)
                         }
                     }
                     HStack(spacing: 14) {
@@ -1146,7 +1146,8 @@ struct PrayerFlowView: View {
                             GlassEffectContainer(spacing: 0) {
                                 HStack(spacing: 0) {
                                     Text("\(displayProgress)/\(flattenedPrayerSymbols.count)")
-                                        .padding(.horizontal, 16)
+                                        .minimumScaleFactor(0.6)
+                                        .padding(.horizontal, 12)
                                         .padding(.vertical, 10)
                                         .glassEffect()
                                         .glassEffectUnion(id: "restartGroup", namespace: namespace)
@@ -1163,7 +1164,7 @@ struct PrayerFlowView: View {
                                     .symbolRenderingMode(.monochrome)
                                     .foregroundStyle(.primary)
                                 }
-                                .padding(4)
+                                .padding(2)
                             }
                             
                             GlassEffectContainer(spacing: 0) {
