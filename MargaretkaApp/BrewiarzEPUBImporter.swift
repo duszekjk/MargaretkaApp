@@ -716,12 +716,13 @@ nonisolated enum BrewiarzEPUBImporter {
                 locale: Locale(identifier: "pl_PL")
             )
             if line.role == .heading && folded.hasPrefix("psalmodia") { continue }
-            if line.role == .heading {
-                if isPsalmOrCanticleHeading(line.text) {
-                    discardingPsalmComment = true
-                } else if discardingPsalmComment && isSemanticSectionHeading(line.text) {
-                    discardingPsalmComment = false
-                }
+            if isPsalmOrCanticleHeading(line.text) {
+                discardingPsalmComment = true
+            } else if discardingPsalmComment && isSemanticSectionHeading(line.text) {
+                // In Polish EPUBs headings such as "Czytanie" are sometimes
+                // formatted as rubrics. Their text, not just the line role,
+                // must end psalm-comment filtering so the reading is retained.
+                discardingPsalmComment = false
             } else if discardingPsalmComment {
                 if line.italic { continue }
                 discardingPsalmComment = false
