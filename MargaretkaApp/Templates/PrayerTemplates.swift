@@ -20,6 +20,9 @@ private let templatePrayerIds: [String: UUID] = [
     "Gloria Patri (LA)": UUID(uuidString: "1b233f22-e368-4fa3-0836-7e8f90123456")!,
     "Symbolum Apostolicum (LA)": UUID(uuidString: "2c344033-f479-4fb4-1947-8f9012345678")!,
     "O Iesu (LA)": UUID(uuidString: "3d455144-058a-4fc5-2a58-90123456789a")!,
+    "Eternal Father (EN)": UUID(uuidString: "4e566255-169b-4fd6-3b69-a0123456789b")!,
+    "Sorrowful Passion (EN)": UUID(uuidString: "5f677366-27ac-4fe7-4c7a-b123456789ac")!,
+    "Holy God (EN)": UUID(uuidString: "60788477-38bd-4ff8-5d8b-c23456789abd")!,
     "Zdrowaś Mario": UUID(uuidString: "965670c5-cd79-4cde-8cb6-8bfda47ae6cf")!,
     "Chwała Ojcu": UUID(uuidString: "7b134385-e206-4101-9cc8-7be53cdc72ae")!,
     "O mój Jezu": UUID(uuidString: "7631b14f-60ee-408f-a62c-ab8b33e13405")!,
@@ -53,6 +56,9 @@ private let templatePrayerIds: [String: UUID] = [
 ]
 
 var prayersTemplate : [String:Prayer] = [
+    "Eternal Father (EN)": Prayer(id: templatePrayerIds["Eternal Father (EN)"]!, name: "Eternal Father", text: "Eternal Father, I offer you the Body and Blood, Soul and Divinity of your dearly beloved Son, our Lord Jesus Christ, in atonement for our sins and those of the whole world.", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil),
+    "Sorrowful Passion (EN)": Prayer(id: templatePrayerIds["Sorrowful Passion (EN)"]!, name: "For the sake of His sorrowful Passion", text: "For the sake of His sorrowful Passion, have mercy on us and on the whole world.", symbol: "cross", audioFilename: nil, audioSource: nil, timestampedLines: nil),
+    "Holy God (EN)": Prayer(id: templatePrayerIds["Holy God (EN)"]!, name: "Holy God", text: "Holy God, Holy Mighty One, Holy Immortal One, have mercy on us and on the whole world.", symbol: "star", audioFilename: nil, audioSource: nil, timestampedLines: nil),
     "Symbolum Apostolicum (LA)": Prayer(id: templatePrayerIds["Symbolum Apostolicum (LA)"]!, name: "Symbolum Apostolicum", text: "Credo in Deum Patrem omnipotentem, Creatorem caeli et terrae, et in Iesum Christum, Filium eius unicum, Dominum nostrum, qui conceptus est de Spiritu Sancto, natus ex Maria Virgine, passus sub Pontio Pilato, crucifixus, mortuus et sepultus, descendit ad inferos, tertia die resurrexit a mortuis, ascendit ad caelos, sedet ad dexteram Dei Patris omnipotentis, inde venturus est iudicare vivos et mortuos. Credo in Spiritum Sanctum, sanctam Ecclesiam catholicam, sanctorum communionem, remissionem peccatorum, carnis resurrectionem, vitam aeternam. Amen.", symbol: "book", audioFilename: nil, audioSource: nil, timestampedLines: nil),
     "O Iesu (LA)": Prayer(id: templatePrayerIds["O Iesu (LA)"]!, name: "O Iesu", text: "O Iesu mi, dimitte nobis debita nostra, libera nos ab igne inferni, perduc in caelum omnes animas, praesertim eas quae misericordiae tuae maxime indigent.", symbol: "cloud", audioFilename: nil, audioSource: nil, timestampedLines: nil),
     "Pater Noster (LA)": Prayer(id: templatePrayerIds["Pater Noster (LA)"]!, name: "Pater noster", text: "Pater noster, qui es in caelis: sanctificetur nomen tuum; adveniat regnum tuum; fiat voluntas tua, sicut in caelo et in terra. Panem nostrum cotidianum da nobis hodie; et dimitte nobis debita nostra, sicut et nos dimittimus debitoribus nostris; et ne nos inducas in tentationem; sed libera nos a malo. Amen.", symbol: "heart", audioFilename: nil, audioSource: nil, timestampedLines: nil),

@@ -24,8 +24,19 @@ private func simpleRosaryGroups(creed: String, father: String, hail: String, glo
     return groups
 }
 
+private func chapletGroups(father: String, hail: String, creed: String, offering: String, response: String, conclusion: String) -> [AssignedPrayerGroup] {
+    var groups = [AssignedPrayerGroup(prayerIds: [prayersTemplate[father]!.id, prayersTemplate[hail]!.id, prayersTemplate[creed]!.id])]
+    for _ in 0..<5 {
+        groups.append(AssignedPrayerGroup(prayerIds: [prayersTemplate[offering]!.id]))
+        groups.append(AssignedPrayerGroup(prayerIds: [prayersTemplate[response]!.id], repeatCount: 10))
+    }
+    groups.append(AssignedPrayerGroup(prayerIds: [prayersTemplate[conclusion]!.id], repeatCount: 3))
+    return groups
+}
+
 var peopleTemplates : [Priest] = {
     return [
+        Priest(id: UUID(), firstName: "Divine Mercy Chaplet", lastName: "", title: "en", category: .prayer, assignedPrayerGroups: chapletGroups(father: "Our Father", hail: "Hail Mary (EN)", creed: "Apostles' Creed (EN)", offering: "Eternal Father (EN)", response: "Sorrowful Passion (EN)", conclusion: "Holy God (EN)"), schedule: .suggested(forPrayerName: "Divine Mercy Chaplet"), lastModified: Date(), notificationTitle: "Divine Mercy Chaplet", notificationMessage: ""),
         Priest(id: UUID(), firstName: "Rosarium", lastName: "", title: "la", category: .prayer,
                assignedPrayerGroups: simpleRosaryGroups(creed: "Symbolum Apostolicum (LA)", father: "Pater Noster (LA)", hail: "Ave Maria (LA)", glory: "Gloria Patri (LA)", fatima: "O Iesu (LA)"), schedule: .suggested(forPrayerName: "Rosarium"), lastModified: Date(), notificationTitle: "Rosarium", notificationMessage: ""),
         Priest(id: UUID(), firstName: "Rosary", lastName: "", title: "en", category: .prayer,

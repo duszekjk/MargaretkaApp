@@ -567,7 +567,12 @@ struct PrayerFlowView: View {
     private var devotionVariants: [Priest] {
         guard let selectedPriest,
               selectedPriest.category == .prayer else { return [] }
-        let names = Set(["Różaniec", "Rosary", "Rosarium"])
+        let names: Set<String>
+        if ["Różaniec", "Rosary", "Rosarium"].contains(selectedPriest.firstName) {
+            names = ["Różaniec", "Rosary", "Rosarium"]
+        } else {
+            names = ["Koronka do Miłosierdzia Bożego", "Divine Mercy Chaplet"]
+        }
         guard names.contains(selectedPriest.firstName) else { return [] }
         return priestStore.priests.filter { $0.category == .prayer && names.contains($0.firstName) }
     }
