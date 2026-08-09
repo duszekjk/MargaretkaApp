@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] correct the simple Rosary opening
+codex conversation [20260809-ipad] checkpoint before multilingual Rosary sets
 
-Remove the Fatima prayer from the opening prayers of the default Rosary. It
-remains after each decade, where it belongs.
+Save the corrected Polish Rosary before adding the agreed Polish, English, and
+Latin simple Rosary and Divine Mercy Chaplet variants.
