@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] animate the variant popup from its button
+codex conversation [20260809-ipad] keep the variant popup above prayer views
 
-Use an in-view glass overlay with extra padding and a spring scale transition
-anchored to the selector button.
+Raise the entire selector while its popup is open and animate presentation from
+the selector button toward the bottom.

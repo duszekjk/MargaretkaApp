@@ -83,6 +83,8 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
             .glassEffect()
             .foregroundStyle(.primary)
         }
+        .zIndex(isPresented ? 1_000 : 0)
+        .animation(.spring(response: 0.28, dampingFraction: 0.82), value: isPresented)
     }
 }
 
