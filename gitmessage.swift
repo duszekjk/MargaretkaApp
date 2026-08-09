@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] make variant language labels visible
+codex conversation [20260809-ipad] share one variant selector implementation
 
-Keep bold styling only for the selected list item and render the language code
-as explicit menu text, independent of platform Menu layout behavior.
+Replace separate officium and devotion selector views with one common picker
+that shows small language labels only in its menu list.

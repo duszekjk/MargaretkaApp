@@ -35,6 +35,34 @@ private struct PrayerFlowCardBackground: View {
     }
 }
 
+private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatable {
+    let items: [Item]
+    let selectedID: Item.ID?
+    let selectedTitle: String
+    let title: (Item) -> String
+    let language: (Item) -> String
+    let select: (Item) -> Void
+
+    var body: some View {
+        GlassEffectContainer(spacing: 0) {
+            Menu {
+                ForEach(items) { item in
+                    Button { select(item) } label: {
+                        HStack {
+                            Text(title(item)).fontWeight(item.id == selectedID ? .bold : .regular)
+                            Text(language(item)).font(.caption2.monospaced()).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            } label: {
+                Text(selectedTitle).lineLimit(1).minimumScaleFactor(0.75).padding(12)
+            }
+            .glassEffect()
+            .foregroundStyle(.primary)
+        }
+    }
+}
+
 #if os(macOS)
 private enum UIUserInterfaceIdiom { case phone, pad, mac }
 private final class UIDevice {
@@ -580,57 +608,19 @@ struct PrayerFlowView: View {
     @ViewBuilder
     private var devotionVariantPicker: some View {
         if devotionVariants.count > 1 {
-            Menu {
-                ForEach(devotionVariants) { variant in
-                    Button {
+            PrayerFlowVariantPicker(items: devotionVariants, selectedID: selectedPriest?.id, selectedTitle: selectedPriest?.displayName ?? "", title: \.displayName, language: { $0.title.isEmpty ? "pl" : $0.title }) { variant in
                         selectedPriest = variant
                         activeIndex = 0
-                    } label: {
-                        HStack {
-                            Text(variant.displayName)
-                                .fontWeight(variant.id == selectedPriest?.id ? .bold : .regular)
-                            Text("[\(variant.title.isEmpty ? "pl" : variant.title)]")
-                                .font(.caption2.monospaced())
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-            } label: {
-                Text(selectedPriest?.displayName ?? "")
-                    .padding(12)
             }
-            .glassEffect()
         }
     }
 
     @ViewBuilder
     private var breviaryVariantPicker: some View {
         if showsBreviaryVariantPicker {
-            GlassEffectContainer(spacing: 0) {
-                Menu {
-                    ForEach(availableOfflineBreviaryDays) { day in
-                        Button {
-                            selectedOfflineBreviaryDayID = day.id
-                            activeIndex = 0
-                        } label: {
-                            HStack {
-                                Text(day.variantName)
-                                    .fontWeight(day.id == selectedOfflineBreviaryDay?.id ? .bold : .regular)
-                                Text("[\(day.languageCode ?? "pl")]")
-                                    .font(.caption2.monospaced())
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                } label: {
-                    Text(selectedOfflineBreviaryDay?.variantName ?? "Oficjum")
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
-                    .padding(12)
-                }
-                .glassEffect()
-                .symbolRenderingMode(.monochrome)
-                .foregroundStyle(.primary)
+            PrayerFlowVariantPicker(items: availableOfflineBreviaryDays, selectedID: selectedOfflineBreviaryDay?.id, selectedTitle: selectedOfflineBreviaryDay?.variantName ?? "Oficjum", title: \.variantName, language: { $0.languageCode ?? "pl" }) { day in
+                        selectedOfflineBreviaryDayID = day.id
+                        activeIndex = 0
             }
         }
     }
