@@ -58,7 +58,8 @@ private let templatePrayerIds: [String: UUID] = [
     "Święty dnia (Brewiarz)": UUID(uuidString: "d62e0768-24c7-4ba8-ac3c-e7122365c9f1")!
 ]
 
-var prayersTemplate : [String:Prayer] = [
+var prayersTemplate: [String: Prayer] = {
+    var templates: [String: Prayer] = [
     "Pater Aeterne (LA)": Prayer(id: templatePrayerIds["Pater Aeterne (LA)"]!, name: "Pater Aeterne", text: "Pater aeterne, offero tibi Corpus et Sanguinem, animam et divinitatem dilectissimi Filii tui, Domini nostri Iesu Christi, in propitiationem pro peccatis nostris et totius mundi.", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil),
     "Pro Dolorosa Passione (LA)": Prayer(id: templatePrayerIds["Pro Dolorosa Passione (LA)"]!, name: "Pro dolorosa Eius passione", text: "Pro dolorosa Eius passione, miserere nobis et totius mundi.", symbol: "cross", audioFilename: nil, audioSource: nil, timestampedLines: nil),
     "Sanctus Deus (LA)": Prayer(id: templatePrayerIds["Sanctus Deus (LA)"]!, name: "Sanctus Deus", text: "Sanctus Deus, Sanctus Fortis, Sanctus Immortalis, miserere nobis et totius mundi.", symbol: "star", audioFilename: nil, audioSource: nil, timestampedLines: nil),
@@ -240,8 +241,10 @@ var prayersTemplate : [String:Prayer] = [
         Prayer(id: templatePrayerIds["Kompleta (Brewiarz)"]!, name: "Kompleta", text: "Modlitwa w brewiarz.pl", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .brewiarz(.kompleta)),
     "Święty dnia (Brewiarz)":
         Prayer(id: templatePrayerIds["Święty dnia (Brewiarz)"]!, name: "Święty dnia", text: "Życiorys świętego z brewiarz.pl", symbol: "person.crop.circle.badge.checkmark", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .saintBiography),
-]
+    ]
 
-// Mystery titles are regular, read-only built-in prayers. This lets a mystery
-// appear as its own step before every decade and keeps the same flow engine.
-prayersTemplate.merge(rosaryMysteryPrayerTemplates(), uniquingKeysWith: { current, _ in current })
+    // Mystery titles are regular, read-only built-in prayers. This lets a
+    // mystery appear as its own step before every decade in the same flow.
+    templates.merge(rosaryMysteryPrayerTemplates(), uniquingKeysWith: { current, _ in current })
+    return templates
+}()

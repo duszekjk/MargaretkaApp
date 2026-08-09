@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] test Rosary mystery variants
+codex conversation [20260809-ipad] fix Rosary template compilation
 
-Verify the weekday cycle and ensure every Polish, English, and Latin mystery
-variant contains its five mystery steps.
+Initialize mystery prayers inside the template dictionary initializer and close
+the root Liquid Glass container in PrayerFlowView, restoring valid Swift scope.

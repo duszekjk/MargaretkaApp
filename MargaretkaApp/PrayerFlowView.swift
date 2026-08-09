@@ -1487,6 +1487,7 @@ struct PrayerFlowView: View {
                 .zIndex(10_000)
             }
         }
+        }
         .coordinateSpace(name: prayerFlowVariantPickerCoordinateSpace)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .focusable()
