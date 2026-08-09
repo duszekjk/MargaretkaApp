@@ -1,3 +1,3 @@
-codex conversation [20260809-ipad] add Latin core Rosary prayers
+codex conversation [20260809-ipad] checkpoint before Latin Rosary completion
 
-Add reusable Latin Pater noster, Ave Maria, and Gloria Patri prayer texts.
+Save the Latin core prayers before completing the usable Latin Rosary set.
