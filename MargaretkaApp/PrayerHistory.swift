@@ -118,6 +118,41 @@ class PrayerStore: ObservableObject {
         return merged
     }
 
+    /// Restores only the authored content of built-in text prayers that are already present.
+    /// Plans keep referring to the same prayer IDs and user-created prayers are untouched.
+    @discardableResult
+    func restoreDefaultPrayerContents() -> Int {
+        let restored = Self.restoringDefaultPrayerContents(in: prayers)
+        guard restored.count > 0 else { return 0 }
+        for prayer in restored.prayers where prayer.text != prayers.first(where: { $0.id == prayer.id })?.text || prayer.timestampedLines != prayers.first(where: { $0.id == prayer.id })?.timestampedLines {
+            pendingChangedIDs.insert(prayer.id.uuidString.lowercased())
+        }
+        prayers = restored.prayers
+        return restored.count
+    }
+
+    static func restoringDefaultPrayerContents(in existing: [Prayer]) -> (prayers: [Prayer], count: Int) {
+        let templatesByID = Dictionary(
+            uniqueKeysWithValues: prayersTemplate.values.compactMap { template -> (UUID, Prayer)? in
+                guard case .text = template.content else { return nil }
+                return (template.id, template)
+            }
+        )
+        var restoredCount = 0
+        let restoredPrayers = existing.map { prayer in
+            guard let template = templatesByID[prayer.id],
+                  prayer.text != template.text || prayer.timestampedLines != template.timestampedLines else {
+                return prayer
+            }
+            var restored = prayer
+            restored.text = template.text
+            restored.timestampedLines = template.timestampedLines
+            restoredCount += 1
+            return restored
+        }
+        return (restoredPrayers, restoredCount)
+    }
+
     func addOrUpdate(_ prayer: Prayer) {
         pendingChangedIDs.insert(prayer.id.uuidString.lowercased())
         if let index = prayers.firstIndex(where: { $0.id == prayer.id }) {

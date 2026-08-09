@@ -10,9 +10,24 @@ internal import UniformTypeIdentifiers
 
 struct PrayerListSettingsView: View {
     @StateObject private var store = PrayerStore()
+    @State private var showRestoreConfirmation = false
+    @State private var restoredPrayerCount = 0
+    @State private var showRestoreResult = false
 
     var body: some View {
         List {
+            Section {
+                Button {
+                    showRestoreConfirmation = true
+                } label: {
+                    Label("Przywróć domyślne treści modlitw", systemImage: "arrow.counterclockwise")
+                }
+
+                Text("Odtwarza tekst istniejących modlitw wbudowanych. Nie usuwa modlitw ani nie zmienia planów, przypisań, historii, nazw, ikon ani audio.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
             ForEach(store.prayers) { prayer in
                 NavigationLink(destination: PrayerEditorView(store: store, prayer: prayer)) {
                     Label(prayer.name, systemImage: prayer.symbol)
@@ -25,6 +40,21 @@ struct PrayerListSettingsView: View {
             }
         }
         .navigationTitle("Modlitwy")
+        .confirmationDialog("Przywrócić domyślne treści modlitw?", isPresented: $showRestoreConfirmation, titleVisibility: .visible) {
+            Button("Przywróć treści", role: .destructive) {
+                restoredPrayerCount = store.restoreDefaultPrayerContents()
+                showRestoreResult = true
+            }
+        } message: {
+            Text("Zmienione zostaną wyłącznie teksty istniejących modlitw wbudowanych.")
+        }
+        .alert("Przywrócono domyślne treści", isPresented: $showRestoreResult) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(restoredPrayerCount == 0
+                 ? "Wszystkie istniejące modlitwy wbudowane mają już aktualną treść."
+                 : "Zaktualizowano treść (restoredPrayerCount) modlitw.")
+        }
     }
 }
 

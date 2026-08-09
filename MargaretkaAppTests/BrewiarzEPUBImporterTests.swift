@@ -4,6 +4,40 @@ import UIKit
 @testable import MargaretkaApp
 
 struct BrewiarzEPUBImporterTests {
+    @Test func restoresOnlyContentOfExistingBuiltInPrayers() {
+        let originalPrayer = try! #require(prayersTemplate["Ojcze Nasz"])
+        let modifiedPrayer = Prayer(
+            id: originalPrayer.id,
+            name: "Moja nazwa",
+            text: "Nieaktualna treść",
+            symbol: "heart.fill",
+            audioFilename: "moja-modlitwa.m4a",
+            audioSource: .recorded,
+            timestampedLines: [TimestampedLine(timestamp: 1, text: "Nieaktualna treść")]
+        )
+        let customPrayer = Prayer(
+            name: "Moja modlitwa",
+            text: "Mój tekst",
+            symbol: "star",
+            audioFilename: nil,
+            audioSource: nil,
+            timestampedLines: nil
+        )
+
+        let result = PrayerStore.restoringDefaultPrayerContents(in: [modifiedPrayer, customPrayer])
+        let restored = result.prayers[0]
+
+        #expect(result.count == 1)
+        #expect(restored.id == modifiedPrayer.id)
+        #expect(restored.text == originalPrayer.text)
+        #expect(restored.timestampedLines == originalPrayer.timestampedLines)
+        #expect(restored.name == modifiedPrayer.name)
+        #expect(restored.symbol == modifiedPrayer.symbol)
+        #expect(restored.audioFilename == modifiedPrayer.audioFilename)
+        #expect(restored.audioSource == modifiedPrayer.audioSource)
+        #expect(result.prayers[1] == customPrayer)
+    }
+
     @Test func preservesSubstantialMorningReadingForEveryAugustDay() async throws {
         let fixtureNames = (1...6).map { String(format: "AugustWeek%02dPolish", $0) }
         var days: [OfflineBreviaryDay] = []
