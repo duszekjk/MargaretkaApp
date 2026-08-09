@@ -15,6 +15,9 @@ private let templatePrayerIds: [String: UUID] = [
     "Glory Be (EN)": UUID(uuidString: "c6c8eadd-9f13-4d5f-b3e1-2f3a4b5c6d7e")!,
     "O My Jesus (EN)": UUID(uuidString: "d7d9fbee-af24-4e6f-c4f2-3a4b5c6d7e8f")!,
     "Apostles' Creed (EN)": UUID(uuidString: "e8ea0cff-b035-4f70-d503-4b5c6d7e8f90")!,
+    "Pater Noster (LA)": UUID(uuidString: "f9011d00-c146-4f81-e614-5c6d7e8f9012")!,
+    "Ave Maria (LA)": UUID(uuidString: "0a122e11-d257-4f92-f725-6d7e8f901234")!,
+    "Gloria Patri (LA)": UUID(uuidString: "1b233f22-e368-4fa3-0836-7e8f90123456")!,
     "Zdrowaś Mario": UUID(uuidString: "965670c5-cd79-4cde-8cb6-8bfda47ae6cf")!,
     "Chwała Ojcu": UUID(uuidString: "7b134385-e206-4101-9cc8-7be53cdc72ae")!,
     "O mój Jezu": UUID(uuidString: "7631b14f-60ee-408f-a62c-ab8b33e13405")!,
@@ -48,6 +51,9 @@ private let templatePrayerIds: [String: UUID] = [
 ]
 
 var prayersTemplate : [String:Prayer] = [
+    "Pater Noster (LA)": Prayer(id: templatePrayerIds["Pater Noster (LA)"]!, name: "Pater noster", text: "Pater noster, qui es in caelis: sanctificetur nomen tuum; adveniat regnum tuum; fiat voluntas tua, sicut in caelo et in terra. Panem nostrum cotidianum da nobis hodie; et dimitte nobis debita nostra, sicut et nos dimittimus debitoribus nostris; et ne nos inducas in tentationem; sed libera nos a malo. Amen.", symbol: "heart", audioFilename: nil, audioSource: nil, timestampedLines: nil),
+    "Ave Maria (LA)": Prayer(id: templatePrayerIds["Ave Maria (LA)"]!, name: "Ave Maria", text: "Ave Maria, gratia plena, Dominus tecum; benedicta tu in mulieribus, et benedictus fructus ventris tui, Iesus. Sancta Maria, Mater Dei, ora pro nobis peccatoribus, nunc et in hora mortis nostrae. Amen.", symbol: "star", audioFilename: nil, audioSource: nil, timestampedLines: nil),
+    "Gloria Patri (LA)": Prayer(id: templatePrayerIds["Gloria Patri (LA)"]!, name: "Gloria Patri", text: "Gloria Patri et Filio et Spiritui Sancto. Sicut erat in principio et nunc et semper et in saecula saeculorum. Amen.", symbol: "flame", audioFilename: nil, audioSource: nil, timestampedLines: nil),
     "Hail Mary (EN)": Prayer(id: templatePrayerIds["Hail Mary (EN)"]!, name: "Hail Mary", text: "Hail, Mary, full of grace, the Lord is with thee. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.", symbol: "star", audioFilename: nil, audioSource: nil, timestampedLines: nil),
     "Glory Be (EN)": Prayer(id: templatePrayerIds["Glory Be (EN)"]!, name: "Glory Be", text: "Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen.", symbol: "flame", audioFilename: nil, audioSource: nil, timestampedLines: nil),
     "O My Jesus (EN)": Prayer(id: templatePrayerIds["O My Jesus (EN)"]!, name: "O my Jesus", text: "O my Jesus, forgive us our sins, save us from the fires of hell; lead all souls to Heaven, especially those in most need of thy mercy.", symbol: "cloud", audioFilename: nil, audioSource: nil, timestampedLines: nil),
