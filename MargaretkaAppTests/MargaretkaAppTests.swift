@@ -166,6 +166,34 @@ struct MargaretkaAppTests {
         }
     }
 
+    @Test func rosaryMysteriesFollowTheTraditionalWeekdayCycle() throws {
+        let calendar = Calendar(identifier: .gregorian)
+        func date(_ day: Int) -> Date {
+            calendar.date(from: DateComponents(year: 2026, month: 8, day: day))!
+        }
+
+        #expect(RosaryMysterySet.forToday(calendar: calendar, date: date(3)) == .joyful) // Monday
+        #expect(RosaryMysterySet.forToday(calendar: calendar, date: date(4)) == .sorrowful) // Tuesday
+        #expect(RosaryMysterySet.forToday(calendar: calendar, date: date(5)) == .glorious) // Wednesday
+        #expect(RosaryMysterySet.forToday(calendar: calendar, date: date(6)) == .luminous) // Thursday
+        #expect(RosaryMysterySet.forToday(calendar: calendar, date: date(7)) == .sorrowful) // Friday
+        #expect(RosaryMysterySet.forToday(calendar: calendar, date: date(8)) == .joyful) // Saturday
+        #expect(RosaryMysterySet.forToday(calendar: calendar, date: date(9)) == .glorious) // Sunday
+    }
+
+    @Test func everyRosaryMysteryVariantHasFiveMysterySteps() {
+        let variants = peopleTemplates.filter { target in
+            RosaryMysterySet.allCases.contains { set in
+                PrayerLanguage.allCases.contains { target.firstName == set.variantName(language: $0) }
+            }
+        }
+
+        #expect(variants.count == RosaryMysterySet.allCases.count * PrayerLanguage.allCases.count)
+        for variant in variants {
+            #expect(variant.assignedPrayerGroups.count == 23)
+        }
+    }
+
     @Test func notificationRouteWaitsUntilConsumed() {
         let store = UserDefaults(suiteName: "PrayerNotificationRouterTests")!
         store.removePersistentDomain(forName: "PrayerNotificationRouterTests")
