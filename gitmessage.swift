@@ -1,4 +1,5 @@
-codex conversation [20260809-ipad] reset prayer position on target switch
+codex conversation [20260809-ipad] add daily Rosary mystery variants
 
-Always return to the first page when the user opens or switches to another
-prayer target, so a prior prayer's scroll position cannot carry over.
+Add joyful, luminous, sorrowful, and glorious Rosary variants in Polish,
+English, and Latin. Opening a Rosary selects today's mysteries in the last
+used language, while the shared variant menu keeps manual selection available.

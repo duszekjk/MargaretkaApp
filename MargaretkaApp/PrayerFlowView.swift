@@ -352,6 +352,7 @@ struct PrayerFlowView: View {
     @State private var fontNow: CGFloat = 19.0
     @State private var selectedOfflineBreviaryDayID: UUID?
     @State private var variantPopup: PrayerFlowVariantPopupState?
+    @AppStorage("lastRosaryLanguage") private var lastRosaryLanguageCode = PrayerLanguage.polish.rawValue
     
     @Binding var showSettings: Bool
     @Binding var showEditor: Bool
@@ -670,20 +671,51 @@ struct PrayerFlowView: View {
     private var devotionVariants: [Priest] {
         guard let selectedPriest,
               selectedPriest.category == .prayer else { return [] }
-        let names: Set<String>
-        if ["Różaniec", "Rosary", "Rosarium"].contains(selectedPriest.firstName) {
-            names = ["Różaniec", "Rosary", "Rosarium"]
-        } else {
-            names = ["Koronka do Miłosierdzia Bożego", "Divine Mercy Chaplet", "Coronilla Divinae Misericordiae"]
+        if isRosaryTarget(selectedPriest) {
+            return priestStore.priests.filter { $0.category == .prayer && isRosaryTarget($0) }
         }
-        guard names.contains(selectedPriest.firstName) else { return [] }
-        return priestStore.priests.filter { $0.category == .prayer && names.contains($0.firstName) }
+        let chapletNames: Set<String> = ["Koronka do Miłosierdzia Bożego", "Divine Mercy Chaplet", "Coronilla Divinae Misericordiae"]
+        guard chapletNames.contains(selectedPriest.firstName) else { return [] }
+        return priestStore.priests.filter { $0.category == .prayer && chapletNames.contains($0.firstName) }
+    }
+
+    private func isRosaryTarget(_ target: Priest) -> Bool {
+        target.firstName == "Różaniec"
+            || target.firstName == "Rosary"
+            || target.firstName == "Rosarium"
+            || RosaryMysterySet.allCases.contains { set in
+                PrayerLanguage.allCases.contains { target.firstName == set.variantName(language: $0) }
+            }
+    }
+
+    private func rosaryLanguage(for target: Priest) -> PrayerLanguage {
+        PrayerLanguage(rawValue: target.title) ?? .polish
+    }
+
+    private func defaultRosaryVariant(for target: Priest) -> Priest {
+        guard isRosaryTarget(target) else { return target }
+        let language = PrayerLanguage(rawValue: lastRosaryLanguageCode) ?? rosaryLanguage(for: target)
+        let todayName = RosaryMysterySet.forToday().variantName(language: language)
+        return priestStore.priests.first { candidate in
+            candidate.category == .prayer
+                && candidate.firstName == todayName
+                && candidate.title == language.rawValue
+        } ?? target
+    }
+
+    private func openPrayerTarget(_ target: Priest) {
+        selectedPriest = defaultRosaryVariant(for: target)
+        activeIndex = 0
+        finished = false
     }
 
     @ViewBuilder
     private var devotionVariantPicker: some View {
         if devotionVariants.count > 1 {
             PrayerFlowVariantPicker(items: devotionVariants, selectedID: selectedPriest?.id, selectedTitle: selectedPriest?.displayName ?? "", title: \.displayName, language: { $0.title.isEmpty ? "pl" : $0.title }, select: { variant in
+                        if isRosaryTarget(variant) {
+                            lastRosaryLanguageCode = rosaryLanguage(for: variant).rawValue
+                        }
                         selectedPriest = variant
                         activeIndex = 0
             }, namespace: brewiarzNamespace, popup: $variantPopup)
@@ -983,7 +1015,7 @@ struct PrayerFlowView: View {
                                     Button(action: {
                                         withAnimation()
                                         {
-                                            selectedPriest = priest
+                                            openPrayerTarget(priest)
                                         }
                                     }) {
                                         Label(priest.displayName, systemImage: selectedPriest?.id == priest.id ? "checkmark" : "")
@@ -1220,7 +1252,7 @@ struct PrayerFlowView: View {
                                     Button(action: {
                                         withAnimation()
                                         {
-                                            selectedPriest = priest
+                                            openPrayerTarget(priest)
                                         }
                                     }) {
                                         Label(priest.displayName, systemImage: selectedPriest?.id == priest.id ? "checkmark" : "")

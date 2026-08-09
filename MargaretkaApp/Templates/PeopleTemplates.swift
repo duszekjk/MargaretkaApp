@@ -24,6 +24,55 @@ private func simpleRosaryGroups(creed: String, father: String, hail: String, glo
     return groups
 }
 
+private func mysteryRosaryGroups(
+    set: RosaryMysterySet,
+    language: PrayerLanguage,
+    creed: String,
+    father: String,
+    hail: String,
+    glory: String,
+    fatima: String
+) -> [AssignedPrayerGroup] {
+    var groups = [
+        AssignedPrayerGroup(prayerIds: [prayersTemplate[creed]!.id, prayersTemplate[father]!.id]),
+        AssignedPrayerGroup(prayerIds: [prayersTemplate[hail]!.id], repeatCount: 3),
+        AssignedPrayerGroup(prayerIds: [prayersTemplate[glory]!.id])
+    ]
+    for index in 0..<5 {
+        groups += [
+            AssignedPrayerGroup(prayerIds: [prayersTemplate[rosaryMysteryPrayerKey(set: set, language: language, index: index)]!.id]),
+            AssignedPrayerGroup(prayerIds: [prayersTemplate[father]!.id]),
+            AssignedPrayerGroup(prayerIds: [prayersTemplate[hail]!.id], repeatCount: 10),
+            AssignedPrayerGroup(prayerIds: [prayersTemplate[glory]!.id, prayersTemplate[fatima]!.id])
+        ]
+    }
+    return groups
+}
+
+private func mysteryRosaryTemplate(set: RosaryMysterySet, language: PrayerLanguage) -> Priest {
+    let prayers: (creed: String, father: String, hail: String, glory: String, fatima: String)
+    switch language {
+    case .polish:
+        prayers = ("Skład apostolski (Wyznanie wiary)", "Ojcze Nasz", "Zdrowaś Mario", "Chwała Ojcu", "O mój Jezu")
+    case .english:
+        prayers = ("Apostles' Creed (EN)", "Our Father", "Hail Mary (EN)", "Glory Be (EN)", "O My Jesus (EN)")
+    case .latin:
+        prayers = ("Symbolum Apostolicum (LA)", "Pater Noster (LA)", "Ave Maria (LA)", "Gloria Patri (LA)", "O Iesu (LA)")
+    }
+    let name = set.variantName(language: language)
+    return Priest(
+        id: UUID(), firstName: name, lastName: "", title: language.rawValue,
+        category: .prayer,
+        assignedPrayerGroups: mysteryRosaryGroups(
+            set: set, language: language, creed: prayers.creed,
+            father: prayers.father, hail: prayers.hail, glory: prayers.glory,
+            fatima: prayers.fatima
+        ),
+        schedule: .suggested(forPrayerName: "Różaniec"), lastModified: Date(),
+        notificationTitle: name, notificationMessage: ""
+    )
+}
+
 private func chapletGroups(father: String, hail: String, creed: String, offering: String, response: String, conclusion: String) -> [AssignedPrayerGroup] {
     var groups = [AssignedPrayerGroup(prayerIds: [prayersTemplate[father]!.id, prayersTemplate[hail]!.id, prayersTemplate[creed]!.id])]
     for _ in 0..<5 {
@@ -35,7 +84,7 @@ private func chapletGroups(father: String, hail: String, creed: String, offering
 }
 
 var peopleTemplates : [Priest] = {
-    return [
+    var templates: [Priest] = [
         Priest(id: UUID(), firstName: "Coronilla Divinae Misericordiae", lastName: "", title: "la", category: .prayer, assignedPrayerGroups: chapletGroups(father: "Pater Noster (LA)", hail: "Ave Maria (LA)", creed: "Symbolum Apostolicum (LA)", offering: "Pater Aeterne (LA)", response: "Pro Dolorosa Passione (LA)", conclusion: "Sanctus Deus (LA)"), schedule: .suggested(forPrayerName: "Coronilla Divinae Misericordiae"), lastModified: Date(), notificationTitle: "Coronilla Divinae Misericordiae", notificationMessage: ""),
         Priest(id: UUID(), firstName: "Divine Mercy Chaplet", lastName: "", title: "en", category: .prayer, assignedPrayerGroups: chapletGroups(father: "Our Father", hail: "Hail Mary (EN)", creed: "Apostles' Creed (EN)", offering: "Eternal Father (EN)", response: "Sorrowful Passion (EN)", conclusion: "Holy God (EN)"), schedule: .suggested(forPrayerName: "Divine Mercy Chaplet"), lastModified: Date(), notificationTitle: "Divine Mercy Chaplet", notificationMessage: ""),
         Priest(id: UUID(), firstName: "Rosarium", lastName: "", title: "la", category: .prayer,
@@ -198,4 +247,8 @@ var peopleTemplates : [Priest] = {
                ], schedule: .suggested(forPrayerName: "Koronka do Miłosierdzia Bożego"), lastModified: Date(), notificationTitle: "Koronka", notificationMessage: "do Miłosierdzia Bożego"),
         
     ]
+    templates += RosaryMysterySet.allCases.flatMap { set in
+        PrayerLanguage.allCases.map { mysteryRosaryTemplate(set: set, language: $0) }
+    }
+    return templates
 }()

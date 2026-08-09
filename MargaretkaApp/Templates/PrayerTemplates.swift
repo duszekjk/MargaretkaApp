@@ -241,3 +241,7 @@ var prayersTemplate : [String:Prayer] = [
     "Święty dnia (Brewiarz)":
         Prayer(id: templatePrayerIds["Święty dnia (Brewiarz)"]!, name: "Święty dnia", text: "Życiorys świętego z brewiarz.pl", symbol: "person.crop.circle.badge.checkmark", audioFilename: nil, audioSource: nil, timestampedLines: nil, content: .saintBiography),
 ]
+
+// Mystery titles are regular, read-only built-in prayers. This lets a mystery
+// appear as its own step before every decade and keeps the same flow engine.
+prayersTemplate.merge(rosaryMysteryPrayerTemplates(), uniquingKeysWith: { current, _ in current })
