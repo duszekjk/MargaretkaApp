@@ -1343,7 +1343,8 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         bufferStyle.italic = bufferStyle.italic || style.italic
         bufferStyle.rubric = bufferStyle.rubric || style.rubric
         bufferStyle.leftAligned = bufferStyle.leftAligned || style.leftAligned
-        bufferStyle.navigationLink = bufferStyle.navigationLink || style.navigationLink
+        // EPUBs use inline links for liturgical notes and references. They must
+        // not make the surrounding prayer line disappear.
         bufferStyle.universalisHymnStanzaStart = bufferStyle.universalisHymnStanzaStart || style.universalisHymnStanzaStart
         bufferStyle.isVerseContinuation = bufferStyle.isVerseContinuation || style.isVerseContinuation
         bufferStyle.universalisVerseLayout = bufferStyle.universalisVerseLayout ?? style.universalisVerseLayout
@@ -1368,7 +1369,6 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         bufferStyle = Style()
         bufferHasRubricText = false
         bufferHasPrayerText = false
-        guard !style.navigationLink else { return }
         for rawLine in raw.split(separator: "\n", omittingEmptySubsequences: false) {
             let leadingChoirIndent = rawLine.prefix { $0 == "\u{00A0}" }.count >= 4
             var text = rawLine

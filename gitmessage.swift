@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] checkpoint before preserving linked EPUB text
+codex conversation [20260809-ipad] preserve EPUB lines with inline links
 
-Save build 60 before correcting the parser behaviour that removes a whole
-liturgical line when it contains an XHTML link.
+Retain all XHTML link text during import so an inline reference cannot discard
+an entire Polish psalm, hymn, or reading line.
