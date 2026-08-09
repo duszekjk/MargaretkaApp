@@ -23,6 +23,9 @@ private let templatePrayerIds: [String: UUID] = [
     "Eternal Father (EN)": UUID(uuidString: "4e566255-169b-4fd6-3b69-a0123456789b")!,
     "Sorrowful Passion (EN)": UUID(uuidString: "5f677366-27ac-4fe7-4c7a-b123456789ac")!,
     "Holy God (EN)": UUID(uuidString: "60788477-38bd-4ff8-5d8b-c23456789abd")!,
+    "Pater Aeterne (LA)": UUID(uuidString: "71899588-49ce-4019-6e9c-d3456789abce")!,
+    "Pro Dolorosa Passione (LA)": UUID(uuidString: "829aa699-5adf-412a-7fad-e456789abcdf")!,
+    "Sanctus Deus (LA)": UUID(uuidString: "93abb7aa-6be0-423b-80be-f56789abcde0")!,
     "Zdrowaś Mario": UUID(uuidString: "965670c5-cd79-4cde-8cb6-8bfda47ae6cf")!,
     "Chwała Ojcu": UUID(uuidString: "7b134385-e206-4101-9cc8-7be53cdc72ae")!,
     "O mój Jezu": UUID(uuidString: "7631b14f-60ee-408f-a62c-ab8b33e13405")!,
@@ -56,6 +59,9 @@ private let templatePrayerIds: [String: UUID] = [
 ]
 
 var prayersTemplate : [String:Prayer] = [
+    "Pater Aeterne (LA)": Prayer(id: templatePrayerIds["Pater Aeterne (LA)"]!, name: "Pater Aeterne", text: "Pater aeterne, offero tibi Corpus et Sanguinem, animam et divinitatem dilectissimi Filii tui, Domini nostri Iesu Christi, in propitiationem pro peccatis nostris et totius mundi.", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil),
+    "Pro Dolorosa Passione (LA)": Prayer(id: templatePrayerIds["Pro Dolorosa Passione (LA)"]!, name: "Pro dolorosa Eius passione", text: "Pro dolorosa Eius passione, miserere nobis et totius mundi.", symbol: "cross", audioFilename: nil, audioSource: nil, timestampedLines: nil),
+    "Sanctus Deus (LA)": Prayer(id: templatePrayerIds["Sanctus Deus (LA)"]!, name: "Sanctus Deus", text: "Sanctus Deus, Sanctus Fortis, Sanctus Immortalis, miserere nobis et totius mundi.", symbol: "star", audioFilename: nil, audioSource: nil, timestampedLines: nil),
     "Eternal Father (EN)": Prayer(id: templatePrayerIds["Eternal Father (EN)"]!, name: "Eternal Father", text: "Eternal Father, I offer you the Body and Blood, Soul and Divinity of your dearly beloved Son, our Lord Jesus Christ, in atonement for our sins and those of the whole world.", symbol: "globe.europe.africa", audioFilename: nil, audioSource: nil, timestampedLines: nil),
     "Sorrowful Passion (EN)": Prayer(id: templatePrayerIds["Sorrowful Passion (EN)"]!, name: "For the sake of His sorrowful Passion", text: "For the sake of His sorrowful Passion, have mercy on us and on the whole world.", symbol: "cross", audioFilename: nil, audioSource: nil, timestampedLines: nil),
     "Holy God (EN)": Prayer(id: templatePrayerIds["Holy God (EN)"]!, name: "Holy God", text: "Holy God, Holy Mighty One, Holy Immortal One, have mercy on us and on the whole world.", symbol: "star", audioFilename: nil, audioSource: nil, timestampedLines: nil),

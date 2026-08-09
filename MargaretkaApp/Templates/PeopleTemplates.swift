@@ -36,6 +36,7 @@ private func chapletGroups(father: String, hail: String, creed: String, offering
 
 var peopleTemplates : [Priest] = {
     return [
+        Priest(id: UUID(), firstName: "Coronilla Divinae Misericordiae", lastName: "", title: "la", category: .prayer, assignedPrayerGroups: chapletGroups(father: "Pater Noster (LA)", hail: "Ave Maria (LA)", creed: "Symbolum Apostolicum (LA)", offering: "Pater Aeterne (LA)", response: "Pro Dolorosa Passione (LA)", conclusion: "Sanctus Deus (LA)"), schedule: .suggested(forPrayerName: "Coronilla Divinae Misericordiae"), lastModified: Date(), notificationTitle: "Coronilla Divinae Misericordiae", notificationMessage: ""),
         Priest(id: UUID(), firstName: "Divine Mercy Chaplet", lastName: "", title: "en", category: .prayer, assignedPrayerGroups: chapletGroups(father: "Our Father", hail: "Hail Mary (EN)", creed: "Apostles' Creed (EN)", offering: "Eternal Father (EN)", response: "Sorrowful Passion (EN)", conclusion: "Holy God (EN)"), schedule: .suggested(forPrayerName: "Divine Mercy Chaplet"), lastModified: Date(), notificationTitle: "Divine Mercy Chaplet", notificationMessage: ""),
         Priest(id: UUID(), firstName: "Rosarium", lastName: "", title: "la", category: .prayer,
                assignedPrayerGroups: simpleRosaryGroups(creed: "Symbolum Apostolicum (LA)", father: "Pater Noster (LA)", hail: "Ave Maria (LA)", glory: "Gloria Patri (LA)", fatima: "O Iesu (LA)"), schedule: .suggested(forPrayerName: "Rosarium"), lastModified: Date(), notificationTitle: "Rosarium", notificationMessage: ""),

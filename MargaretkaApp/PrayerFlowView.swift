@@ -571,7 +571,7 @@ struct PrayerFlowView: View {
         if ["Różaniec", "Rosary", "Rosarium"].contains(selectedPriest.firstName) {
             names = ["Różaniec", "Rosary", "Rosarium"]
         } else {
-            names = ["Koronka do Miłosierdzia Bożego", "Divine Mercy Chaplet"]
+            names = ["Koronka do Miłosierdzia Bożego", "Divine Mercy Chaplet", "Coronilla Divinae Misericordiae"]
         }
         guard names.contains(selectedPriest.firstName) else { return [] }
         return priestStore.priests.filter { $0.category == .prayer && names.contains($0.firstName) }
