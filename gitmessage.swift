@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] make notification scheduling test compile
+codex conversation [20260809-ipad] test complete default prayer restoration
 
-Use a test-local schedulable fixture instead of the app-private fixture so the
-notification scheduling regression test can compile and run.
+Verify that restoring defaults repairs every built-in complex prayer target,
+not only the Polish Rosary.

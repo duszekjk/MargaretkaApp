@@ -142,6 +142,30 @@ struct MargaretkaAppTests {
         #expect(notifications.isEmpty)
     }
 
+    @Test func restoringDefaultsRepairsEveryBuiltInPrayerTarget() {
+        let prayerTemplates = Array(prayersTemplate.values)
+        let defaultPrayerTargets = peopleTemplates.filter { $0.category == .prayer }
+        let staleTargets = defaultPrayerTargets.map { template -> Priest in
+            var target = template
+            target.assignedPrayerGroups = []
+            return target
+        }
+
+        let restored = PriestStore.restoringDefaultPrayerTargets(
+            in: staleTargets,
+            using: prayerTemplates,
+            modificationDate: Date(timeIntervalSince1970: 1_700_000_000)
+        )
+
+        #expect(restored.count == defaultPrayerTargets.count)
+        for template in defaultPrayerTargets {
+            let restoredTarget = restored.priests.first {
+                Priest.templateKey(for: $0) == Priest.templateKey(for: template)
+            }
+            #expect(restoredTarget?.assignedPrayerGroups == template.assignedPrayerGroups)
+        }
+    }
+
     @Test func notificationRouteWaitsUntilConsumed() {
         let store = UserDefaults(suiteName: "PrayerNotificationRouterTests")!
         store.removePersistentDomain(forName: "PrayerNotificationRouterTests")
