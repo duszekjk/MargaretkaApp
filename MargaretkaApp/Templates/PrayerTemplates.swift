@@ -11,6 +11,10 @@ import SwiftUI
 private let templatePrayerIds: [String: UUID] = [
     "Ojcze Nasz": UUID(uuidString: "bf79f12e-0ccd-4ff6-93cc-d80a051d139a")!,
     "Our Father": UUID(uuidString: "f9c43a2d-762e-4a3a-b100-a93e8f292dd7")!,
+    "Hail Mary (EN)": UUID(uuidString: "b5b7d9cc-8f02-4c4e-a2d0-1e2a3b4c5d6e")!,
+    "Glory Be (EN)": UUID(uuidString: "c6c8eadd-9f13-4d5f-b3e1-2f3a4b5c6d7e")!,
+    "O My Jesus (EN)": UUID(uuidString: "d7d9fbee-af24-4e6f-c4f2-3a4b5c6d7e8f")!,
+    "Apostles' Creed (EN)": UUID(uuidString: "e8ea0cff-b035-4f70-d503-4b5c6d7e8f90")!,
     "Zdrowaś Mario": UUID(uuidString: "965670c5-cd79-4cde-8cb6-8bfda47ae6cf")!,
     "Chwała Ojcu": UUID(uuidString: "7b134385-e206-4101-9cc8-7be53cdc72ae")!,
     "O mój Jezu": UUID(uuidString: "7631b14f-60ee-408f-a62c-ab8b33e13405")!,
@@ -44,6 +48,10 @@ private let templatePrayerIds: [String: UUID] = [
 ]
 
 var prayersTemplate : [String:Prayer] = [
+    "Hail Mary (EN)": Prayer(id: templatePrayerIds["Hail Mary (EN)"]!, name: "Hail Mary", text: "Hail, Mary, full of grace, the Lord is with thee. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.", symbol: "star", audioFilename: nil, audioSource: nil, timestampedLines: nil),
+    "Glory Be (EN)": Prayer(id: templatePrayerIds["Glory Be (EN)"]!, name: "Glory Be", text: "Glory be to the Father, and to the Son, and to the Holy Spirit. As it was in the beginning, is now, and ever shall be, world without end. Amen.", symbol: "flame", audioFilename: nil, audioSource: nil, timestampedLines: nil),
+    "O My Jesus (EN)": Prayer(id: templatePrayerIds["O My Jesus (EN)"]!, name: "O my Jesus", text: "O my Jesus, forgive us our sins, save us from the fires of hell; lead all souls to Heaven, especially those in most need of thy mercy.", symbol: "cloud", audioFilename: nil, audioSource: nil, timestampedLines: nil),
+    "Apostles' Creed (EN)": Prayer(id: templatePrayerIds["Apostles' Creed (EN)"]!, name: "Apostles' Creed", text: "I believe in God, the Father almighty, Creator of heaven and earth, and in Jesus Christ, his only Son, our Lord, who was conceived by the Holy Spirit, born of the Virgin Mary, suffered under Pontius Pilate, was crucified, died and was buried; he descended into hell; on the third day he rose again from the dead; he ascended into heaven, and is seated at the right hand of God the Father almighty; from there he will come to judge the living and the dead. I believe in the Holy Spirit, the holy Catholic Church, the communion of saints, the forgiveness of sins, the resurrection of the body, and life everlasting. Amen.", symbol: "book", audioFilename: nil, audioSource: nil, timestampedLines: nil),
     "Our Father":
     Prayer(id: templatePrayerIds["Our Father"]!, name: "Our Father", text: """
            Our Father, who art in heaven,

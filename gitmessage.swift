@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] add devotion language model
+codex conversation [20260809-ipad] add English Rosary prayers
 
-Add the shared Polish, English, and Latin language identity used by the simple
-Rosary and Divine Mercy Chaplet variants.
+Add the missing English Hail Mary, Glory Be, Fatima prayer, and Apostles'
+Creed as reusable default prayers.
