@@ -8,8 +8,26 @@
 import Foundation
 import SwiftUI
 
+private func simpleRosaryGroups(creed: String, father: String, hail: String, glory: String, fatima: String) -> [AssignedPrayerGroup] {
+    var groups = [
+        AssignedPrayerGroup(prayerIds: [prayersTemplate[creed]!.id, prayersTemplate[father]!.id], repeatCount: 1),
+        AssignedPrayerGroup(prayerIds: [prayersTemplate[hail]!.id], repeatCount: 3),
+        AssignedPrayerGroup(prayerIds: [prayersTemplate[glory]!.id], repeatCount: 1)
+    ]
+    for _ in 0..<5 {
+        groups += [
+            AssignedPrayerGroup(prayerIds: [prayersTemplate[father]!.id], repeatCount: 1),
+            AssignedPrayerGroup(prayerIds: [prayersTemplate[hail]!.id], repeatCount: 10),
+            AssignedPrayerGroup(prayerIds: [prayersTemplate[glory]!.id, prayersTemplate[fatima]!.id], repeatCount: 1)
+        ]
+    }
+    return groups
+}
+
 var peopleTemplates : [Priest] = {
     return [
+        Priest(id: UUID(), firstName: "Rosarium", lastName: "", title: "la", category: .prayer,
+               assignedPrayerGroups: simpleRosaryGroups(creed: "Symbolum Apostolicum (LA)", father: "Pater Noster (LA)", hail: "Ave Maria (LA)", glory: "Gloria Patri (LA)", fatima: "O Iesu (LA)"), schedule: .suggested(forPrayerName: "Rosarium"), lastModified: Date(), notificationTitle: "Rosarium", notificationMessage: ""),
         Priest(id: UUID(), firstName: "Rosary", lastName: "", title: "en", category: .prayer,
                assignedPrayerGroups: [
                 AssignedPrayerGroup(prayerIds: [prayersTemplate["Apostles' Creed (EN)"]!.id, prayersTemplate["Our Father"]!.id], repeatCount: 1),

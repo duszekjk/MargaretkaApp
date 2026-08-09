@@ -1,3 +1,4 @@
-codex conversation [20260809-ipad] checkpoint before reusable Rosary sequence
+codex conversation [20260809-ipad] add a selectable Latin simple Rosary
 
-Save the prayer text additions before wiring the Latin sequence into the app.
+Add a reusable corrected five-decade sequence and wire the Latin Rosary into
+the in-flow language selector.
