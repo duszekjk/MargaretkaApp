@@ -1,4 +1,3 @@
-codex conversation [20260809-ipad] add English Divine Mercy Chaplet
+codex conversation [20260809-ipad] checkpoint before Latin Divine Mercy Chaplet
 
-Add the full five-decade English Chaplet and extend the in-flow selector to
-switch Chaplet language variants.
+Save the existing prayer variants before adding the final Latin Chaplet.
