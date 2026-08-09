@@ -20,7 +20,6 @@ var peopleTemplates : [Priest] = {
                     prayersTemplate["Zdrowaś Mario"]!.id,
                     prayersTemplate["Zdrowaś Mario"]!.id,
                     prayersTemplate["Chwała Ojcu"]!.id,
-                    prayersTemplate["O mój Jezu"]!.id
                 ], repeatCount: 1),
                 
                 AssignedPrayerGroup(id: UUID(), prayerIds: [
