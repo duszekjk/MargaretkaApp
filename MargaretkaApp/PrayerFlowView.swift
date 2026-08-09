@@ -48,10 +48,8 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
             Menu {
                 ForEach(items) { item in
                     Button { select(item) } label: {
-                        HStack {
-                            Text(title(item)).fontWeight(item.id == selectedID ? .bold : .regular)
-                            Text(language(item)).font(.caption2.monospaced()).foregroundStyle(.secondary)
-                        }
+                        Text("\(title(item)) · \(language(item))")
+                            .fontWeight(item.id == selectedID ? .bold : .regular)
                     }
                 }
             } label: {
