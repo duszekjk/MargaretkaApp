@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] show devotion variants on iPhone
+codex conversation [20260809-ipad] unify prayer-set and officium selectors
 
-Render the Rosary and Chaplet language picker in the iPhone toolbar as well as
-the iPad toolbar.
+Use the same language-forward selector presentation for Rosary, Chaplet, and
+officium, including a bold selected name and small visible language code.

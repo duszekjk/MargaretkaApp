@@ -586,13 +586,24 @@ struct PrayerFlowView: View {
                         selectedPriest = variant
                         activeIndex = 0
                     } label: {
-                        Label(variant.title.isEmpty ? "pl" : variant.title, systemImage: variant.id == selectedPriest?.id ? "checkmark" : "")
+                        HStack {
+                            Text(variant.displayName)
+                                .fontWeight(variant.id == selectedPriest?.id ? .bold : .regular)
+                            Text(variant.title.isEmpty ? "pl" : variant.title)
+                                .font(.caption2.monospaced())
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             } label: {
-                Text(selectedPriest?.title.isEmpty == false ? selectedPriest!.title : "pl")
-                    .font(.caption.monospaced())
-                    .padding(12)
+                HStack(spacing: 5) {
+                    Text(selectedPriest?.displayName ?? "")
+                        .fontWeight(.bold)
+                    Text(selectedPriest?.title.isEmpty == false ? selectedPriest!.title : "pl")
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(.secondary)
+                }
+                .padding(12)
             }
             .glassEffect()
         }
@@ -621,9 +632,9 @@ struct PrayerFlowView: View {
 //                        Image(systemName: "books.vertical")
                         Text(selectedOfflineBreviaryDay?.variantName ?? "Oficjum").lineLimit(1)
                             .minimumScaleFactor(0.75)
-//                        Text(selectedOfflineBreviaryDay?.languageCode ?? "pl")
-//                            .font(.caption2.monospaced())
-//                            .foregroundStyle(.secondary)
+                        Text(selectedOfflineBreviaryDay?.languageCode ?? "pl")
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.secondary)
                     }
                     .padding(12)
                 }
