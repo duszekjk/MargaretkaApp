@@ -59,8 +59,10 @@ func rosaryMysteryPrayerTemplates() -> [String: Prayer] {
         PrayerLanguage.allCases.flatMap { language in
             set.mysteries(language: language).enumerated().map { index, title in
                 let key = rosaryMysteryPrayerKey(set: set, language: language, index: index)
-                let suffix = String(format: "%012llx", stableMysteryHash(key))
-                let id = UUID(uuidString: "00000000-0000-4000-8000-\(suffix)")!
+                let hash = String(format: "%016llx", stableMysteryHash(key))
+                let suffix = String(hash.suffix(12))
+                let id = UUID(uuidString: "00000000-0000-4000-8000-\(suffix)")
+                    ?? UUID(uuidString: "00000000-0000-4000-8000-000000000000")!
                 return (key, Prayer(id: id, name: title, text: title, symbol: "sparkles", audioFilename: nil, audioSource: nil, timestampedLines: nil))
             }
         }

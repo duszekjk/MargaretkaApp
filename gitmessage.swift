@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] record Xcode project synchronization
+codex conversation [20260809-ipad] fix Rosary mystery identifier crash
 
-Record the user-generated build-number increment and localization catalog
-synchronization before correcting the Rosary identifier crash.
+Use exactly twelve hexadecimal characters in the final UUID segment for each
+Rosary mystery, preventing the nil UUID unwrap during template initialization.
