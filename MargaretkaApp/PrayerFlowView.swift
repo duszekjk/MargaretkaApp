@@ -1174,6 +1174,7 @@ struct PrayerFlowView: View {
                             
                         }
                         breviaryVariantPicker
+                        devotionVariantPicker
                         Spacer()
                         
                         if(flattenedPrayerSymbols.count>0)

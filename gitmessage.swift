@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] reload prayer flow after restoring defaults
+codex conversation [20260809-ipad] show devotion variants on iPhone
 
-Reload the schedule data used by PrayerFlow immediately after default prayers
-and default complex targets are restored.
+Render the Rosary and Chaplet language picker in the iPhone toolbar as well as
+the iPad toolbar.
