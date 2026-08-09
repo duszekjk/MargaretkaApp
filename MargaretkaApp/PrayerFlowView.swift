@@ -596,14 +596,9 @@ struct PrayerFlowView: View {
                     }
                 }
             } label: {
-                HStack(spacing: 5) {
-                    Text(selectedPriest?.displayName ?? "")
-                        .fontWeight(.bold)
-                    Text(selectedPriest?.title.isEmpty == false ? selectedPriest!.title : "pl")
-                        .font(.caption2.monospaced())
-                        .foregroundStyle(.secondary)
-                }
-                .padding(12)
+                Text(selectedPriest?.displayName ?? "")
+                    .fontWeight(.bold)
+                    .padding(12)
             }
             .glassEffect()
         }
@@ -620,7 +615,8 @@ struct PrayerFlowView: View {
                             activeIndex = 0
                         } label: {
                             HStack {
-                                Label(day.variantName, systemImage: day.id == selectedOfflineBreviaryDay?.id ? "checkmark" : "book.closed")
+                                Text(day.variantName)
+                                    .fontWeight(day.id == selectedOfflineBreviaryDay?.id ? .bold : .regular)
                                 Text(day.languageCode ?? "pl")
                                     .font(.caption2.monospaced())
                                     .foregroundStyle(.secondary)
@@ -628,14 +624,10 @@ struct PrayerFlowView: View {
                         }
                     }
                 } label: {
-                    HStack(spacing: 5) {
-//                        Image(systemName: "books.vertical")
-                        Text(selectedOfflineBreviaryDay?.variantName ?? "Oficjum").lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                        Text(selectedOfflineBreviaryDay?.languageCode ?? "pl")
-                            .font(.caption2.monospaced())
-                            .foregroundStyle(.secondary)
-                    }
+                    Text(selectedOfflineBreviaryDay?.variantName ?? "Oficjum")
+                        .fontWeight(.bold)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                     .padding(12)
                 }
                 .glassEffect()
