@@ -101,11 +101,11 @@ class PriestStore: ObservableObject {
         }
     }
 
-    /// Restores the groups of the built-in Rosary target without touching its
-    /// schedule, notifications, identity, or any unrelated target.
+    /// Restores the prayer groups of every built-in prayer target without
+    /// touching schedules, notifications, identity, or user-created targets.
     @discardableResult
-    func restoreDefaultRosary(using prayers: [Prayer]) -> Int {
-        let restored = Self.restoringDefaultRosary(in: priests, using: prayers, modificationDate: Date())
+    func restoreDefaultPrayerTargets(using prayers: [Prayer]) -> Int {
+        let restored = Self.restoringDefaultPrayerTargets(in: priests, using: prayers, modificationDate: Date())
         guard restored.count > 0 else { return 0 }
         for priest in restored.priests where priest.assignedPrayerGroups != priests.first(where: { $0.id == priest.id })?.assignedPrayerGroups {
             pendingChangedIDs.insert(priest.id.uuidString.lowercased())
@@ -114,22 +114,18 @@ class PriestStore: ObservableObject {
         return restored.count
     }
 
-    static func restoringDefaultRosary(
+    static func restoringDefaultPrayerTargets(
         in existing: [Priest],
         using prayers: [Prayer],
         modificationDate: Date
     ) -> (priests: [Priest], count: Int) {
-        guard let template = peopleTemplates.first(where: { template in
-            template.category == .prayer
-                && template.firstName == "Różaniec"
-                && template.lastName.isEmpty
-                && template.title.isEmpty
-        }) else {
-            return (existing, 0)
-        }
-
         let prayerIDByName = Dictionary(uniqueKeysWithValues: prayers.map { ($0.name, $0.id) })
         let templateNameByID = Dictionary(uniqueKeysWithValues: prayersTemplate.values.map { ($0.id, $0.name) })
+        let prayerTemplatesByKey = Dictionary(
+            uniqueKeysWithValues: peopleTemplates
+                .filter { $0.category == .prayer }
+                .map { (Priest.templateKey(for: $0), $0) }
+        )
 
         func remapped(_ group: AssignedPrayerGroup) -> AssignedPrayerGroup {
             let items = group.items.map { item -> AssignedPrayerItem in
@@ -148,13 +144,13 @@ class PriestStore: ObservableObject {
             )
         }
 
-        let defaultGroups = template.assignedPrayerGroups.map(remapped)
         var restoredCount = 0
         let restoredPriests = existing.map { priest in
-            guard priest.category == template.category,
-                  priest.firstName == template.firstName,
-                  priest.lastName == template.lastName,
-                  priest.title == template.title,
+            guard let template = prayerTemplatesByKey[Priest.templateKey(for: priest)] else {
+                return priest
+            }
+            let defaultGroups = template.assignedPrayerGroups.map(remapped)
+            guard
                   priest.assignedPrayerGroups != defaultGroups else {
                 return priest
             }
