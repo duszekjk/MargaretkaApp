@@ -1,4 +1,3 @@
-codex conversation [20260809-ipad] select Rosary language in prayer flow
+codex conversation [20260809-ipad] checkpoint before Latin prayer set
 
-Add an in-flow language picker that switches between saved Rosary prayer-set
-variants and restarts the sequence at its beginning.
+Save the Polish and English Rosary variants before adding the Latin prayers.
