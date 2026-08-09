@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] raise the prayer-flow popup layer
+codex conversation [20260809-ipad] merge popup glass with its selector
 
-Keep the PrayerFlow content layer above its card layers while a selector popup
-is open.
+Give the selector button and anchored popup a shared Liquid Glass union so the
+opening transition can visually merge from the button.

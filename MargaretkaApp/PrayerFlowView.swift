@@ -42,6 +42,7 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
     let title: (Item) -> String
     let language: (Item) -> String
     let select: (Item) -> Void
+    let namespace: Namespace.ID
     @State private var isPresented = false
 
     var body: some View {
@@ -49,6 +50,7 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
             Button { withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) { isPresented.toggle() } } label: {
                 Text(selectedTitle).lineLimit(1).minimumScaleFactor(0.75).padding(12)
             }
+            .glassEffectUnion(id: "variantPicker", namespace: namespace)
             .overlay(alignment: .topLeading) {
                 if isPresented {
                 VStack(alignment: .leading, spacing: 0) {
@@ -75,6 +77,7 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
                 .padding(6)
                 .frame(minWidth: 260, maxWidth: 360)
                 .glassEffect()
+                .glassEffectUnion(id: "variantPicker", namespace: namespace)
                 .offset(y: 54)
                 .transition(.scale(scale: 0.88, anchor: .topLeading).combined(with: .opacity))
                 .zIndex(1)
@@ -633,20 +636,20 @@ struct PrayerFlowView: View {
     @ViewBuilder
     private var devotionVariantPicker: some View {
         if devotionVariants.count > 1 {
-            PrayerFlowVariantPicker(items: devotionVariants, selectedID: selectedPriest?.id, selectedTitle: selectedPriest?.displayName ?? "", title: \.displayName, language: { $0.title.isEmpty ? "pl" : $0.title }) { variant in
+            PrayerFlowVariantPicker(items: devotionVariants, selectedID: selectedPriest?.id, selectedTitle: selectedPriest?.displayName ?? "", title: \.displayName, language: { $0.title.isEmpty ? "pl" : $0.title }, select: { variant in
                         selectedPriest = variant
                         activeIndex = 0
-            }
+            }, namespace: brewiarzNamespace)
         }
     }
 
     @ViewBuilder
     private var breviaryVariantPicker: some View {
         if showsBreviaryVariantPicker {
-            PrayerFlowVariantPicker(items: availableOfflineBreviaryDays, selectedID: selectedOfflineBreviaryDay?.id, selectedTitle: selectedOfflineBreviaryDay?.variantName ?? "Oficjum", title: \.variantName, language: { $0.languageCode ?? "pl" }) { day in
+            PrayerFlowVariantPicker(items: availableOfflineBreviaryDays, selectedID: selectedOfflineBreviaryDay?.id, selectedTitle: selectedOfflineBreviaryDay?.variantName ?? "Oficjum", title: \.variantName, language: { $0.languageCode ?? "pl" }, select: { day in
                         selectedOfflineBreviaryDayID = day.id
                         activeIndex = 0
-            }
+            }, namespace: brewiarzNamespace)
         }
     }
 
