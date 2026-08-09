@@ -1,5 +1,4 @@
-codex conversation [20260809-ipad] record Xcode project synchronization
+codex conversation [20260809-ipad] checkpoint before multilingual prayer sets
 
-Record Xcode-generated localization entries for the default restore action,
-fixture reference normalization, and the existing version 1.0.4 build 61
-project settings.
+Save the current application before adding simple Polish, English, and Latin
+Rosary and Divine Mercy Chaplet prayer sets.
