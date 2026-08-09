@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] use an animated variant popup
+codex conversation [20260809-ipad] animate the variant popup from its button
 
-Replace the system Menu with a button-anchored popup that preserves long names,
-shows a small separate language label, and bolds only the selected list item.
+Use an in-view glass overlay with extra padding and a spring scale transition
+anchored to the selector button.

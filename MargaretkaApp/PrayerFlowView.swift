@@ -46,20 +46,21 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
 
     var body: some View {
         GlassEffectContainer(spacing: 0) {
-            Button { isPresented = true } label: {
+            Button { withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) { isPresented.toggle() } } label: {
                 Text(selectedTitle).lineLimit(1).minimumScaleFactor(0.75).padding(12)
             }
-            .popover(isPresented: $isPresented, arrowEdge: .top) {
+            .overlay(alignment: .topLeading) {
+                if isPresented {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(items) { item in
                         Button {
                             select(item)
-                            isPresented = false
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) { isPresented = false }
                         } label: {
                             HStack(spacing: 10) {
                                 Text(title(item))
                                     .fontWeight(item.id == selectedID ? .bold : .regular)
-                                    .lineLimit(2)
+                                    .lineLimit(3)
                                 Spacer(minLength: 8)
                                 Text(language(item))
                                     .font(.caption2.monospaced())
@@ -71,8 +72,13 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
                         .buttonStyle(.plain)
                     }
                 }
+                .padding(6)
                 .frame(minWidth: 260, maxWidth: 360)
-                .presentationCompactAdaptation(.popover)
+                .glassEffect()
+                .offset(y: 54)
+                .transition(.scale(scale: 0.88, anchor: .topLeading).combined(with: .opacity))
+                .zIndex(1)
+                }
             }
             .glassEffect()
             .foregroundStyle(.primary)
