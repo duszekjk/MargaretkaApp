@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] raise the root popup layer when open
+codex conversation [20260809-ipad] record localization catalog synchronization
 
-Bind popup presentation to PrayerFlow so its root content layer rises above
-prayer cards while the popup is visible.
+Record the localization catalog cleanup produced by Xcode before the next
+implementation change.
