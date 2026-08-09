@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] add the English simple Rosary
+codex conversation [20260809-ipad] select Rosary language in prayer flow
 
-Add the complete five-decade English Rosary template with the corrected
-opening and Fatima prayer only after each decade.
+Add an in-flow language picker that switches between saved Rosary prayer-set
+variants and restarts the sequence at its beginning.

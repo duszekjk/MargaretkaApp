@@ -564,6 +564,35 @@ struct PrayerFlowView: View {
             && prayerSteps.contains(where: { $0.offlineOffice != nil })
     }
 
+    private var devotionVariants: [Priest] {
+        guard let selectedPriest,
+              selectedPriest.category == .prayer else { return [] }
+        let names = Set(["Różaniec", "Rosary"])
+        guard names.contains(selectedPriest.firstName) else { return [] }
+        return priestStore.priests.filter { $0.category == .prayer && names.contains($0.firstName) }
+    }
+
+    @ViewBuilder
+    private var devotionVariantPicker: some View {
+        if devotionVariants.count > 1 {
+            Menu {
+                ForEach(devotionVariants) { variant in
+                    Button {
+                        selectedPriest = variant
+                        activeIndex = 0
+                    } label: {
+                        Label(variant.title.isEmpty ? "pl" : variant.title, systemImage: variant.id == selectedPriest?.id ? "checkmark" : "")
+                    }
+                }
+            } label: {
+                Text(selectedPriest?.title.isEmpty == false ? selectedPriest!.title : "pl")
+                    .font(.caption.monospaced())
+                    .padding(12)
+            }
+            .glassEffect()
+        }
+    }
+
     @ViewBuilder
     private var breviaryVariantPicker: some View {
         if showsBreviaryVariantPicker {
@@ -916,6 +945,7 @@ struct PrayerFlowView: View {
                             .foregroundStyle(.primary)
                         }
                         breviaryVariantPicker
+                        devotionVariantPicker
                         Spacer()
                         if(selectedPriest != nil)
                         {
