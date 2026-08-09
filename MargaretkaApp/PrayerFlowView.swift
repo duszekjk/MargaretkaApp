@@ -42,18 +42,37 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
     let title: (Item) -> String
     let language: (Item) -> String
     let select: (Item) -> Void
+    @State private var isPresented = false
 
     var body: some View {
         GlassEffectContainer(spacing: 0) {
-            Menu {
-                ForEach(items) { item in
-                    Button { select(item) } label: {
-                        Text("\(title(item)) · \(language(item))")
-                            .fontWeight(item.id == selectedID ? .bold : .regular)
+            Button { isPresented = true } label: {
+                Text(selectedTitle).lineLimit(1).minimumScaleFactor(0.75).padding(12)
+            }
+            .popover(isPresented: $isPresented, arrowEdge: .top) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(items) { item in
+                        Button {
+                            select(item)
+                            isPresented = false
+                        } label: {
+                            HStack(spacing: 10) {
+                                Text(title(item))
+                                    .fontWeight(item.id == selectedID ? .bold : .regular)
+                                    .lineLimit(2)
+                                Spacer(minLength: 8)
+                                Text(language(item))
+                                    .font(.caption2.monospaced())
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
-            } label: {
-                Text(selectedTitle).lineLimit(1).minimumScaleFactor(0.75).padding(12)
+                .frame(minWidth: 260, maxWidth: 360)
+                .presentationCompactAdaptation(.popover)
             }
             .glassEffect()
             .foregroundStyle(.primary)

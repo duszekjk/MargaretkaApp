@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] make variant language codes visible in menus
+codex conversation [20260809-ipad] use an animated variant popup
 
-Render each menu row as one title-and-language string so Menu cannot discard
-the language label, while preserving bold selected rows.
+Replace the system Menu with a button-anchored popup that preserves long names,
+shows a small separate language label, and bolds only the selected list item.
