@@ -1358,6 +1358,7 @@ struct PrayerFlowView: View {
                 }
             }
             .padding(.vertical, isIPad ? 0 : 35)
+            .zIndex(200)
 
             if isPreparingImagePlayground {
                 ImagePlaygroundPreparationOverlay()

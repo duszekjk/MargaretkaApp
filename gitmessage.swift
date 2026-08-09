@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] keep the variant popup above prayer views
+codex conversation [20260809-ipad] raise the prayer-flow popup layer
 
-Raise the entire selector while its popup is open and animate presentation from
-the selector button toward the bottom.
+Keep the PrayerFlow content layer above its card layers while a selector popup
+is open.
