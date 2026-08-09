@@ -10,6 +10,7 @@ internal import UniformTypeIdentifiers
 
 struct PrayerListSettingsView: View {
     @ObservedObject var priestStore: PriestStore
+    @EnvironmentObject private var scheduleData: ScheduleData<Priest>
     @StateObject private var store = PrayerStore()
     @State private var showRestoreConfirmation = false
     @State private var restoredPrayerCount = 0
@@ -47,6 +48,7 @@ struct PrayerListSettingsView: View {
                 restoredPrayerCount = store.restoreDefaultPrayerContents()
                 priestStore.priests = Priest.loadWithTemplates(using: store.prayers)
                 restoredRosaryCount = priestStore.restoreDefaultRosary(using: store.prayers)
+                scheduleData.load()
                 showRestoreResult = true
             }
         } message: {
