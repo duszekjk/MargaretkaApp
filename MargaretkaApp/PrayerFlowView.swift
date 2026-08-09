@@ -43,7 +43,7 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
     let language: (Item) -> String
     let select: (Item) -> Void
     let namespace: Namespace.ID
-    @State private var isPresented = false
+    @Binding var isPresented: Bool
 
     var body: some View {
         GlassEffectContainer(spacing: 0) {
@@ -305,6 +305,7 @@ struct PrayerFlowView: View {
     @State private var sessionForcedEndDate: Date?
     @State private var fontNow: CGFloat = 19.0
     @State private var selectedOfflineBreviaryDayID: UUID?
+    @State private var isVariantPopupOpen = false
     
     @Binding var showSettings: Bool
     @Binding var showEditor: Bool
@@ -639,7 +640,7 @@ struct PrayerFlowView: View {
             PrayerFlowVariantPicker(items: devotionVariants, selectedID: selectedPriest?.id, selectedTitle: selectedPriest?.displayName ?? "", title: \.displayName, language: { $0.title.isEmpty ? "pl" : $0.title }, select: { variant in
                         selectedPriest = variant
                         activeIndex = 0
-            }, namespace: brewiarzNamespace)
+            }, namespace: brewiarzNamespace, isPresented: $isVariantPopupOpen)
         }
     }
 
@@ -649,7 +650,7 @@ struct PrayerFlowView: View {
             PrayerFlowVariantPicker(items: availableOfflineBreviaryDays, selectedID: selectedOfflineBreviaryDay?.id, selectedTitle: selectedOfflineBreviaryDay?.variantName ?? "Oficjum", title: \.variantName, language: { $0.languageCode ?? "pl" }, select: { day in
                         selectedOfflineBreviaryDayID = day.id
                         activeIndex = 0
-            }, namespace: brewiarzNamespace)
+            }, namespace: brewiarzNamespace, isPresented: $isVariantPopupOpen)
         }
     }
 
@@ -1361,7 +1362,7 @@ struct PrayerFlowView: View {
                 }
             }
             .padding(.vertical, isIPad ? 0 : 35)
-            .zIndex(200)
+            .zIndex(isVariantPopupOpen ? 1_000 : 200)
 
             if isPreparingImagePlayground {
                 ImagePlaygroundPreparationOverlay()
