@@ -1,3 +1,3 @@
-codex conversation [20260809-ipad] checkpoint before Latin Rosary completion
+codex conversation [20260809-ipad] add Latin Rosary opening prayers
 
-Save the Latin core prayers before completing the usable Latin Rosary set.
+Add the Latin Apostles' Creed and Fatima prayer required by the Rosary set.
