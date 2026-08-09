@@ -1,5 +1,5 @@
-codex conversation [20260809-ipad] restore every built-in prayer target
+codex conversation [20260809-ipad] host variant picker above prayer flow
 
-Make the default-reset action restore all built-in complex prayer targets,
-including the Polish, English, and Latin Rosary and Divine Mercy Chaplet,
-while preserving schedules and user-created targets.
+Render the shared officium and devotion variant list in the root prayer-flow
+layer, anchored to its trigger. This prevents the list from being covered by
+cards and preserves the shared Liquid Glass union between trigger and panel.
