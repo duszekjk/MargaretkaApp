@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] add English Rosary prayers
+codex conversation [20260809-ipad] add the English simple Rosary
 
-Add the missing English Hail Mary, Glory Be, Fatima prayer, and Apostles'
-Creed as reusable default prayers.
+Add the complete five-decade English Rosary template with the corrected
+opening and Fatima prayer only after each decade.

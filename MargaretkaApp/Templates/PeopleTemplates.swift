@@ -10,6 +10,27 @@ import SwiftUI
 
 var peopleTemplates : [Priest] = {
     return [
+        Priest(id: UUID(), firstName: "Rosary", lastName: "", title: "en", category: .prayer,
+               assignedPrayerGroups: [
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Apostles' Creed (EN)"]!.id, prayersTemplate["Our Father"]!.id], repeatCount: 1),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Hail Mary (EN)"]!.id], repeatCount: 3),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Glory Be (EN)"]!.id], repeatCount: 1),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Our Father"]!.id], repeatCount: 1),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Hail Mary (EN)"]!.id], repeatCount: 10),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Glory Be (EN)"]!.id, prayersTemplate["O My Jesus (EN)"]!.id], repeatCount: 1),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Our Father"]!.id], repeatCount: 1),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Hail Mary (EN)"]!.id], repeatCount: 10),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Glory Be (EN)"]!.id, prayersTemplate["O My Jesus (EN)"]!.id], repeatCount: 1),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Our Father"]!.id], repeatCount: 1),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Hail Mary (EN)"]!.id], repeatCount: 10),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Glory Be (EN)"]!.id, prayersTemplate["O My Jesus (EN)"]!.id], repeatCount: 1),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Our Father"]!.id], repeatCount: 1),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Hail Mary (EN)"]!.id], repeatCount: 10),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Glory Be (EN)"]!.id, prayersTemplate["O My Jesus (EN)"]!.id], repeatCount: 1),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Our Father"]!.id], repeatCount: 1),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Hail Mary (EN)"]!.id], repeatCount: 10),
+                AssignedPrayerGroup(prayerIds: [prayersTemplate["Glory Be (EN)"]!.id, prayersTemplate["O My Jesus (EN)"]!.id], repeatCount: 1)
+               ], schedule: .suggested(forPrayerName: "Rosary"), lastModified: Date(), notificationTitle: "Rosary", notificationMessage: ""),
         
         Priest(id: UUID(), firstName: "Różaniec", lastName: "", title: "", category: .prayer,
                assignedPrayerGroups: [
