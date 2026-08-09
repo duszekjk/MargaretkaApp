@@ -10,6 +10,18 @@ import Testing
 import UIKit
 @testable import MargaretkaApp
 
+private struct TestSchedulable: Schedulable {
+    var id = UUID()
+    var schedule = SchedulePlan()
+    var lastModified = Date()
+    var notificationIds: [String] = []
+    var notificationIdsFinished: [String] = []
+    var notificationTitle = "Test"
+    var notificationMessage = ""
+    var notificationSound: String?
+    let notificationTypeId = "Test"
+}
+
 @MainActor
 struct MargaretkaAppTests {
 
@@ -113,7 +125,7 @@ struct MargaretkaAppTests {
     @Test func weeklyScheduleWithNoSelectedDaysCreatesNoNotifications() {
         let calendar = Calendar(identifier: .gregorian)
         let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 9, hour: 10))!
-        var item = DummySchedulable()
+        var item = TestSchedulable()
         item.schedule.frequencyUnit = .weekly
         item.schedule.daysOfWeek = []
         item.schedule.startDate = now

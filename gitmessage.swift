@@ -1,5 +1,4 @@
-codex conversation [20260809-ipad] host variant picker above prayer flow
+codex conversation [20260809-ipad] make notification scheduling test compile
 
-Render the shared officium and devotion variant list in the root prayer-flow
-layer, anchored to its trigger. This prevents the list from being covered by
-cards and preserves the shared Liquid Glass union between trigger and panel.
+Use a test-local schedulable fixture instead of the app-private fixture so the
+notification scheduling regression test can compile and run.
