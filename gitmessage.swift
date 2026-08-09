@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] restore all default prayers and targets
+codex conversation [20260809-ipad] record existing Xcode build-number update
 
-Make the restore action merge missing built-in simple prayers and all default
-complex prayer targets before refreshing their content and groups.
+Record the existing project build-number update without changing or discarding
+it.
