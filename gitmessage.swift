@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] test complete default prayer restoration
+codex conversation [20260809-ipad] reset prayer position on target switch
 
-Verify that restoring defaults repairs every built-in complex prayer target,
-not only the Polish Rosary.
+Always return to the first page when the user opens or switches to another
+prayer target, so a prior prayer's scroll position cannot carry over.

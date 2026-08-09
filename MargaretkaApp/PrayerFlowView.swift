@@ -1618,6 +1618,10 @@ struct PrayerFlowView: View {
                     completion: .abandoned,
                     completedSubprayerCount: completedSubprayerCount(for: activeIndex)
                 )
+                // A target is a fresh prayer flow. Never carry the page of the
+                // previously selected prayer into it.
+                moveToIndex(0, animated: false)
+                finished = false
             }
         }
         .onChange(of: scenePhase) { _, newPhase in
