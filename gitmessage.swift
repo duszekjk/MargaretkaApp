@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] add Latin Divine Mercy Chaplet
+codex conversation [20260809-ipad] load new devotion variants into the UI
 
-Add the Latin Chaplet texts, a full five-decade template, and its in-flow
-language selection alongside Polish and English.
+Refresh the in-memory prayer target store after merging templates so newly
+added Rosary and Chaplet language variants appear immediately.

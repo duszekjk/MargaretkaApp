@@ -1405,7 +1405,7 @@ struct PrayerFlowView: View {
             keyboardFocus = true
 
             let templatesStart = CFAbsoluteTimeGetCurrent()
-            Priest.ensureTemplates(using: prayerStore.prayers)
+            priestStore.priests = Priest.loadWithTemplates(using: prayerStore.prayers)
             ensureOfflineBreviaryPrayerTargets()
             let templatesDuration = CFAbsoluteTimeGetCurrent() - templatesStart
             print("PrayerFlowView ensureTemplates in \(String(format: "%.3f", templatesDuration))s")
