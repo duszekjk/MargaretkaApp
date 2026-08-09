@@ -1,5 +1,4 @@
-codex conversation [20260809-ipad] restore the saved default rosary
+fix weekly schedules with no selected days
 
-Extend the default restore action to replace only the prayer groups of saved
-Rosary targets with the current template while preserving their schedules and
-all other user data.
+Treat an empty weekday selection as disabled, so weekly prayer schedules do
+not create notification requests when the user has unselected every day.

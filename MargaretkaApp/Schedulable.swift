@@ -1066,12 +1066,11 @@ func computeUpcomingNotifications(
             }
 
         case .weekly:
-            let selectedWeekdays: [Weekday] = {
-                if item.schedule.daysOfWeek.isEmpty {
-                    return [Weekday.today]
-                }
-                return Weekday.allCases.filter { item.schedule.daysOfWeek.contains($0) }
-            }()
+            // An empty selection explicitly disables weekly notifications.
+            // It must not fall back to today, because users use this state to
+            // keep a prayer without a reminder.
+            let selectedWeekdays = Weekday.allCases.filter { item.schedule.daysOfWeek.contains($0) }
+            guard !selectedWeekdays.isEmpty else { continue }
 
             let end = computedEnd(start: item.schedule.startDate, explicitEnd: item.schedule.endDate)
             let hour = time.event.hour ?? 11

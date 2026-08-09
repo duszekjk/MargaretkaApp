@@ -110,6 +110,26 @@ struct MargaretkaAppTests {
         #expect(plan.timeSelectionSource == .user)
     }
 
+    @Test func weeklyScheduleWithNoSelectedDaysCreatesNoNotifications() {
+        let calendar = Calendar(identifier: .gregorian)
+        let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 9, hour: 10))!
+        var item = DummySchedulable()
+        item.schedule.frequencyUnit = .weekly
+        item.schedule.daysOfWeek = []
+        item.schedule.startDate = now
+        item.schedule.endDate = calendar.date(byAdding: .month, value: 1, to: now)
+        item.schedule.times = [NotificationTimes(event: DateComponents(hour: 11, minute: 0))]
+
+        let notifications = computeUpcomingNotifications(
+            for: item,
+            title: item.notificationTitle,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(notifications.isEmpty)
+    }
+
     @Test func notificationRouteWaitsUntilConsumed() {
         let store = UserDefaults(suiteName: "PrayerNotificationRouterTests")!
         store.removePersistentDomain(forName: "PrayerNotificationRouterTests")
