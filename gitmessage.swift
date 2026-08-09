@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] add a selectable Latin simple Rosary
+codex conversation [20260809-ipad] checkpoint before multilingual Chaplet
 
-Add a reusable corrected five-decade sequence and wire the Latin Rosary into
-the in-flow language selector.
+Save the completed simple Rosary variants before adding the Divine Mercy
+Chaplet variants.
