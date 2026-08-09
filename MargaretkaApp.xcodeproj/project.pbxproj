@@ -12,6 +12,12 @@
 		F10000000000000000000012 /* MargaretkaAppTests/Fixtures/EnglishUniversalis.epub in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000015 /* MargaretkaAppTests/Fixtures/EnglishUniversalis.epub */; };
 		F10000000000000000000013 /* MargaretkaAppTests/Fixtures/LatinUniversalis.epub in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000016 /* MargaretkaAppTests/Fixtures/LatinUniversalis.epub */; };
 		F10000000000000000000017 /* MargaretkaAppTests/Fixtures/JulyUniversalis.epub in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000018 /* MargaretkaAppTests/Fixtures/JulyUniversalis.epub */; };
+		F1000000000000000000001A /* AugustWeek01Polish.epub in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000019 /* AugustWeek01Polish.epub */; };
+		F1000000000000000000001C /* AugustWeek02Polish.epub in Resources */ = {isa = PBXBuildFile; fileRef = F1000000000000000000001B /* AugustWeek02Polish.epub */; };
+		F1000000000000000000001E /* AugustWeek03Polish.epub in Resources */ = {isa = PBXBuildFile; fileRef = F1000000000000000000001D /* AugustWeek03Polish.epub */; };
+		F10000000000000000000020 /* AugustWeek04Polish.epub in Resources */ = {isa = PBXBuildFile; fileRef = F1000000000000000000001F /* AugustWeek04Polish.epub */; };
+		F10000000000000000000022 /* AugustWeek05Polish.epub in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000021 /* AugustWeek05Polish.epub */; };
+		F10000000000000000000024 /* AugustWeek06Polish.epub in Resources */ = {isa = PBXBuildFile; fileRef = F10000000000000000000023 /* AugustWeek06Polish.epub */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,6 +67,12 @@
 		F10000000000000000000015 /* MargaretkaAppTests/Fixtures/EnglishUniversalis.epub */ = {isa = PBXFileReference; explicitFileType = file; path = MargaretkaAppTests/Fixtures/EnglishUniversalis.epub; sourceTree = SOURCE_ROOT; };
 		F10000000000000000000016 /* MargaretkaAppTests/Fixtures/LatinUniversalis.epub */ = {isa = PBXFileReference; explicitFileType = file; path = MargaretkaAppTests/Fixtures/LatinUniversalis.epub; sourceTree = SOURCE_ROOT; };
 		F10000000000000000000018 /* MargaretkaAppTests/Fixtures/JulyUniversalis.epub */ = {isa = PBXFileReference; explicitFileType = file; path = MargaretkaAppTests/Fixtures/JulyUniversalis.epub; sourceTree = SOURCE_ROOT; };
+		F10000000000000000000019 /* AugustWeek01Polish.epub */ = {isa = PBXFileReference; explicitFileType = file; path = MargaretkaAppTests/Fixtures/AugustWeek01Polish.epub; sourceTree = SOURCE_ROOT; };
+		F1000000000000000000001B /* AugustWeek02Polish.epub */ = {isa = PBXFileReference; explicitFileType = file; path = MargaretkaAppTests/Fixtures/AugustWeek02Polish.epub; sourceTree = SOURCE_ROOT; };
+		F1000000000000000000001D /* AugustWeek03Polish.epub */ = {isa = PBXFileReference; explicitFileType = file; path = MargaretkaAppTests/Fixtures/AugustWeek03Polish.epub; sourceTree = SOURCE_ROOT; };
+		F1000000000000000000001F /* AugustWeek04Polish.epub */ = {isa = PBXFileReference; explicitFileType = file; path = MargaretkaAppTests/Fixtures/AugustWeek04Polish.epub; sourceTree = SOURCE_ROOT; };
+		F10000000000000000000021 /* AugustWeek05Polish.epub */ = {isa = PBXFileReference; explicitFileType = file; path = MargaretkaAppTests/Fixtures/AugustWeek05Polish.epub; sourceTree = SOURCE_ROOT; };
+		F10000000000000000000023 /* AugustWeek06Polish.epub */ = {isa = PBXFileReference; explicitFileType = file; path = MargaretkaAppTests/Fixtures/AugustWeek06Polish.epub; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -165,6 +177,12 @@
 				F10000000000000000000015 /* MargaretkaAppTests/Fixtures/EnglishUniversalis.epub */,
 				F10000000000000000000016 /* MargaretkaAppTests/Fixtures/LatinUniversalis.epub */,
 				F10000000000000000000018 /* MargaretkaAppTests/Fixtures/JulyUniversalis.epub */,
+				F10000000000000000000019 /* AugustWeek01Polish.epub */,
+				F1000000000000000000001B /* AugustWeek02Polish.epub */,
+				F1000000000000000000001D /* AugustWeek03Polish.epub */,
+				F1000000000000000000001F /* AugustWeek04Polish.epub */,
+				F10000000000000000000021 /* AugustWeek05Polish.epub */,
+				F10000000000000000000023 /* AugustWeek06Polish.epub */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -354,6 +372,12 @@
 				F10000000000000000000012 /* MargaretkaAppTests/Fixtures/EnglishUniversalis.epub in Resources */,
 				F10000000000000000000013 /* MargaretkaAppTests/Fixtures/LatinUniversalis.epub in Resources */,
 				F10000000000000000000017 /* MargaretkaAppTests/Fixtures/JulyUniversalis.epub in Resources */,
+				F1000000000000000000001A /* AugustWeek01Polish.epub in Resources */,
+				F1000000000000000000001C /* AugustWeek02Polish.epub in Resources */,
+				F1000000000000000000001E /* AugustWeek03Polish.epub in Resources */,
+				F10000000000000000000020 /* AugustWeek04Polish.epub in Resources */,
+				F10000000000000000000022 /* AugustWeek05Polish.epub in Resources */,
+				F10000000000000000000024 /* AugustWeek06Polish.epub in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

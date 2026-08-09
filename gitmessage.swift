@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] checkpoint before August reading coverage test
+codex conversation [20260809-ipad] test August Polish reading coverage
 
-Save the importer before adding real August Polish EPUB fixtures and complete
-daily reading-length coverage checks.
+Bundle all six Polish weekly August EPUB fixtures and require every morning
+office day to retain a substantial reading before its responsory.

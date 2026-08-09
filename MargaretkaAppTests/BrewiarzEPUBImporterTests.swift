@@ -4,6 +4,28 @@ import UIKit
 @testable import MargaretkaApp
 
 struct BrewiarzEPUBImporterTests {
+    @Test func preservesSubstantialMorningReadingForEveryAugustDay() async throws {
+        let fixtureNames = (1...6).map { String(format: "AugustWeek%02dPolish", $0) }
+        var days: [OfflineBreviaryDay] = []
+        for name in fixtureNames {
+            let url = try #require(Bundle(for: BrewiarzEPUBImporterTestBundle.self).url(forResource: name, withExtension: "epub"))
+            days += try await BrewiarzEPUBImporter.importEPUB(from: url).days
+        }
+        let augustDays = Dictionary(grouping: days.filter { $0.date.year == 2026 && $0.date.month == 8 }, by: \.date)
+        #expect(augustDays.count == 31)
+        for (date, variants) in augustDays {
+            let lines = try #require(variants.first?.offices.first(where: { $0.key == .jutrznia }))
+                .cards.flatMap(\.lines)
+            guard let start = lines.firstIndex(where: { $0.text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current).hasPrefix("czytanie") }) else {
+                Issue.record("Brak nagłówka Czytanie: \(date)")
+                continue
+            }
+            let end = lines[(start + 1)...].firstIndex(where: { $0.text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current).hasPrefix("responsorium") }) ?? lines.endIndex
+            let characterCount = lines[start..<end].filter { $0.role != .heading && $0.role != .rubric }.map(\.text.count).reduce(0, +)
+            #expect(characterCount >= 40, "Za krótkie czytanie (\(characterCount) znaków): \(date)")
+        }
+    }
+
     @Test func importsLocalPolishEnglishAndLatinEPUBs() async throws {
         let fixtures: [(filename: String, language: String)] = [
             ("PolishBrewiarz", "pl"),
