@@ -589,7 +589,7 @@ struct PrayerFlowView: View {
                         HStack {
                             Text(variant.displayName)
                                 .fontWeight(variant.id == selectedPriest?.id ? .bold : .regular)
-                            Text(variant.title.isEmpty ? "pl" : variant.title)
+                            Text("[\(variant.title.isEmpty ? "pl" : variant.title)]")
                                 .font(.caption2.monospaced())
                                 .foregroundStyle(.secondary)
                         }
@@ -597,7 +597,6 @@ struct PrayerFlowView: View {
                 }
             } label: {
                 Text(selectedPriest?.displayName ?? "")
-                    .fontWeight(.bold)
                     .padding(12)
             }
             .glassEffect()
@@ -617,7 +616,7 @@ struct PrayerFlowView: View {
                             HStack {
                                 Text(day.variantName)
                                     .fontWeight(day.id == selectedOfflineBreviaryDay?.id ? .bold : .regular)
-                                Text(day.languageCode ?? "pl")
+                                Text("[\(day.languageCode ?? "pl")]")
                                     .font(.caption2.monospaced())
                                     .foregroundStyle(.secondary)
                             }
@@ -625,7 +624,6 @@ struct PrayerFlowView: View {
                     }
                 } label: {
                     Text(selectedOfflineBreviaryDay?.variantName ?? "Oficjum")
-                        .fontWeight(.bold)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
                     .padding(12)

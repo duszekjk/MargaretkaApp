@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] simplify all variant selectors
+codex conversation [20260809-ipad] make variant language labels visible
 
-Remove selector icons and language codes from selected labels. Keep the small
-language code only beside each variant in the menu list.
+Keep bold styling only for the selected list item and render the language code
+as explicit menu text, independent of platform Menu layout behavior.
