@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] load new devotion variants into the UI
+codex conversation [20260809-ipad] restore all default prayers and targets
 
-Refresh the in-memory prayer target store after merging templates so newly
-added Rosary and Chaplet language variants appear immediately.
+Make the restore action merge missing built-in simple prayers and all default
+complex prayer targets before refreshing their content and groups.

@@ -122,6 +122,7 @@ class PrayerStore: ObservableObject {
     /// Plans keep referring to the same prayer IDs and user-created prayers are untouched.
     @discardableResult
     func restoreDefaultPrayerContents() -> Int {
+        ensureDefaultPrayers()
         let restored = Self.restoringDefaultPrayerContents(in: prayers)
         guard restored.count > 0 else { return 0 }
         for prayer in restored.prayers where prayer.text != prayers.first(where: { $0.id == prayer.id })?.text || prayer.timestampedLines != prayers.first(where: { $0.id == prayer.id })?.timestampedLines {

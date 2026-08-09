@@ -45,6 +45,7 @@ struct PrayerListSettingsView: View {
         .confirmationDialog("Przywrócić domyślne modlitwy i różaniec?", isPresented: $showRestoreConfirmation, titleVisibility: .visible) {
             Button("Przywróć", role: .destructive) {
                 restoredPrayerCount = store.restoreDefaultPrayerContents()
+                priestStore.priests = Priest.loadWithTemplates(using: store.prayers)
                 restoredRosaryCount = priestStore.restoreDefaultRosary(using: store.prayers)
                 showRestoreResult = true
             }
