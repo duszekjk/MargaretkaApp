@@ -1,4 +1,4 @@
-codex conversation [20260731-ipad] retain all Polish office content
+codex conversation [20260809-ipad] checkpoint before preserving linked EPUB text
 
-Remove the unreliable psalm-comment heuristic so importing never discards
-prayer fragments or readings merely because of nearby psalm formatting.
+Save build 60 before correcting the parser behaviour that removes a whole
+liturgical line when it contains an XHTML link.
