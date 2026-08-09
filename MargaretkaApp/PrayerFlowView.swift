@@ -58,14 +58,16 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
     let language: (Item) -> String
     let select: (Item) -> Void
     let namespace: Namespace.ID
-    @Binding var popup: PrayerFlowVariantPopupState?
+    let isPresented: Bool
+    let present: (PrayerFlowVariantPopupState) -> Void
+    let dismiss: () -> Void
     @State private var anchor = CGRect.zero
 
     var body: some View {
         Button {
             withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
-                if popup == nil {
-                    popup = PrayerFlowVariantPopupState(
+                if !isPresented {
+                    present(PrayerFlowVariantPopupState(
                         anchor: anchor,
                         options: items.map { item in
                             PrayerFlowVariantPopupOption(
@@ -76,9 +78,9 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
                                 select: { select(item) }
                             )
                         }
-                    )
+                    ))
                 } else {
-                    popup = nil
+                    dismiss()
                 }
             }
         } label: {
@@ -104,36 +106,98 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
 private struct PrayerFlowVariantPopup: View {
     let state: PrayerFlowVariantPopupState
     let namespace: Namespace.ID
+    let cornerRadius: CGFloat
+    let maximumHeight: CGFloat
     let dismiss: () -> Void
+    @State private var expandedLanguage: String
+
+    init(
+        state: PrayerFlowVariantPopupState,
+        namespace: Namespace.ID,
+        cornerRadius: CGFloat,
+        maximumHeight: CGFloat,
+        dismiss: @escaping () -> Void
+    ) {
+        self.state = state
+        self.namespace = namespace
+        self.cornerRadius = cornerRadius
+        self.maximumHeight = maximumHeight
+        self.dismiss = dismiss
+        _expandedLanguage = State(initialValue: state.options.first(where: \.isSelected)?.language ?? state.options.first?.language ?? "")
+    }
+
+    private var languages: [String] {
+        Array(Set(state.options.map(\.language))).sorted { lhs, rhs in
+            let order = ["pl", "en", "la"]
+            return (order.firstIndex(of: lhs) ?? order.count) < (order.firstIndex(of: rhs) ?? order.count)
+        }
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(state.options) { option in
-                Button {
-                    option.select()
-                    dismiss()
-                } label: {
-                    HStack(alignment: .top, spacing: 10) {
-                        Text(option.title)
-                            .fontWeight(option.isSelected ? .bold : .regular)
-                            .lineLimit(3)
-                            .multilineTextAlignment(.leading)
-                        Spacer(minLength: 8)
-                        Text(option.language)
-                            .font(.caption2.monospaced())
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 3)
+        ScrollView(.vertical, showsIndicators: true) {
+            VStack(alignment: .leading, spacing: 0) {
+                if state.options.count > 5 {
+                    ForEach(languages, id: \.self) { language in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.22)) {
+                                expandedLanguage = expandedLanguage == language ? "" : language
+                            }
+                        } label: {
+                            HStack {
+                                Text(language)
+                                    .font(.caption2.monospaced().weight(.semibold))
+                                Spacer()
+                                Image(systemName: expandedLanguage == language ? "chevron.up" : "chevron.down")
+                                    .font(.caption.weight(.semibold))
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+
+                        if expandedLanguage == language {
+                            ForEach(state.options.filter { $0.language == language }) { option in
+                                optionRow(option)
+                            }
+                        }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .contentShape(Rectangle())
+                } else {
+                    ForEach(state.options) { option in
+                        optionRow(option)
+                    }
                 }
-                .buttonStyle(.plain)
             }
         }
-        .padding(8)
-        .glassEffect()
+        .padding(.vertical, 14)
+        .padding(.horizontal, 8)
+        .frame(maxHeight: maximumHeight)
+        .glassEffect(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .glassEffectUnion(id: "variantPicker", namespace: namespace)
+    }
+
+    @ViewBuilder
+    private func optionRow(_ option: PrayerFlowVariantPopupOption) -> some View {
+        Button {
+            option.select()
+            dismiss()
+        } label: {
+            HStack(alignment: .top, spacing: 10) {
+                Text(option.title)
+                    .fontWeight(option.isSelected ? .bold : .regular)
+                    .lineLimit(3)
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: 8)
+                Text(option.language)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 3)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -352,6 +416,8 @@ struct PrayerFlowView: View {
     @State private var fontNow: CGFloat = 19.0
     @State private var selectedOfflineBreviaryDayID: UUID?
     @State private var variantPopup: PrayerFlowVariantPopupState?
+    @State private var variantPopupCornerRadius: CGFloat = 28
+    @State private var isClosingVariantPopup = false
     @AppStorage("lastRosaryLanguage") private var lastRosaryLanguageCode = PrayerLanguage.polish.rawValue
     
     @Binding var showSettings: Bool
@@ -491,6 +557,34 @@ struct PrayerFlowView: View {
                 fontNow = currentPrayerCardFontSize
                         }
         })
+    }
+
+    private func presentVariantPopup(_ popup: PrayerFlowVariantPopupState) {
+        guard !isClosingVariantPopup else { return }
+        variantPopupCornerRadius = 28
+        withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
+            variantPopup = popup
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            guard variantPopup != nil, !isClosingVariantPopup else { return }
+            withAnimation(.easeInOut(duration: 0.5)) {
+                variantPopupCornerRadius = 4
+            }
+        }
+    }
+
+    private func dismissVariantPopup() {
+        guard variantPopup != nil, !isClosingVariantPopup else { return }
+        isClosingVariantPopup = true
+        withAnimation(.easeInOut(duration: 0.5)) {
+            variantPopupCornerRadius = 28
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
+                variantPopup = nil
+            }
+            isClosingVariantPopup = false
+        }
     }
 
     private func handleKeyPress(_ keyPress: KeyPress) -> KeyPress.Result {
@@ -718,7 +812,7 @@ struct PrayerFlowView: View {
                         }
                         selectedPriest = variant
                         activeIndex = 0
-            }, namespace: brewiarzNamespace, popup: $variantPopup)
+            }, namespace: brewiarzNamespace, isPresented: variantPopup != nil, present: presentVariantPopup, dismiss: dismissVariantPopup)
         }
     }
 
@@ -728,7 +822,7 @@ struct PrayerFlowView: View {
             PrayerFlowVariantPicker(items: availableOfflineBreviaryDays, selectedID: selectedOfflineBreviaryDay?.id, selectedTitle: selectedOfflineBreviaryDay?.variantName ?? "Oficjum", title: \.variantName, language: { $0.languageCode ?? "pl" }, select: { day in
                         selectedOfflineBreviaryDayID = day.id
                         activeIndex = 0
-            }, namespace: brewiarzNamespace, popup: $variantPopup)
+            }, namespace: brewiarzNamespace, isPresented: variantPopup != nil, present: presentVariantPopup, dismiss: dismissVariantPopup)
         }
     }
 
@@ -1458,26 +1552,23 @@ struct PrayerFlowView: View {
                     )
                     let y = min(
                         max(8, variantPopup.anchor.maxY + 8),
-                        max(8, proxy.size.height - 80)
+                        max(8, proxy.size.height - 160)
                     )
+                    let panelHeight = max(120, proxy.size.height - y - 8)
 
                     ZStack(alignment: .topLeading) {
                         Color.clear
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
-                                    self.variantPopup = nil
-                                }
+                                dismissVariantPopup()
                             }
 
                         PrayerFlowVariantPopup(
                             state: variantPopup,
                             namespace: brewiarzNamespace,
-                            dismiss: {
-                                withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
-                                    self.variantPopup = nil
-                                }
-                            }
+                            cornerRadius: variantPopupCornerRadius,
+                            maximumHeight: panelHeight,
+                            dismiss: dismissVariantPopup
                         )
                         .frame(width: panelWidth)
                         .offset(x: x, y: y)

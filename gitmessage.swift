@@ -1,4 +1,5 @@
-codex conversation [20260809-ipad] fix Rosary mystery identifier crash
+codex conversation [20260810-ipad] make variant popup fit and group Rosary
 
-Use exactly twelve hexadecimal characters in the final UUID segment for each
-Rosary mystery, preventing the nil UUID unwrap during template initialization.
+Increase safe vertical padding, constrain the popup to the visible screen, and
+group lists over five options by language. Add the requested two-stage corner
+animation before opening and before the Liquid Glass closing transition.
