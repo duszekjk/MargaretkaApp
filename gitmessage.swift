@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] preserve EPUB lines with inline links
+codex conversation [20260809-ipad] checkpoint before August reading coverage test
 
-Retain all XHTML link text during import so an inline reference cannot discard
-an entire Polish psalm, hymn, or reading line.
+Save the importer before adding real August Polish EPUB fixtures and complete
+daily reading-length coverage checks.
