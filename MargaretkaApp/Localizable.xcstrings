@@ -574,6 +574,9 @@
     "Odczytywanie archiwum…" : {
 
     },
+    "Odtwarza tekst istniejących modlitw wbudowanych i aktualny układ wbudowanego różańca. Nie usuwa modlitw ani nie zmienia innych planów, harmonogramów, historii, nazw, ikon ani audio." : {
+
+    },
     "OK" : {
 
     },
@@ -679,13 +682,25 @@
     "Przykładowe komendy" : {
 
     },
+    "Przywróć" : {
+
+    },
+    "Przywróć domyślne modlitwy i różaniec" : {
+
+    },
     "Przywróć kopię zapasową" : {
 
     },
     "Przywróć pełną kopię" : {
 
     },
+    "Przywrócić domyślne modlitwy i różaniec?" : {
+
+    },
     "Przywrócić pełną kopię?" : {
+
+    },
+    "Przywrócono ustawienia domyślne" : {
 
     },
     "Remove last" : {
@@ -1470,6 +1485,9 @@
 
     },
     "Zdjęcie" : {
+
+    },
+    "Zmienione zostaną teksty istniejących modlitw wbudowanych oraz układ wbudowanego różańca." : {
 
     },
     "Zmniejsza elementy listy modlitw" : {

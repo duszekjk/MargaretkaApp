@@ -1,4 +1,5 @@
-fix weekly schedules with no selected days
+codex conversation [20260809-ipad] record Xcode project synchronization
 
-Treat an empty weekday selection as disabled, so weekly prayer schedules do
-not create notification requests when the user has unselected every day.
+Record Xcode-generated localization entries for the default restore action,
+fixture reference normalization, and the existing version 1.0.4 build 61
+project settings.
