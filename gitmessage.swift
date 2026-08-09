@@ -1,4 +1,3 @@
-codex conversation [20260809-ipad] share one variant selector implementation
+codex conversation [20260809-ipad] record selector localization key
 
-Replace separate officium and devotion selector views with one common picker
-that shows small language labels only in its menu list.
+Record the Xcode-generated localized formatting key for language labels.
