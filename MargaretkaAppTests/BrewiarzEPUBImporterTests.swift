@@ -38,6 +38,39 @@ struct BrewiarzEPUBImporterTests {
         #expect(result.prayers[1] == customPrayer)
     }
 
+    @Test func restoresOnlyTheSavedRosaryPrayerGroups() throws {
+        let template = try #require(peopleTemplates.first { $0.category == .prayer && $0.firstName == "Różaniec" })
+        var outdatedRosary = template
+        outdatedRosary.id = UUID()
+        outdatedRosary.assignedPrayerGroups = [
+            AssignedPrayerGroup(prayerIds: [prayersTemplate["Zdrowaś Mario"]!.id], repeatCount: 1)
+        ]
+        let customTarget = Priest(
+            id: UUID(),
+            firstName: "Moja modlitwa",
+            lastName: "",
+            title: "",
+            category: .prayer,
+            assignedPrayerGroups: outdatedRosary.assignedPrayerGroups,
+            schedule: template.schedule,
+            lastModified: template.lastModified,
+            notificationTitle: "Moja modlitwa",
+            notificationMessage: ""
+        )
+
+        let result = PriestStore.restoringDefaultRosary(
+            in: [outdatedRosary, customTarget],
+            using: Array(prayersTemplate.values),
+            modificationDate: Date(timeIntervalSince1970: 1)
+        )
+
+        #expect(result.count == 1)
+        #expect(result.priests[0].id == outdatedRosary.id)
+        #expect(result.priests[0].assignedPrayerGroups == template.assignedPrayerGroups)
+        #expect(result.priests[0].schedule == outdatedRosary.schedule)
+        #expect(result.priests[1] == customTarget)
+    }
+
     @Test func preservesSubstantialMorningReadingForEveryAugustDay() async throws {
         let fixtureNames = (1...6).map { String(format: "AugustWeek%02dPolish", $0) }
         var days: [OfflineBreviaryDay] = []

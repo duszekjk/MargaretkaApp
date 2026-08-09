@@ -9,9 +9,11 @@ import SwiftUI
 internal import UniformTypeIdentifiers
 
 struct PrayerListSettingsView: View {
+    @ObservedObject var priestStore: PriestStore
     @StateObject private var store = PrayerStore()
     @State private var showRestoreConfirmation = false
     @State private var restoredPrayerCount = 0
+    @State private var restoredRosaryCount = 0
     @State private var showRestoreResult = false
 
     var body: some View {
@@ -20,10 +22,10 @@ struct PrayerListSettingsView: View {
                 Button {
                     showRestoreConfirmation = true
                 } label: {
-                    Label("Przywróć domyślne treści modlitw", systemImage: "arrow.counterclockwise")
+                    Label("Przywróć domyślne modlitwy i różaniec", systemImage: "arrow.counterclockwise")
                 }
 
-                Text("Odtwarza tekst istniejących modlitw wbudowanych. Nie usuwa modlitw ani nie zmienia planów, przypisań, historii, nazw, ikon ani audio.")
+                Text("Odtwarza tekst istniejących modlitw wbudowanych i aktualny układ wbudowanego różańca. Nie usuwa modlitw ani nie zmienia innych planów, harmonogramów, historii, nazw, ikon ani audio.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -40,20 +42,32 @@ struct PrayerListSettingsView: View {
             }
         }
         .navigationTitle("Modlitwy")
-        .confirmationDialog("Przywrócić domyślne treści modlitw?", isPresented: $showRestoreConfirmation, titleVisibility: .visible) {
-            Button("Przywróć treści", role: .destructive) {
+        .confirmationDialog("Przywrócić domyślne modlitwy i różaniec?", isPresented: $showRestoreConfirmation, titleVisibility: .visible) {
+            Button("Przywróć", role: .destructive) {
                 restoredPrayerCount = store.restoreDefaultPrayerContents()
+                restoredRosaryCount = priestStore.restoreDefaultRosary(using: store.prayers)
                 showRestoreResult = true
             }
         } message: {
-            Text("Zmienione zostaną wyłącznie teksty istniejących modlitw wbudowanych.")
+            Text("Zmienione zostaną teksty istniejących modlitw wbudowanych oraz układ wbudowanego różańca.")
         }
-        .alert("Przywrócono domyślne treści", isPresented: $showRestoreResult) {
+        .alert("Przywrócono ustawienia domyślne", isPresented: $showRestoreResult) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text(restoredPrayerCount == 0
-                 ? "Wszystkie istniejące modlitwy wbudowane mają już aktualną treść."
-                 : "Zaktualizowano treść (restoredPrayerCount) modlitw.")
+            Text(restorationResultMessage)
+        }
+    }
+
+    private var restorationResultMessage: String {
+        switch (restoredPrayerCount, restoredRosaryCount) {
+        case (0, 0):
+            "Modlitwy wbudowane i różaniec mają już aktualną wersję."
+        case (let prayers, 0):
+            "Zaktualizowano treść \(prayers) modlitw. Różaniec miał już aktualny układ."
+        case (0, let rosaries):
+            "Odtworzono aktualny układ dla \(rosaries) zapisanych różańców."
+        case (let prayers, let rosaries):
+            "Zaktualizowano treść \(prayers) modlitw i układ dla \(rosaries) zapisanych różańców."
         }
     }
 }

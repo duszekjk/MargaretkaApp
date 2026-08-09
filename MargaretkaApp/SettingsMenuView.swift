@@ -38,7 +38,7 @@ struct SettingsMenuView: View {
     
     var body: some View {
         List {
-                NavigationLink("Modlitwy (pojedyncze)", destination: PrayerListSettingsView())
+                NavigationLink("Modlitwy (pojedyncze)", destination: PrayerListSettingsView(priestStore: priestStore))
 
                 NavigationLink(
                     destination: PriestListView(

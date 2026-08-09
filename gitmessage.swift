@@ -1,4 +1,5 @@
-codex conversation [20260809-ipad] checkpoint before restoring default rosary
+codex conversation [20260809-ipad] restore the saved default rosary
 
-Save the current prayer-content restoration before extending it to repair the
-saved built-in Rosary plan on existing devices.
+Extend the default restore action to replace only the prayer groups of saved
+Rosary targets with the current template while preserving their schedules and
+all other user data.

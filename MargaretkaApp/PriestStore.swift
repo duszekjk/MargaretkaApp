@@ -100,4 +100,70 @@ class PriestStore: ObservableObject {
             priests.remove(at: index)
         }
     }
+
+    /// Restores the groups of the built-in Rosary target without touching its
+    /// schedule, notifications, identity, or any unrelated target.
+    @discardableResult
+    func restoreDefaultRosary(using prayers: [Prayer]) -> Int {
+        let restored = Self.restoringDefaultRosary(in: priests, using: prayers, modificationDate: Date())
+        guard restored.count > 0 else { return 0 }
+        for priest in restored.priests where priest.assignedPrayerGroups != priests.first(where: { $0.id == priest.id })?.assignedPrayerGroups {
+            pendingChangedIDs.insert(priest.id.uuidString.lowercased())
+        }
+        priests = restored.priests
+        return restored.count
+    }
+
+    static func restoringDefaultRosary(
+        in existing: [Priest],
+        using prayers: [Prayer],
+        modificationDate: Date
+    ) -> (priests: [Priest], count: Int) {
+        guard let template = peopleTemplates.first(where: { template in
+            template.category == .prayer
+                && template.firstName == "Różaniec"
+                && template.lastName.isEmpty
+                && template.title.isEmpty
+        }) else {
+            return (existing, 0)
+        }
+
+        let prayerIDByName = Dictionary(uniqueKeysWithValues: prayers.map { ($0.name, $0.id) })
+        let templateNameByID = Dictionary(uniqueKeysWithValues: prayersTemplate.values.map { ($0.id, $0.name) })
+
+        func remapped(_ group: AssignedPrayerGroup) -> AssignedPrayerGroup {
+            let items = group.items.map { item -> AssignedPrayerItem in
+                guard case .prayer(let templateID) = item,
+                      let name = templateNameByID[templateID],
+                      let storedID = prayerIDByName[name] else {
+                    return item
+                }
+                return .prayer(storedID)
+            }
+            return AssignedPrayerGroup(
+                id: group.id,
+                items: items,
+                repeatCount: group.repeatCount,
+                subgroups: group.subgroups.map(remapped)
+            )
+        }
+
+        let defaultGroups = template.assignedPrayerGroups.map(remapped)
+        var restoredCount = 0
+        let restoredPriests = existing.map { priest in
+            guard priest.category == template.category,
+                  priest.firstName == template.firstName,
+                  priest.lastName == template.lastName,
+                  priest.title == template.title,
+                  priest.assignedPrayerGroups != defaultGroups else {
+                return priest
+            }
+            var restored = priest
+            restored.assignedPrayerGroups = defaultGroups
+            restored.lastModified = modificationDate
+            restoredCount += 1
+            return restored
+        }
+        return (restoredPriests, restoredCount)
+    }
 }
