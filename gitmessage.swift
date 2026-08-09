@@ -1,4 +1,4 @@
-codex conversation [20260809-ipad] checkpoint before multilingual Rosary sets
+codex conversation [20260809-ipad] add devotion language model
 
-Save the corrected Polish Rosary before adding the agreed Polish, English, and
-Latin simple Rosary and Divine Mercy Chaplet variants.
+Add the shared Polish, English, and Latin language identity used by the simple
+Rosary and Divine Mercy Chaplet variants.
