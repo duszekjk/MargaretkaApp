@@ -70,7 +70,7 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
     @State private var triggerSize = CGSize.zero
 
     var body: some View {
-        GlassEffectContainer(spacing: 8) {
+        GlassEffectContainer(spacing: 24) {
             ZStack(alignment: .topLeading) {
                 if let popup, popup.sourceID == sourceID {
                     localPopup(popup)
@@ -115,7 +115,7 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
                     }
                 }
                 .glassEffect(in: .rect(cornerRadius: 12))
-                .glassEffectUnion(id: sourceID, namespace: namespace)
+                .glassEffectID("\(sourceID)-trigger", in: namespace)
                 .zIndex(1)
             }
             .frame(
@@ -235,7 +235,8 @@ private struct PrayerFlowVariantPopup: View {
         }
         .frame(height: maximumHeight)
         .glassEffect(in: .rect(cornerRadius: 5))
-        .glassEffectUnion(id: state.sourceID, namespace: namespace)
+        .glassEffectID("\(state.sourceID)-panel", in: namespace)
+        .glassEffectTransition(.matchedGeometry)
     }
 
     @ViewBuilder

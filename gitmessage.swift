@@ -1,5 +1,5 @@
-codex conversation [20260810-ipad] visibly separate popup from its selector
+codex conversation [20260810-ipad] morph selector and popup as separate glass effects
 
-Keep the panel's one-selector-height baseline and add another 1.1 selector
-heights during expansion, so the trigger remains visibly separate from the
-popup rather than moving by only a few points.
+Replace the persistent glass union with Apple's transition pattern: unique
+glassEffectID values for the trigger and conditionally inserted panel in one
+GlassEffectContainer, with a matched-geometry glass transition on the panel.
