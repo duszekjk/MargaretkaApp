@@ -1,5 +1,5 @@
-codex conversation [20260810-ipad] place popup above the whole prayer layout
+codex conversation [20260810-ipad] animate popup from its selector surface
 
-Keep the trigger in the root GlassEffectContainer but render the popup as a
-root-level layer positioned from the trigger's global frame, so cards cannot
-cover it and its top and bottom remain clamped to the visible window.
+Start the popup with the trigger's exact frame and no visible list content,
+then expand and move it into its bounded panel while both surfaces share a
+Liquid Glass union. Increase the expanded panel limit to 460 points.

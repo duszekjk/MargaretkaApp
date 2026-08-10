@@ -103,6 +103,7 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
             }
         }
         .glassEffect()
+        .glassEffectUnion(id: "variantPicker", namespace: namespace)
     }
 }
 
@@ -111,6 +112,7 @@ private struct PrayerFlowVariantPopup: View {
     let state: PrayerFlowVariantPopupState
     let namespace: Namespace.ID
     let maximumHeight: CGFloat
+    let showsContent: Bool
     let dismiss: () -> Void
     @State private var expandedLanguage: String
 
@@ -118,11 +120,13 @@ private struct PrayerFlowVariantPopup: View {
         state: PrayerFlowVariantPopupState,
         namespace: Namespace.ID,
         maximumHeight: CGFloat,
+        showsContent: Bool,
         dismiss: @escaping () -> Void
     ) {
         self.state = state
         self.namespace = namespace
         self.maximumHeight = maximumHeight
+        self.showsContent = showsContent
         self.dismiss = dismiss
         _expandedLanguage = State(initialValue: state.options.first(where: \.isSelected)?.language ?? state.options.first?.language ?? "")
     }
@@ -176,8 +180,10 @@ private struct PrayerFlowVariantPopup: View {
             }
             .padding(.bottom, 100)
         }
+        .opacity(showsContent ? 1 : 0)
         .frame(height: maximumHeight)
         .glassEffect(in: .rect(cornerRadius: 5))
+        .glassEffectUnion(id: "variantPicker", namespace: namespace)
     }
 
     @ViewBuilder
@@ -420,6 +426,7 @@ struct PrayerFlowView: View {
     @State private var fontNow: CGFloat = 19.0
     @State private var selectedOfflineBreviaryDayID: UUID?
     @State private var variantPopup: PrayerFlowVariantPopupState?
+    @State private var isVariantPopupExpanded = false
     @AppStorage("lastRosaryLanguage") private var lastRosaryLanguageCode = PrayerLanguage.polish.rawValue
     
     @Binding var showSettings: Bool
@@ -562,13 +569,20 @@ struct PrayerFlowView: View {
     }
 
     private func presentVariantPopup(_ popup: PrayerFlowVariantPopupState) {
-        withAnimation(.spring(response: 0.17, dampingFraction: 0.82)) {
-            variantPopup = popup
+        isVariantPopupExpanded = false
+        variantPopup = popup
+        DispatchQueue.main.async {
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                isVariantPopupExpanded = true
+            }
         }
     }
 
     private func dismissVariantPopup() {
-        withAnimation(.spring(response: 0.17, dampingFraction: 0.82)) {
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+            isVariantPopupExpanded = false
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
             variantPopup = nil
         }
     }
@@ -1533,7 +1547,7 @@ struct PrayerFlowView: View {
                     GeometryReader { proxy in
                         let rootFrame = proxy.frame(in: .global)
                         let trigger = variantPopup.anchor
-                        let panelWidth = min(270, max(200, proxy.size.width - 32))
+                        let expandedWidth = min(270, max(200, proxy.size.width - 32))
                         let triggerLeft = trigger.minX - rootFrame.minX
                         let triggerTop = trigger.minY - rootFrame.minY
                         let belowTop = trigger.maxY - rootFrame.minY + 8
@@ -1542,14 +1556,19 @@ struct PrayerFlowView: View {
                         let availableHeight = opensAbove
                             ? triggerTop - 16
                             : spaceBelow
-                        let panelHeight = min(360, max(120, availableHeight))
-                        let panelLeft = min(
+                        let expandedHeight = min(460, max(120, availableHeight))
+                        let expandedLeft = min(
                             max(16, triggerLeft),
-                            max(16, proxy.size.width - panelWidth - 16)
+                            max(16, proxy.size.width - expandedWidth - 16)
                         )
-                        let panelTop = opensAbove
-                            ? max(16, triggerTop - panelHeight - 8)
+                        let expandedTop = opensAbove
+                            ? max(16, triggerTop - expandedHeight - 8)
                             : belowTop
+
+                        let panelWidth = isVariantPopupExpanded ? expandedWidth : trigger.width
+                        let panelHeight = isVariantPopupExpanded ? expandedHeight : trigger.height
+                        let panelLeft = isVariantPopupExpanded ? expandedLeft : triggerLeft
+                        let panelTop = isVariantPopupExpanded ? expandedTop : triggerTop
 
                         ZStack(alignment: .topLeading) {
                             Color.clear
@@ -1560,6 +1579,7 @@ struct PrayerFlowView: View {
                                 state: variantPopup,
                                 namespace: brewiarzNamespace,
                                 maximumHeight: panelHeight,
+                                showsContent: isVariantPopupExpanded,
                                 dismiss: dismissVariantPopup
                             )
                             .frame(width: panelWidth, height: panelHeight)
