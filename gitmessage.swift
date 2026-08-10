@@ -1,5 +1,5 @@
-codex conversation [20260810-ipad] animate popup height after its collapsed frame renders
+codex conversation [20260810-ipad] restore trigger animation and explicitly animate popup geometry
 
-Insert the collapsed popup without an enclosing animation, then begin its size
-and offset springs after one rendered frame. This preserves the height-growth
-animation when the list has intrinsic content size without a ScrollView.
+Keep the popup insertion unanimated in its collapsed state, but restore the
+selector's transition transaction. Animate the popup frame and offset directly
+from their respective state values so intrinsic list height grows visibly.

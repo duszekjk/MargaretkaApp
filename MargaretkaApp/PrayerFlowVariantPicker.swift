@@ -68,23 +68,25 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
                 }
 
                 Button {
-                    if !isPresented {
-                        present(PrayerFlowVariantPopupState(
-                            sourceID: sourceID,
-                            anchor: anchor,
-                            selectedTitle: selectedTitle,
-                            options: items.map { item in
-                                PrayerFlowVariantPopupOption(
-                                    id: AnyHashable(item.id),
-                                    title: title(item),
-                                    language: language(item),
-                                    isSelected: item.id == selectedID,
-                                    select: { select(item) }
-                                )
-                            }
-                        ))
-                    } else {
-                        dismiss()
+                    withAnimation(.spring(response: 0.72, dampingFraction: 0.86)) {
+                        if !isPresented {
+                            present(PrayerFlowVariantPopupState(
+                                sourceID: sourceID,
+                                anchor: anchor,
+                                selectedTitle: selectedTitle,
+                                options: items.map { item in
+                                    PrayerFlowVariantPopupOption(
+                                        id: AnyHashable(item.id),
+                                        title: title(item),
+                                        language: language(item),
+                                        isSelected: item.id == selectedID,
+                                        select: { select(item) }
+                                    )
+                                }
+                            ))
+                        } else {
+                            dismiss()
+                        }
                     }
                 } label: {
                     VStack()
@@ -152,10 +154,12 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
             width: isExpanded ? expandedWidth : collapsedWidth,
             height: isExpanded ? preferredHeight : collapsedHeight
         )
+        .animation(.spring(response: 0.72, dampingFraction: 0.86), value: isExpanded)
         .offset(
             x: isExpanded ? horizontalOffset : 0,
             y: isOffsetExpanded ? collapsedHeight + 9 : -1
         )
+        .animation(.spring(response: 1.44, dampingFraction: 0.86), value: isOffsetExpanded)
         .allowsHitTesting(isExpanded)
     }
 }

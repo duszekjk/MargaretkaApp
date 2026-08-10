@@ -376,7 +376,11 @@ struct PrayerFlowView: View {
     private func presentVariantPopup(_ popup: PrayerFlowVariantPopupState) {
         isVariantPopupExpanded = false
         isVariantPopupOffsetExpanded = false
-        variantPopup = popup
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
+            variantPopup = popup
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
             withAnimation(.spring(response: 0.72, dampingFraction: 0.86)) {
                 isVariantPopupExpanded = true
