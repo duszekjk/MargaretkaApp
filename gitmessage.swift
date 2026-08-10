@@ -1,5 +1,6 @@
-codex conversation [20260810-ipad] animate popup from its selector surface
+codex conversation [20260810-ipad] keep selector visible while expanding its glass panel
 
-Start the popup with the trigger's exact frame and no visible list content,
-then expand and move it into its bounded panel while both surfaces share a
-Liquid Glass union. Increase the expanded panel limit to 460 points.
+Replace the root-level variant popup overlay with a local sibling of its
+trigger inside the same GlassEffectContainer. The trigger and panel share a
+glassEffectUnion, while the panel expands below the trigger without using
+glassEffectTransition or covering the selector.

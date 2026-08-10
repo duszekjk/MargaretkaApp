@@ -62,48 +62,96 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
     let namespace: Namespace.ID
     let sourceID: String
     let isPresented: Bool
+    let popup: PrayerFlowVariantPopupState?
+    let isExpanded: Bool
     let present: (PrayerFlowVariantPopupState) -> Void
     let dismiss: () -> Void
     @State private var anchor = CGRect.zero
+    @State private var triggerSize = CGSize.zero
 
     var body: some View {
-        Button {
-            withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
-                if !isPresented {
-                    present(PrayerFlowVariantPopupState(
-                        sourceID: sourceID,
-                        anchor: anchor,
-                        selectedTitle: selectedTitle,
-                        options: items.map { item in
-                            PrayerFlowVariantPopupOption(
-                                id: AnyHashable(item.id),
-                                title: title(item),
-                                language: language(item),
-                                isSelected: item.id == selectedID,
-                                select: { select(item) }
-                            )
-                        }
-                    ))
-                } else {
-                    dismiss()
+        GlassEffectContainer(spacing: 8) {
+            ZStack(alignment: .topLeading) {
+                if let popup, popup.sourceID == sourceID {
+                    localPopup(popup)
+                        .zIndex(0)
                 }
-            }
-        } label: {
-            Text(selectedTitle).lineLimit(1).minimumScaleFactor(0.75).padding(12)
-        }
-        .background {
-            GeometryReader { proxy in
-                Color.clear
-                    .onAppear {
-                        anchor = proxy.frame(in: .global)
+
+                Button {
+                    withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
+                        if !isPresented {
+                            present(PrayerFlowVariantPopupState(
+                                sourceID: sourceID,
+                                anchor: anchor,
+                                selectedTitle: selectedTitle,
+                                options: items.map { item in
+                                    PrayerFlowVariantPopupOption(
+                                        id: AnyHashable(item.id),
+                                        title: title(item),
+                                        language: language(item),
+                                        isSelected: item.id == selectedID,
+                                        select: { select(item) }
+                                    )
+                                }
+                            ))
+                        } else {
+                            dismiss()
+                        }
                     }
-                    .onChange(of: proxy.frame(in: .global)) { frame in
-                        anchor = frame
+                } label: {
+                    Text(selectedTitle).lineLimit(1).minimumScaleFactor(0.75).padding(12)
+                }
+                .background {
+                    GeometryReader { proxy in
+                        Color.clear
+                            .onAppear {
+                                anchor = proxy.frame(in: .global)
+                                triggerSize = proxy.size
+                            }
+                            .onChange(of: proxy.frame(in: .global)) { frame in
+                                anchor = frame
+                                triggerSize = frame.size
+                            }
                     }
+                }
+                .glassEffect()
+                .glassEffectUnion(id: "variantPicker", namespace: namespace)
+                .zIndex(1)
             }
+            .frame(
+                width: triggerSize.width > 0 ? triggerSize.width : nil,
+                height: triggerSize.height > 0 ? triggerSize.height : nil,
+                alignment: .topLeading
+            )
         }
-        .glassEffect()
-        .glassEffectUnion(id: "variantPicker", namespace: namespace)
+    }
+
+    @ViewBuilder
+    private func localPopup(_ popup: PrayerFlowVariantPopupState) -> some View {
+        let screen = UIScreen.main.bounds
+        let expandedWidth = min(270, max(200, screen.width - 32))
+        let availableHeight = max(120, screen.maxY - popup.anchor.maxY - 24)
+        let expandedHeight = min(460, availableHeight)
+        let horizontalOffset = min(0, screen.maxX - popup.anchor.minX - expandedWidth - 16)
+        let collapsedWidth = max(1, triggerSize.width)
+        let collapsedHeight = max(1, triggerSize.height)
+
+        PrayerFlowVariantPopup(
+            state: popup,
+            namespace: namespace,
+            maximumHeight: isExpanded ? expandedHeight : collapsedHeight,
+            showsContent: isExpanded,
+            dismiss: dismiss
+        )
+        .frame(
+            width: isExpanded ? expandedWidth : collapsedWidth,
+            height: isExpanded ? expandedHeight : collapsedHeight
+        )
+        .offset(
+            x: isExpanded ? horizontalOffset : 0,
+            y: isExpanded ? collapsedHeight + 8 : 0
+        )
+        .allowsHitTesting(isExpanded)
     }
 }
 
@@ -143,8 +191,11 @@ private struct PrayerFlowVariantPopup: View {
     }
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: true) {
-            VStack(alignment: .leading, spacing: 0) {
+        ZStack {
+            Color.clear
+
+            ScrollView(.vertical, showsIndicators: true) {
+                VStack(alignment: .leading, spacing: 0) {
 
                 if state.options.count > 5 {
                     ForEach(languages, id: \.self) { language in
@@ -177,10 +228,11 @@ private struct PrayerFlowVariantPopup: View {
                         optionRow(option)
                     }
                 }
+                }
+                .padding(.bottom, 100)
             }
-            .padding(.bottom, 100)
+            .opacity(showsContent ? 1 : 0)
         }
-        .opacity(showsContent ? 1 : 0)
         .frame(height: maximumHeight)
         .glassEffect(in: .rect(cornerRadius: 5))
         .glassEffectUnion(id: "variantPicker", namespace: namespace)
@@ -812,7 +864,7 @@ struct PrayerFlowView: View {
                         }
                         selectedPriest = variant
                         activeIndex = 0
-            }, namespace: brewiarzNamespace, sourceID: "devotion", isPresented: variantPopup?.sourceID == "devotion", present: presentVariantPopup, dismiss: dismissVariantPopup)
+            }, namespace: brewiarzNamespace, sourceID: "devotion", isPresented: variantPopup?.sourceID == "devotion", popup: variantPopup, isExpanded: isVariantPopupExpanded, present: presentVariantPopup, dismiss: dismissVariantPopup)
         }
     }
 
@@ -822,7 +874,7 @@ struct PrayerFlowView: View {
             PrayerFlowVariantPicker(items: availableOfflineBreviaryDays, selectedID: selectedOfflineBreviaryDay?.id, selectedTitle: selectedOfflineBreviaryDay?.variantName ?? "Oficjum", title: \.variantName, language: { $0.languageCode ?? "pl" }, select: { day in
                 selectedOfflineBreviaryDayID = day.id
                 activeIndex = 0
-            }, namespace: brewiarzNamespace, sourceID: "breviary", isPresented: variantPopup?.sourceID == "breviary", present: presentVariantPopup, dismiss: dismissVariantPopup)
+            }, namespace: brewiarzNamespace, sourceID: "breviary", isPresented: variantPopup?.sourceID == "breviary", popup: variantPopup, isExpanded: isVariantPopupExpanded, present: presentVariantPopup, dismiss: dismissVariantPopup)
         }
     }
 
@@ -1269,7 +1321,7 @@ struct PrayerFlowView: View {
                     .padding(.top, isFullscreen ? 0.0 : (flattenedPrayerSymbols.count > 0 ? 0.0 : -12.0))
                     .frame(maxWidth: .infinity)
                     .contentShape(Rectangle())
-                    .zIndex(20)
+                    .zIndex(variantPopup == nil ? 20 : 500)
                     
                     
                 }
@@ -1454,6 +1506,7 @@ struct PrayerFlowView: View {
                     .padding(.bottom, flattenedPrayerSymbols.count>0 ? -6.0 : 8.0)
                     .padding(.top, flattenedPrayerSymbols.count>0 ? 0.0 : -12.0)
                     .modifier(PrayerFlowAdaptiveWidth(width: viewportWidth))
+                    .zIndex(variantPopup == nil ? 20 : 500)
                     
                 }
 
@@ -1541,56 +1594,6 @@ struct PrayerFlowView: View {
                     ImagePlaygroundPreparationOverlay()
                         .transition(.opacity)
                         .zIndex(100)
-                }
-
-                if let variantPopup {
-                    GeometryReader { proxy in
-                        let rootFrame = proxy.frame(in: .global)
-                        let trigger = variantPopup.anchor
-                        let expandedWidth = min(270, max(200, proxy.size.width - 32))
-                        let triggerLeft = trigger.minX - rootFrame.minX
-                        let triggerTop = trigger.minY - rootFrame.minY
-                        let belowTop = trigger.maxY - rootFrame.minY + 8
-                        let spaceBelow = proxy.size.height - belowTop - 16
-                        let opensAbove = spaceBelow < 160 && triggerTop > 160
-                        let availableHeight = opensAbove
-                            ? triggerTop - 16
-                            : spaceBelow
-                        let expandedHeight = min(460, max(120, availableHeight))
-                        let expandedLeft = min(
-                            max(16, triggerLeft),
-                            max(16, proxy.size.width - expandedWidth - 16)
-                        )
-                        let expandedTop = opensAbove
-                            ? max(16, triggerTop - expandedHeight - 8)
-                            : belowTop
-
-                        let panelWidth = isVariantPopupExpanded ? expandedWidth : trigger.width
-                        let panelHeight = isVariantPopupExpanded ? expandedHeight : trigger.height
-                        let panelLeft = isVariantPopupExpanded ? expandedLeft : triggerLeft
-                        let panelTop = isVariantPopupExpanded ? expandedTop : triggerTop
-
-                        ZStack(alignment: .topLeading) {
-                            Color.clear
-                                .contentShape(Rectangle())
-                                .onTapGesture { dismissVariantPopup() }
-
-                            PrayerFlowVariantPopup(
-                                state: variantPopup,
-                                namespace: brewiarzNamespace,
-                                maximumHeight: panelHeight,
-                                showsContent: isVariantPopupExpanded,
-                                dismiss: dismissVariantPopup
-                            )
-                            .frame(width: panelWidth, height: panelHeight)
-                            .position(
-                                x: panelLeft + panelWidth / 2,
-                                y: panelTop + panelHeight / 2
-                            )
-                            .glassEffectTransition(.matchedGeometry)
-                        }
-                    }
-                    .zIndex(300)
                 }
 
             }
