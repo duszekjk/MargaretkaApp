@@ -569,6 +569,14 @@ struct PrayerFlowView: View {
             ?? availableOfflineBreviaryDays.first
     }
 
+    private var showsBreviaryVariantPicker: Bool {
+        guard let key = currentBrewiarzKey else { return false }
+        return availableOfflineBreviaryDays.count > 1
+            && availableOfflineBreviaryDays.contains { day in
+                day.offices.contains { $0.key == key }
+            }
+    }
+
 
     private var devotionVariants: [Priest] {
         guard let selectedPriest,
@@ -651,6 +659,16 @@ struct PrayerFlowView: View {
                         selectedPriest = variant
                         activeIndex = 0
             }, namespace: brewiarzNamespace, sourceID: "devotion", isPresented: variantPopup?.sourceID == "devotion", popup: variantPopup, isExpanded: isVariantPopupExpanded, isOffsetExpanded: isVariantPopupOffsetExpanded, present: presentVariantPopup, dismiss: dismissVariantPopup)
+        }
+    }
+
+    @ViewBuilder
+    private var breviaryVariantPicker: some View {
+        if showsBreviaryVariantPicker {
+            PrayerFlowVariantPicker(items: availableOfflineBreviaryDays, selectedID: selectedOfflineBreviaryDay?.id, selectedTitle: selectedOfflineBreviaryDay?.variantName ?? "Oficjum", title: \.variantName, language: { $0.languageCode ?? "pl" }, select: { day in
+                selectedOfflineBreviaryDayID = day.id
+                activeIndex = 0
+            }, namespace: brewiarzNamespace, sourceID: "breviary", isPresented: variantPopup?.sourceID == "breviary", popup: variantPopup, isExpanded: isVariantPopupExpanded, isOffsetExpanded: isVariantPopupOffsetExpanded, present: presentVariantPopup, dismiss: dismissVariantPopup)
         }
     }
 
@@ -971,13 +989,8 @@ struct PrayerFlowView: View {
                             .symbolRenderingMode(.monochrome)
                             .foregroundStyle(.primary)
                         }
-                        if(availableOfflineBreviaryDays.count > 1
-                            && prayerSteps.contains(where: { $0.offlineOffice != nil }) ){
-                            PrayerFlowVariantPicker(items: availableOfflineBreviaryDays, selectedID: selectedOfflineBreviaryDay?.id, selectedTitle: selectedOfflineBreviaryDay?.variantName ?? "Oficjum", title: \.variantName, language: { $0.languageCode ?? "pl" }, select: { day in
-                                selectedOfflineBreviaryDayID = day.id
-                                activeIndex = 0
-                            }, namespace: brewiarzNamespace, sourceID: "breviary", isPresented: variantPopup?.sourceID == "breviary", popup: variantPopup, isExpanded: isVariantPopupExpanded, isOffsetExpanded: isVariantPopupOffsetExpanded, present: presentVariantPopup, dismiss: dismissVariantPopup)
-                        }
+                        breviaryVariantPicker
+                        breviaryVariantPicker
                         devotionVariantPicker
                         Spacer()
                         if(selectedPriest != nil)
