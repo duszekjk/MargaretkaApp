@@ -11,30 +11,6 @@ import ImagePlayground
 import AppKit
 #endif
 
-private struct PrayerFlowAdaptiveWidth: ViewModifier {
-    let width: CGFloat
-
-    func body(content: Content) -> some View {
-#if os(macOS)
-        content.frame(maxWidth: .infinity)
-#else
-        content.frame(width: width)
-#endif
-    }
-}
-
-private struct PrayerFlowCardBackground: View {
-    var body: some View {
-#if os(macOS)
-        // Keep the macOS welcome card visually aligned with iOS while leaving
-        // the iOS Liquid Glass implementation untouched.
-        RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial)
-#else
-        RoundedRectangle(cornerRadius: 20).fill(.ultraThinMaterial)
-#endif
-    }
-}
-
 private let prayerFlowVariantPickerCoordinateSpace = "prayer-flow-variant-picker"
 
 private struct PrayerFlowVariantPopupOption: Identifiable {

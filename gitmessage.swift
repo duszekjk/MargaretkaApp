@@ -1,5 +1,4 @@
-codex conversation [20260810-ipad] slow the glass morph and keep a 3 point gap
+codex conversation [20260810-ipad] extract shared prayer-flow layout components
 
-Use a 3 point final gap below the selector instead of an additional selector
-height. Slow the opening and closing springs so the matched-geometry glass
-transition remains perceptible.
+Move independent sizing and card-background views out of PrayerFlowView into a
+dedicated source file as the first safe step in splitting the large view.
