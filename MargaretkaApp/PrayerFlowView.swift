@@ -46,6 +46,7 @@ private struct PrayerFlowVariantPopupOption: Identifiable {
 }
 
 private struct PrayerFlowVariantPopupState {
+    let sourceID: String
     let anchor: CGRect
     let selectedTitle: String
     let options: [PrayerFlowVariantPopupOption]
@@ -59,16 +60,26 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
     let language: (Item) -> String
     let select: (Item) -> Void
     let namespace: Namespace.ID
+    let sourceID: String
     let isPresented: Bool
+    let popup: PrayerFlowVariantPopupState?
     let present: (PrayerFlowVariantPopupState) -> Void
     let dismiss: () -> Void
     @State private var anchor = CGRect.zero
 
+    private var localPopup: PrayerFlowVariantPopupState? {
+        guard popup?.sourceID == sourceID else { return nil }
+        return popup
+    }
+
     var body: some View {
-        Button {
+        GlassEffectContainer(spacing: 40) {
+            ZStack(alignment: .topLeading) {
+                Button {
             withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
                 if !isPresented {
                     present(PrayerFlowVariantPopupState(
+                        sourceID: sourceID,
                         anchor: anchor,
                         selectedTitle: selectedTitle,
                         options: items.map { item in
@@ -85,21 +96,36 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
                     dismiss()
                 }
             }
-        } label: {
-            Text(selectedTitle).lineLimit(1).minimumScaleFactor(0.75).padding(12)
-        }
-        .background {
-            GeometryReader { proxy in
-                Color.clear
-                    .onAppear {
-                        anchor = proxy.frame(in: .named(prayerFlowVariantPickerCoordinateSpace))
+                } label: {
+                    Text(selectedTitle).lineLimit(1).minimumScaleFactor(0.75).padding(12)
+                }
+                .background {
+                    GeometryReader { proxy in
+                        Color.clear
+                            .onAppear {
+                                anchor = proxy.frame(in: .named(prayerFlowVariantPickerCoordinateSpace))
+                            }
+                            .onChange(of: proxy.frame(in: .named(prayerFlowVariantPickerCoordinateSpace))) { frame in
+                                anchor = frame
+                            }
                     }
-                    .onChange(of: proxy.frame(in: .named(prayerFlowVariantPickerCoordinateSpace))) { frame in
-                        anchor = frame
-                    }
+                }
+                .glassEffect()
+
+                if let localPopup {
+                    PrayerFlowVariantPopup(
+                        state: localPopup,
+                        namespace: namespace,
+                        maximumHeight: min(360, UIScreen.main.bounds.height - 140),
+                        dismiss: dismiss
+                    )
+                    .frame(width: 270)
+                    .offset(y: 56)
+                    .glassEffectTransition(.matchedGeometry)
+                    .zIndex(1)
+                }
             }
         }
-        .glassEffect()
     }
 }
 
@@ -792,51 +818,17 @@ struct PrayerFlowView: View {
                         }
                         selectedPriest = variant
                         activeIndex = 0
-            }, namespace: brewiarzNamespace, isPresented: variantPopup != nil, present: presentVariantPopup, dismiss: dismissVariantPopup)
+            }, namespace: brewiarzNamespace, sourceID: "devotion", isPresented: variantPopup?.sourceID == "devotion", popup: variantPopup, present: presentVariantPopup, dismiss: dismissVariantPopup)
         }
     }
 
     @ViewBuilder
     private var breviaryVariantPicker: some View {
         if showsBreviaryVariantPicker {
-            ZStack(alignment: .topLeading) {
-                GlassEffectContainer(spacing: 40.0) {
-                    VStack
-                    {
-                        PrayerFlowVariantPicker(items: availableOfflineBreviaryDays, selectedID: selectedOfflineBreviaryDay?.id, selectedTitle: selectedOfflineBreviaryDay?.variantName ?? "Oficjum", title: \.variantName, language: { $0.languageCode ?? "pl" }, select: { day in
-                            selectedOfflineBreviaryDayID = day.id
-                            activeIndex = 0
-                        }, namespace: brewiarzNamespace, isPresented: variantPopup != nil, present: presentVariantPopup, dismiss: dismissVariantPopup)
-                        
-                        if let variantPopup {
-                            GeometryReader { proxy in
-                                let panelWidth = min(270, proxy.size.width - 32)
-                                let x = min(
-                                    max(16, variantPopup.anchor.minX),
-                                    max(16, proxy.size.width - panelWidth - 16)
-                                )
-                                let y = min(
-                                    max(8, variantPopup.anchor.maxY + 8),
-                                    max(8, proxy.size.height - 160)
-                                )
-                                let panelHeight = min(360, max(120, proxy.size.height - y - 8))
-                                
-                                ZStack(alignment: .topLeading) {
-                                    
-                                    PrayerFlowVariantPopup(
-                                        state: variantPopup,
-                                        namespace: brewiarzNamespace,
-                                        maximumHeight: panelHeight,
-                                        dismiss: dismissVariantPopup
-                                    )
-                                    .frame(width: panelWidth)
-                                    .offset(x: x, y: y)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            PrayerFlowVariantPicker(items: availableOfflineBreviaryDays, selectedID: selectedOfflineBreviaryDay?.id, selectedTitle: selectedOfflineBreviaryDay?.variantName ?? "Oficjum", title: \.variantName, language: { $0.languageCode ?? "pl" }, select: { day in
+                selectedOfflineBreviaryDayID = day.id
+                activeIndex = 0
+            }, namespace: brewiarzNamespace, sourceID: "breviary", isPresented: variantPopup?.sourceID == "breviary", popup: variantPopup, present: presentVariantPopup, dismiss: dismissVariantPopup)
         }
     }
 
