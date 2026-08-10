@@ -1,5 +1,4 @@
-codex conversation [20260810-ipad] animate popup corner shape after glass union
+codex conversation [20260810-ipad] tighten variant popup animation and width
 
-Detach the popup from its Liquid Glass union after the opening transition, so
-its explicitly animated 4-point rounded rectangle is visible. Rejoin it before
-the closing Liquid Glass transition.
+Halve the popup transition timings and reduce its maximum width with wider
+screen insets so the complete surface fits within the display.

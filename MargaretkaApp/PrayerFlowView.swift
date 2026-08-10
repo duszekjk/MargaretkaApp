@@ -199,7 +199,7 @@ private struct PrayerFlowVariantPopup: View {
             cornerRadius: cornerRadius,
             namespace: namespace
         ))
-        .animation(.easeInOut(duration: 0.5), value: cornerRadius)
+        .animation(.easeInOut(duration: 0.25), value: cornerRadius)
     }
 
     @ViewBuilder
@@ -590,12 +590,12 @@ struct PrayerFlowView: View {
         guard !isClosingVariantPopup else { return }
         variantPopupCornerRadius = 28
         variantPopupJoinsTrigger = true
-        withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
+        withAnimation(.spring(response: 0.17, dampingFraction: 0.82)) {
             variantPopup = popup
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             guard variantPopup != nil, !isClosingVariantPopup else { return }
-            withAnimation(.easeInOut(duration: 0.5)) {
+            withAnimation(.easeInOut(duration: 0.25)) {
                 variantPopupCornerRadius = 4
                 variantPopupJoinsTrigger = false
             }
@@ -605,12 +605,12 @@ struct PrayerFlowView: View {
     private func dismissVariantPopup() {
         guard variantPopup != nil, !isClosingVariantPopup else { return }
         isClosingVariantPopup = true
-        withAnimation(.easeInOut(duration: 0.5)) {
+        withAnimation(.easeInOut(duration: 0.25)) {
             variantPopupCornerRadius = 28
             variantPopupJoinsTrigger = true
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            withAnimation(.spring(response: 0.17, dampingFraction: 0.82)) {
                 variantPopup = nil
             }
             isClosingVariantPopup = false
@@ -1575,10 +1575,10 @@ struct PrayerFlowView: View {
 
             if let variantPopup {
                 GeometryReader { proxy in
-                    let panelWidth = min(360, proxy.size.width - 16)
+                    let panelWidth = min(320, proxy.size.width - 32)
                     let x = min(
-                        max(8, variantPopup.anchor.minX),
-                        max(8, proxy.size.width - panelWidth - 8)
+                        max(16, variantPopup.anchor.minX),
+                        max(16, proxy.size.width - panelWidth - 16)
                     )
                     let y = min(
                         max(8, variantPopup.anchor.maxY + 8),
