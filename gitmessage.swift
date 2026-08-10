@@ -1,4 +1,4 @@
-codex conversation [20260810-ipad] complete local glass picker composition
+codex conversation [20260810-ipad] fit local variant popup within the screen
 
-Make both officium and devotion selectors use the same local GlassEffectContainer
-with a native matched transition, and scope the shared popup state to its source.
+Constrain the local Glass popup to available screen width and height, shift it
+away from the right edge, open it upward when necessary, and scroll long lists.

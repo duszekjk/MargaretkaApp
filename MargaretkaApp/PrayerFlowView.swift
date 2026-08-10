@@ -113,14 +113,27 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
                 .glassEffect()
 
                 if let localPopup {
+                    let screen = UIScreen.main.bounds
+                    let panelWidth = min(270, max(200, screen.width - 32))
+                    let spaceBelow = screen.maxY - localPopup.anchor.maxY - 16
+                    let opensAbove = spaceBelow < 160 && localPopup.anchor.minY > 160
+                    let availableHeight = opensAbove
+                        ? localPopup.anchor.minY - 16
+                        : spaceBelow
+                    let panelHeight = min(360, max(120, availableHeight))
+                    let xAdjustment = min(0, screen.maxX - 16 - localPopup.anchor.minX - panelWidth)
+
                     PrayerFlowVariantPopup(
                         state: localPopup,
                         namespace: namespace,
-                        maximumHeight: min(360, UIScreen.main.bounds.height - 140),
+                        maximumHeight: panelHeight,
                         dismiss: dismiss
                     )
-                    .frame(width: 270)
-                    .offset(y: 56)
+                    .frame(width: panelWidth)
+                    .offset(
+                        x: xAdjustment,
+                        y: opensAbove ? -(panelHeight + 8) : anchor.height + 8
+                    )
                     .glassEffectTransition(.matchedGeometry)
                     .zIndex(1)
                 }
@@ -162,6 +175,7 @@ private struct PrayerFlowVariantPopup: View {
     }
 
     var body: some View {
+        ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 0) {
 
                 if state.options.count > 5 {
@@ -197,7 +211,9 @@ private struct PrayerFlowVariantPopup: View {
                 }
             }
             .padding(.bottom, 100)
-            .glassEffect(in: .rect(cornerRadius: 5))
+        }
+        .frame(height: maximumHeight)
+        .glassEffect(in: .rect(cornerRadius: 5))
     }
 
     @ViewBuilder
