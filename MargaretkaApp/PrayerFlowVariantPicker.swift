@@ -137,7 +137,7 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
         let horizontalOffset = min(0, screen.maxX - popup.anchor.minX - expandedWidth - 16)
         let collapsedWidth = selectorWidth
         let collapsedHeight = selectorHeight
-        let estimatedHeight = max(54, CGFloat(popup.options.count - 1) * 52 + 20)
+        let estimatedHeight = max(54, CGFloat(popup.options.count) * 52 + 20)
         let preferredHeight = min(
             expandedHeight,
             max(collapsedHeight, popupContentHeight > 0 ? popupContentHeight : estimatedHeight)

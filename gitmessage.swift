@@ -1,4 +1,5 @@
-codex conversation [20260810-ipad] checkpoint pending popup layout changes
+codex conversation [20260810-ipad] size the officium popup for every visible variant
 
-Preserve the current uncommitted selector and popup layout changes before
-correcting the height calculation for all visible variant rows.
+Count every rendered option, including the selected bold option, when choosing
+the popup's initial height. Three officium variants now receive space for all
+three rows instead of the height previously allocated for two.
