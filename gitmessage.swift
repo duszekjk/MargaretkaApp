@@ -1,4 +1,5 @@
-codex conversation [20260810-ipad] checkpoint pending workspace changes
+codex conversation [20260810-ipad] group devotion variants in the prayer list
 
-Preserve the existing uncommitted project and PrayerFlowView changes before
-making the rosary-list filtering update.
+Show one primary list item for all rosary variants and one for all Divine Mercy
+Chaplet language variants. Keep the full set accessible through the existing
+variant selector after opening the grouped devotion.

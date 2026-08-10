@@ -255,7 +255,9 @@ struct PrayerFlowView: View {
     @State private var imagePlaygroundConcepts: [ImagePlaygroundConcept] = []
     @FocusState private var keyboardFocus: Bool
     var priestsAndPrayers: [Priest] {
-        scheduleData.items.filter { $0.category == selectedCategory }
+        let items = scheduleData.items.filter { $0.category == selectedCategory }
+        guard selectedCategory == .prayer else { return items }
+        return items.filter { isPrimaryDevotionListItem($0, in: items) }
     }
     var today: Weekday {
         Weekday.today
@@ -578,9 +580,29 @@ struct PrayerFlowView: View {
         if isRosaryTarget(selectedPriest) {
             return priestStore.priests.filter { $0.category == .prayer && isRosaryTarget($0) }
         }
-        let chapletNames: Set<String> = ["Koronka do Miłosierdzia Bożego", "Divine Mercy Chaplet", "Coronilla Divinae Misericordiae"]
-        guard chapletNames.contains(selectedPriest.firstName) else { return [] }
-        return priestStore.priests.filter { $0.category == .prayer && chapletNames.contains($0.firstName) }
+        guard chapletVariantNames.contains(selectedPriest.firstName) else { return [] }
+        return priestStore.priests.filter { $0.category == .prayer && chapletVariantNames.contains($0.firstName) }
+    }
+
+    private var chapletVariantNames: Set<String> {
+        ["Koronka do Miłosierdzia Bożego", "Divine Mercy Chaplet", "Coronilla Divinae Misericordiae"]
+    }
+
+    private func devotionGroup(for target: Priest) -> SimpleDevotion? {
+        if isRosaryTarget(target) { return .rosary }
+        if chapletVariantNames.contains(target.firstName) { return .divineMercyChaplet }
+        return nil
+    }
+
+    private func isPrimaryDevotionListItem(_ target: Priest, in items: [Priest]) -> Bool {
+        guard let group = devotionGroup(for: target) else { return true }
+        let grouped = items.filter { devotionGroup(for: $0) == group }
+        let primary = grouped.first(where: { $0.firstName == group.polishName })
+            ?? grouped.sorted {
+                ($0.title == "pl" ? 0 : $0.title == "en" ? 1 : 2)
+                    < ($1.title == "pl" ? 0 : $1.title == "en" ? 1 : 2)
+            }.first
+        return target.id == primary?.id
     }
 
     private func isRosaryTarget(_ target: Priest) -> Bool {
