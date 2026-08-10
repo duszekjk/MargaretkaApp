@@ -53,7 +53,7 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
 #if os(macOS)
         180
 #else
-        UIDevice.current.userInterfaceIdiom == .pad ? 180 : 132
+        UIDevice.current.userInterfaceIdiom == .pad ? 180 : 122
 #endif
     }
 

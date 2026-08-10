@@ -569,10 +569,6 @@ struct PrayerFlowView: View {
             ?? availableOfflineBreviaryDays.first
     }
 
-    private var showsBreviaryVariantPicker: Bool {
-        availableOfflineBreviaryDays.count > 1
-            && prayerSteps.contains(where: { $0.offlineOffice != nil })
-    }
 
     private var devotionVariants: [Priest] {
         guard let selectedPriest,
@@ -658,15 +654,6 @@ struct PrayerFlowView: View {
         }
     }
 
-    @ViewBuilder
-    private var breviaryVariantPicker: some View {
-        if showsBreviaryVariantPicker {
-            PrayerFlowVariantPicker(items: availableOfflineBreviaryDays, selectedID: selectedOfflineBreviaryDay?.id, selectedTitle: selectedOfflineBreviaryDay?.variantName ?? "Oficjum", title: \.variantName, language: { $0.languageCode ?? "pl" }, select: { day in
-                selectedOfflineBreviaryDayID = day.id
-                activeIndex = 0
-            }, namespace: brewiarzNamespace, sourceID: "breviary", isPresented: variantPopup?.sourceID == "breviary", popup: variantPopup, isExpanded: isVariantPopupExpanded, isOffsetExpanded: isVariantPopupOffsetExpanded, present: presentVariantPopup, dismiss: dismissVariantPopup)
-        }
-    }
 
     var isIPad: Bool {
         UIDevice.current.userInterfaceIdiom == .pad
@@ -984,7 +971,13 @@ struct PrayerFlowView: View {
                             .symbolRenderingMode(.monochrome)
                             .foregroundStyle(.primary)
                         }
-                        breviaryVariantPicker
+                        if(availableOfflineBreviaryDays.count > 1
+                            && prayerSteps.contains(where: { $0.offlineOffice != nil }) ){
+                            PrayerFlowVariantPicker(items: availableOfflineBreviaryDays, selectedID: selectedOfflineBreviaryDay?.id, selectedTitle: selectedOfflineBreviaryDay?.variantName ?? "Oficjum", title: \.variantName, language: { $0.languageCode ?? "pl" }, select: { day in
+                                selectedOfflineBreviaryDayID = day.id
+                                activeIndex = 0
+                            }, namespace: brewiarzNamespace, sourceID: "breviary", isPresented: variantPopup?.sourceID == "breviary", popup: variantPopup, isExpanded: isVariantPopupExpanded, isOffsetExpanded: isVariantPopupOffsetExpanded, present: presentVariantPopup, dismiss: dismissVariantPopup)
+                        }
                         devotionVariantPicker
                         Spacer()
                         if(selectedPriest != nil)
@@ -1157,7 +1150,7 @@ struct PrayerFlowView: View {
                             Spacer(minLength: 128.0)
                         }
                     }
-                    HStack(spacing: 14) {
+                    HStack(spacing: 11) {
                         
                         GlassEffectContainer(spacing: 0) {
                             
@@ -1211,16 +1204,15 @@ struct PrayerFlowView: View {
                             .foregroundStyle(.primary)
                             
                         }
-                        breviaryVariantPicker
                         devotionVariantPicker
-                        Spacer()
+                        Spacer(minLength: 2.0)
                         
                         if(flattenedPrayerSymbols.count>0)
                         {
                             GlassEffectContainer(spacing: 0) {
                                 HStack(spacing: 0) {
                                     Text("\(displayProgress)/\(flattenedPrayerSymbols.count)")
-                                        .minimumScaleFactor(0.6)
+                                        .minimumScaleFactor(0.5)
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 10)
                                         .glassEffect()
@@ -1232,6 +1224,7 @@ struct PrayerFlowView: View {
                                     }) {
                                         Image(systemName: "arrow.triangle.2.circlepath")
                                             .padding(12)
+                                            .minimumScaleFactor(0.6)
                                     }
                                     .glassEffect()
                                     .glassEffectUnion(id: "restartGroup", namespace: namespace)
