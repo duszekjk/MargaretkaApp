@@ -1,5 +1,5 @@
-codex conversation [20260810-ipad] slow the variant popup offset independently
+codex conversation [20260810-ipad] keep the selector fixed and fit the popup to its list
 
-Drive the popup's vertical offset with a dedicated animation state at twice the
-duration of its size expansion, keeping the panel's growth at the existing
-speed while making its movement easier to follow.
+Freeze the measured selector frame while its popup is presented. Measure the
+variant-list content and size the popup to that content, capped by available
+screen space so longer lists still scroll.

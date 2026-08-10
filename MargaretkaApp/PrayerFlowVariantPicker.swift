@@ -23,6 +23,14 @@ struct PrayerFlowVariantPopupState {
     let options: [PrayerFlowVariantPopupOption]
 }
 
+private struct PrayerFlowVariantPopupContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatable {
     let items: [Item]
     let selectedID: Item.ID?
@@ -40,6 +48,7 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
     let dismiss: () -> Void
     @State private var anchor = CGRect.zero
     @State private var triggerSize = CGSize.zero
+    @State private var popupContentHeight: CGFloat = 0
 
     var body: some View {
         GlassEffectContainer(spacing: 24) {
@@ -77,10 +86,12 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
                     GeometryReader { proxy in
                         Color.clear
                             .onAppear {
+                                guard !isPresented else { return }
                                 anchor = proxy.frame(in: .global)
                                 triggerSize = proxy.size
                             }
                             .onChange(of: proxy.frame(in: .global)) { frame in
+                                guard !isPresented else { return }
                                 anchor = frame
                                 triggerSize = frame.size
                             }
@@ -111,16 +122,22 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
         let horizontalOffset = min(0, screen.maxX - popup.anchor.minX - expandedWidth - 16)
         let collapsedWidth = max(1, triggerSize.width)
         let collapsedHeight = max(1, triggerSize.height)
+        let estimatedHeight = max(54, CGFloat(popup.options.count - 1) * 52 + 20)
+        let preferredHeight = min(
+            expandedHeight,
+            max(collapsedHeight, popupContentHeight > 0 ? popupContentHeight : estimatedHeight)
+        )
 
         PrayerFlowVariantPopup(
             state: popup,
             namespace: namespace,
             showsContent: isExpanded,
+            onContentHeightChange: { popupContentHeight = $0 },
             dismiss: dismiss
         )
         .frame(
             width: isExpanded ? expandedWidth : collapsedWidth,
-            height: isExpanded ? expandedHeight : collapsedHeight
+            height: isExpanded ? preferredHeight : collapsedHeight
         )
         .offset(
             x: isExpanded ? horizontalOffset : 0,
@@ -134,6 +151,7 @@ private struct PrayerFlowVariantPopup: View {
     let state: PrayerFlowVariantPopupState
     let namespace: Namespace.ID
     let showsContent: Bool
+    let onContentHeightChange: (CGFloat) -> Void
     let dismiss: () -> Void
     @State private var expandedLanguage: String
 
@@ -141,11 +159,13 @@ private struct PrayerFlowVariantPopup: View {
         state: PrayerFlowVariantPopupState,
         namespace: Namespace.ID,
         showsContent: Bool,
+        onContentHeightChange: @escaping (CGFloat) -> Void,
         dismiss: @escaping () -> Void
     ) {
         self.state = state
         self.namespace = namespace
         self.showsContent = showsContent
+        self.onContentHeightChange = onContentHeightChange
         self.dismiss = dismiss
         _expandedLanguage = State(initialValue: state.options.first(where: \.isSelected)?.language ?? state.options.first?.language ?? "")
     }
@@ -199,8 +219,20 @@ private struct PrayerFlowVariantPopup: View {
                         }
                     }
                 }
+                .background {
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: PrayerFlowVariantPopupContentHeightKey.self,
+                            value: proxy.size.height
+                        )
+                    }
+                }
             }
             .opacity(showsContent ? 1 : 0)
+        }
+        .onPreferenceChange(PrayerFlowVariantPopupContentHeightKey.self) { height in
+            guard height > 0 else { return }
+            onContentHeightChange(height)
         }
         .glassEffect(in: .rect(cornerRadius: 6))
         .glassEffectID("\(state.sourceID)-panel", in: namespace)
