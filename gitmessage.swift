@@ -1,5 +1,5 @@
-codex conversation [20260810-ipad] give popup an explicit glass shape
+codex conversation [20260810-ipad] revert broken popup glass surface
 
-Render the popup's Liquid Glass as a RoundedRectangle background rather than
-clipping a system glass union, so the animated corner radius controls the
-actual visible surface.
+Revert the explicit popup-background glass surface because it covered the
+variant list and introduced a second shadow. Restore the prior single-surface
+list while retaining the width, height, and timing changes.

@@ -105,15 +105,12 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
 
 private struct PrayerFlowVariantPopupGlass: ViewModifier {
     let cornerRadius: CGFloat
+    let namespace: Namespace.ID
 
     func body(content: Content) -> some View {
         content
-            .background {
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(.clear)
-                    .glassEffect()
-                    .allowsHitTesting(false)
-            }
+            .glassEffect()
+            .glassEffectUnion(id: "variantPicker", namespace: namespace)
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
 }
@@ -188,7 +185,8 @@ private struct PrayerFlowVariantPopup: View {
         .padding(.horizontal, 8)
         .frame(height: maximumHeight)
         .modifier(PrayerFlowVariantPopupGlass(
-            cornerRadius: cornerRadius
+            cornerRadius: cornerRadius,
+            namespace: namespace
         ))
         .animation(.easeInOut(duration: 0.25), value: cornerRadius)
     }
