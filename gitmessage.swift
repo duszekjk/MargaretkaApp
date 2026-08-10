@@ -1,4 +1,3 @@
-codex conversation [20260810-ipad] keep popup glass continuous and height bounded
+adding build number 65
 
-Animate a single clipped Liquid Glass surface instead of replacing it between
-animation phases, and cap the popup at 360 points with scrolling content.
+Record the existing build-number increase for the app and its widget targets.
