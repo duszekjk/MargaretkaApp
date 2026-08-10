@@ -971,30 +971,33 @@ struct PrayerFlowView: View {
                                 .lineLimit(4)
                                 .padding(3)
                                 .glassEffect()
-                            if supportsImagePlayground,
-                               let office = backgroundOfflineOffice,
-                               office.imageFilename == nil {
-                                Button {
-                                    Task {
-                                        await presentImagePlayground(
-                                            for: office
-                                        )
-                                    }
-                                } label: {
-                                    if isPreparingImagePlayground,
-                                       imagePlaygroundOfficeID == office.id {
-                                        HStack(spacing: 8) {
-                                            ProgressView()
-                                            Text("Przygotowuję tło…")
+                            if(selectedPriest?.displayPhoto == nil)
+                            {
+                                if supportsImagePlayground,
+                                   let office = backgroundOfflineOffice,
+                                   office.imageFilename == nil {
+                                    Button {
+                                        Task {
+                                            await presentImagePlayground(
+                                                for: office
+                                            )
                                         }
-                                    } else {
-                                        Label("Utwórz tło", systemImage: "photo.badge.plus")
+                                    } label: {
+                                        if isPreparingImagePlayground,
+                                           imagePlaygroundOfficeID == office.id {
+                                            HStack(spacing: 8) {
+                                                ProgressView()
+                                                Text("Przygotowuję tło…")
+                                            }
+                                        } else {
+                                            Label("Utwórz tło", systemImage: "photo.badge.plus")
+                                        }
                                     }
+                                    .disabled(isPreparingImagePlayground)
+                                    .padding(8)
+                                    .glassEffect()
+                                    .contentShape(Rectangle())
                                 }
-                                .disabled(isPreparingImagePlayground)
-                                .padding(8)
-                                .glassEffect()
-                                .contentShape(Rectangle())
                             }
                             Spacer()
                                 .frame(height: 12)
