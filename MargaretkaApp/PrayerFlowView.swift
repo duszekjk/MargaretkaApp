@@ -103,9 +103,9 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
                     GeometryReader { proxy in
                         Color.clear
                             .onAppear {
-                                anchor = proxy.frame(in: .named(prayerFlowVariantPickerCoordinateSpace))
+                                anchor = proxy.frame(in: .global)
                             }
-                            .onChange(of: proxy.frame(in: .named(prayerFlowVariantPickerCoordinateSpace))) { frame in
+                            .onChange(of: proxy.frame(in: .global)) { frame in
                                 anchor = frame
                             }
                     }
@@ -139,6 +139,7 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
                 }
             }
         }
+        .zIndex(isPresented ? 1_000 : 0)
     }
 }
 

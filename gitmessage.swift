@@ -1,4 +1,4 @@
-codex conversation [20260810-ipad] fit local variant popup within the screen
+codex conversation [20260810-ipad] align popup using global screen coordinates
 
-Constrain the local Glass popup to available screen width and height, shift it
-away from the right edge, open it upward when necessary, and scroll long lists.
+Measure the trigger in global coordinates so edge calculations match the actual
+display, and raise the local picker above the prayer card while it is open.
