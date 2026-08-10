@@ -1,4 +1,4 @@
-codex conversation [20260810-ipad] place one officium picker in each header
+codex conversation [20260810-ipad] keep the officium picker visible throughout a breviary prayer
 
-Keep exactly one shared breviary variant selector in the iPad header and add
-the same selector to the phone header before the devotion selector.
+Base picker visibility on the selected target's assigned breviary prayers and
+the imported day variants, rather than the currently active individual page.

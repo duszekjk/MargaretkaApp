@@ -570,11 +570,12 @@ struct PrayerFlowView: View {
     }
 
     private var showsBreviaryVariantPicker: Bool {
-        guard let key = currentBrewiarzKey else { return false }
-        return availableOfflineBreviaryDays.count > 1
-            && availableOfflineBreviaryDays.contains { day in
-                day.offices.contains { $0.key == key }
-            }
+        guard availableOfflineBreviaryDays.count > 1 else { return false }
+        return assignedPrayerIds.contains { prayerID in
+            guard let prayer = allPrayers[prayerID] else { return false }
+            if case .brewiarz = prayer.content { return true }
+            return false
+        }
     }
 
 
