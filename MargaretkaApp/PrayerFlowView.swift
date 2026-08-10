@@ -78,7 +78,7 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
                 }
 
                 Button {
-                    withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
+                    withAnimation(.spring(response: 0.72, dampingFraction: 0.86)) {
                         if !isPresented {
                             present(PrayerFlowVariantPopupState(
                                 sourceID: sourceID,
@@ -149,7 +149,7 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
         )
         .offset(
             x: isExpanded ? horizontalOffset : 0,
-            y: isExpanded ? collapsedHeight * 2.1 : 0
+            y: isExpanded ? collapsedHeight + 3 : 0
         )
         .allowsHitTesting(isExpanded)
     }
@@ -625,17 +625,17 @@ struct PrayerFlowView: View {
         isVariantPopupExpanded = false
         variantPopup = popup
         DispatchQueue.main.async {
-            withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+            withAnimation(.spring(response: 0.72, dampingFraction: 0.86)) {
                 isVariantPopupExpanded = true
             }
         }
     }
 
     private func dismissVariantPopup() {
-        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+        withAnimation(.spring(response: 0.56, dampingFraction: 0.86)) {
             isVariantPopupExpanded = false
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.56) {
             variantPopup = nil
         }
     }

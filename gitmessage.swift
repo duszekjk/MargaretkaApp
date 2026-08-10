@@ -1,5 +1,5 @@
-codex conversation [20260810-ipad] morph selector and popup as separate glass effects
+codex conversation [20260810-ipad] slow the glass morph and keep a 3 point gap
 
-Replace the persistent glass union with Apple's transition pattern: unique
-glassEffectID values for the trigger and conditionally inserted panel in one
-GlassEffectContainer, with a matched-geometry glass transition on the panel.
+Use a 3 point final gap below the selector instead of an additional selector
+height. Slow the opening and closing springs so the matched-geometry glass
+transition remains perceptible.
