@@ -1,5 +1,5 @@
-codex conversation [20260810-ipad] materialize only the variant popup glass
+codex conversation [20260810-ipad] give variant selectors fixed dimensions
 
-Use Apple's materialize Liquid Glass transition for the inserted popup rather
-than matched geometry. The selector remains a fixed glass surface while only
-the popup materializes and expands.
+Replace geometry-derived selector sizing with fixed 132 point phone and 180
+point iPad/macOS widths. The popup can no longer turn its width into the
+selector's frame or alter the toolbar layout; restore the prior glass morph.

@@ -47,8 +47,17 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
     let present: (PrayerFlowVariantPopupState) -> Void
     let dismiss: () -> Void
     @State private var anchor = CGRect.zero
-    @State private var triggerSize = CGSize.zero
     @State private var popupContentHeight: CGFloat = 0
+
+    private var selectorWidth: CGFloat {
+#if os(macOS)
+        180
+#else
+        UIDevice.current.userInterfaceIdiom == .pad ? 180 : 132
+#endif
+    }
+
+    private let selectorHeight: CGFloat = 44
 
     var body: some View {
         GlassEffectContainer(spacing: 24) {
@@ -80,7 +89,11 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
                         }
                     }
                 } label: {
-                    Text(selectedTitle).lineLimit(1).minimumScaleFactor(0.75).padding(12)
+                    Text(selectedTitle)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                        .padding(12)
+                        .frame(width: selectorWidth, height: selectorHeight)
                 }
                 .background {
                     GeometryReader { proxy in
@@ -88,12 +101,10 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
                             .onAppear {
                                 guard !isPresented else { return }
                                 anchor = proxy.frame(in: .global)
-                                triggerSize = proxy.size
                             }
                             .onChange(of: proxy.frame(in: .global)) { frame in
                                 guard !isPresented else { return }
                                 anchor = frame
-                                triggerSize = frame.size
                             }
                     }
                 }
@@ -102,8 +113,8 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
                 .zIndex(1)
             }
             .frame(
-                width: triggerSize.width > 0 ? triggerSize.width : nil,
-                height: triggerSize.height > 0 ? triggerSize.height : nil,
+                width: selectorWidth,
+                height: selectorHeight,
                 alignment: .topLeading
             )
         }
@@ -120,8 +131,8 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
         let availableHeight = max(120, screen.maxY - popup.anchor.maxY - 24)
         let expandedHeight = min(460, availableHeight)
         let horizontalOffset = min(0, screen.maxX - popup.anchor.minX - expandedWidth - 16)
-        let collapsedWidth = max(1, triggerSize.width)
-        let collapsedHeight = max(1, triggerSize.height)
+        let collapsedWidth = selectorWidth
+        let collapsedHeight = selectorHeight
         let estimatedHeight = max(54, CGFloat(popup.options.count - 1) * 52 + 20)
         let preferredHeight = min(
             expandedHeight,
@@ -236,7 +247,7 @@ private struct PrayerFlowVariantPopup: View {
         }
         .glassEffect(in: .rect(cornerRadius: 6))
         .glassEffectID("\(state.sourceID)-panel", in: namespace)
-        .glassEffectTransition(.materialize)
+        .glassEffectTransition(.matchedGeometry)
     }
 
     @ViewBuilder
