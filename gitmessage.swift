@@ -1,5 +1,4 @@
-codex conversation [20260810-ipad] isolate each variant selector glass union
+codex conversation [20260810-ipad] use a rounded rectangle for variant selector glass
 
-Give the breviary and devotion selectors distinct glassEffectUnion IDs. This
-prevents their nearby glass surfaces from merging into one oversized ellipse
-when a popup is opened.
+Define the selector surface explicitly as a rounded rectangle rather than
+letting the default Liquid Glass shape render as a capsule.

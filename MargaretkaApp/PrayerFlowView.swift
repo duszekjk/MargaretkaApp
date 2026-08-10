@@ -114,7 +114,7 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
                             }
                     }
                 }
-                .glassEffect()
+                .glassEffect(in: .rect(cornerRadius: 12))
                 .glassEffectUnion(id: sourceID, namespace: namespace)
                 .zIndex(1)
             }
