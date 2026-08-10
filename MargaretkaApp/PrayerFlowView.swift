@@ -596,6 +596,13 @@ struct PrayerFlowView: View {
         PrayerLanguage(rawValue: target.title) ?? .polish
     }
 
+    private func isTodayRosaryVariant(_ target: Priest) -> Bool {
+        guard isRosaryTarget(target) else { return false }
+        return target.firstName == RosaryMysterySet.forToday().variantName(
+            language: rosaryLanguage(for: target)
+        )
+    }
+
     private func defaultRosaryVariant(for target: Priest) -> Priest {
         guard isRosaryTarget(target) else { return target }
         let language = PrayerLanguage(rawValue: lastRosaryLanguageCode) ?? rosaryLanguage(for: target)
@@ -616,7 +623,10 @@ struct PrayerFlowView: View {
     @ViewBuilder
     private var devotionVariantPicker: some View {
         if devotionVariants.count > 1 {
-            PrayerFlowVariantPicker(items: devotionVariants, selectedID: selectedPriest?.id, selectedTitle: selectedPriest?.displayName ?? "", title: \.displayName, language: { $0.title.isEmpty ? "pl" : $0.title }, select: { variant in
+            PrayerFlowVariantPicker(items: devotionVariants, selectedID: selectedPriest?.id, selectedTitle: selectedPriest?.displayName ?? "", title: { variant in
+                let marker = isTodayRosaryVariant(variant) ? " *" : ""
+                return variant.displayName + marker
+            }, language: { $0.title.isEmpty ? "pl" : $0.title }, select: { variant in
                         if isRosaryTarget(variant) {
                             lastRosaryLanguageCode = rosaryLanguage(for: variant).rawValue
                         }

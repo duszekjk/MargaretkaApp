@@ -189,7 +189,7 @@ private struct PrayerFlowVariantPopup: View {
     }
 
     private var listOptions: [PrayerFlowVariantPopupOption] {
-        state.options.filter { !$0.isSelected }
+        state.options
     }
 
     var body: some View {
