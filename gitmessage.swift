@@ -1,4 +1,4 @@
-codex conversation [20260810-ipad] tighten variant popup animation and width
+codex conversation [20260810-ipad] narrow the variant popup to 270 points
 
-Halve the popup transition timings and reduce its maximum width with wider
-screen insets so the complete surface fits within the display.
+Limit the popup to 270 points so it remains a compact control with generous
+surrounding space on every iPhone width.

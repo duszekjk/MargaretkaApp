@@ -1575,7 +1575,7 @@ struct PrayerFlowView: View {
 
             if let variantPopup {
                 GeometryReader { proxy in
-                    let panelWidth = min(320, proxy.size.width - 32)
+                    let panelWidth = min(270, proxy.size.width - 32)
                     let x = min(
                         max(16, variantPopup.anchor.minX),
                         max(16, proxy.size.width - panelWidth - 16)
