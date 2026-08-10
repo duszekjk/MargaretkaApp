@@ -103,10 +103,30 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
     }
 }
 
+private struct PrayerFlowVariantPopupGlass: ViewModifier {
+    let joinsTrigger: Bool
+    let cornerRadius: CGFloat
+    let namespace: Namespace.ID
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if joinsTrigger {
+            content
+                .glassEffect()
+                .glassEffectUnion(id: "variantPicker", namespace: namespace)
+        } else {
+            content
+                .glassEffect(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        }
+    }
+}
+
 private struct PrayerFlowVariantPopup: View {
     let state: PrayerFlowVariantPopupState
     let namespace: Namespace.ID
     let cornerRadius: CGFloat
+    let joinsTrigger: Bool
     let maximumHeight: CGFloat
     let dismiss: () -> Void
     @State private var expandedLanguage: String
@@ -115,12 +135,14 @@ private struct PrayerFlowVariantPopup: View {
         state: PrayerFlowVariantPopupState,
         namespace: Namespace.ID,
         cornerRadius: CGFloat,
+        joinsTrigger: Bool,
         maximumHeight: CGFloat,
         dismiss: @escaping () -> Void
     ) {
         self.state = state
         self.namespace = namespace
         self.cornerRadius = cornerRadius
+        self.joinsTrigger = joinsTrigger
         self.maximumHeight = maximumHeight
         self.dismiss = dismiss
         _expandedLanguage = State(initialValue: state.options.first(where: \.isSelected)?.language ?? state.options.first?.language ?? "")
@@ -172,8 +194,12 @@ private struct PrayerFlowVariantPopup: View {
         .padding(.vertical, 14)
         .padding(.horizontal, 8)
         .frame(maxHeight: maximumHeight)
-        .glassEffect(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-        .glassEffectUnion(id: "variantPicker", namespace: namespace)
+        .modifier(PrayerFlowVariantPopupGlass(
+            joinsTrigger: joinsTrigger,
+            cornerRadius: cornerRadius,
+            namespace: namespace
+        ))
+        .animation(.easeInOut(duration: 0.5), value: cornerRadius)
     }
 
     @ViewBuilder
@@ -417,6 +443,7 @@ struct PrayerFlowView: View {
     @State private var selectedOfflineBreviaryDayID: UUID?
     @State private var variantPopup: PrayerFlowVariantPopupState?
     @State private var variantPopupCornerRadius: CGFloat = 28
+    @State private var variantPopupJoinsTrigger = true
     @State private var isClosingVariantPopup = false
     @AppStorage("lastRosaryLanguage") private var lastRosaryLanguageCode = PrayerLanguage.polish.rawValue
     
@@ -562,6 +589,7 @@ struct PrayerFlowView: View {
     private func presentVariantPopup(_ popup: PrayerFlowVariantPopupState) {
         guard !isClosingVariantPopup else { return }
         variantPopupCornerRadius = 28
+        variantPopupJoinsTrigger = true
         withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
             variantPopup = popup
         }
@@ -569,6 +597,7 @@ struct PrayerFlowView: View {
             guard variantPopup != nil, !isClosingVariantPopup else { return }
             withAnimation(.easeInOut(duration: 0.5)) {
                 variantPopupCornerRadius = 4
+                variantPopupJoinsTrigger = false
             }
         }
     }
@@ -578,6 +607,7 @@ struct PrayerFlowView: View {
         isClosingVariantPopup = true
         withAnimation(.easeInOut(duration: 0.5)) {
             variantPopupCornerRadius = 28
+            variantPopupJoinsTrigger = true
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
@@ -1567,6 +1597,7 @@ struct PrayerFlowView: View {
                             state: variantPopup,
                             namespace: brewiarzNamespace,
                             cornerRadius: variantPopupCornerRadius,
+                            joinsTrigger: variantPopupJoinsTrigger,
                             maximumHeight: panelHeight,
                             dismiss: dismissVariantPopup
                         )

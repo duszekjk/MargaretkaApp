@@ -1,5 +1,5 @@
-codex conversation [20260810-ipad] make variant popup fit and group Rosary
+codex conversation [20260810-ipad] animate popup corner shape after glass union
 
-Increase safe vertical padding, constrain the popup to the visible screen, and
-group lists over five options by language. Add the requested two-stage corner
-animation before opening and before the Liquid Glass closing transition.
+Detach the popup from its Liquid Glass union after the opening transition, so
+its explicitly animated 4-point rounded rectangle is visible. Rejoin it before
+the closing Liquid Glass transition.
