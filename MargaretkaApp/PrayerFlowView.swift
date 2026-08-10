@@ -47,6 +47,7 @@ private struct PrayerFlowVariantPopupOption: Identifiable {
 
 private struct PrayerFlowVariantPopupState {
     let anchor: CGRect
+    let selectedTitle: String
     let options: [PrayerFlowVariantPopupOption]
 }
 
@@ -69,6 +70,7 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
                 if !isPresented {
                     present(PrayerFlowVariantPopupState(
                         anchor: anchor,
+                        selectedTitle: selectedTitle,
                         options: items.map { item in
                             PrayerFlowVariantPopupOption(
                                 id: AnyHashable(item.id),
@@ -148,6 +150,12 @@ private struct PrayerFlowVariantPopup: View {
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 0) {
+                Text(state.selectedTitle)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 20)
+                    .padding(.bottom, 12)
+
                 if state.options.count > 5 {
                     ForEach(languages, id: \.self) { language in
                         Button {
@@ -180,8 +188,8 @@ private struct PrayerFlowVariantPopup: View {
                     }
                 }
             }
+            .padding(.bottom, 100)
         }
-        .padding(.vertical, 14)
         .padding(.horizontal, 8)
         .frame(height: maximumHeight)
         .modifier(PrayerFlowVariantPopupGlass(

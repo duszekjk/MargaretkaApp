@@ -1,5 +1,4 @@
-codex conversation [20260810-ipad] revert broken popup glass surface
+codex conversation [20260810-ipad] add popup title and requested spacing
 
-Revert the explicit popup-background glass surface because it covered the
-variant list and introduced a second shadow. Restore the prior single-surface
-list while retaining the width, height, and timing changes.
+Show the selected button title centered at the top of the opened popup, with
+20-point top padding and 100-point bottom padding inside its scrollable list.
