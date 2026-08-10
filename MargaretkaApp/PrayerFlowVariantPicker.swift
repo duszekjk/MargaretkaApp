@@ -68,25 +68,23 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
                 }
 
                 Button {
-                    withAnimation(.spring(response: 0.72, dampingFraction: 0.86)) {
-                        if !isPresented {
-                            present(PrayerFlowVariantPopupState(
-                                sourceID: sourceID,
-                                anchor: anchor,
-                                selectedTitle: selectedTitle,
-                                options: items.map { item in
-                                    PrayerFlowVariantPopupOption(
-                                        id: AnyHashable(item.id),
-                                        title: title(item),
-                                        language: language(item),
-                                        isSelected: item.id == selectedID,
-                                        select: { select(item) }
-                                    )
-                                }
-                            ))
-                        } else {
-                            dismiss()
-                        }
+                    if !isPresented {
+                        present(PrayerFlowVariantPopupState(
+                            sourceID: sourceID,
+                            anchor: anchor,
+                            selectedTitle: selectedTitle,
+                            options: items.map { item in
+                                PrayerFlowVariantPopupOption(
+                                    id: AnyHashable(item.id),
+                                    title: title(item),
+                                    language: language(item),
+                                    isSelected: item.id == selectedID,
+                                    select: { select(item) }
+                                )
+                            }
+                        ))
+                    } else {
+                        dismiss()
                     }
                 } label: {
                     VStack()

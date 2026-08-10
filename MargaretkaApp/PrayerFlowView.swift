@@ -377,7 +377,7 @@ struct PrayerFlowView: View {
         isVariantPopupExpanded = false
         isVariantPopupOffsetExpanded = false
         variantPopup = popup
-        DispatchQueue.main.async {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
             withAnimation(.spring(response: 0.72, dampingFraction: 0.86)) {
                 isVariantPopupExpanded = true
             }

@@ -1,5 +1,5 @@
-codex conversation [20260810-ipad] size the officium popup for every visible variant
+codex conversation [20260810-ipad] animate popup height after its collapsed frame renders
 
-Count every rendered option, including the selected bold option, when choosing
-the popup's initial height. Three officium variants now receive space for all
-three rows instead of the height previously allocated for two.
+Insert the collapsed popup without an enclosing animation, then begin its size
+and offset springs after one rendered frame. This preserves the height-growth
+animation when the list has intrinsic content size without a ScrollView.
