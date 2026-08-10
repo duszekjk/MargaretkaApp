@@ -1,4 +1,5 @@
-codex conversation [20260810-ipad] align popup using global screen coordinates
+codex conversation [20260810-ipad] place popup above the whole prayer layout
 
-Measure the trigger in global coordinates so edge calculations match the actual
-display, and raise the local picker above the prayer card while it is open.
+Keep the trigger in the root GlassEffectContainer but render the popup as a
+root-level layer positioned from the trigger's global frame, so cards cannot
+cover it and its top and bottom remain clamped to the visible window.
