@@ -990,7 +990,6 @@ struct PrayerFlowView: View {
                             .foregroundStyle(.primary)
                         }
                         breviaryVariantPicker
-                        breviaryVariantPicker
                         devotionVariantPicker
                         Spacer()
                         if(selectedPriest != nil)
@@ -1217,6 +1216,7 @@ struct PrayerFlowView: View {
                             .foregroundStyle(.primary)
                             
                         }
+                        breviaryVariantPicker
                         devotionVariantPicker
                         Spacer(minLength: 2.0)
                         

@@ -1,5 +1,4 @@
-codex conversation [20260810-ipad] show the officium picker wherever its prayer has variants
+codex conversation [20260810-ipad] place one officium picker in each header
 
-Centralize the breviary picker for both phone and iPad headers. Show it when
-the active breviary prayer exists in more than one imported officium variant,
-without depending on already constructed offline cards.
+Keep exactly one shared breviary variant selector in the iPad header and add
+the same selector to the phone header before the devotion selector.
