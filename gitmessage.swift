@@ -1,4 +1,4 @@
-codex conversation [20260810-ipad] keep the officium picker visible throughout a breviary prayer
+codex conversation [20260810-ipad] checkpoint pending popup layout changes
 
-Base picker visibility on the selected target's assigned breviary prayers and
-the imported day variants, rather than the currently active individual page.
+Preserve the current uncommitted selector and popup layout changes before
+correcting the height calculation for all visible variant rows.

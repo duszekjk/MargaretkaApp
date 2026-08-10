@@ -89,11 +89,15 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
                         }
                     }
                 } label: {
-                    Text(selectedTitle)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
-                        .padding(12)
-                        .frame(width: selectorWidth, height: selectorHeight)
+                    VStack()
+                    {
+                        Text(selectedTitle)
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                            .padding(12)
+                    }
+                    .frame(width: selectorWidth, height: selectorHeight)
                 }
                 .background {
                     GeometryReader { proxy in
@@ -152,7 +156,7 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
         )
         .offset(
             x: isExpanded ? horizontalOffset : 0,
-            y: isOffsetExpanded ? collapsedHeight + 6 : -1
+            y: isOffsetExpanded ? collapsedHeight + 9 : -1
         )
         .allowsHitTesting(isExpanded)
     }
@@ -196,7 +200,7 @@ private struct PrayerFlowVariantPopup: View {
         ZStack {
             Color.clear
 
-            ScrollView(.vertical, showsIndicators: true) {
+//            ScrollView(.vertical, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 0) {
                     if state.options.count > 5 {
                         ForEach(languages, id: \.self) { language in
@@ -238,9 +242,9 @@ private struct PrayerFlowVariantPopup: View {
                         )
                     }
                 }
-            }
-            .opacity(showsContent ? 1 : 0)
+//            }
         }
+        .opacity(showsContent ? 1 : 0)
         .onPreferenceChange(PrayerFlowVariantPopupContentHeightKey.self) { height in
             guard height > 0 else { return }
             onContentHeightChange(height)
@@ -261,12 +265,14 @@ private struct PrayerFlowVariantPopup: View {
                     .fontWeight(option.isSelected ? .bold : .regular)
                     .lineLimit(3)
                     .multilineTextAlignment(.leading)
-                Spacer(minLength: 8)
+                Spacer(minLength: 4)
                 Text(option.language)
                     .font(.caption2.monospaced())
                     .foregroundStyle(.secondary)
                     .padding(.top, 3)
             }
+            .minimumScaleFactor(0.5)
+            .frame(height: 32)
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
             .contentShape(Rectangle())
