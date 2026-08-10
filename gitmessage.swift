@@ -1,4 +1,4 @@
-codex conversation [20260810-ipad] narrow the variant popup to 270 points
+codex conversation [20260810-ipad] keep popup glass continuous and height bounded
 
-Limit the popup to 270 points so it remains a compact control with generous
-surrounding space on every iPhone width.
+Animate a single clipped Liquid Glass surface instead of replacing it between
+animation phases, and cap the popup at 360 points with scrolling content.
