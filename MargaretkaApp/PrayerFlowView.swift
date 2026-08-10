@@ -229,6 +229,7 @@ struct PrayerFlowView: View {
     @State private var selectedOfflineBreviaryDayID: UUID?
     @State private var variantPopup: PrayerFlowVariantPopupState?
     @State private var isVariantPopupExpanded = false
+    @State private var isVariantPopupOffsetExpanded = false
     @AppStorage("lastRosaryLanguage") private var lastRosaryLanguageCode = PrayerLanguage.polish.rawValue
     
     @Binding var showSettings: Bool
@@ -372,10 +373,14 @@ struct PrayerFlowView: View {
 
     private func presentVariantPopup(_ popup: PrayerFlowVariantPopupState) {
         isVariantPopupExpanded = false
+        isVariantPopupOffsetExpanded = false
         variantPopup = popup
         DispatchQueue.main.async {
             withAnimation(.spring(response: 0.72, dampingFraction: 0.86)) {
                 isVariantPopupExpanded = true
+            }
+            withAnimation(.spring(response: 1.44, dampingFraction: 0.86)) {
+                isVariantPopupOffsetExpanded = true
             }
         }
     }
@@ -384,7 +389,10 @@ struct PrayerFlowView: View {
         withAnimation(.spring(response: 0.56, dampingFraction: 0.86)) {
             isVariantPopupExpanded = false
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.56) {
+        withAnimation(.spring(response: 1.12, dampingFraction: 0.86)) {
+            isVariantPopupOffsetExpanded = false
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.12) {
             variantPopup = nil
         }
     }
@@ -614,7 +622,7 @@ struct PrayerFlowView: View {
                         }
                         selectedPriest = variant
                         activeIndex = 0
-            }, namespace: brewiarzNamespace, sourceID: "devotion", isPresented: variantPopup?.sourceID == "devotion", popup: variantPopup, isExpanded: isVariantPopupExpanded, present: presentVariantPopup, dismiss: dismissVariantPopup)
+            }, namespace: brewiarzNamespace, sourceID: "devotion", isPresented: variantPopup?.sourceID == "devotion", popup: variantPopup, isExpanded: isVariantPopupExpanded, isOffsetExpanded: isVariantPopupOffsetExpanded, present: presentVariantPopup, dismiss: dismissVariantPopup)
         }
     }
 
@@ -624,7 +632,7 @@ struct PrayerFlowView: View {
             PrayerFlowVariantPicker(items: availableOfflineBreviaryDays, selectedID: selectedOfflineBreviaryDay?.id, selectedTitle: selectedOfflineBreviaryDay?.variantName ?? "Oficjum", title: \.variantName, language: { $0.languageCode ?? "pl" }, select: { day in
                 selectedOfflineBreviaryDayID = day.id
                 activeIndex = 0
-            }, namespace: brewiarzNamespace, sourceID: "breviary", isPresented: variantPopup?.sourceID == "breviary", popup: variantPopup, isExpanded: isVariantPopupExpanded, present: presentVariantPopup, dismiss: dismissVariantPopup)
+            }, namespace: brewiarzNamespace, sourceID: "breviary", isPresented: variantPopup?.sourceID == "breviary", popup: variantPopup, isExpanded: isVariantPopupExpanded, isOffsetExpanded: isVariantPopupOffsetExpanded, present: presentVariantPopup, dismiss: dismissVariantPopup)
         }
     }
 

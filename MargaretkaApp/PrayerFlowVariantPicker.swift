@@ -35,6 +35,7 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
     let isPresented: Bool
     let popup: PrayerFlowVariantPopupState?
     let isExpanded: Bool
+    let isOffsetExpanded: Bool
     let present: (PrayerFlowVariantPopupState) -> Void
     let dismiss: () -> Void
     @State private var anchor = CGRect.zero
@@ -123,7 +124,7 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
         )
         .offset(
             x: isExpanded ? horizontalOffset : 0,
-            y: isExpanded ? (isExpanded ? collapsedHeight + (isExpanded ? 6 : -1) : -1) : -1
+            y: isOffsetExpanded ? collapsedHeight + 6 : -1
         )
         .allowsHitTesting(isExpanded)
     }
