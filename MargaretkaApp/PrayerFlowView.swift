@@ -115,7 +115,7 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
                     }
                 }
                 .glassEffect()
-                .glassEffectUnion(id: "variantPicker", namespace: namespace)
+                .glassEffectUnion(id: sourceID, namespace: namespace)
                 .zIndex(1)
             }
             .frame(
@@ -235,7 +235,7 @@ private struct PrayerFlowVariantPopup: View {
         }
         .frame(height: maximumHeight)
         .glassEffect(in: .rect(cornerRadius: 5))
-        .glassEffectUnion(id: "variantPicker", namespace: namespace)
+        .glassEffectUnion(id: state.sourceID, namespace: namespace)
     }
 
     @ViewBuilder
