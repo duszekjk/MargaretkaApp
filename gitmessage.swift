@@ -1,4 +1,4 @@
-codex conversation [20260810-ipad] use a rounded rectangle for variant selector glass
+codex conversation [20260810-ipad] position the expanded selector panel below its trigger
 
-Define the selector surface explicitly as a rounded rectangle rather than
-letting the default Liquid Glass shape render as a capsule.
+Move the expanded panel down by 1.1 times the selector height so the two
+related Liquid Glass surfaces separate cleanly during the existing animation.
