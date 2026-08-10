@@ -149,7 +149,7 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
         )
         .offset(
             x: isExpanded ? horizontalOffset : 0,
-            y: isExpanded ? collapsedHeight + 3 : 0
+            y: isExpanded ? (isExpanded ? collapsedHeight + (isExpanded ? 6 : -1) : -1) : -1
         )
         .allowsHitTesting(isExpanded)
     }
@@ -229,12 +229,10 @@ private struct PrayerFlowVariantPopup: View {
                     }
                 }
                 }
-                .padding(.bottom, 100)
             }
             .opacity(showsContent ? 1 : 0)
         }
-        .frame(height: maximumHeight)
-        .glassEffect(in: .rect(cornerRadius: 5))
+        .glassEffect(in: .rect(cornerRadius: 6))
         .glassEffectID("\(state.sourceID)-panel", in: namespace)
         .glassEffectTransition(.matchedGeometry)
     }
