@@ -1,4 +1,5 @@
-codex conversation [20260810-ipad] apply popup glass to its rounded shape
+codex conversation [20260810-ipad] restore direct popup-to-button glass transition
 
-Remove the capsule-shaped glass union from the popup and apply Liquid Glass
-directly to its animated RoundedRectangle so the 4-point corners are honored.
+Restore the shared Liquid Glass union between the trigger and popup and remove
+the delayed corner phase, which prevented the popup from opening out of its
+button as intended.

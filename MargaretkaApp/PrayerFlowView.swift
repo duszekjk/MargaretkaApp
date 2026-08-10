@@ -106,18 +106,18 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
 }
 
 private struct PrayerFlowVariantPopupGlass: ViewModifier {
-    let cornerRadius: CGFloat
+    let namespace: Namespace.ID
 
     func body(content: Content) -> some View {
         content
-            .glassEffect(in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .glassEffect()
+            .glassEffectUnion(id: "variantPicker", namespace: namespace)
     }
 }
 
 private struct PrayerFlowVariantPopup: View {
     let state: PrayerFlowVariantPopupState
     let namespace: Namespace.ID
-    let cornerRadius: CGFloat
     let maximumHeight: CGFloat
     let dismiss: () -> Void
     @State private var expandedLanguage: String
@@ -125,13 +125,11 @@ private struct PrayerFlowVariantPopup: View {
     init(
         state: PrayerFlowVariantPopupState,
         namespace: Namespace.ID,
-        cornerRadius: CGFloat,
         maximumHeight: CGFloat,
         dismiss: @escaping () -> Void
     ) {
         self.state = state
         self.namespace = namespace
-        self.cornerRadius = cornerRadius
         self.maximumHeight = maximumHeight
         self.dismiss = dismiss
         _expandedLanguage = State(initialValue: state.options.first(where: \.isSelected)?.language ?? state.options.first?.language ?? "")
@@ -190,9 +188,8 @@ private struct PrayerFlowVariantPopup: View {
         .padding(.horizontal, 8)
         .frame(height: maximumHeight)
         .modifier(PrayerFlowVariantPopupGlass(
-            cornerRadius: cornerRadius
+            namespace: namespace
         ))
-        .animation(.easeInOut(duration: 0.25), value: cornerRadius)
     }
 
     @ViewBuilder
@@ -435,8 +432,6 @@ struct PrayerFlowView: View {
     @State private var fontNow: CGFloat = 19.0
     @State private var selectedOfflineBreviaryDayID: UUID?
     @State private var variantPopup: PrayerFlowVariantPopupState?
-    @State private var variantPopupCornerRadius: CGFloat = 28
-    @State private var isClosingVariantPopup = false
     @AppStorage("lastRosaryLanguage") private var lastRosaryLanguageCode = PrayerLanguage.polish.rawValue
     
     @Binding var showSettings: Bool
@@ -579,30 +574,14 @@ struct PrayerFlowView: View {
     }
 
     private func presentVariantPopup(_ popup: PrayerFlowVariantPopupState) {
-        guard !isClosingVariantPopup else { return }
-        variantPopupCornerRadius = 28
         withAnimation(.spring(response: 0.17, dampingFraction: 0.82)) {
             variantPopup = popup
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            guard variantPopup != nil, !isClosingVariantPopup else { return }
-            withAnimation(.easeInOut(duration: 0.25)) {
-                variantPopupCornerRadius = 4
-            }
         }
     }
 
     private func dismissVariantPopup() {
-        guard variantPopup != nil, !isClosingVariantPopup else { return }
-        isClosingVariantPopup = true
-        withAnimation(.easeInOut(duration: 0.25)) {
-            variantPopupCornerRadius = 28
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            withAnimation(.spring(response: 0.17, dampingFraction: 0.82)) {
-                variantPopup = nil
-            }
-            isClosingVariantPopup = false
+        withAnimation(.spring(response: 0.17, dampingFraction: 0.82)) {
+            variantPopup = nil
         }
     }
 
@@ -1585,7 +1564,6 @@ struct PrayerFlowView: View {
                         PrayerFlowVariantPopup(
                             state: variantPopup,
                             namespace: brewiarzNamespace,
-                            cornerRadius: variantPopupCornerRadius,
                             maximumHeight: panelHeight,
                             dismiss: dismissVariantPopup
                         )
