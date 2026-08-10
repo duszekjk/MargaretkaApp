@@ -100,20 +100,9 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
             }
         }
         .glassEffect()
-        .glassEffectUnion(id: "variantPicker", namespace: namespace)
-        .foregroundStyle(.primary)
     }
 }
 
-private struct PrayerFlowVariantPopupGlass: ViewModifier {
-    let namespace: Namespace.ID
-
-    func body(content: Content) -> some View {
-        content
-            .glassEffect()
-            .glassEffectUnion(id: "variantPicker", namespace: namespace)
-    }
-}
 
 private struct PrayerFlowVariantPopup: View {
     let state: PrayerFlowVariantPopupState
@@ -147,13 +136,7 @@ private struct PrayerFlowVariantPopup: View {
     }
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 0) {
-                Text(state.selectedTitle)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 20)
-                    .padding(.bottom, 12)
 
                 if state.options.count > 5 {
                     ForEach(languages, id: \.self) { language in
@@ -188,12 +171,7 @@ private struct PrayerFlowVariantPopup: View {
                 }
             }
             .padding(.bottom, 100)
-        }
-        .padding(.horizontal, 8)
-        .frame(height: maximumHeight)
-        .modifier(PrayerFlowVariantPopupGlass(
-            namespace: namespace
-        ))
+            .glassEffect(in: .rect(cornerRadius: 5))
     }
 
     @ViewBuilder
@@ -821,10 +799,44 @@ struct PrayerFlowView: View {
     @ViewBuilder
     private var breviaryVariantPicker: some View {
         if showsBreviaryVariantPicker {
-            PrayerFlowVariantPicker(items: availableOfflineBreviaryDays, selectedID: selectedOfflineBreviaryDay?.id, selectedTitle: selectedOfflineBreviaryDay?.variantName ?? "Oficjum", title: \.variantName, language: { $0.languageCode ?? "pl" }, select: { day in
-                        selectedOfflineBreviaryDayID = day.id
-                        activeIndex = 0
-            }, namespace: brewiarzNamespace, isPresented: variantPopup != nil, present: presentVariantPopup, dismiss: dismissVariantPopup)
+            ZStack(alignment: .topLeading) {
+                GlassEffectContainer(spacing: 40.0) {
+                    VStack
+                    {
+                        PrayerFlowVariantPicker(items: availableOfflineBreviaryDays, selectedID: selectedOfflineBreviaryDay?.id, selectedTitle: selectedOfflineBreviaryDay?.variantName ?? "Oficjum", title: \.variantName, language: { $0.languageCode ?? "pl" }, select: { day in
+                            selectedOfflineBreviaryDayID = day.id
+                            activeIndex = 0
+                        }, namespace: brewiarzNamespace, isPresented: variantPopup != nil, present: presentVariantPopup, dismiss: dismissVariantPopup)
+                        
+                        if let variantPopup {
+                            GeometryReader { proxy in
+                                let panelWidth = min(270, proxy.size.width - 32)
+                                let x = min(
+                                    max(16, variantPopup.anchor.minX),
+                                    max(16, proxy.size.width - panelWidth - 16)
+                                )
+                                let y = min(
+                                    max(8, variantPopup.anchor.maxY + 8),
+                                    max(8, proxy.size.height - 160)
+                                )
+                                let panelHeight = min(360, max(120, proxy.size.height - y - 8))
+                                
+                                ZStack(alignment: .topLeading) {
+                                    
+                                    PrayerFlowVariantPopup(
+                                        state: variantPopup,
+                                        namespace: brewiarzNamespace,
+                                        maximumHeight: panelHeight,
+                                        dismiss: dismissVariantPopup
+                                    )
+                                    .frame(width: panelWidth)
+                                    .offset(x: x, y: y)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -1539,46 +1551,13 @@ struct PrayerFlowView: View {
             .padding(.vertical, isIPad ? 0 : 35)
             .zIndex(200)
 
-            if isPreparingImagePlayground {
-                ImagePlaygroundPreparationOverlay()
-                    .transition(.opacity)
-                    .zIndex(100)
-            }
-
-            if let variantPopup {
-                GeometryReader { proxy in
-                    let panelWidth = min(270, proxy.size.width - 32)
-                    let x = min(
-                        max(16, variantPopup.anchor.minX),
-                        max(16, proxy.size.width - panelWidth - 16)
-                    )
-                    let y = min(
-                        max(8, variantPopup.anchor.maxY + 8),
-                        max(8, proxy.size.height - 160)
-                    )
-                    let panelHeight = min(360, max(120, proxy.size.height - y - 8))
-
-                    ZStack(alignment: .topLeading) {
-                        Color.clear
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                dismissVariantPopup()
-                            }
-
-                        PrayerFlowVariantPopup(
-                            state: variantPopup,
-                            namespace: brewiarzNamespace,
-                            maximumHeight: panelHeight,
-                            dismiss: dismissVariantPopup
-                        )
-                        .frame(width: panelWidth)
-                        .offset(x: x, y: y)
-                        .glassEffectTransition(.matchedGeometry)
-                    }
+                if isPreparingImagePlayground {
+                    ImagePlaygroundPreparationOverlay()
+                        .transition(.opacity)
+                        .zIndex(100)
                 }
-                .zIndex(201)
+
             }
-        }
         }
         .coordinateSpace(name: prayerFlowVariantPickerCoordinateSpace)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

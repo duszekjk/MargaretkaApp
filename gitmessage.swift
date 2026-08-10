@@ -1,5 +1,4 @@
-codex conversation [20260810-ipad] use native matched Liquid Glass transition
+codex conversation [20260810-ipad] checkpoint local popup composition work
 
-Replace the custom scale transition and extreme popup z-index with SwiftUI's
-matched GlassEffectTransition in the shared glass container. Keep the current
-selection in the centered header instead of duplicating it in the list.
+Record the in-progress move of the variant popup beside its trigger in a local
+GlassEffectContainer before completing the shared implementation.
