@@ -1,4 +1,4 @@
-codex conversation [20260810-ipad] extract the prayer-flow variant picker
+codex conversation [20260810-ipad] remove Finder metadata from the asset catalog
 
-Move the variant selector, popup model, and Liquid Glass transition views out
-of PrayerFlowView into their own source file while preserving their public API.
+Remove the regenerated .DS_Store file from Assets.xcassets so Finder metadata
+cannot alter the catalog input that Xcode uses for incremental asset builds.
