@@ -1,4 +1,4 @@
-codex conversation [20260810-ipad] add popup title and requested spacing
+codex conversation [20260810-ipad] apply popup glass to its rounded shape
 
-Show the selected button title centered at the top of the opened popup, with
-20-point top padding and 100-point bottom padding inside its scrollable list.
+Remove the capsule-shaped glass union from the popup and apply Liquid Glass
+directly to its animated RoundedRectangle so the 4-point corners are honored.
