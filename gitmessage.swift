@@ -1,5 +1,5 @@
-codex conversation [20260810-ipad] restore direct popup-to-button glass transition
+codex conversation [20260810-ipad] use native matched Liquid Glass transition
 
-Restore the shared Liquid Glass union between the trigger and popup and remove
-the delayed corner phase, which prevented the popup from opening out of its
-button as intended.
+Replace the custom scale transition and extreme popup z-index with SwiftUI's
+matched GlassEffectTransition in the shared glass container. Keep the current
+selection in the centered header instead of duplicating it in the list.

@@ -142,6 +142,10 @@ private struct PrayerFlowVariantPopup: View {
         }
     }
 
+    private var listOptions: [PrayerFlowVariantPopupOption] {
+        state.options.filter { !$0.isSelected }
+    }
+
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(alignment: .leading, spacing: 0) {
@@ -172,13 +176,13 @@ private struct PrayerFlowVariantPopup: View {
                         .buttonStyle(.plain)
 
                         if expandedLanguage == language {
-                            ForEach(state.options.filter { $0.language == language }) { option in
+                            ForEach(listOptions.filter { $0.language == language }) { option in
                                 optionRow(option)
                             }
                         }
                     }
                 } else {
-                    ForEach(state.options) { option in
+                    ForEach(listOptions) { option in
                         optionRow(option)
                     }
                 }
@@ -1569,10 +1573,10 @@ struct PrayerFlowView: View {
                         )
                         .frame(width: panelWidth)
                         .offset(x: x, y: y)
-                        .transition(.scale(scale: 0.92, anchor: .topLeading))
+                        .glassEffectTransition(.matchedGeometry)
                     }
                 }
-                .zIndex(10_000)
+                .zIndex(201)
             }
         }
         }
