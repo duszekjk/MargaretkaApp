@@ -1,4 +1,5 @@
-codex conversation [20260810-ipad] position the expanded selector panel below its trigger
+codex conversation [20260810-ipad] visibly separate popup from its selector
 
-Move the expanded panel down by 1.1 times the selector height so the two
-related Liquid Glass surfaces separate cleanly during the existing animation.
+Keep the panel's one-selector-height baseline and add another 1.1 selector
+heights during expansion, so the trigger remains visibly separate from the
+popup rather than moving by only a few points.

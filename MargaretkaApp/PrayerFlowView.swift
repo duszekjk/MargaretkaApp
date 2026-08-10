@@ -149,7 +149,7 @@ private struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: 
         )
         .offset(
             x: isExpanded ? horizontalOffset : 0,
-            y: isExpanded ? collapsedHeight * 1.1 : 0
+            y: isExpanded ? collapsedHeight * 2.1 : 0
         )
         .allowsHitTesting(isExpanded)
     }
