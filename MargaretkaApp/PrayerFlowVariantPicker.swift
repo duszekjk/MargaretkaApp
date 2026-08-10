@@ -131,17 +131,19 @@ struct PrayerFlowVariantPicker<Item: Identifiable>: View where Item.ID: Equatabl
 #else
         let screen = UIScreen.main.bounds
 #endif
-        let expandedWidth = min(270, max(200, screen.width - 32))
+        let expandedWidth = min(280, max(200, screen.width - 32))
         let availableHeight = max(120, screen.maxY - popup.anchor.maxY - 24)
-        let expandedHeight = min(460, availableHeight)
+        let options = min(CGFloat(popup.options.count), 9.0)
+        let expandedHeight = min(CGFloat(options)*54.0+14.0, availableHeight)
         let horizontalOffset = min(0, screen.maxX - popup.anchor.minX - expandedWidth - 16)
         let collapsedWidth = selectorWidth
         let collapsedHeight = selectorHeight
         let estimatedHeight = max(54, CGFloat(popup.options.count) * 52 + 20)
-        let preferredHeight = min(
-            expandedHeight,
-            max(collapsedHeight, popupContentHeight > 0 ? popupContentHeight : estimatedHeight)
-        )
+        let preferredHeight = expandedHeight
+//        min(
+//            expandedHeight,
+//            max(collapsedHeight, popupContentHeight > 0 ? popupContentHeight : estimatedHeight)
+//        )
 
         PrayerFlowVariantPopup(
             state: popup,
@@ -202,7 +204,7 @@ private struct PrayerFlowVariantPopup: View {
         ZStack {
             Color.clear
 
-//            ScrollView(.vertical, showsIndicators: true) {
+            ScrollView(.vertical, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 0) {
                     if state.options.count > 5 {
                         ForEach(languages, id: \.self) { language in
@@ -214,11 +216,12 @@ private struct PrayerFlowVariantPopup: View {
                                 HStack {
                                     Text(language)
                                         .font(.caption2.monospaced().weight(.semibold))
-                                    Spacer()
+                                    Spacer(minLength: 2.0)
                                     Image(systemName: expandedLanguage == language ? "chevron.up" : "chevron.down")
                                         .font(.caption.weight(.semibold))
                                 }
-                                .padding(.horizontal, 16)
+                                .frame(height: 32.0)
+                                .padding(.horizontal, 8)
                                 .padding(.vertical, 12)
                                 .contentShape(Rectangle())
                             }
@@ -244,7 +247,7 @@ private struct PrayerFlowVariantPopup: View {
                         )
                     }
                 }
-//            }
+            }
         }
         .opacity(showsContent ? 1 : 0)
         .onPreferenceChange(PrayerFlowVariantPopupContentHeightKey.self) { height in
@@ -262,21 +265,21 @@ private struct PrayerFlowVariantPopup: View {
             option.select()
             dismiss()
         } label: {
-            HStack(alignment: .top, spacing: 10) {
+            HStack(alignment: .center, spacing: 2) {
                 Text(option.title)
                     .fontWeight(option.isSelected ? .bold : .regular)
                     .lineLimit(3)
                     .multilineTextAlignment(.leading)
-                Spacer(minLength: 4)
+                Spacer(minLength: 2)
                 Text(option.language)
                     .font(.caption2.monospaced())
                     .foregroundStyle(.secondary)
-                    .padding(.top, 3)
+//                    .padding(.top, 3)
             }
-            .minimumScaleFactor(0.5)
-            .frame(height: 32)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .minimumScaleFactor(0.7)
+            .frame(height: 48)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
