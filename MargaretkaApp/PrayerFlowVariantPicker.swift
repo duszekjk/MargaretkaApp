@@ -236,7 +236,7 @@ private struct PrayerFlowVariantPopup: View {
         }
         .glassEffect(in: .rect(cornerRadius: 6))
         .glassEffectID("\(state.sourceID)-panel", in: namespace)
-        .glassEffectTransition(.matchedGeometry)
+        .glassEffectTransition(.materialize)
     }
 
     @ViewBuilder
