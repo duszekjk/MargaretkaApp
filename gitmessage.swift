@@ -1,4 +1,4 @@
-fix photo synchronization for HEIC originals
+increment build number for validated photo synchronization fix
 
-Convert image formats the deployed server cannot read, including HEIC, to
-full-resolution JPEG before upload and expose a server-provided failure detail.
+Raise the app and widget build number to 69 after the successful iOS build of
+the full-resolution photo synchronization fix.
