@@ -161,11 +161,11 @@ struct MargaretkaAppTests {
         #expect(notifications.isEmpty)
     }
 
-    @Test func suggestedPrayerReminderHasAnHourButNoEnabledDays() {
+    @Test func chapletSuggestionHasThreePMAndEveryDayEnabled() {
         let plan = SchedulePlan.suggested(forPrayerName: "Koronka do Miłosierdzia Bożego")
 
         #expect(plan.frequencyUnit == .weekly)
-        #expect(plan.daysOfWeek.isEmpty)
+        #expect(plan.daysOfWeek == Weekday.allCases)
         #expect(plan.times.first?.event.hour == 15)
         #expect(plan.times.first?.event.minute == 0)
     }

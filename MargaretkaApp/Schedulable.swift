@@ -224,7 +224,10 @@ struct PrayerTimeSuggestion: Equatable {
 
         guard !name.isEmpty else { return nil }
 
-        if name.contains("koronka") || name.contains("godzina milosierdzia") {
+        if name.contains("koronka")
+            || name.contains("godzina milosierdzia")
+            || name.contains("divine mercy chaplet")
+            || name.contains("coronilla divinae misericordiae") {
             return PrayerTimeSuggestion(hour: 15, minute: 0)
         }
         if name.contains("aniol panski") || name.contains("modlitwa poludniowa") {
@@ -264,7 +267,19 @@ extension SchedulePlan {
         // at least one day.
         plan.frequencyUnit = .weekly
         plan.applyPrayerTimeSuggestion(for: prayerName)
+        if isDivineMercyChaplet(prayerName) {
+            plan.daysOfWeek = Weekday.allCases
+        }
         return plan
+    }
+
+    private static func isDivineMercyChaplet(_ prayerName: String) -> Bool {
+        let normalized = prayerName
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "pl_PL"))
+            .lowercased()
+        return normalized.contains("koronka")
+            || normalized.contains("divine mercy chaplet")
+            || normalized.contains("coronilla divinae misericordiae")
     }
 
     static func suggested(forBreviaryKey key: BrewiarzPrayerKey) -> SchedulePlan {

@@ -1,4 +1,5 @@
-codex conversation [20260811-ipad] cover disabled and grouped reminders
+codex conversation [20260811-ipad] enable the chaplet reminder every day
 
-Add regression tests for empty legacy daily schedules, inactive suggested
-reminders, and the shared notification identity of rosary and chaplet variants.
+Make the Divine Mercy Chaplet the sole default reminder exception: 15:00 on
+every weekday. Recognize its Polish, English, and Latin template names and
+cover the default in regression tests.
