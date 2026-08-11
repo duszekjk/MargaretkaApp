@@ -608,7 +608,10 @@ nonisolated enum BrewiarzEPUBImporter {
         celebration: String?
     ) -> OfflineSaintBiography? {
         guard let markerIndex = lines.firstIndex(where: {
-            normalizedForComparison($0.text).hasPrefix("garsc informacji:")
+            let text = normalizedForComparison($0.text)
+            return text.hasPrefix("garsc informacji")
+                || text.hasPrefix("informacje o swietym")
+                || text.hasPrefix("zyciorys swietego")
         }) else { return nil }
 
         let stopPhrases = [
@@ -632,7 +635,11 @@ nonisolated enum BrewiarzEPUBImporter {
             )
         }
 
-        guard biographyLines.contains(where: { $0.text.count >= 80 }) else { return nil }
+        // A biography is commonly split by EPUB markup into several short
+        // lines. Requiring a single 80-character line discarded valid lives
+        // of saints while their aggregate text was substantial.
+        let characterCount = biographyLines.map(\.text.count).reduce(0, +)
+        guard characterCount >= 80 else { return nil }
         let trimmedCelebration = celebration?.trimmingCharacters(in: .whitespacesAndNewlines)
         let title = trimmedCelebration?.isEmpty == false ? trimmedCelebration! : "Święty dnia"
         return OfflineSaintBiography(

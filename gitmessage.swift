@@ -1,5 +1,5 @@
-codex conversation [20260811-ipad] separate rosary mystery labels from texts
+codex conversation [20260811-ipad] preserve EPUB saint biographies
 
-Give every mystery step a short ordinal label while retaining the mystery name
-as its prayer text. Migrate unchanged built-in mystery labels safely and avoid
-duplicating their stable prayer identifiers during template merging.
+Accept the biography headings used by brewiarz.pl EPUBs and evaluate their
+total content rather than requiring one long parsed line. Add a regression
+test using the real Polish EPUB for 11 August 2026.

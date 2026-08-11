@@ -651,6 +651,24 @@ struct BrewiarzEPUBImporterTests {
         })
     }
 
+    @Test func importsSaintBiographyFromTheActualPolishEPUB() async throws {
+        let url = try #require(
+            Bundle(for: BrewiarzEPUBImporterTestBundle.self).url(
+                forResource: "AugustWeek03Polish",
+                withExtension: "epub"
+            )
+        )
+        let imported = try await BrewiarzEPUBImporter.importEPUB(from: url)
+        let day = try #require(imported.days.first {
+            $0.date == BreviaryCivilDate(year: 2026, month: 8, day: 11)
+                && $0.variantIdentifier == "p"
+        })
+        let saint = try #require(day.saintBiography)
+
+        #expect(saint.title == "ŚW. KLARY, DZIEWICY")
+        #expect(saint.text.contains("Klara urodziła się w Asyżu"))
+    }
+
     @Test @MainActor func saintBiographyCreatesOneComplexPrayerAndNativeCards() throws {
         let prayer = Prayer(
             name: "Święty dnia",
