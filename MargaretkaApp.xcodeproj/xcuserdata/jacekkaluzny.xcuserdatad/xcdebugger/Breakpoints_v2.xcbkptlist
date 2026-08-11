@@ -203,6 +203,20 @@
                   startingLineNumber = "529"
                   endingLineNumber = "529">
                </Location>
+               <Location
+                  uuid = "390E64A5-8152-4696-826F-802E8A93F0A8 - 86a85ad70cab588e"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "(3) suspend resume partial function for MargaretkaApp.SyncService.uploadPhoto(assetID: Foundation.UUID) async throws -&gt; ()"
+                  moduleName = "MargaretkaApp.debug.dylib"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/jacekkaluzny/Library/Mobile%20Documents/com~apple~CloudDocs/Documents/%F0%9F%9B%8Dmojeprogramy/MargaretkaApp/MargaretkaApp/MargaretkaApp/SyncService.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "529"
+                  endingLineNumber = "529">
+               </Location>
             </Locations>
          </BreakpointContent>
       </BreakpointProxy>
