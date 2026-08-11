@@ -1,5 +1,5 @@
-codex conversation [20260811-ipad] enable the chaplet reminder every day
+codex conversation [20260811-ipad] separate rosary mystery labels from texts
 
-Make the Divine Mercy Chaplet the sole default reminder exception: 15:00 on
-every weekday. Recognize its Polish, English, and Latin template names and
-cover the default in regression tests.
+Give every mystery step a short ordinal label while retaining the mystery name
+as its prayer text. Migrate unchanged built-in mystery labels safely and avoid
+duplicating their stable prayer identifiers during template merging.

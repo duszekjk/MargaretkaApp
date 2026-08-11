@@ -48,6 +48,24 @@ enum RosaryMysterySet: String, CaseIterable, Codable {
         case (.glorious, .latin): ["Resurrectio Domini", "Ascensio Domini", "Descensus Spiritus Sancti", "Assumptio Mariae", "Coronatio Mariae"]
         }
     }
+
+    func mysteryPrayerName(language: PrayerLanguage, index: Int) -> String {
+        let number = index + 1
+        switch (self, language) {
+        case (.joyful, .polish): "Tajemnica \(number) radosna"
+        case (.luminous, .polish): "Tajemnica \(number) światła"
+        case (.sorrowful, .polish): "Tajemnica \(number) bolesna"
+        case (.glorious, .polish): "Tajemnica \(number) chwalebna"
+        case (.joyful, .english): "Joyful mystery \(number)"
+        case (.luminous, .english): "Luminous mystery \(number)"
+        case (.sorrowful, .english): "Sorrowful mystery \(number)"
+        case (.glorious, .english): "Glorious mystery \(number)"
+        case (.joyful, .latin): "Mysterium \(number) gaudiosum"
+        case (.luminous, .latin): "Mysterium \(number) luminosum"
+        case (.sorrowful, .latin): "Mysterium \(number) dolorosum"
+        case (.glorious, .latin): "Mysterium \(number) gloriosum"
+        }
+    }
 }
 
 func rosaryMysteryPrayerKey(set: RosaryMysterySet, language: PrayerLanguage, index: Int) -> String {
@@ -63,7 +81,18 @@ func rosaryMysteryPrayerTemplates() -> [String: Prayer] {
                 let suffix = String(hash.suffix(12))
                 let id = UUID(uuidString: "00000000-0000-4000-8000-\(suffix)")
                     ?? UUID(uuidString: "00000000-0000-4000-8000-000000000000")!
-                return (key, Prayer(id: id, name: title, text: title, symbol: "sparkles", audioFilename: nil, audioSource: nil, timestampedLines: nil))
+                return (
+                    key,
+                    Prayer(
+                        id: id,
+                        name: set.mysteryPrayerName(language: language, index: index),
+                        text: title,
+                        symbol: "sparkles",
+                        audioFilename: nil,
+                        audioSource: nil,
+                        timestampedLines: nil
+                    )
+                )
             }
         }
     })

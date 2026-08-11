@@ -240,6 +240,15 @@ struct MargaretkaAppTests {
         }
     }
 
+    @Test func rosaryMysteryPrayerHasAStepNameSeparateFromItsText() throws {
+        let key = rosaryMysteryPrayerKey(set: .joyful, language: .polish, index: 0)
+        let mystery = try #require(prayersTemplate[key])
+
+        #expect(mystery.name == "Tajemnica 1 radosna")
+        #expect(mystery.text == "Zwiastowanie Najświętszej Maryi Pannie")
+        #expect(mystery.name != mystery.text)
+    }
+
     @Test func notificationRouteWaitsUntilConsumed() {
         let store = UserDefaults(suiteName: "PrayerNotificationRouterTests")!
         store.removePersistentDomain(forName: "PrayerNotificationRouterTests")

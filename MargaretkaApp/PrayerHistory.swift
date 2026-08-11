@@ -96,6 +96,7 @@ class PrayerStore: ObservableObject {
 
     static func mergingDefaultPrayers(into existing: [Prayer]) -> [Prayer] {
         let existingNames = Set(existing.map { $0.name })
+        let existingIDs = Set(existing.map(\.id))
         let templates = Array(prayersTemplate.values)
         var merged = existing
         for template in templates {
@@ -111,9 +112,19 @@ class PrayerStore: ObservableObject {
             case .saintBiography:
                 alreadyExists = merged.contains { $0.content == .saintBiography }
             case .text:
-                alreadyExists = existingNames.contains(template.name)
+                alreadyExists = existingIDs.contains(template.id) || existingNames.contains(template.name)
             }
             if !alreadyExists { merged.append(template) }
+        }
+
+        let mysteryTemplatesByID = Dictionary(
+            uniqueKeysWithValues: rosaryMysteryPrayerTemplates().values.map { ($0.id, $0) }
+        )
+        for index in merged.indices {
+            guard let template = mysteryTemplatesByID[merged[index].id],
+                  merged[index].name == merged[index].text,
+                  merged[index].text == template.text else { continue }
+            merged[index].name = template.name
         }
         return merged
     }
