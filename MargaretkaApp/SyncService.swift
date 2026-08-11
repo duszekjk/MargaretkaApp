@@ -505,7 +505,8 @@ final class SyncService: ObservableObject {
 
     private func uploadPhoto(assetID: UUID) async throws {
         guard let token = accessToken else { throw SyncServiceError.signedOut }
-        let data = try SyncedPhotoStorage.shared.data(for: assetID)
+        let originalData = try SyncedPhotoStorage.shared.data(for: assetID)
+        let data = try uploadablePhotoData(from: originalData)
         var urlRequest = URLRequest(url: Self.baseURL.appending(path: "media/photos/\(assetID.uuidString.lowercased())/original/"))
         urlRequest.httpMethod = "PUT"
         urlRequest.httpBody = data
@@ -515,15 +516,34 @@ final class SyncService: ObservableObject {
         if let fingerprint = SyncedPhotoStorage.shared.fingerprint(for: assetID) {
             urlRequest.setValue(fingerprint, forHTTPHeaderField: "X-Photo-Fingerprint")
         }
-        let (_, response) = try await session.data(for: urlRequest)
+        let (responseData, response) = try await session.data(for: urlRequest)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            throw SyncServiceError.server("Nie udało się przesłać zdjęcia w pełnej rozdzielczości.")
+            let detail = (try? JSONSerialization.jsonObject(with: responseData))
+                .flatMap { ($0 as? [String: Any])?["detail"] as? String }
+            throw SyncServiceError.server(detail ?? "Nie udało się przesłać zdjęcia w pełnej rozdzielczości.")
         }
         var fingerprints = photoFingerprints
         if let fingerprint = SyncedPhotoStorage.shared.fingerprint(for: assetID) {
             fingerprints[assetID] = fingerprint
         }
         photoFingerprints = fingerprints
+    }
+
+    private func uploadablePhotoData(from data: Data) throws -> Data {
+        guard !data.starts(with: [0x89, 0x50, 0x4E, 0x47]),
+              !data.starts(with: [0xFF, 0xD8, 0xFF]),
+              !data.starts(with: [0x52, 0x49, 0x46, 0x46]) else {
+            return data
+        }
+        #if os(iOS) || os(tvOS) || os(visionOS)
+        guard let image = UIImage(data: data),
+              let jpegData = image.jpegData(compressionQuality: 1) else {
+            throw SyncServiceError.server("Nie można przygotować zdjęcia do synchronizacji.")
+        }
+        return jpegData
+        #else
+        return data
+        #endif
     }
 
     private func downloadMissingPhotos(for targets: [Priest]) async throws {

@@ -1,4 +1,4 @@
-adding existing uncommitted iPad prayer-flow changes
+fix photo synchronization for HEIC originals
 
-Preserve the current project and PrayerFlowView changes before investigating
-photo synchronisation.
+Convert image formats the deployed server cannot read, including HEIC, to
+full-resolution JPEG before upload and expose a server-provided failure detail.
