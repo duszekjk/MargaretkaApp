@@ -1,5 +1,4 @@
-codex conversation [20260811-ipad] test Mass and morning readings from EPUB
+codex conversation [20260811-ipad] return generated rosary mystery labels
 
-For the ten selected patron days, require substantial imported Mass readings
-(I, psalm, optional II, Gospel) and the reading from Morning Prayer, using the
-real Polish brewiarz.pl EPUB fixtures.
+Explicitly return the mystery step name after deriving its ordinal, resolving
+the compiler error in RosaryMysteries.swift.

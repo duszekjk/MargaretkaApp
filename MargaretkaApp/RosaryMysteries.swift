@@ -16,7 +16,7 @@ enum RosaryMysterySet: String, CaseIterable, Codable {
     }
 
     func variantName(language: PrayerLanguage) -> String {
-        switch (self, language) {
+        return switch (self, language) {
         case (.joyful, .polish): "Różaniec — tajemnice radosne"
         case (.luminous, .polish): "Różaniec — tajemnice światła"
         case (.sorrowful, .polish): "Różaniec — tajemnice bolesne"
@@ -51,7 +51,7 @@ enum RosaryMysterySet: String, CaseIterable, Codable {
 
     func mysteryPrayerName(language: PrayerLanguage, index: Int) -> String {
         let number = index + 1
-        switch (self, language) {
+        return switch (self, language) {
         case (.joyful, .polish): "Tajemnica \(number) radosna"
         case (.luminous, .polish): "Tajemnica \(number) światła"
         case (.sorrowful, .polish): "Tajemnica \(number) bolesna"
