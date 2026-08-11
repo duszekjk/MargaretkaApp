@@ -1,4 +1,4 @@
-codex conversation [20260811-ipad] return generated rosary mystery labels
+adding existing uncommitted iPad prayer-flow changes
 
-Explicitly return the mystery step name after deriving its ordinal, resolving
-the compiler error in RosaryMysteries.swift.
+Preserve the current project and PrayerFlowView changes before investigating
+photo synchronisation.

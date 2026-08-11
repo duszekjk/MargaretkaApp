@@ -808,7 +808,13 @@ struct PrayerFlowView: View {
             BreviaryPrayerCardText(cards: cards, maxHeight: currentPrayerCardHeight)
         } else if activeIndex <= flattenedPrayerSymbols.count,
                   let prayer = allPrayers[flattenedPrayerIds[activeIndex - 1]] {
-            Text(prayer.text + "\n\n" + prayer.name)
+            VStack()
+            {
+                Text(prayer.name)
+                    .foregroundStyle(.gray)
+                    .font(.footnote)
+                Text(prayer.text)
+            }
         } else {
             Text("Koniec 🙏")
         }
@@ -1141,31 +1147,33 @@ struct PrayerFlowView: View {
                             .lineLimit(4)
                             .padding(3)
                             .glassEffect()
-                        if supportsImagePlayground,
-                           let office = backgroundOfflineOffice,
-                           office.imageFilename == nil {
-                            Button {
-                                Task {
-                                    await presentImagePlayground(
-                                        for: office
-                                    )
-                                }
-                            } label: {
-                                if isPreparingImagePlayground,
-                                   imagePlaygroundOfficeID == office.id {
-                                    HStack(spacing: 8) {
-                                        ProgressView()
-                                        Text("Przygotowuję tło…")
+                        if let livePriest = priestStore.priests.first(where: { $0.id == selectedPriest!.id })
+                        {
+                            if supportsImagePlayground,
+                               let office = backgroundOfflineOffice,
+                               office.imageFilename == nil {
+                                Button {
+                                    Task {
+                                        await presentImagePlayground(
+                                            for: office
+                                        )
                                     }
-                                } else {
-                                    Label("Utwórz tło", systemImage: "photo.badge.plus")
+                                } label: {
+                                    if isPreparingImagePlayground,
+                                       imagePlaygroundOfficeID == office.id {
+                                        HStack(spacing: 8) {
+                                            ProgressView()
+                                            Text("Przygotowuję tło…")
+                                        }
+                                    } else {
+                                        Label("Utwórz tło", systemImage: "photo.badge.plus")
+                                    }
                                 }
+                                .disabled(isPreparingImagePlayground)
+                                .padding(8)
+                                .glassEffect()
                             }
-                            .disabled(isPreparingImagePlayground)
-                            .padding(8)
-                            .glassEffect()
                         }
-                        
                         Spacer()
                         if(selectedCategory != .prayer)
                         {
