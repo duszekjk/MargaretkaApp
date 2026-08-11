@@ -1,5 +1,5 @@
-codex conversation [20260811-ipad] test ten EPUB patron biographies
+codex conversation [20260811-ipad] test Mass and morning readings from EPUB
 
-Add regression coverage for ten selected August dates with patrons, imported
-from the real Polish brewiarz.pl EPUB fixtures. Each requires nonempty,
-substantial paginated biography content.
+For the ten selected patron days, require substantial imported Mass readings
+(I, psalm, optional II, Gospel) and the reading from Morning Prayer, using the
+real Polish brewiarz.pl EPUB fixtures.

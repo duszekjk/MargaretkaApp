@@ -670,6 +670,27 @@ struct BrewiarzEPUBImporterTests {
     }
 
     @Test func importsPatronBiographiesForTenSelectedAugustDays() async throws {
+        func normalized(_ text: String) -> String {
+            text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "pl_PL"))
+        }
+
+        func sectionCharacterCount(
+            in lines: [OfflineBreviaryLine],
+            startsWith start: String,
+            stopsAt stopPrefixes: [String]
+        ) -> Int {
+            guard let startIndex = lines.firstIndex(where: {
+                normalized($0.text).hasPrefix(start)
+            }) else { return 0 }
+            let endIndex = lines[(startIndex + 1)...].firstIndex(where: { line in
+                stopPrefixes.contains { normalized(line.text).hasPrefix($0) }
+            }) ?? lines.endIndex
+            return lines[(startIndex + 1)..<endIndex]
+                .filter { $0.role != .heading && $0.role != .rubric }
+                .map(\.text.count)
+                .reduce(0, +)
+        }
+
         let fixtureNames = (1...5).map { String(format: "AugustWeek%02dPolish", $0) }
         var importedDays: [OfflineBreviaryDay] = []
         for fixtureName in fixtureNames {
@@ -692,6 +713,55 @@ struct BrewiarzEPUBImporterTests {
 
             #expect(!biography.cards.isEmpty, "Brak stron życiorysu patrona: \(date.id)")
             #expect(biography.text.count >= 80, "Za krótki życiorys patrona: \(date.id)")
+
+            let massLines = try #require(day.offices.first(where: { $0.key == .msza }))
+                .cards.flatMap(\.lines)
+            #expect(
+                sectionCharacterCount(
+                    in: massLines,
+                    startsWith: "pierwsze czytanie",
+                    stopsAt: ["psalm responsoryjny", "drugie czytanie", "aklamacja przed ewangelia", "ewangelia"]
+                ) >= 40,
+                "Brak treści I czytania mszalnego: \(date.id)"
+            )
+            #expect(
+                sectionCharacterCount(
+                    in: massLines,
+                    startsWith: "psalm responsoryjny",
+                    stopsAt: ["drugie czytanie", "aklamacja przed ewangelia", "ewangelia"]
+                ) >= 40,
+                "Brak treści psalmu responsoryjnego: \(date.id)"
+            )
+            #expect(
+                sectionCharacterCount(
+                    in: massLines,
+                    startsWith: "ewangelia",
+                    stopsAt: ["modlitwa powszechna", "modlitwa nad darami", "prefacja"]
+                ) >= 40,
+                "Brak treści Ewangelii: \(date.id)"
+            )
+
+            if massLines.contains(where: { normalized($0.text).hasPrefix("drugie czytanie") }) {
+                #expect(
+                    sectionCharacterCount(
+                        in: massLines,
+                        startsWith: "drugie czytanie",
+                        stopsAt: ["aklamacja przed ewangelia", "ewangelia"]
+                    ) >= 40,
+                    "Brak treści II czytania mszalnego: \(date.id)"
+                )
+            }
+
+            let morningLines = try #require(day.offices.first(where: { $0.key == .jutrznia }))
+                .cards.flatMap(\.lines)
+            #expect(
+                sectionCharacterCount(
+                    in: morningLines,
+                    startsWith: "czytanie",
+                    stopsAt: ["responsorium"]
+                ) >= 40,
+                "Brak treści czytania jutrzni: \(date.id)"
+            )
         }
     }
 
