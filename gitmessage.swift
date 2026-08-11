@@ -1,5 +1,5 @@
-codex conversation [20260811-ipad] preserve EPUB saint biographies
+codex conversation [20260811-ipad] test ten EPUB patron biographies
 
-Accept the biography headings used by brewiarz.pl EPUBs and evaluate their
-total content rather than requiring one long parsed line. Add a regression
-test using the real Polish EPUB for 11 August 2026.
+Add regression coverage for ten selected August dates with patrons, imported
+from the real Polish brewiarz.pl EPUB fixtures. Each requires nonempty,
+substantial paginated biography content.

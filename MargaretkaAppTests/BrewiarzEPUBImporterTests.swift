@@ -669,6 +669,32 @@ struct BrewiarzEPUBImporterTests {
         #expect(saint.text.contains("Klara urodziła się w Asyżu"))
     }
 
+    @Test func importsPatronBiographiesForTenSelectedAugustDays() async throws {
+        let fixtureNames = (1...5).map { String(format: "AugustWeek%02dPolish", $0) }
+        var importedDays: [OfflineBreviaryDay] = []
+        for fixtureName in fixtureNames {
+            let url = try #require(
+                Bundle(for: BrewiarzEPUBImporterTestBundle.self).url(
+                    forResource: fixtureName,
+                    withExtension: "epub"
+                )
+            )
+            importedDays += try await BrewiarzEPUBImporter.importEPUB(from: url).days
+        }
+
+        let dates = [1, 8, 10, 11, 14, 15, 17, 20, 24, 26]
+        for dayNumber in dates {
+            let date = BreviaryCivilDate(year: 2026, month: 8, day: dayNumber)
+            let day = try #require(importedDays.first {
+                $0.date == date && $0.variantIdentifier == "p"
+            })
+            let biography = try #require(day.saintBiography, "Brak życiorysu patrona: \(date.id)")
+
+            #expect(!biography.cards.isEmpty, "Brak stron życiorysu patrona: \(date.id)")
+            #expect(biography.text.count >= 80, "Za krótki życiorys patrona: \(date.id)")
+        }
+    }
+
     @Test @MainActor func saintBiographyCreatesOneComplexPrayerAndNativeCards() throws {
         let prayer = Prayer(
             name: "Święty dnia",
