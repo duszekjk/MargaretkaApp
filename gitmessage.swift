@@ -1,5 +1,4 @@
-codex conversation [20260810-ipad] dismiss open variant popup on outside tap
+codex conversation [20260811-ipad] checkpoint pending workspace changes
 
-Add a full-screen transparent tap target while a variant popup is open. It
-closes the popup on taps outside the selector and popup while preserving the
-Image Playground preparation overlay above it.
+Preserve the current project and PrayerFlowView changes before repairing
+notification scheduling and variant selection behavior.

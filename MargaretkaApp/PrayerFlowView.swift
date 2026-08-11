@@ -1003,32 +1003,37 @@ struct PrayerFlowView: View {
                                 .lineLimit(4)
                                 .padding(3)
                                 .glassEffect()
-                            if(selectedPriest?.displayPhoto == nil)
+                            if let livePriest = priestStore.priests.first(where: { $0.id == selectedPriest!.id })
                             {
-                                if supportsImagePlayground,
-                                   let office = backgroundOfflineOffice,
-                                   office.imageFilename == nil {
-                                    Button {
-                                        Task {
-                                            await presentImagePlayground(
-                                                for: office
-                                            )
-                                        }
-                                    } label: {
-                                        if isPreparingImagePlayground,
-                                           imagePlaygroundOfficeID == office.id {
-                                            HStack(spacing: 8) {
-                                                ProgressView()
-                                                Text("Przygotowuję tło…")
+                                if(
+                                    livePriest.photoData == nil && backgroundOfflineOffice?.imageFilename == nil && selectedPriest?.photoData == nil
+                                )
+                                {
+                                    if supportsImagePlayground,
+                                       let office = backgroundOfflineOffice,
+                                       office.imageFilename == nil {
+                                        Button {
+                                            Task {
+                                                await presentImagePlayground(
+                                                    for: office
+                                                )
                                             }
-                                        } else {
-                                            Label("Utwórz tło", systemImage: "photo.badge.plus")
+                                        } label: {
+                                            if isPreparingImagePlayground,
+                                               imagePlaygroundOfficeID == office.id {
+                                                HStack(spacing: 8) {
+                                                    ProgressView()
+                                                    Text("Przygotowuję tło…")
+                                                }
+                                            } else {
+                                                Label("Utwórz tło", systemImage: "photo.badge.plus")
+                                            }
                                         }
+                                        .disabled(isPreparingImagePlayground)
+                                        .padding(8)
+                                        .glassEffect()
+                                        .contentShape(Rectangle())
                                     }
-                                    .disabled(isPreparingImagePlayground)
-                                    .padding(8)
-                                    .glassEffect()
-                                    .contentShape(Rectangle())
                                 }
                             }
                             Spacer()
