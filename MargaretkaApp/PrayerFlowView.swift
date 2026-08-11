@@ -1399,13 +1399,6 @@ struct PrayerFlowView: View {
             .padding(.vertical, isIPad ? 0 : 35)
             .zIndex(200)
 
-                if variantPopup != nil {
-                    Color.clear
-                        .contentShape(Rectangle())
-                        .onTapGesture { dismissVariantPopup() }
-                        .zIndex(300)
-                }
-
                 if isPreparingImagePlayground {
                     ImagePlaygroundPreparationOverlay()
                         .transition(.opacity)
