@@ -142,6 +142,52 @@ struct MargaretkaAppTests {
         #expect(notifications.isEmpty)
     }
 
+    @Test func legacyDailyScheduleWithNoSelectedDaysCreatesNoNotifications() {
+        let calendar = Calendar(identifier: .gregorian)
+        let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 9, hour: 10))!
+        var item = TestSchedulable()
+        item.schedule.frequencyUnit = .daily
+        item.schedule.daysOfWeek = []
+        item.schedule.startDate = now
+        item.schedule.endDate = calendar.date(byAdding: .month, value: 1, to: now)
+
+        let notifications = computeUpcomingNotifications(
+            for: item,
+            title: item.notificationTitle,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(notifications.isEmpty)
+    }
+
+    @Test func suggestedPrayerReminderHasAnHourButNoEnabledDays() {
+        let plan = SchedulePlan.suggested(forPrayerName: "Koronka do Miłosierdzia Bożego")
+
+        #expect(plan.frequencyUnit == .weekly)
+        #expect(plan.daysOfWeek.isEmpty)
+        #expect(plan.times.first?.event.hour == 15)
+        #expect(plan.times.first?.event.minute == 0)
+    }
+
+    @Test func devotionVariantsShareOneNotificationTarget() throws {
+        let rosary = try #require(peopleTemplates.first { $0.firstName == "Różaniec" })
+        let rosaryEnglish = try #require(peopleTemplates.first { $0.firstName == "Rosary" })
+        let rosaryMystery = try #require(peopleTemplates.first {
+            $0.firstName == RosaryMysterySet.joyful.variantName(language: .latin)
+        })
+        let chaplet = try #require(peopleTemplates.first { $0.firstName == "Koronka do Miłosierdzia Bożego" })
+        let chapletEnglish = try #require(peopleTemplates.first { $0.firstName == "Divine Mercy Chaplet" })
+
+        #expect(rosary.notificationScheduleGroupID == rosaryEnglish.notificationScheduleGroupID)
+        #expect(rosary.notificationScheduleGroupID == rosaryMystery.notificationScheduleGroupID)
+        #expect(rosary.isNotificationScheduleRepresentative)
+        #expect(!rosaryEnglish.isNotificationScheduleRepresentative)
+        #expect(chaplet.notificationScheduleGroupID == chapletEnglish.notificationScheduleGroupID)
+        #expect(chaplet.isNotificationScheduleRepresentative)
+        #expect(!chapletEnglish.isNotificationScheduleRepresentative)
+    }
+
     @Test func restoringDefaultsRepairsEveryBuiltInPrayerTarget() {
         let prayerTemplates = Array(prayersTemplate.values)
         let defaultPrayerTargets = peopleTemplates.filter { $0.category == .prayer }

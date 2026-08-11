@@ -1,5 +1,4 @@
-codex conversation [20260811-ipad] group devotion notification targets
+codex conversation [20260811-ipad] cover disabled and grouped reminders
 
-Treat every rosary language and mystery variant as one Różaniec reminder, and
-all Divine Mercy Chaplet languages as one Koronka reminder. The notification
-settings list now exposes only the Polish canonical target for each group.
+Add regression tests for empty legacy daily schedules, inactive suggested
+reminders, and the shared notification identity of rosary and chaplet variants.
