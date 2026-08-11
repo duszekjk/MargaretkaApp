@@ -1,5 +1,5 @@
-codex conversation [20260811-ipad] require selected days for prayer reminders
+codex conversation [20260811-ipad] remove obsolete app reminder requests
 
-Suggested prayer hours now use weekly scheduling and remain inactive until a
-user selects a day. Empty day selections also disable legacy daily and monthly
-schedules instead of creating notifications the user cannot turn off.
+Compare and replace only this app's pending reminder requests. This removes
+old daily requests after their days are cleared without deleting notifications
+owned by other parts of iOS or other apps.

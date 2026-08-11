@@ -527,12 +527,20 @@ class ScheduleData<T: Schedulable>: ObservableObject {
             let pendingStart = CFAbsoluteTimeGetCurrent()
             notificationCenter.getPendingNotificationRequests { requests in
                 let pendingDuration = CFAbsoluteTimeGetCurrent() - pendingStart
-                let pendingIds = Set(requests.map { $0.identifier })
-                let needsReschedule = pendingIds != scheduledIds
+                let appPendingIds = Set(requests.compactMap { request -> String? in
+                    guard request.content.categoryIdentifier == notificationCategoryId
+                            || request.content.userInfo["type"] != nil else {
+                        return nil
+                    }
+                    return request.identifier
+                })
+                let needsReschedule = appPendingIds != scheduledIds
 
                 let scheduleStart = CFAbsoluteTimeGetCurrent()
                 if needsReschedule {
-                    notificationCenter.removeAllPendingNotificationRequests()
+                    notificationCenter.removePendingNotificationRequests(
+                        withIdentifiers: Array(appPendingIds)
+                    )
                 }
 
                 for entry in scheduled {
