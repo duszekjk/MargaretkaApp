@@ -517,10 +517,17 @@ final class SyncService: ObservableObject {
             urlRequest.setValue(fingerprint, forHTTPHeaderField: "X-Photo-Fingerprint")
         }
         let (responseData, response) = try await session.data(for: urlRequest)
-        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse else {
+            throw SyncServiceError.server("Serwer przesłał nieprawidłową odpowiedź podczas wysyłania zdjęcia.")
+        }
+        guard (200..<300).contains(http.statusCode) else {
             let detail = (try? JSONSerialization.jsonObject(with: responseData))
                 .flatMap { ($0 as? [String: Any])?["detail"] as? String }
-            throw SyncServiceError.server(detail ?? "Nie udało się przesłać zdjęcia w pełnej rozdzielczości.")
+            let responseText = String(data: responseData, encoding: .utf8)
+                .map { String($0.prefix(500)).trimmingCharacters(in: .whitespacesAndNewlines) }
+            let diagnostic = detail ?? responseText?.nilIfBlank
+            let message = diagnostic ?? "Nie udało się przesłać zdjęcia w pełnej rozdzielczości."
+            throw SyncServiceError.server("\(message) (kod HTTP: \(http.statusCode))")
         }
         var fingerprints = photoFingerprints
         if let fingerprint = SyncedPhotoStorage.shared.fingerprint(for: assetID) {
