@@ -1,5 +1,5 @@
-codex conversation [20260811-ipad] restore variant popup selection taps
+codex conversation [20260811-ipad] require selected days for prayer reminders
 
-Remove the full-screen transparent dismissal target that was layered above the
-picker. It intercepted taps on its options, causing a popup to close without
-selecting the requested breviary, rosary, or chaplet variant.
+Suggested prayer hours now use weekly scheduling and remain inactive until a
+user selects a day. Empty day selections also disable legacy daily and monthly
+schedules instead of creating notifications the user cannot turn off.

@@ -252,6 +252,10 @@ struct PrayerTimeSuggestion: Equatable {
 extension SchedulePlan {
     static func suggested(forPrayerName prayerName: String) -> SchedulePlan {
         var plan = SchedulePlan()
+        // Prayer reminders are configured by weekday.  A suggested hour must
+        // never silently turn into a daily reminder before the user chooses
+        // at least one day.
+        plan.frequencyUnit = .weekly
         plan.applyPrayerTimeSuggestion(for: prayerName)
         return plan
     }
@@ -1021,6 +1025,18 @@ func computeUpcomingNotifications(
     calendar: Calendar = .current
 ) -> [(eventDate: Date, notificationDate: Date, id: String)] {
     var upcoming: [(Date, Date, String)] = []
+
+    // A schedule without an explicitly selected day is disabled.  Older
+    // stored prayer schedules can still say `.daily` even though their editor
+    // shows no selected weekdays; honoring that as daily created reminders the
+    // user could not turn off.
+    switch item.schedule.frequencyUnit {
+    case .daily, .weekly:
+        guard !item.schedule.daysOfWeek.isEmpty else { return [] }
+    case .monthly:
+        guard !item.schedule.daysOfMonth.isEmpty else { return [] }
+    }
+
     // Legacy schedules may contain zero or negative intervals. Without this
     // guard the cursor in the daily/weekly/monthly loops never advances.
     let interval = max(1, item.schedule.everyN)
