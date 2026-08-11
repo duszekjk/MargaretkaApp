@@ -1,5 +1,5 @@
-codex conversation [20260811-ipad] remove obsolete app reminder requests
+codex conversation [20260811-ipad] group devotion notification targets
 
-Compare and replace only this app's pending reminder requests. This removes
-old daily requests after their days are cleared without deleting notifications
-owned by other parts of iOS or other apps.
+Treat every rosary language and mystery variant as one Różaniec reminder, and
+all Divine Mercy Chaplet languages as one Koronka reminder. The notification
+settings list now exposes only the Polish canonical target for each group.

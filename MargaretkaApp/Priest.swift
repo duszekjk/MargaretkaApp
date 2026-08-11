@@ -312,6 +312,43 @@ extension Priest: Schedulable {
 }
 
 extension Priest {
+    private var simpleDevotion: SimpleDevotion? {
+        guard category == .prayer else { return nil }
+
+        if firstName == "Koronka do Miłosierdzia Bożego"
+            || firstName == "Divine Mercy Chaplet"
+            || firstName == "Coronilla Divinae Misericordiae" {
+            return .divineMercyChaplet
+        }
+
+        if firstName == "Różaniec"
+            || firstName == "Rosary"
+            || firstName == "Rosarium"
+            || RosaryMysterySet.allCases.contains(where: { set in
+                PrayerLanguage.allCases.contains { firstName == set.variantName(language: $0) }
+            }) {
+            return .rosary
+        }
+
+        return nil
+    }
+
+    var notificationScheduleGroupID: String {
+        guard let simpleDevotion else { return "prayer-target.\(id.uuidString)" }
+        return "simple-devotion.\(simpleDevotion.rawValue)"
+    }
+
+    var isNotificationScheduleRepresentative: Bool {
+        switch simpleDevotion {
+        case .rosary:
+            return firstName == "Różaniec"
+        case .divineMercyChaplet:
+            return firstName == "Koronka do Miłosierdzia Bożego"
+        case nil:
+            return true
+        }
+    }
+
     nonisolated private static func templatesSignature(using prayers: [Prayer]) -> String {
         var hash: UInt64 = 14_695_981_039_346_656_037
 

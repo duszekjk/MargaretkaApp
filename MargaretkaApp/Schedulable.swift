@@ -62,6 +62,13 @@ protocol Schedulable: Identifiable, Codable {
     var notificationSound: String? { get set }
     
     var notificationTypeId: String { get }
+    var notificationScheduleGroupID: String { get }
+    var isNotificationScheduleRepresentative: Bool { get }
+}
+
+extension Schedulable {
+    var notificationScheduleGroupID: String { String(describing: id) }
+    var isNotificationScheduleRepresentative: Bool { true }
 }
 
 enum TimeTypes: String, Codable, CaseIterable, Identifiable, Hashable, Equatable {
@@ -483,7 +490,14 @@ class ScheduleData<T: Schedulable>: ObservableObject {
 
             var scheduled: [Scheduled] = []
             let buildStart = CFAbsoluteTimeGetCurrent()
-            for (index, item) in itemsSnapshot.enumerated() {
+            let notificationItems = Dictionary(
+                grouping: itemsSnapshot,
+                by: \T.notificationScheduleGroupID
+            ).values.compactMap { group in
+                group.first(where: \.isNotificationScheduleRepresentative) ?? group.first
+            }
+
+            for (index, item) in notificationItems.enumerated() {
                 print("📅 ScheduleData building item \(index + 1)/\(itemsSnapshot.count): \(item.notificationTitle)")
                 let upcoming = self.buildUpcomingNotifications(for: item, title: item.notificationTitle, now: now, calendar: calendar)
                 for entry in upcoming {

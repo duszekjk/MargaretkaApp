@@ -50,7 +50,9 @@ struct PriestListView: View {
                 newPriest.save()
                 store.addOrUpdate(newPriest)
             },
-            filter: { $0.category == category },
+            filter: { target in
+                target.category == category && target.isNotificationScheduleRepresentative
+            },
             showingForm: $showEditor
         )
         .onAppear {
