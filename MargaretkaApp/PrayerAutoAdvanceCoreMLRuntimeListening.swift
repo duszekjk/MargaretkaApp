@@ -3,8 +3,8 @@ import Foundation
 extension PrayerAutoAdvanceCoreMLRuntime {
     func prepareListening() async {
         guard let context, isFeatureEnabled else { return }
-        guard await state.ensureModelAvailable() else {
-            statusMessage = state.lastError ?? "Nie udało się przygotować modelu automatycznego przełączania."
+        guard state.model != nil else {
+            statusMessage = "Brak lokalnego modelu. Włącz funkcję ponownie w Ustawieniach, aby pobrać model bazowy."
             return
         }
 #if os(iOS)
