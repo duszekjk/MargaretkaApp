@@ -6,7 +6,6 @@ extension PrayerAutoAdvanceCoreMLState {
         let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
         isTraining = true
         diagnostics.pipelineState = "training"
-        diagnostics.event("MLUpdateTask start samples=\(batch.samples.count) delay=\(String(format: "%.2f", batch.observedDelay))s")
         lastTrainingEvent = "Aktualizowanie modelu lokalnego…"
         defer { isTraining = false }
 
@@ -20,7 +19,9 @@ extension PrayerAutoAdvanceCoreMLState {
             _ = try fileManager.replaceItemAt(modelURL, withItemAt: updatedURL)
             model = try PrayerAutoAdvanceCoreMLModel(compiledURL: modelURL)
 
-            timingHistory.append(batch.observedDelay)
+            if let observedDelay = batch.observedDelay {
+                timingHistory.append(observedDelay)
+            }
             if var value = metadata {
                 value.lastUpdatedAt = Date()
                 value.trainedTransitions += 1
