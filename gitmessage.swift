@@ -1,4 +1,4 @@
-fix storage section headers for this SwiftUI SDK
+add current localization catalog changes
 
-Use explicit Section content, header, and footer closures rather than the
-unavailable string-header overload that Xcode rejects in StorageSettingsView.
+Preserve the existing local changes to the app localization catalog without
+modifying their text.

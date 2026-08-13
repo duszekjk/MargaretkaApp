@@ -431,6 +431,9 @@
     "Kolejność wariantów oficjum" : {
 
     },
+    "Kompresuj" : {
+
+    },
     "Konflikt synchronizacji" : {
 
     },
@@ -574,6 +577,9 @@
     "Odczytywanie archiwum…" : {
 
     },
+    "Odśwież" : {
+
+    },
     "Odtwarza teksty modlitw wbudowanych oraz układ wszystkich wbudowanych modlitw złożonych. Nie usuwa modlitw ani nie zmienia planów, harmonogramów, historii, nazw, ikon ani audio." : {
 
     },
@@ -607,6 +613,9 @@
     "Otwórz tę stronę i wybierz link „Liturgia horarum”. Przeglądarka pobierze bezpłatny EPUB; potem wskaż go podczas importu w aplikacji." : {
 
     },
+    "Pamięć" : {
+
+    },
     "Pełna kopia zapasowa" : {
 
     },
@@ -628,6 +637,9 @@
     "Pokaż" : {
 
     },
+    "Pokazane są dane zapisane przez aplikację. iOS może dodatkowo naliczać własny cache i pliki diagnostyczne wersji deweloperskiej." : {
+
+    },
     "Pomoc" : {
 
     },
@@ -641,6 +653,9 @@
 
     },
     "Powtórz %lldx" : {
+
+    },
+    "Pozostałe" : {
 
     },
     "Pozostało około %@" : {
@@ -755,6 +770,9 @@
     "Sesje: %lld" : {
 
     },
+    "Silnie skompresować zdjęcia?" : {
+
+    },
     "Siri → Heptadaisy → wybrana modlitwa" : {
 
     },
@@ -762,6 +780,9 @@
 
     },
     "Siri, Skróty i NFC" : {
+
+    },
+    "Skompresowano zdjęcia: %lld" : {
 
     },
     "Skopiowano" : {
@@ -805,6 +826,9 @@
 
     },
     "Synchronizuję…" : {
+
+    },
+    "Tekst EPUB jest upraszczany, zapisywany bez ozdobników i kompresowany. Plik EPUB nie pozostaje w aplikacji po imporcie." : {
 
     },
     "Tekst modlitwy" : {
@@ -1314,13 +1338,22 @@
     "Usuń cały dzień" : {
 
     },
+    "Usuń dni z wybranego zakresu" : {
+
+    },
     "Usuń dni z zakresu" : {
+
+    },
+    "Usuń do" : {
 
     },
     "Usuń konto i dane z chmury" : {
 
     },
     "Usuń obraz" : {
+
+    },
+    "Usuń od" : {
 
     },
     "Usuń wygasłe teraz" : {
@@ -1333,6 +1366,9 @@
 
     },
     "Usunąć wybrany zakres?" : {
+
+    },
+    "Usunięte zostaną pobrane oficja oraz obrazy należące tylko do tych dni." : {
 
     },
     "Usuwanie zakresu" : {
@@ -1454,6 +1490,9 @@
     "Zaimportuj eksport EPUB z brewiarz.pl." : {
 
     },
+    "Zajęte miejsce" : {
+
+    },
     "Zakres" : {
 
     },
@@ -1472,16 +1511,25 @@
     "Zapisz imiona, dzień i datę rozpoczęcia." : {
 
     },
+    "Zarządzaj dniami i oficjami" : {
+
+    },
     "Zastąp aktualny stan" : {
 
     },
     "Zastępstwo: jeśli nie możesz w danym dniu, postaraj się znaleźć zastępstwo lub odmów modlitwę wcześniej/później." : {
 
     },
+    "Zastosuj silną kompresję zdjęć" : {
+
+    },
     "Zatrzymaj nagrywanie" : {
 
     },
     "Zbierz 7 osób i przydziel dni tygodnia." : {
+
+    },
+    "Zdjęcia" : {
 
     },
     "Zdjęcie" : {
@@ -1491,6 +1539,12 @@
 
     },
     "Zmniejsza elementy listy modlitw" : {
+
+    },
+    "Zmniejsza wyłącznie lokalne podglądy: do 96 KB na iPhonie albo 220 KB na iPadzie. Kadrowanie i funkcja zdjęć pozostają bez zmian." : {
+
+    },
+    "Zmniejszone zostaną tylko kopie na tym urządzeniu. Oryginały potwierdzone przez serwer nie są potrzebne lokalnie." : {
 
     },
     "Zostaną usunięte wszystkie dni i wygenerowane obrazy należące tylko do tego importu." : {
