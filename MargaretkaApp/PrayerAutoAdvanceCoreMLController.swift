@@ -8,9 +8,6 @@ final class PrayerAutoAdvanceCoreMLController: ObservableObject {
     @Published private(set) var statusMessage: String?
 
     let state = PrayerAutoAdvanceCoreMLState.shared
-#if os(iOS)
-    let capture = PrayerAutoAdvanceCoreMLSpeechCapture()
-#endif
     var context: PrayerAutoAdvanceContext?
     var contextStartedAt = Date()
     var snapshots: [PrayerAutoAdvanceTrainingSnapshot] = []
