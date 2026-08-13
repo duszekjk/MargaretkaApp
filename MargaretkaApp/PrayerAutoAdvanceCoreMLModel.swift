@@ -36,9 +36,13 @@ final class PrayerAutoAdvanceCoreMLModel {
         for (index, feature) in features.enumerated() {
             inputArray[index] = NSNumber(value: min(max(feature, 0), 1))
         }
+
+        let labelArray = try MLMultiArray(shape: [1], dataType: .int32)
+        labelArray[0] = NSNumber(value: Int32(label))
+
         return try MLDictionaryFeatureProvider(dictionary: [
             "features": MLFeatureValue(multiArray: inputArray),
-            "probabilities_true": MLFeatureValue(int64: label),
+            "probabilities_true": MLFeatureValue(multiArray: labelArray),
         ])
     }
 
