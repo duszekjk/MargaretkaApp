@@ -123,7 +123,6 @@ final class SyncService: ObservableObject {
         configuredPrayerStore = prayerStore
         configuredTargetStore = targetStore
         configuredOfflineStore = offlineStore
-        maintainLocalPhotoStorage(for: targetStore)
     }
 
     func requestImmediateSync() {
@@ -322,6 +321,21 @@ final class SyncService: ObservableObject {
             pendingConflict = nil
             try await downloadDevicePhotoVariants(for: targetStore)
             markSuccessfulSync()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Explicit recovery action for a device whose local photo previews no
+    /// longer render correctly. Ordinary synchronization only fills missing
+    /// previews and never re-downloads working ones.
+    func repairDevicePhotoPreviews(for targetStore: PriestStore) async {
+        guard isSignedIn, !isWorking else { return }
+        isWorking = true
+        errorMessage = nil
+        defer { isWorking = false }
+        do {
+            try await downloadDevicePhotoVariants(for: targetStore, replacingExisting: true)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -558,28 +572,20 @@ final class SyncService: ObservableObject {
         #endif
     }
 
-    private func downloadDevicePhotoVariants(for targetStore: PriestStore) async throws {
+    private func downloadDevicePhotoVariants(
+        for targetStore: PriestStore,
+        replacingExisting: Bool = false
+    ) async throws {
         guard let token = accessToken else { throw SyncServiceError.signedOut }
         let family = DeviceDescription.current.family.rawValue.lowercased()
         for index in targetStore.priests.indices {
-            if let photoData = targetStore.priests[index].photoData,
-               let image = UIImage(data: photoData),
-               let compacted = devicePhotoData(from: image),
-               targetStore.priests[index].photoData != compacted {
-                targetStore.priests[index].photoData = compacted
-            }
-
-            guard let assetID = targetStore.priests[index].photoAssetID,
-                  SyncedPhotoStorage.shared.contains(assetID) else { continue }
-            if targetStore.priests[index].photoData != nil {
-                SyncedPhotoStorage.shared.removeOriginal(for: assetID)
-                continue
-            }
+            guard let assetID = targetStore.priests[index].photoAssetID else { continue }
+            if !replacingExisting, targetStore.priests[index].photoData != nil { continue }
             var urlRequest = URLRequest(url: Self.baseURL.appending(path: "media/photos/\(assetID.uuidString.lowercased())/variants/\(family)/"))
             urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             let (data, response) = try await session.data(for: urlRequest)
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { continue }
-            guard UIImage(data: data) != nil else { continue }
+            guard let image = UIImage(data: data), image.cgImage != nil else { continue }
             if targetStore.priests[index].photoData != data {
                 targetStore.priests[index].photoData = data
             }
@@ -588,43 +594,6 @@ final class SyncService: ObservableObject {
         SyncedPhotoStorage.shared.removeOrphanedOriginals(
             referencedBy: Set(targetStore.priests.compactMap(\.photoAssetID))
         )
-    }
-
-    /// Keeps the on-device cache small even before the next synchronization starts.
-    /// An original is deleted here only when its exact fingerprint was already
-    /// acknowledged by the server; unsent originals are retained for upload.
-    private func maintainLocalPhotoStorage(for targetStore: PriestStore) {
-        let acknowledgedFingerprints = photoFingerprints
-        let referencedAssetIDs = Set(targetStore.priests.compactMap(\.photoAssetID))
-
-        for index in targetStore.priests.indices {
-            if let photoData = targetStore.priests[index].photoData,
-               let image = UIImage(data: photoData),
-               let compacted = devicePhotoData(from: image),
-               photoData != compacted {
-                targetStore.priests[index].photoData = compacted
-            }
-
-            guard let assetID = targetStore.priests[index].photoAssetID,
-                  SyncedPhotoStorage.shared.contains(assetID),
-                  let fingerprint = SyncedPhotoStorage.shared.fingerprint(for: assetID),
-                  acknowledgedFingerprints[assetID] == fingerprint else { continue }
-            SyncedPhotoStorage.shared.removeOriginal(for: assetID)
-        }
-
-        SyncedPhotoStorage.shared.removeOrphanedOriginals(referencedBy: referencedAssetIDs)
-    }
-
-    private func devicePhotoData(from image: UIImage) -> Data? {
-        #if os(iOS) || os(tvOS) || os(visionOS)
-        let family = DeviceDescription.current.family
-        return image.storageJPEGData(
-            maxDimension: family == .iPad ? 1024 : 552,
-            byteLimit: family == .iPad ? 350_000 : 160_000
-        )
-        #else
-        return image.storageJPEGData(maxDimension: 1024, byteLimit: 350_000)
-        #endif
     }
 
     private var uploadedPhotoIDs: Set<UUID> {

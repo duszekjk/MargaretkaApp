@@ -39,6 +39,13 @@ struct SyncSettingsView: View {
                     }
                     .disabled(syncService.isWorking)
 
+                    Button {
+                        Task { await repairPhotos() }
+                    } label: {
+                        Label("Pobierz ponownie zdjęcia", systemImage: "photo.badge.arrow.down")
+                    }
+                    .disabled(syncService.isWorking)
+
                     Button("Wyloguj", role: .destructive) {
                         Task { await syncService.signOut() }
                     }
@@ -140,5 +147,9 @@ struct SyncSettingsView: View {
             targetStore: targetStore,
             offlineStore: offlineStore
         )
+    }
+
+    private func repairPhotos() async {
+        await syncService.repairDevicePhotoPreviews(for: targetStore)
     }
 }

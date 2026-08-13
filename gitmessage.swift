@@ -1,6 +1,6 @@
-cap and clear the online breviary network cache
+restore verified server photo variants instead of locally recompressing them
 
-Replace the global URL cache used by online breviary resolution with a 300 KB
-cap. Resolve online breviary links through a non-caching session, clear the
-cache when offline breviary content is available, and provide a manual clear
-control in Pamięć.
+Remove unsafe local recompression controls and maintenance. Ordinary sync only
+fills missing previews. Add the explicit “Pobierz ponownie zdjęcia” action,
+which replaces existing device-specific copies only after image decoding is
+verified. Raise app and widget build number to 75.

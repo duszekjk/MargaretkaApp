@@ -7,9 +7,7 @@ struct StorageSettingsView: View {
     @State private var report = AppStorageReport.current()
     @State private var rangeStart = Date.now
     @State private var rangeEnd = Date.now
-    @State private var confirmPhotoCompression = false
     @State private var confirmRangeDeletion = false
-    @State private var compressedPhotoCount = 0
 
     var body: some View {
         List {
@@ -29,10 +27,7 @@ struct StorageSettingsView: View {
             Section {
                 storageRow("Zdjęcia przy osobach", report.photoPreviews.formattedSize)
                 storageRow("Oryginały oczekujące na synchronizację", report.pendingOriginals.formattedSize)
-                Button("Zastosuj silną kompresję zdjęć") {
-                    confirmPhotoCompression = true
-                }
-                Text("Zmniejsza wyłącznie lokalne podglądy: do 96 KB na iPhonie albo 220 KB na iPadzie. Kadrowanie i funkcja zdjęć pozostają bez zmian.")
+                Text("Aplikacja zachowuje wyłącznie zweryfikowany wariant zdjęcia dopasowany do urządzenia. Oryginały są usuwane dopiero po udanym przesłaniu na serwer.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             } header: {
@@ -74,15 +69,6 @@ struct StorageSettingsView: View {
         }
         .navigationTitle("Pamięć")
         .onAppear(perform: refresh)
-        .alert("Silnie skompresować zdjęcia?", isPresented: $confirmPhotoCompression) {
-            Button("Anuluj", role: .cancel) {}
-            Button("Kompresuj") {
-                compressedPhotoCount = priestStore.compressLocalPhotoPreviews()
-                refresh()
-            }
-        } message: {
-            Text("Zmniejszone zostaną tylko kopie na tym urządzeniu. Oryginały potwierdzone przez serwer nie są potrzebne lokalnie.")
-        }
         .alert("Usunąć wybrany zakres?", isPresented: $confirmRangeDeletion) {
             Button("Anuluj", role: .cancel) {}
             Button("Usuń", role: .destructive) {
@@ -91,15 +77,6 @@ struct StorageSettingsView: View {
             }
         } message: {
             Text("Usunięte zostaną pobrane oficja oraz obrazy należące tylko do tych dni.")
-        }
-        .overlay(alignment: .bottom) {
-            if compressedPhotoCount > 0 {
-                Text("Skompresowano zdjęcia: \(compressedPhotoCount)")
-                    .font(.footnote)
-                    .padding(10)
-                    .background(.regularMaterial, in: Capsule())
-                    .padding()
-            }
         }
     }
 
