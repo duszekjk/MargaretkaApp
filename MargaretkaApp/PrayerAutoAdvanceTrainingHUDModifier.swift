@@ -18,29 +18,81 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
                         }
                         HStack(spacing: 7) {
                             Text("ok \(state.metadata?.trainingSessions ?? 0)")
+                            Text("skip \(diagnostics.skippedTrainingCount)")
                             Text("speech \(diagnostics.speechState)")
-                            Text("pipeline \(diagnostics.pipelineState)")
                         }
                         HStack(spacing: 7) {
+                            Text("pipe \(diagnostics.pipelineState)")
                             Text("timing \(state.timingHistory.values.count)/\(PrayerAutoAdvanceTimingHistory.minimumCountForOutliers)")
-                            Text("skip \(diagnostics.skippedTrainingCount)")
+                            Text("P/N \(diagnostics.positiveSamples)/\(diagnostics.negativeSamples)")
                         }
+
+                        if let pos = diagnostics.positivePredictionAverage,
+                           let neg = diagnostics.negativePredictionAverage,
+                           let margin = diagnostics.predictionMargin {
+                            HStack(spacing: 7) {
+                                Text(String(format: "pos %.3f", pos))
+                                Text(String(format: "neg %.3f", neg))
+                                Text(String(format: "margin %+.3f", margin))
+                            }
+                        }
+
+                        HStack(spacing: 7) {
+                            if let loss = diagnostics.logLoss {
+                                Text(String(format: "loss %.4f", loss))
+                            }
+                            if let delta = diagnostics.lastTrainingLossChange {
+                                Text(String(format: "Δloss %+.4f", delta))
+                            }
+                            if let peak = diagnostics.lastPeakPrediction {
+                                Text(String(format: "peak %.3f", peak))
+                            }
+                        }
+
+                        if let mae = diagnostics.timingMAE,
+                           let bias = diagnostics.timingBias {
+                            HStack(spacing: 7) {
+                                Text(String(format: "MAE %.2fs", mae))
+                                Text(String(format: "bias %+.2fs", bias))
+                                if let hit = diagnostics.timingHitOneSecond {
+                                    Text(String(format: "±1s %.0f%%", hit * 100))
+                                }
+                            }
+                            HStack(spacing: 7) {
+                                if let hit = diagnostics.timingHitHalfSecond {
+                                    Text(String(format: "±0.5s %.0f%%", hit * 100))
+                                }
+                                if let hit = diagnostics.timingHitTwoSeconds {
+                                    Text(String(format: "±2s %.0f%%", hit * 100))
+                                }
+                                if let error = diagnostics.lastPeakTimingError {
+                                    Text(String(format: "last %+.2fs", error))
+                                }
+                            }
+                        }
+
                         HStack(alignment: .bottom, spacing: 1) {
                             ForEach(Array(diagnostics.predictionHistory.suffix(28).enumerated()), id: \.offset) { _, value in
                                 Rectangle().frame(width: 2, height: max(1, CGFloat(value) * 20))
                             }
                         }
                         .frame(height: 20, alignment: .bottom)
+
                         Text(diagnostics.lastFeatureSummary)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
+                        if let event = state.lastTrainingEvent {
+                            Text(event)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                         if let error = state.lastError {
                             Text("ERR: \(error)")
                                 .foregroundStyle(.red)
                                 .lineLimit(3)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
-                        ForEach(Array(diagnostics.recentMessages.suffix(3).enumerated()), id: \.offset) { _, message in
+                        ForEach(Array(diagnostics.recentMessages.suffix(2).enumerated()), id: \.offset) { _, message in
                             Text(message)
                                 .lineLimit(2)
                                 .fixedSize(horizontal: false, vertical: true)
