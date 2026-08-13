@@ -4,6 +4,7 @@ internal import Combine
 
 @MainActor
 final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
+    static let shared = PrayerAutoAdvanceTrainingDiagnostics()
     static let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "MargaretkaApp",
         category: "PrayerAutoAdvanceTraining"
