@@ -122,6 +122,9 @@
     "Aplikacja robi to automatycznie: wpis znika na początku trzeciego dnia po dacie modlitwy." : {
 
     },
+    "Aplikacja zachowuje wyłącznie zweryfikowany wariant zdjęcia dopasowany do urządzenia. Oryginały są usuwane dopiero po udanym przesłaniu na serwer." : {
+
+    },
     "At times" : {
       "localizations" : {
         "pl" : {
@@ -431,9 +434,6 @@
     "Kolejność wariantów oficjum" : {
 
     },
-    "Kompresuj" : {
-
-    },
     "Konflikt synchronizacji" : {
 
     },
@@ -625,6 +625,9 @@
     "Po co?" : {
 
     },
+    "Pobierz ponownie zdjęcia" : {
+
+    },
     "Pobierz teksty Liturgii Godzin" : {
 
     },
@@ -637,7 +640,7 @@
     "Pokaż" : {
 
     },
-    "Pokazane są dane zapisane przez aplikację. iOS może dodatkowo naliczać własny cache i pliki diagnostyczne wersji deweloperskiej." : {
+    "Pokazane są dane, którymi zarządza Margaretka. Systemowe podglądy i tymczasowe pliki iOS nie są tu wliczane." : {
 
     },
     "Pomoc" : {
@@ -770,9 +773,6 @@
     "Sesje: %lld" : {
 
     },
-    "Silnie skompresować zdjęcia?" : {
-
-    },
     "Siri → Heptadaisy → wybrana modlitwa" : {
 
     },
@@ -780,9 +780,6 @@
 
     },
     "Siri, Skróty i NFC" : {
-
-    },
-    "Skompresowano zdjęcia: %lld" : {
 
     },
     "Skopiowano" : {
@@ -1472,6 +1469,9 @@
     "Wycentruj zdjęcie" : {
 
     },
+    "Wyczyść cache internetowy" : {
+
+    },
     "Wygeneruj obraz" : {
 
     },
@@ -1520,9 +1520,6 @@
     "Zastępstwo: jeśli nie możesz w danym dniu, postaraj się znaleźć zastępstwo lub odmów modlitwę wcześniej/później." : {
 
     },
-    "Zastosuj silną kompresję zdjęć" : {
-
-    },
     "Zatrzymaj nagrywanie" : {
 
     },
@@ -1539,12 +1536,6 @@
 
     },
     "Zmniejsza elementy listy modlitw" : {
-
-    },
-    "Zmniejsza wyłącznie lokalne podglądy: do 96 KB na iPhonie albo 220 KB na iPadzie. Kadrowanie i funkcja zdjęć pozostają bez zmian." : {
-
-    },
-    "Zmniejszone zostaną tylko kopie na tym urządzeniu. Oryginały potwierdzone przez serwer nie są potrzebne lokalnie." : {
 
     },
     "Zostaną usunięte wszystkie dni i wygenerowane obrazy należące tylko do tego importu." : {
