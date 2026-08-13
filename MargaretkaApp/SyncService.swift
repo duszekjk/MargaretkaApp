@@ -588,6 +588,11 @@ final class SyncService: ObservableObject {
             guard let image = UIImage(data: data), image.cgImage != nil else { continue }
             if targetStore.priests[index].photoData != data {
                 targetStore.priests[index].photoData = data
+                // A photo asset keeps the same ID when a device downloads its
+                // own size variant. Bump the version used by displayPhoto's
+                // cache key, otherwise SwiftUI keeps showing the old (possibly
+                // damaged) decoded image after a re-download.
+                targetStore.priests[index].photoUpdatedAt = .now
             }
             SyncedPhotoStorage.shared.removeOriginal(for: assetID)
         }
