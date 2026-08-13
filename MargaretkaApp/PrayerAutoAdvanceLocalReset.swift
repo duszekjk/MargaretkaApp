@@ -2,11 +2,14 @@ import Foundation
 
 @MainActor
 enum PrayerAutoAdvanceLocalReset {
-    static func run(store: PrayerAutoAdvanceStore = .shared) throws {
-        let directory = store.storageDirectory
+    static func run(state: PrayerAutoAdvanceCoreMLState = .shared) throws {
+        let directory = state.directory
         if FileManager.default.fileExists(atPath: directory.path) {
             try FileManager.default.removeItem(at: directory)
         }
-        store.clearLoadedState()
+        state.model = nil
+        state.metadata = nil
+        state.timingHistory = PrayerAutoAdvanceTimingHistory()
+        state.lastError = nil
     }
 }
