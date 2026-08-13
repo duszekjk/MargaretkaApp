@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   wire:
-    if: "${{ !contains(github.event.head_commit.message, '[auto-wired]') }}"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,5 +56,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm .github/workflows/prayer-auto-advance-wire.yml
           git add MargaretkaApp/PrayerFlowView.swift
-          git commit -m "[auto-wired] Wire prayer auto advance into flow"
+          git commit -m "Wire prayer auto advance into flow"
           git push origin HEAD:agent/prayer-auto-advance-final
