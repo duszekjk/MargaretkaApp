@@ -1,23 +1,6 @@
 import CoreML
 import Foundation
 
-struct PrayerAutoAdvanceLocalMetadata: Codable, Sendable {
-    var baseModelVersion: Int
-    var featureSchemaVersion: Int
-    var createdAt: Date
-    var lastUpdatedAt: Date
-    var trainingSessions: Int
-    var trainedTransitions: Int
-}
-
-struct PrayerAutoAdvanceManifest: Codable, Sendable {
-    let modelVersion: Int
-    let featureSchemaVersion: Int
-    let modelURL: URL
-    let sha256: String
-    let publishedAt: Date?
-}
-
 final class PrayerAutoAdvanceCoreMLModel {
     static let inputSize = 10
     static let currentFeatureSchemaVersion = 1
@@ -32,10 +15,7 @@ final class PrayerAutoAdvanceCoreMLModel {
 
     func prediction(for features: [Float]) throws -> Float {
         guard features.count == Self.inputSize else { throw ModelError.invalidFeatureCount }
-        let inputArray = try MLMultiArray(
-            shape: [NSNumber(value: Self.inputSize)],
-            dataType: .float32
-        )
+        let inputArray = try MLMultiArray(shape: [NSNumber(value: Self.inputSize)], dataType: .float32)
         for (index, feature) in features.enumerated() {
             inputArray[index] = NSNumber(value: min(max(feature, 0), 1))
         }
@@ -52,10 +32,7 @@ final class PrayerAutoAdvanceCoreMLModel {
 
     static func trainingProvider(features: [Float], label: Int64) throws -> MLFeatureProvider {
         guard features.count == inputSize else { throw ModelError.invalidFeatureCount }
-        let inputArray = try MLMultiArray(
-            shape: [NSNumber(value: inputSize)],
-            dataType: .float32
-        )
+        let inputArray = try MLMultiArray(shape: [NSNumber(value: inputSize)], dataType: .float32)
         for (index, feature) in features.enumerated() {
             inputArray[index] = NSNumber(value: min(max(feature, 0), 1))
         }
