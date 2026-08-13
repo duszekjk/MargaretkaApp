@@ -98,6 +98,12 @@ struct SettingsMenuView: View {
                     Label("Brewiarz offline", systemImage: "book.closed")
                 }
 
+                NavigationLink {
+                    StorageSettingsView(priestStore: priestStore)
+                } label: {
+                    Label("Pamięć", systemImage: "internaldrive")
+                }
+
                 NavigationLink(
                     destination: DataTransferView(targetStore: priestStore)
                 ) {

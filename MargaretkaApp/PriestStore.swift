@@ -9,6 +9,9 @@ import AppIntents
 import Foundation
 internal import Combine
 import SwiftUI
+#if os(iOS) || os(tvOS) || os(visionOS)
+import UIKit
+#endif
 
 
 class PriestStore: ObservableObject {
@@ -99,6 +102,34 @@ class PriestStore: ObservableObject {
         if let index = priests.firstIndex(of: priest) {
             priests.remove(at: index)
         }
+    }
+
+    /// Re-encodes only the local display copies. The server original and crop
+    /// metadata remain untouched, so this action is safe to repeat.
+    @discardableResult
+    func compressLocalPhotoPreviews() -> Int {
+#if os(macOS)
+        let isIPad = true
+#else
+        let isIPad = UIDevice.current.userInterfaceIdiom == .pad
+#endif
+        let maxDimension: CGFloat = isIPad ? 768 : 420
+        let byteLimit = isIPad ? 220_000 : 96_000
+        var changedIDs = Set<String>()
+        let compacted = priests.map { priest -> Priest in
+            guard let photoData = priest.photoData,
+                  let image = UIImage(data: photoData),
+                  let data = image.storageJPEGData(maxDimension: maxDimension, byteLimit: byteLimit),
+                  data.count < photoData.count else { return priest }
+            var result = priest
+            result.photoData = data
+            changedIDs.insert(priest.id.uuidString.lowercased())
+            return result
+        }
+        guard !changedIDs.isEmpty else { return 0 }
+        pendingChangedIDs.formUnion(changedIDs)
+        priests = compacted
+        return changedIDs.count
     }
 
     /// Restores the prayer groups of every built-in prayer target without

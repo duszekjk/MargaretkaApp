@@ -1,17 +1,14 @@
 {
   "images" : [
     {
+      "filename" : "mercy-ipad.jpg",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "mercy.png",
-      "idiom" : "universal",
-      "scale" : "2x"
-    },
-    {
-      "idiom" : "universal",
-      "scale" : "3x"
+      "filename" : "mercy-iphone.jpg",
+      "idiom" : "iphone",
+      "scale" : "1x"
     }
   ],
   "info" : {
