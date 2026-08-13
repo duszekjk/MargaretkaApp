@@ -3,7 +3,10 @@ import Foundation
 extension PrayerAutoAdvanceCoreMLState {
     func train(_ batch: PrayerAutoAdvanceLabeledBatch) async {
         guard !isTraining, let current = model else { return }
+        let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
         isTraining = true
+        diagnostics.pipelineState = "training"
+        diagnostics.event("MLUpdateTask start samples=\(batch.samples.count) delay=\(String(format: "%.2f", batch.observedDelay))s")
         lastTrainingEvent = "Aktualizowanie modelu lokalnego…"
         defer { isTraining = false }
 
@@ -27,10 +30,15 @@ extension PrayerAutoAdvanceCoreMLState {
             try PrayerAutoAdvanceCoreMLDiskState.save(self)
             lastError = nil
             lastTrainingEvent = "Model zaktualizowany na podstawie \(batch.samples.count) próbek."
+            diagnostics.acceptedTrainingCount += 1
+            diagnostics.pipelineState = "trained"
+            diagnostics.event("MLUpdateTask complete")
         } catch {
             try? fileManager.removeItem(at: updatedURL)
             lastError = error.localizedDescription
             lastTrainingEvent = "Błąd aktualizacji modelu: \(error.localizedDescription)"
+            diagnostics.pipelineState = "error"
+            diagnostics.error(error.localizedDescription)
         }
     }
 }
