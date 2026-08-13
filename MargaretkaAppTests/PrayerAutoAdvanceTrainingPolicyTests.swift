@@ -43,12 +43,32 @@ struct PrayerAutoAdvanceTrainingPolicyTests {
             )
         )
 
-        #expect(batch.observedDelay >= 9)
+        let delay = try #require(batch.observedDelay)
+        #expect(delay >= 9)
         let positiveMarkers = batch.samples
             .filter { $0.label == 1 }
             .map { $0.features[0] }
         #expect(positiveMarkers.contains(10))
         #expect(!positiveMarkers.contains(0))
+    }
+
+    @Test func calibrationCanTrainWithoutReliableCompletionTiming() throws {
+        let base = Date(timeIntervalSince1970: 1_700_000_000)
+        let snapshots = (0...8).map { index in
+            weakSnapshot(index: index, base: base)
+        }
+
+        let batch = try #require(
+            PrayerAutoAdvanceTrainingPolicy.makeBatch(
+                snapshots: snapshots,
+                manualAdvanceAt: base.addingTimeInterval(8),
+                history: PrayerAutoAdvanceTimingHistory()
+            )
+        )
+
+        #expect(batch.observedDelay == nil)
+        #expect(batch.samples.contains(where: { $0.label == 1 }))
+        #expect(batch.samples.contains(where: { $0.label == 0 }))
     }
 
     @Test func matureBaselineDropsWholeStrongOutlierEvent() {
@@ -83,6 +103,21 @@ struct PrayerAutoAdvanceTrainingPolicyTests {
             currentSimilarity: 1,
             nextSimilarity: 0,
             silenceDuration: 0.5
+        )
+    }
+
+    private func weakSnapshot(index: Int, base: Date) -> PrayerAutoAdvanceTrainingSnapshot {
+        var features = Array(repeating: Float.zero, count: PrayerAutoAdvanceCoreMLModel.inputSize)
+        features[0] = Float(index)
+        return PrayerAutoAdvanceTrainingSnapshot(
+            pageID: "test",
+            date: base.addingTimeInterval(TimeInterval(index)),
+            features: features,
+            endingCoverage: 0,
+            spokenRatio: 0.5,
+            currentSimilarity: 0.4,
+            nextSimilarity: 0.4,
+            silenceDuration: 0.2
         )
     }
 }
