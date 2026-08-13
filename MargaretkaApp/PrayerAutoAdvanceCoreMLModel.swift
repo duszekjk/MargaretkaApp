@@ -50,16 +50,18 @@ final class PrayerAutoAdvanceCoreMLModel {
         let providers = try samples.map {
             try trainingProvider(features: $0.features, label: $0.label)
         }
-        let batch = MLArrayBatchProvider(array: providers)
+        let retention = UpdateRetention(providers: providers)
         let configuration = MLModelConfiguration()
         configuration.computeUnits = .cpuOnly
+
         try await withCheckedThrowingContinuation { continuation in
             do {
-                let task = try MLUpdateTask(
+                retention.task = try MLUpdateTask(
                     forModelAt: compiledURL,
-                    trainingData: batch,
+                    trainingData: retention.batch,
                     configuration: configuration
                 ) { context in
+                    defer { retention.task = nil }
                     do {
                         let fileManager = FileManager.default
                         if fileManager.fileExists(atPath: destinationURL.path) {
@@ -71,10 +73,22 @@ final class PrayerAutoAdvanceCoreMLModel {
                         continuation.resume(throwing: error)
                     }
                 }
-                task.resume()
+                retention.task?.resume()
             } catch {
+                retention.task = nil
                 continuation.resume(throwing: error)
             }
+        }
+    }
+
+    private final class UpdateRetention {
+        let providers: [MLFeatureProvider]
+        let batch: MLArrayBatchProvider
+        var task: MLUpdateTask?
+
+        init(providers: [MLFeatureProvider]) {
+            self.providers = providers
+            self.batch = MLArrayBatchProvider(array: providers)
         }
     }
 
