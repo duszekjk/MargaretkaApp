@@ -41,6 +41,14 @@ struct PriestEditorView: View {
 #endif
     }
 
+    private var devicePhotoMaxDimension: CGFloat {
+        photoLayoutFamily == .iPad ? 1024 : 552
+    }
+
+    private var devicePhotoByteLimit: Int {
+        photoLayoutFamily == .iPad ? 350_000 : 160_000
+    }
+
     private var editorTitle: String {
         switch priest.category {
         case .priest:
@@ -65,7 +73,8 @@ struct PriestEditorView: View {
 
     private func storePhoto(_ image: UIImage, originalData: Data? = nil) {
         guard let photoData = image.storageJPEGData(
-            maxDimension: UIImage.storagePhotoMaxDimension
+            maxDimension: devicePhotoMaxDimension,
+            byteLimit: devicePhotoByteLimit
         ),
               let storedImage = UIImage(data: photoData) else { return }
         // A replacement must get a new ID so another device recognizes that

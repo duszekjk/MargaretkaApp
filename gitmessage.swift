@@ -1,4 +1,4 @@
-adding current photo upload breakpoint
+store only device-sized photo variants locally
 
-Preserve the existing SyncService debugger breakpoint before changing photo
-variant synchronization.
+Upload a JPEG capped at 2048 px, discard it after server confirmation, and
+download authenticated 552 px iPhone or 1024 px iPad variants for display.

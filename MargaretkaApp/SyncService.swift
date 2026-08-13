@@ -274,7 +274,7 @@ final class SyncService: ObservableObject {
                             scheduleData: scheduleData
                         )
                         storedRevision = metadata.revision
-                        try await downloadMissingPhotos(for: targetStore.priests)
+                        try await downloadDevicePhotoVariants(for: targetStore)
                         markSuccessfulSync()
                         return
                     }
@@ -318,6 +318,7 @@ final class SyncService: ObservableObject {
             storedRevision = response.revision
             clearPending(sentChanges)
             pendingConflict = nil
+            try await downloadDevicePhotoVariants(for: targetStore)
             markSuccessfulSync()
         } catch {
             errorMessage = error.localizedDescription
@@ -344,7 +345,7 @@ final class SyncService: ObservableObject {
             )
             storedRevision = conflict.serverRevision
             pendingConflict = nil
-            try await downloadMissingPhotos(for: targetStore.priests)
+            try await downloadDevicePhotoVariants(for: targetStore)
             markSuccessfulSync()
         } catch {
             errorMessage = error.localizedDescription
@@ -534,42 +535,41 @@ final class SyncService: ObservableObject {
             fingerprints[assetID] = fingerprint
         }
         photoFingerprints = fingerprints
+        SyncedPhotoStorage.shared.removeOriginal(for: assetID)
     }
 
     private func uploadablePhotoData(from data: Data) throws -> Data {
-        guard !data.starts(with: [0x89, 0x50, 0x4E, 0x47]),
-              !data.starts(with: [0xFF, 0xD8, 0xFF]),
-              !data.starts(with: [0x52, 0x49, 0x46, 0x46]) else {
-            return data
-        }
         #if os(iOS) || os(tvOS) || os(visionOS)
-        guard let image = UIImage(data: data),
-              let jpegData = image.jpegData(compressionQuality: 1) else {
+        guard let image = UIImage(data: data) else {
             throw SyncServiceError.server("Nie można przygotować zdjęcia do synchronizacji.")
         }
-        return jpegData
+        let limited = image.resized(maxDimension: 2048)
+        for quality in [CGFloat(0.92), 0.88, 0.82, 0.76] {
+            guard let jpegData = limited.jpegData(compressionQuality: quality) else { continue }
+            if jpegData.count <= 12_000_000 {
+                return jpegData
+            }
+        }
+        throw SyncServiceError.server("Zdjęcie jest zbyt duże, aby je zsynchronizować.")
         #else
         return data
         #endif
     }
 
-    private func downloadMissingPhotos(for targets: [Priest]) async throws {
+    private func downloadDevicePhotoVariants(for targetStore: PriestStore) async throws {
         guard let token = accessToken else { throw SyncServiceError.signedOut }
-        let missing = Set(targets.compactMap(\.photoAssetID)).filter { !SyncedPhotoStorage.shared.contains($0) }
-        for assetID in missing {
-            var urlRequest = URLRequest(url: Self.baseURL.appending(path: "media/photos/\(assetID.uuidString.lowercased())/original/"))
+        let family = DeviceDescription.current.family.rawValue.lowercased()
+        for index in targetStore.priests.indices {
+            guard let assetID = targetStore.priests[index].photoAssetID else { continue }
+            var urlRequest = URLRequest(url: Self.baseURL.appending(path: "media/photos/\(assetID.uuidString.lowercased())/variants/\(family)/"))
             urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             let (data, response) = try await session.data(for: urlRequest)
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { continue }
-            try data.write(
-                to: SyncedPhotoStorage.shared.url(for: assetID),
-                options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
-            )
-            var fingerprints = photoFingerprints
-            if let fingerprint = SyncedPhotoStorage.shared.fingerprint(for: assetID) {
-                fingerprints[assetID] = fingerprint
+            guard UIImage(data: data) != nil else { continue }
+            if targetStore.priests[index].photoData != data {
+                targetStore.priests[index].photoData = data
             }
-            photoFingerprints = fingerprints
+            SyncedPhotoStorage.shared.removeOriginal(for: assetID)
         }
     }
 

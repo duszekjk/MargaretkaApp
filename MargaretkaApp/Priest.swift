@@ -290,7 +290,9 @@ struct Priest: Identifiable, Hashable, Codable {
         try container.encode(lastName, forKey: .lastName)
         try container.encode(title, forKey: .title)
         try container.encode(category, forKey: .category)
-        try container.encodeIfPresent(photoData, forKey: .photoData)
+        if photoAssetID == nil {
+            try container.encodeIfPresent(photoData, forKey: .photoData)
+        }
         try container.encodeIfPresent(photoAssetID, forKey: .photoAssetID)
         try container.encodeIfPresent(photoUpdatedAt, forKey: .photoUpdatedAt)
         try container.encode(photoScale, forKey: .photoScale)
@@ -517,8 +519,7 @@ extension Priest {
         if let cached = displayPhotoCache.object(forKey: key) {
             return cached
         }
-        let syncedOriginal = photoAssetID.flatMap { try? SyncedPhotoStorage.shared.data(for: $0) }
-        if let data = syncedOriginal ?? photoData,
+        if let data = photoData,
            let image = UIImage(data: data) {
             displayPhotoCache.setObject(image, forKey: key)
             print("🖼️ displayPhoto cache miss: \(id.uuidString), bytes \(data.count), size \(Int(image.size.width))x\(Int(image.size.height))")
@@ -531,10 +532,7 @@ extension Priest {
     var displayPhotoCacheKey: NSString {
         let version = photoUpdatedAt?.timeIntervalSince1970 ?? 0
         let assetID = photoAssetID?.uuidString.lowercased() ?? "no-asset"
-        let originalFingerprint = photoAssetID.flatMap {
-            SyncedPhotoStorage.shared.fingerprint(for: $0)
-        } ?? "preview"
-        return "\(id.uuidString.lowercased()):\(version):\(assetID):\(originalFingerprint)" as NSString
+        return "\(id.uuidString.lowercased()):\(version):\(assetID)" as NSString
     }
 
     func photoPlacement(for family: PhotoLayoutFamily) -> PhotoPlacement {
