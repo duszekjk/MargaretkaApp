@@ -54,7 +54,7 @@ final class PrayerAutoAdvanceCoreMLModel {
         let configuration = MLModelConfiguration()
         configuration.computeUnits = .cpuOnly
 
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             do {
                 retention.task = try MLUpdateTask(
                     forModelAt: compiledURL,
