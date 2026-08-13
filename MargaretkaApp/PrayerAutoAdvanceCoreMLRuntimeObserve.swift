@@ -37,9 +37,15 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         do {
             let value = try model.prediction(for: features)
             lastPrediction = value
+            PrayerAutoAdvanceTrainingDiagnostics.shared.prediction(
+                value,
+                snapshotCount: snapshots.count,
+                features: features
+            )
             evaluatePrediction(value, elapsed: elapsed)
         } catch {
             statusMessage = error.localizedDescription
+            PrayerAutoAdvanceTrainingDiagnostics.shared.error(error.localizedDescription)
         }
     }
 }
