@@ -38,7 +38,7 @@ struct PrayerAutoAdvanceTimingHistory: Codable, Sendable {
 
 struct PrayerAutoAdvanceLabeledBatch: Sendable {
     let samples: [(features: [Float], label: Int64)]
-    let observedDelay: TimeInterval?
+    let observedDelay: TimeInterval
 }
 
 enum PrayerAutoAdvanceTrainingPolicy {
@@ -49,17 +49,21 @@ enum PrayerAutoAdvanceTrainingPolicy {
     ) -> PrayerAutoAdvanceLabeledBatch? {
         let ordered = snapshots.sorted { $0.date < $1.date }
         guard ordered.count >= 4 else { return nil }
+        guard let completionIndex = reliableCompletionIndex(in: ordered) else {
+            // Without a reliable completion point we cannot even measure the
+            // user's reaction delay. Skipping the event is safer than guessing.
+            return nil
+        }
 
-        let completion = reliableCompletionIndex(in: ordered).map { ordered[$0] }
-        let observedDelay = completion.map { manualAdvanceAt.timeIntervalSince($0.date) }
+        let completion = ordered[completionIndex]
+        let observedDelay = manualAdvanceAt.timeIntervalSince(completion.date)
 
         // During calibration we do not pretend to know the user's reaction delay.
-        // The manual gesture is the noisy training anchor. Once enough personal
-        // timing data exists, we may compensate only by the user's robust median.
+        // The manual gesture remains the noisy training anchor. Once enough
+        // personal timing data exists, compensate only by the robust median.
         // A strong statistical outlier is discarded, never repaired.
         let anchor: Date
         if let typicalDelay = history.typicalDelay {
-            guard let observedDelay else { return nil }
             guard !history.isOutlier(observedDelay) else { return nil }
             anchor = manualAdvanceAt.addingTimeInterval(-typicalDelay)
         } else {
