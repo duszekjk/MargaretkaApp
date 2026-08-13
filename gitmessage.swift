@@ -1,4 +1,4 @@
-increment build for safe legacy photo cleanup
+adding current photo cleanup breakpoint
 
-Raise the app and widget build number to 71 after successful validation of the
-safe cleanup of pre-existing full-resolution local photos.
+Preserve the existing debugger breakpoint before correcting legacy local photo
+cleanup.
