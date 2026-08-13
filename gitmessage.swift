@@ -1,4 +1,4 @@
-split prayer flow models out of the main view
+split breviary presentation components from the prayer flow view
 
-Move immutable prayer-flow step construction, page pairing, and background
-selection into their own focused source file without changing app behavior.
+Move the breviary card, full-screen presentation, and Image Playground UI into
+their own source file while preserving the existing prayer-flow behavior.
