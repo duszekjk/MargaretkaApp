@@ -17,8 +17,8 @@ enum PrayerAutoAdvanceFeatureExtractor {
         silence: TimeInterval,
         energy: Float
     ) -> [Float] {
-        let currentSemantic = semanticSimilarity(transcript, context.currentText, language: context.language)
-        let nextSemantic = context.nextText.map { semanticSimilarity(transcript, $0, language: context.language) } ?? 0
+        let currentSemantic = semanticSimilarity(transcript, context.currentText)
+        let nextSemantic = context.nextText.map { semanticSimilarity(transcript, $0) } ?? 0
         let currentLexical = lexicalSimilarity(transcript, context.currentText)
         let nextLexical = context.nextText.map { lexicalSimilarity(transcript, $0) } ?? 0
         let ending = endingCoverage(transcript: transcript, expected: context.currentText)
@@ -43,12 +43,10 @@ enum PrayerAutoAdvanceFeatureExtractor {
         ]
     }
 
-    private static func semanticSimilarity(_ lhs: String, _ rhs: String, language: PrayerLanguage) -> Float {
-        // Apple's sentence embeddings are not available for Polish on the tested
-        // devices/SDK. Calling the unsupported locale emits a system warning for
-        // every snapshot, so use the deterministic lexical fallback directly.
-        guard language == .english,
-              let embedding = NLEmbedding.sentenceEmbedding(for: .english),
+    private static func semanticSimilarity(_ lhs: String, _ rhs: String) -> Float {
+        // Use one stable embedding space for every prayer language. Speech
+        // recognition remains language-specific; embeddings do not need to.
+        guard let embedding = NLEmbedding.sentenceEmbedding(for: .english),
               let left = embedding.vector(for: normalized(lhs)),
               let right = embedding.vector(for: normalized(rhs)),
               left.count == right.count,
@@ -80,9 +78,6 @@ enum PrayerAutoAdvanceFeatureExtractor {
         let target = tokens(expected)
         guard !spoken.isEmpty, !target.isEmpty else { return 0 }
 
-        // ASR often drops or substitutes one of the final words. Compare the
-        // recent transcript against the expected ending with an ordered LCS
-        // instead of requiring an exact suffix match.
         let targetTail = Array(target.suffix(min(12, target.count)))
         let spokenTail = Array(spoken.suffix(min(24, spoken.count)))
         let matched = longestCommonSubsequenceLength(spokenTail, targetTail)
