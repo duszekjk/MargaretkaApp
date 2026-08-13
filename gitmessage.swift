@@ -1,4 +1,4 @@
-remove legacy full-resolution photos after safe variant recovery
+increment build for safe legacy photo cleanup
 
-On every completed sync, recover a device-sized variant before removing a
-referenced legacy original and remove unreferenced originals immediately.
+Raise the app and widget build number to 71 after successful validation of the
+safe cleanup of pre-existing full-resolution local photos.
