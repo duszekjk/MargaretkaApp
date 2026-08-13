@@ -43,6 +43,12 @@ struct PrayerAutoAdvanceCoreMLSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
+                if let event = state.lastTrainingEvent {
+                    Text(event)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+
                 if let message = state.lastError ?? localError {
                     Text(message)
                         .font(.footnote)
