@@ -16,17 +16,19 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onAppear {
-                synchronizeContext()
-            }
-            .onDisappear {
-                controller.stop()
-            }
+            .onAppear { synchronizeContext() }
+            .onDisappear { controller.stop() }
             .onChange(of: activeIndex) { oldValue, newValue in
                 if newValue > oldValue, oldValue > 0 {
                     if suppressNextTrainingTransition {
                         suppressNextTrainingTransition = false
                     } else {
+                        if UserDefaults.standard.bool(forKey: PrayerAutoAdvancePreferences.trainingEnabledKey) {
+                            let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
+                            diagnostics.manualSwipeCount += 1
+                            diagnostics.pipelineState = "selecting"
+                            diagnostics.event("manual swipe #\(diagnostics.manualSwipeCount)")
+                        }
                         controller.recordManualAdvance()
                     }
                 } else if suppressNextTrainingTransition {
@@ -34,15 +36,9 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
                 }
                 synchronizeContext()
             }
-            .onChange(of: steps) { _, _ in
-                synchronizeContext()
-            }
-            .onChange(of: flowID) { _, _ in
-                synchronizeContext()
-            }
-            .onChange(of: languageCode) { _, _ in
-                synchronizeContext()
-            }
+            .onChange(of: steps) { _, _ in synchronizeContext() }
+            .onChange(of: flowID) { _, _ in synchronizeContext() }
+            .onChange(of: languageCode) { _, _ in synchronizeContext() }
             .onChange(of: controller.advanceRequestSerial) { _, _ in
                 guard scenePhase == .active,
                       activeIndex > 0,
@@ -84,13 +80,11 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
               !currentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
-
         let previousText = steps.indices.contains(stepIndex - 1) ? text(forStepAt: stepIndex - 1) : nil
         let nextText = steps.indices.contains(stepIndex + 1) ? text(forStepAt: stepIndex + 1) : nil
         let step = steps[stepIndex]
         let cardID = step.offlineCard?.id.uuidString ?? "prayer"
         let flowComponent = flowID?.uuidString ?? "standalone"
-
         return PrayerAutoAdvanceContext(
             pageID: "\(flowComponent):\(stepIndex):\(step.prayerID.uuidString):\(cardID)",
             currentText: currentText,
@@ -137,5 +131,6 @@ extension View {
                 moveToIndex: moveToIndex
             )
         )
+        .prayerAutoAdvanceTrainingHUD()
     }
 }
