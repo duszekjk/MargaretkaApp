@@ -1,8 +1,6 @@
 import Foundation
 
-// Minimal local equivalents used only by PrayerAutoAdvanceController.swift.
-// They keep the feature extractor self-contained without importing Accelerate
-// into the speech capture file.
+// Minimal local equivalents used only by the prayer auto-advance feature.
 typealias vDSP_Length = UInt
 
 func vDSP_measqv(
@@ -23,4 +21,8 @@ func vDSP_measqv(
         index += stride
     }
     result = sum / Float(count)
+}
+
+func min(_ first: Int, _ second: Int, _ third: Int) -> Int {
+    Swift.min(first, Swift.min(second, third))
 }
