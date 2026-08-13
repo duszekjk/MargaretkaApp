@@ -14,10 +14,10 @@ struct StorageSettingsView: View {
     var body: some View {
         List {
             Section("Zajęte miejsce") {
-                LabeledContent("Dane aplikacji", value: report.total.formattedSize)
+                storageRow("Dane aplikacji", report.total.formattedSize)
                     .font(.headline)
                 ForEach(report.entries) { entry in
-                    LabeledContent(entry.title, value: entry.size.formattedSize)
+                    storageRow(entry.title, entry.size.formattedSize)
                 }
                 Button("Odśwież") { refresh() }
             } footer: {
@@ -25,8 +25,8 @@ struct StorageSettingsView: View {
             }
 
             Section("Zdjęcia") {
-                LabeledContent("Zdjęcia przy osobach", value: report.photoPreviews.formattedSize)
-                LabeledContent("Oryginały oczekujące na synchronizację", value: report.pendingOriginals.formattedSize)
+                storageRow("Zdjęcia przy osobach", report.photoPreviews.formattedSize)
+                storageRow("Oryginały oczekujące na synchronizację", report.pendingOriginals.formattedSize)
                 Button("Zastosuj silną kompresję zdjęć") {
                     confirmPhotoCompression = true
                 }
@@ -36,8 +36,8 @@ struct StorageSettingsView: View {
             }
 
             Section("Brewiarz offline") {
-                LabeledContent("Teksty oficjów", value: report.offlineText.formattedSize)
-                LabeledContent("Wygenerowane obrazy oficjów", value: report.offlineImages.formattedSize)
+                storageRow("Teksty oficjów", report.offlineText.formattedSize)
+                storageRow("Wygenerowane obrazy oficjów", report.offlineImages.formattedSize)
                 NavigationLink("Zarządzaj dniami i oficjami") {
                     OfflineBreviaryManagerView()
                 }
@@ -55,9 +55,9 @@ struct StorageSettingsView: View {
             }
 
             Section("Pozostałe") {
-                LabeledContent("Nagrania audio", value: report.audio.formattedSize)
-                LabeledContent("Cache aplikacji", value: report.cache.formattedSize)
-                LabeledContent("Inne dane", value: report.other.formattedSize)
+                storageRow("Nagrania audio", report.audio.formattedSize)
+                storageRow("Cache aplikacji", report.cache.formattedSize)
+                storageRow("Inne dane", report.other.formattedSize)
             }
         }
         .navigationTitle("Pamięć")
@@ -93,6 +93,14 @@ struct StorageSettingsView: View {
 
     private func refresh() {
         report = AppStorageReport.current()
+    }
+
+    private func storageRow(_ title: String, _ value: String) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Text(value).foregroundStyle(.secondary)
+        }
     }
 }
 

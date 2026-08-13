@@ -1,4 +1,4 @@
-add current Xcode breakpoint configuration
+fix the storage settings rows for Xcode's SwiftUI overloads
 
-Preserve the existing local debugger breakpoint without changing application
-source or behavior.
+Use explicit HStack rows for storage values rather than the unavailable
+LabeledContent string-value overload, restoring compilation in Xcode.
