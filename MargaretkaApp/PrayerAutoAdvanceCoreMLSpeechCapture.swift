@@ -49,6 +49,10 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         try await Self.setAudioSessionActive(true)
 
         let input = engine.inputNode
+        if hasInputTap {
+            input.removeTap(onBus: 0)
+            hasInputTap = false
+        }
         let format = input.outputFormat(forBus: 0)
         input.installTap(onBus: 0, bufferSize: 2048, format: format) { [weak self] buffer, _ in
             speechRequest.append(buffer)
