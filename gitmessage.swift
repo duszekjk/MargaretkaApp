@@ -1,4 +1,4 @@
-split breviary presentation components from the prayer flow view
+add current Xcode breakpoint configuration
 
-Move the breviary card, full-screen presentation, and Image Playground UI into
-their own source file while preserving the existing prayer-flow behavior.
+Preserve the existing local Xcode breakpoint configuration without modifying
+its contents before updating photo quality settings.

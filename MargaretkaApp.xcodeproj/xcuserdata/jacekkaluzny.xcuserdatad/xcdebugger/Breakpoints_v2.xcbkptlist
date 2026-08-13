@@ -50,36 +50,6 @@
             endingLineNumber = "267"
             landmarkName = "synchronize(prayerStore:targetStore:offlineStore:force:revisionOverride:)"
             landmarkType = "7">
-            <Locations>
-               <Location
-                  uuid = "7D7925D7-E191-45DF-861B-17C70226D5C5 - afb64444165246e9"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(11) suspend resume partial function for MargaretkaApp.SyncService.synchronize(prayerStore: MargaretkaApp.PrayerStore, targetStore: MargaretkaApp.PriestStore, offlineStore: MargaretkaApp.OfflineBreviaryStore, force: Swift.Bool, revisionOverride: Swift.Optional&lt;Swift.Int&gt;) async -&gt; ()"
-                  moduleName = "MargaretkaApp.debug.dylib"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/jacekkaluzny/Library/Mobile%20Documents/com~apple~CloudDocs/Documents/%F0%9F%9B%8Dmojeprogramy/MargaretkaApp/MargaretkaApp/MargaretkaApp/SyncService.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "267"
-                  endingLineNumber = "267">
-               </Location>
-               <Location
-                  uuid = "7D7925D7-E191-45DF-861B-17C70226D5C5 - afb64444165246e9"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(11) suspend resume partial function for MargaretkaApp.SyncService.synchronize(prayerStore: MargaretkaApp.PrayerStore, targetStore: MargaretkaApp.PriestStore, offlineStore: MargaretkaApp.OfflineBreviaryStore, force: Swift.Bool, revisionOverride: Swift.Optional&lt;Swift.Int&gt;) async -&gt; ()"
-                  moduleName = "MargaretkaApp.debug.dylib"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/jacekkaluzny/Library/Mobile%20Documents/com~apple~CloudDocs/Documents/%F0%9F%9B%8Dmojeprogramy/MargaretkaApp/MargaretkaApp/MargaretkaApp/SyncService.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "267"
-                  endingLineNumber = "267">
-               </Location>
-            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
