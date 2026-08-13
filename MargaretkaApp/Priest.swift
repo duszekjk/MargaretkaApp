@@ -12,7 +12,7 @@ import AppKit
 typealias UIImage = NSImage
 
 extension NSImage {
-    static let storagePhotoByteLimit = 700_000
+    static let storagePhotoByteLimit = 1_200_000
 
     func jpegData(compressionQuality: CGFloat) -> Data? {
         guard let tiffRepresentation,

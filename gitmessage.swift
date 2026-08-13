@@ -1,4 +1,4 @@
-increase iPhone photo detail within a compact storage limit
+increase iPhone photo resolution to 1920 px
 
-Use a 1440 px and 700 KB iPhone photo limit, matching the higher-quality server
-variant while remaining substantially below native iPhone screen resolution.
+Match the 1920 px, 1.2 MB iPhone server variant locally and bump the validated
+app build to 78. JPEG smoothing is applied by the server to downloaded variants.
