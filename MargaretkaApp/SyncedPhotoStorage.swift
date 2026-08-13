@@ -59,6 +59,12 @@ final class SyncedPhotoStorage: @unchecked Sendable {
         try? fileManager.removeItem(at: url(for: assetID))
     }
 
+    func removeOrphanedOriginals(referencedBy assetIDs: Set<UUID>) {
+        for assetID in allStoredAssetIDs() where !assetIDs.contains(assetID) {
+            removeOriginal(for: assetID)
+        }
+    }
+
     func fingerprint(for assetID: UUID) -> String? {
         let fileURL = url(for: assetID)
         guard let attributes = try? fileManager.attributesOfItem(atPath: fileURL.path),

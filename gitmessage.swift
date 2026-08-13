@@ -1,4 +1,4 @@
-increment build for device-sized photo synchronization
+remove legacy full-resolution photos after safe variant recovery
 
-Raise the app and widget build number to 70 after the successful build of the
-server-limited and device-sized photo synchronization changes.
+On every completed sync, recover a device-sized variant before removing a
+referenced legacy original and remove unreferenced originals immediately.

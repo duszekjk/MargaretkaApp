@@ -257,6 +257,7 @@ final class SyncService: ObservableObject {
             if !force, revisionOverride == nil, let revision = storedRevision {
                 let metadata: SnapshotMetadataResponse = try await requestWithoutBody(path: "sync/snapshot/?metadata=1")
                 if metadata.revision == revision, pendingChanges.isEmpty {
+                    try await downloadDevicePhotoVariants(for: targetStore)
                     markSuccessfulSync()
                     return
                 }
@@ -561,6 +562,9 @@ final class SyncService: ObservableObject {
         let family = DeviceDescription.current.family.rawValue.lowercased()
         for index in targetStore.priests.indices {
             guard let assetID = targetStore.priests[index].photoAssetID else { continue }
+            guard SyncedPhotoStorage.shared.contains(assetID) || targetStore.priests[index].photoData == nil else {
+                continue
+            }
             var urlRequest = URLRequest(url: Self.baseURL.appending(path: "media/photos/\(assetID.uuidString.lowercased())/variants/\(family)/"))
             urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             let (data, response) = try await session.data(for: urlRequest)
@@ -571,6 +575,9 @@ final class SyncService: ObservableObject {
             }
             SyncedPhotoStorage.shared.removeOriginal(for: assetID)
         }
+        SyncedPhotoStorage.shared.removeOrphanedOriginals(
+            referencedBy: Set(targetStore.priests.compactMap(\.photoAssetID))
+        )
     }
 
     private var uploadedPhotoIDs: Set<UUID> {
