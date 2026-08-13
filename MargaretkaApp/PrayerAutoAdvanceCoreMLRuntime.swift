@@ -30,4 +30,24 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         UserDefaults.standard.bool(forKey: PrayerAutoAdvancePreferences.trainingEnabledKey)
             || UserDefaults.standard.bool(forKey: PrayerAutoAdvancePreferences.automaticEnabledKey)
     }
+
+    func recordManualAdvance(at date: Date = Date()) {
+        guard UserDefaults.standard.bool(forKey: PrayerAutoAdvancePreferences.trainingEnabledKey),
+              let pageID = context?.pageID,
+              state.model != nil,
+              !state.isTraining else { return }
+
+        let candidates = snapshots.filter { $0.pageID == pageID }
+        guard let batch = PrayerAutoAdvanceTrainingPolicy.makeBatch(
+            snapshots: candidates,
+            manualAdvanceAt: date,
+            history: state.timingHistory
+        ) else { return }
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.state.train(batch)
+            self.statusMessage = self.state.lastError
+        }
+    }
 }
