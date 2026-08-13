@@ -44,8 +44,11 @@ enum PrayerAutoAdvanceFeatureExtractor {
     }
 
     private static func semanticSimilarity(_ lhs: String, _ rhs: String, language: PrayerLanguage) -> Float {
-        guard let nlLanguage = language.nlLanguage,
-              let embedding = NLEmbedding.sentenceEmbedding(for: nlLanguage),
+        // Apple's sentence embeddings are not available for Polish on the tested
+        // devices/SDK. Calling the unsupported locale emits a system warning for
+        // every snapshot, so use the deterministic lexical fallback directly.
+        guard language == .english,
+              let embedding = NLEmbedding.sentenceEmbedding(for: .english),
               let left = embedding.vector(for: normalized(lhs)),
               let right = embedding.vector(for: normalized(rhs)),
               left.count == right.count,
@@ -76,15 +79,31 @@ enum PrayerAutoAdvanceFeatureExtractor {
         let spoken = tokens(transcript)
         let target = tokens(expected)
         guard !spoken.isEmpty, !target.isEmpty else { return 0 }
-        let maximum = Swift.min(20, Swift.min(spoken.count, target.count))
-        var matched = 0
-        for length in stride(from: maximum, through: 1, by: -1) {
-            if Array(spoken.suffix(length)) == Array(target.suffix(length)) {
-                matched = length
-                break
+
+        // ASR often drops or substitutes one of the final words. Compare the
+        // recent transcript against the expected ending with an ordered LCS
+        // instead of requiring an exact suffix match.
+        let targetTail = Array(target.suffix(min(12, target.count)))
+        let spokenTail = Array(spoken.suffix(min(24, spoken.count)))
+        let matched = longestCommonSubsequenceLength(spokenTail, targetTail)
+        return Float(matched) / Float(max(targetTail.count, 1))
+    }
+
+    private static func longestCommonSubsequenceLength(_ lhs: [String], _ rhs: [String]) -> Int {
+        guard !lhs.isEmpty, !rhs.isEmpty else { return 0 }
+        var previous = Array(repeating: 0, count: rhs.count + 1)
+        for left in lhs {
+            var current = Array(repeating: 0, count: rhs.count + 1)
+            for index in rhs.indices {
+                if left == rhs[index] {
+                    current[index + 1] = previous[index] + 1
+                } else {
+                    current[index + 1] = max(current[index], previous[index + 1])
+                }
             }
+            previous = current
         }
-        return Float(matched) / Float(maximum)
+        return previous[rhs.count]
     }
 
     private static func tokens(_ text: String) -> [String] {
@@ -96,15 +115,5 @@ enum PrayerAutoAdvanceFeatureExtractor {
     private static func normalized(_ text: String) -> String {
         text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "pl_PL"))
             .lowercased()
-    }
-}
-
-private extension PrayerLanguage {
-    var nlLanguage: NLLanguage? {
-        switch self {
-        case .polish: .polish
-        case .english: .english
-        case .latin: nil
-        }
     }
 }
