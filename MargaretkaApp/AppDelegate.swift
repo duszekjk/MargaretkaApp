@@ -135,6 +135,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
         cleanStalePreferenceTemporaryFiles()
+        AppNetworkCache.configure()
         cleanLegacyWebCachesIfNeeded()
         return true
     }
@@ -233,6 +234,7 @@ final class AppDelegate: NSObject, PlatformAppDelegate, UNUserNotificationCenter
     func applicationDidFinishLaunching(_ notification: Notification) {
         UNUserNotificationCenter.current().delegate = self
         cleanStalePreferenceTemporaryFiles()
+        AppNetworkCache.configure()
         cleanLegacyWebCachesIfNeeded()
         configureMargaretkaMenu()
         NotificationCenter.default.addObserver(

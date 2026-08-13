@@ -36,6 +36,12 @@ actor BrewiarzURLResolver {
 
     private let cacheKey = "brewiarz_daily_links_v3"
     private var cachedLinks: BrewiarzDailyLinks?
+    private let networkSession: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.urlCache = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: configuration)
+    }()
 
     func resolveURL(for key: BrewiarzPrayerKey, date: Date = .now) async -> URL? {
         do {
@@ -166,7 +172,7 @@ actor BrewiarzURLResolver {
         request.setValue("text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", forHTTPHeaderField: "Accept")
         request.setValue("pl-PL,pl;q=0.9,en;q=0.8", forHTTPHeaderField: "Accept-Language")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await networkSession.data(for: request)
         let httpResponse = response as? HTTPURLResponse
         let finalURL = httpResponse?.url ?? url
         let encodingName = httpResponse?.textEncodingName

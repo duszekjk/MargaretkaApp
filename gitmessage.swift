@@ -1,4 +1,6 @@
-hide iOS-managed files from Margaretka storage totals
+cap and clear the online breviary network cache
 
-Keep Pamięć focused on data that Margaretka owns and can manage. Exclude iOS
-snapshot and temporary files from the displayed categories and total.
+Replace the global URL cache used by online breviary resolution with a 300 KB
+cap. Resolve online breviary links through a non-caching session, clear the
+cache when offline breviary content is available, and provide a manual clear
+control in Pamięć.

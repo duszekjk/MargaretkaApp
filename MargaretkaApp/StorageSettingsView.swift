@@ -63,6 +63,10 @@ struct StorageSettingsView: View {
             Section {
                 storageRow("Nagrania audio", report.audio.formattedSize)
                 storageRow("Cache aplikacji", report.cache.formattedSize)
+                Button("Wyczyść cache internetowy") {
+                    AppNetworkCache.clear()
+                    refresh()
+                }
                 storageRow("Inne dane", report.other.formattedSize)
             } header: {
                 Text("Pozostałe")

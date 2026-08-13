@@ -67,6 +67,9 @@ struct MargaretkaAppApp: App {
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active {
                     offlineBreviaryStore.removeExpired()
+                    if !offlineBreviaryStore.days.isEmpty {
+                        AppNetworkCache.clear()
+                    }
                 }
             }
         }
