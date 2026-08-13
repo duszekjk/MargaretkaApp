@@ -22,6 +22,9 @@ enum PrayerAutoAdvanceCoreMLDownloader {
 
         let (archiveData, archiveResponse) = try await URLSession.shared.data(from: manifest.modelURL)
         try validate(archiveResponse)
+        if let expectedSize = manifest.size, archiveData.count != expectedSize {
+            throw DownloadError.sizeMismatch
+        }
         let digest = SHA256.hash(data: archiveData).map { String(format: "%02x", $0) }.joined()
         guard digest == manifest.sha256.lowercased() else {
             throw DownloadError.checksumMismatch
@@ -38,12 +41,14 @@ enum PrayerAutoAdvanceCoreMLDownloader {
     enum DownloadError: LocalizedError {
         case invalidResponse
         case incompatibleFeatureSchema
+        case sizeMismatch
         case checksumMismatch
 
         var errorDescription: String? {
             switch self {
             case .invalidResponse: "Serwer modelu zwrócił nieprawidłową odpowiedź."
             case .incompatibleFeatureSchema: "Model ma niezgodny schemat cech."
+            case .sizeMismatch: "Pobrany model ma nieprawidłowy rozmiar."
             case .checksumMismatch: "Pobrany model ma nieprawidłową sumę kontrolną."
             }
         }
