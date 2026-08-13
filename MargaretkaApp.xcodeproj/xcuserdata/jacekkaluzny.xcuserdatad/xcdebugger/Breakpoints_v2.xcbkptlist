@@ -18,64 +18,6 @@
             endingLineNumber = "397"
             landmarkName = "keepBothCopies(prayerStore:targetStore:offlineStore:)"
             landmarkType = "7">
-            <Locations>
-               <Location
-                  uuid = "046228B3-07F7-4D88-BB94-5F4DFFE3A617 - fcdd643b17e7a59b"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(1) suspend resume partial function for MargaretkaApp.SyncService.keepBothCopies(prayerStore: MargaretkaApp.PrayerStore, targetStore: MargaretkaApp.PriestStore, offlineStore: MargaretkaApp.OfflineBreviaryStore) async -&gt; ()"
-                  moduleName = "MargaretkaApp.debug.dylib"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/jacekkaluzny/Library/Mobile%20Documents/com~apple~CloudDocs/Documents/%F0%9F%9B%8Dmojeprogramy/MargaretkaApp/MargaretkaApp/MargaretkaApp/SyncService.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "403"
-                  endingLineNumber = "403">
-               </Location>
-               <Location
-                  uuid = "046228B3-07F7-4D88-BB94-5F4DFFE3A617 - fcdd643b17e7a59b"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(1) suspend resume partial function for MargaretkaApp.SyncService.keepBothCopies(prayerStore: MargaretkaApp.PrayerStore, targetStore: MargaretkaApp.PriestStore, offlineStore: MargaretkaApp.OfflineBreviaryStore) async -&gt; ()"
-                  moduleName = "MargaretkaApp.debug.dylib"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/jacekkaluzny/Library/Mobile%20Documents/com~apple~CloudDocs/Documents/%F0%9F%9B%8Dmojeprogramy/MargaretkaApp/MargaretkaApp/MargaretkaApp/SyncService.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "403"
-                  endingLineNumber = "403">
-               </Location>
-               <Location
-                  uuid = "046228B3-07F7-4D88-BB94-5F4DFFE3A617 - f383cf1f38016199"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(3) suspend resume partial function for MargaretkaApp.SyncService.keepBothCopies(prayerStore: MargaretkaApp.PrayerStore, targetStore: MargaretkaApp.PriestStore, offlineStore: MargaretkaApp.OfflineBreviaryStore) async -&gt; ()"
-                  moduleName = "MargaretkaApp.debug.dylib"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/jacekkaluzny/Library/Mobile%20Documents/com~apple~CloudDocs/Documents/%F0%9F%9B%8Dmojeprogramy/MargaretkaApp/MargaretkaApp/MargaretkaApp/SyncService.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "403"
-                  endingLineNumber = "403">
-               </Location>
-               <Location
-                  uuid = "046228B3-07F7-4D88-BB94-5F4DFFE3A617 - fcdd643b17e7a55d"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "(1) suspend resume partial function for MargaretkaApp.SyncService.keepBothCopies(prayerStore: MargaretkaApp.PrayerStore, targetStore: MargaretkaApp.PriestStore, offlineStore: MargaretkaApp.OfflineBreviaryStore) async -&gt; ()"
-                  moduleName = "MargaretkaApp.debug.dylib"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/jacekkaluzny/Library/Mobile%20Documents/com~apple~CloudDocs/Documents/%F0%9F%9B%8Dmojeprogramy/MargaretkaApp/MargaretkaApp/MargaretkaApp/SyncService.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "397"
-                  endingLineNumber = "397">
-               </Location>
-            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
