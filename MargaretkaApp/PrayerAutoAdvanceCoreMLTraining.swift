@@ -6,6 +6,13 @@ extension PrayerAutoAdvanceCoreMLState {
         let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
         isTraining = true
         diagnostics.pipelineState = "training"
+        let lossBefore = diagnostics.evaluateBatch(
+            model: current,
+            samples: batch.samples,
+            phase: "before"
+        )
+        let delayText = batch.observedDelay.map { String(format: "%.2fs", $0) } ?? "n/a"
+        diagnostics.event("MLUpdateTask start samples=\(batch.samples.count) delay=\(delayText)")
         lastTrainingEvent = "Aktualizowanie modelu lokalnego…"
         defer { isTraining = false }
 
@@ -18,6 +25,15 @@ extension PrayerAutoAdvanceCoreMLState {
             )
             _ = try fileManager.replaceItemAt(modelURL, withItemAt: updatedURL)
             model = try PrayerAutoAdvanceCoreMLModel(compiledURL: modelURL)
+
+            let lossAfter = model.map {
+                diagnostics.evaluateBatch(
+                    model: $0,
+                    samples: batch.samples,
+                    phase: "after"
+                )
+            } ?? nil
+            diagnostics.recordLossChange(before: lossBefore, after: lossAfter)
 
             if let observedDelay = batch.observedDelay {
                 timingHistory.append(observedDelay)
