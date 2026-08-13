@@ -1,4 +1,4 @@
-increase iPhone photo resolution to 1920 px
+smooth only photo previews that the device must enlarge
 
-Match the 1920 px, 1.2 MB iPhone server variant locally and bump the validated
-app build to 78. JPEG smoothing is applied by the server to downloaded variants.
+Keep server JPEG variants sharp and apply a 0.35-point SwiftUI blur only when
+the displayed crop exceeds its source pixels. Bump the validated app build to 79.
