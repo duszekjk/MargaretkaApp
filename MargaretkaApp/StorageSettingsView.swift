@@ -63,6 +63,8 @@ struct StorageSettingsView: View {
             Section {
                 storageRow("Nagrania audio", report.audio.formattedSize)
                 storageRow("Cache aplikacji", report.cache.formattedSize)
+                storageRow("Systemowe snapshoty ekranu", report.snapshots.formattedSize)
+                storageRow("Pliki tymczasowe", report.temporary.formattedSize)
                 storageRow("Inne dane", report.other.formattedSize)
             } header: {
                 Text("Pozostałe")
@@ -127,6 +129,8 @@ private struct AppStorageReport {
     let offlineImages: Int64
     let audio: Int64
     let cache: Int64
+    let snapshots: Int64
+    let temporary: Int64
     let other: Int64
 
     static func current() -> Self {
@@ -134,6 +138,10 @@ private struct AppStorageReport {
         let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let support = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        let container = documents.deletingLastPathComponent()
+        let snapshots = size(of: container
+            .appendingPathComponent("Library/SplashBoard/Snapshots", isDirectory: true))
+        let temporary = size(of: fileManager.temporaryDirectory)
         let offlineText = size(of: LocalDatabase.shared.path(for: OfflineBreviaryStore.storageKey))
         let prayerData = size(of: LocalDatabase.shared.path(for: Priest.storageKey))
         let pendingOriginals = size(of: SyncedPhotoStorage.shared.directory)
@@ -142,8 +150,8 @@ private struct AppStorageReport {
         let cache = size(of: caches)
         let documentsSize = size(of: documents)
         let supportSize = size(of: support)
-        let known = offlineText + prayerData + pendingOriginals + offlineImages + audio + cache
-        let total = documentsSize + supportSize + cache
+        let known = offlineText + prayerData + pendingOriginals + offlineImages + audio + cache + snapshots + temporary
+        let total = documentsSize + supportSize + cache + snapshots + temporary
         let other = max(0, total - known)
         let entries = [
             AppStorageEntry(title: "Dane modlitw i podglądy zdjęć", size: prayerData),
@@ -152,6 +160,8 @@ private struct AppStorageReport {
             AppStorageEntry(title: "Oryginały do synchronizacji", size: pendingOriginals),
             AppStorageEntry(title: "Nagrania", size: audio),
             AppStorageEntry(title: "Cache", size: cache),
+            AppStorageEntry(title: "Systemowe snapshoty ekranu", size: snapshots),
+            AppStorageEntry(title: "Pliki tymczasowe", size: temporary),
             AppStorageEntry(title: "Pozostałe dane", size: other)
         ].filter { $0.size > 0 }
         return Self(
@@ -163,22 +173,36 @@ private struct AppStorageReport {
             offlineImages: offlineImages,
             audio: audio,
             cache: cache,
+            snapshots: snapshots,
+            temporary: temporary,
             other: other
         )
     }
 
     private static func size(of url: URL) -> Int64 {
-        guard let enumerator = FileManager.default.enumerator(
+        let fileManager = FileManager.default
+        var isDirectory: ObjCBool = false
+        guard fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory) else { return 0 }
+        guard isDirectory.boolValue else {
+            return fileSize(at: url, fileManager: fileManager)
+        }
+        guard let enumerator = fileManager.enumerator(
             at: url,
-            includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey],
+            includingPropertiesForKeys: nil,
             options: [.skipsHiddenFiles]
         ) else { return 0 }
-        return enumerator.reduce(into: Int64(0)) { result, item in
-            guard let file = item as? URL,
-                  let values = try? file.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
-                  values.isRegularFile == true else { return }
-            result += Int64(values.fileSize ?? 0)
+        var total: Int64 = 0
+        while let file = enumerator.nextObject() as? URL {
+            total += fileSize(at: file, fileManager: fileManager)
         }
+        return total
+    }
+
+    private static func fileSize(at url: URL, fileManager: FileManager) -> Int64 {
+        guard let attributes = try? fileManager.attributesOfItem(atPath: url.path),
+              attributes[.type] as? FileAttributeType == .typeRegular,
+              let size = attributes[.size] as? NSNumber else { return 0 }
+        return size.int64Value
     }
 
     private static func sizeOfAudioFiles(in directory: URL) -> Int64 {
@@ -189,9 +213,10 @@ private struct AppStorageReport {
         ) else { return 0 }
         return files.reduce(into: Int64(0)) { result, file in
             guard let type = UTType(filenameExtension: file.pathExtension), type.conforms(to: .audio),
-                  let values = try? file.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
-                  values.isRegularFile == true else { return }
-            result += Int64(values.fileSize ?? 0)
+                  let attributes = try? FileManager.default.attributesOfItem(atPath: file.path),
+                  attributes[.type] as? FileAttributeType == .typeRegular,
+                  let size = attributes[.size] as? NSNumber else { return }
+            result += size.int64Value
         }
     }
 }
