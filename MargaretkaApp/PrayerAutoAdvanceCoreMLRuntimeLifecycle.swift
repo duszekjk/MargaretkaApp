@@ -39,7 +39,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         guard evaluationTask == nil else { return }
         evaluationTask = Task { @MainActor [weak self] in
             while let self, !Task.isCancelled {
-                self.evaluateCurrentCapture()
+                await self.evaluateCurrentCapture()
                 try? await Task.sleep(for: .milliseconds(750))
             }
         }
