@@ -50,6 +50,7 @@ final class SyncService: ObservableObject {
     @Published private(set) var lastSyncDate: Date?
     @Published var errorMessage: String?
     @Published var pendingConflict: PendingSyncConflict?
+    @Published private(set) var photoDownloadProgress: (completed: Int, total: Int)?
 
     private let session: URLSession
     private var accessToken: String?
@@ -578,23 +579,65 @@ final class SyncService: ObservableObject {
     ) async throws {
         guard let token = accessToken else { throw SyncServiceError.signedOut }
         let family = DeviceDescription.current.family.rawValue.lowercased()
-        for index in targetStore.priests.indices {
-            guard let assetID = targetStore.priests[index].photoAssetID else { continue }
-            if !replacingExisting, targetStore.priests[index].photoData != nil { continue }
-            var urlRequest = URLRequest(url: Self.baseURL.appending(path: "media/photos/\(assetID.uuidString.lowercased())/variants/\(family)/"))
-            urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            let (data, response) = try await session.data(for: urlRequest)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { continue }
-            guard let image = UIImage(data: data), image.cgImage != nil else { continue }
-            if targetStore.priests[index].photoData != data {
-                targetStore.priests[index].photoData = data
-                // A photo asset keeps the same ID when a device downloads its
-                // own size variant. Bump the version used by displayPhoto's
-                // cache key, otherwise SwiftUI keeps showing the old (possibly
-                // damaged) decoded image after a re-download.
-                targetStore.priests[index].photoUpdatedAt = .now
+        let downloads = targetStore.priests.indices.compactMap { index -> (Int, UUID)? in
+            guard let assetID = targetStore.priests[index].photoAssetID,
+                  replacingExisting || targetStore.priests[index].photoData == nil else {
+                return nil
             }
-            SyncedPhotoStorage.shared.removeOriginal(for: assetID)
+            return (index, assetID)
+        }
+        guard !downloads.isEmpty else { return }
+
+        photoDownloadProgress = (0, downloads.count)
+        defer { photoDownloadProgress = nil }
+
+        let session = session
+        var nextDownload = 0
+        var completed = 0
+        await withTaskGroup(of: (Int, UUID, Data?).self) { group in
+            func addDownload(_ download: (Int, UUID)) {
+                group.addTask {
+                    var request = URLRequest(
+                        url: Self.baseURL.appending(
+                            path: "media/photos/\(download.1.uuidString.lowercased())/variants/\(family)/"
+                        )
+                    )
+                    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                    guard let (data, response) = try? await session.data(for: request),
+                          let http = response as? HTTPURLResponse,
+                          http.statusCode == 200 else {
+                        return (download.0, download.1, nil)
+                    }
+                    return (download.0, download.1, data)
+                }
+            }
+
+            while nextDownload < min(1, downloads.count) {
+                addDownload(downloads[nextDownload])
+                nextDownload += 1
+            }
+
+            while let (index, assetID, data) = await group.next() {
+                completed += 1
+                photoDownloadProgress = (completed, downloads.count)
+                if let data,
+                   let image = UIImage(data: data),
+                   image.cgImage != nil,
+                   targetStore.priests.indices.contains(index),
+                   targetStore.priests[index].photoData != data {
+                    targetStore.priests[index].photoData = data
+                    // A photo asset keeps the same ID when a device downloads its
+                    // own size variant. Bump the version used by displayPhoto's
+                    // cache key, otherwise SwiftUI keeps showing the old image.
+                    targetStore.priests[index].photoUpdatedAt = .now
+                    SyncedPhotoStorage.shared.removeOriginal(for: assetID)
+                }
+                if nextDownload < downloads.count {
+                    try? await Task.sleep(for: .milliseconds(300))
+                    addDownload(downloads[nextDownload])
+                    nextDownload += 1
+                }
+            }
         }
         SyncedPhotoStorage.shared.removeOrphanedOriginals(
             referencedBy: Set(targetStore.priests.compactMap(\.photoAssetID))

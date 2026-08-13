@@ -42,7 +42,20 @@ struct SyncSettingsView: View {
                     Button {
                         Task { await repairPhotos() }
                     } label: {
-                        Label("Pobierz ponownie zdjęcia", systemImage: "photo.badge.arrow.down")
+                        if let progress = syncService.photoDownloadProgress {
+                            VStack(alignment: .leading, spacing: 6) {
+                                HStack {
+                                    ProgressView()
+                                    Text("Pobieram zdjęcia \(progress.completed) z \(progress.total)…")
+                                }
+                                ProgressView(
+                                    value: Double(progress.completed),
+                                    total: Double(progress.total)
+                                )
+                            }
+                        } else {
+                            Label("Pobierz ponownie zdjęcia", systemImage: "photo.badge.arrow.down")
+                        }
                     }
                     .disabled(syncService.isWorking)
 
@@ -56,7 +69,7 @@ struct SyncSettingsView: View {
                     }
                     .disabled(syncService.isWorking)
                 } footer: {
-                    Text("Synchronizowane są modlitwy, osoby, harmonogramy, historia, ustawienia, dane brewiarza i zdjęcia w pełnej rozdzielczości.")
+                    Text("Zdjęcia pobierają się od razu dla wszystkich osób, jedno po drugim z krótką przerwą. Na urządzeniu pozostaje wyłącznie wariant dopasowany do ekranu.")
                 }
             } else {
                 Section {
