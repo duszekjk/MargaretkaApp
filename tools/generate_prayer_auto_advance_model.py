@@ -78,7 +78,7 @@ def build_model(model_version: int):
 
     builder.make_updatable(["hidden1", "hidden2", "logits"])
     builder.set_categorical_cross_entropy_loss(name="classification_loss", input="probabilities")
-    builder.set_adam_optimizer(AdamParams(lr=0.005, batch=8))
+    builder.set_adam_optimizer(AdamParams(lr=0.005, batch=1))
     builder.set_epochs(3)
 
     spec = builder.spec
