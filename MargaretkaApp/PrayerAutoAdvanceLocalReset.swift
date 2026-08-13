@@ -3,9 +3,9 @@ import Foundation
 @MainActor
 enum PrayerAutoAdvanceLocalReset {
     static func run(store: PrayerAutoAdvanceStore = .shared) throws {
-        for url in [store.modelURL, store.metadataURL] {
-            guard FileManager.default.fileExists(atPath: url.path) else { continue }
-            try Data().write(to: url, options: .atomic)
+        let directory = store.storageDirectory
+        if FileManager.default.fileExists(atPath: directory.path) {
+            try FileManager.default.removeItem(at: directory)
         }
         store.clearLoadedState()
     }
