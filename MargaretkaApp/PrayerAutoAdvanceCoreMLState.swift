@@ -29,6 +29,6 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
     var hasModel: Bool { model != nil }
 
     private init() {
-        PrayerAutoAdvanceCoreMLPersistence.load(into: self)
+        PrayerAutoAdvanceCoreMLDiskState.load(self)
     }
 }
