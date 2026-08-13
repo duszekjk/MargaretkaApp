@@ -20,6 +20,24 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     @Published var recentMessages: [String] = []
     @Published var lastFeatureSummary = "—"
 
+    @Published var positiveSamples = 0
+    @Published var negativeSamples = 0
+    @Published var positivePredictionAverage: Float?
+    @Published var negativePredictionAverage: Float?
+    @Published var predictionMargin: Float?
+    @Published var logLoss: Double?
+    @Published var lastTrainingLossChange: Double?
+
+    @Published var timingMAE: TimeInterval?
+    @Published var timingBias: TimeInterval?
+    @Published var timingHitHalfSecond: Double?
+    @Published var timingHitOneSecond: Double?
+    @Published var timingHitTwoSeconds: Double?
+    @Published var lastPeakTimingError: TimeInterval?
+    @Published var lastPeakPrediction: Float?
+
+    private var timingErrors: [TimeInterval] = []
+
     func prediction(_ value: Float, snapshotCount: Int, features: [Float]) {
         self.snapshotCount = snapshotCount
         predictionHistory.append(value)
@@ -33,6 +51,80 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
             )
         }
         Self.logger.debug("prediction=\(value, privacy: .public) snapshots=\(snapshotCount, privacy: .public) features=\(self.lastFeatureSummary, privacy: .public)")
+    }
+
+    func evaluateTiming(
+        model: PrayerAutoAdvanceCoreMLModel,
+        snapshots: [PrayerAutoAdvanceTrainingSnapshot],
+        manualAdvanceAt: Date
+    ) {
+        let scored = snapshots.compactMap { snapshot -> (PrayerAutoAdvanceTrainingSnapshot, Float)? in
+            guard let score = try? model.prediction(for: snapshot.features) else { return nil }
+            return (snapshot, score)
+        }
+        guard let peak = scored.max(by: { $0.1 < $1.1 }) else { return }
+
+        let error = peak.0.date.timeIntervalSince(manualAdvanceAt)
+        lastPeakTimingError = error
+        lastPeakPrediction = peak.1
+        timingErrors.append(error)
+        if timingErrors.count > 100 { timingErrors.removeFirst(timingErrors.count - 100) }
+
+        let absolute = timingErrors.map(abs)
+        timingMAE = absolute.reduce(0, +) / Double(absolute.count)
+        timingBias = timingErrors.reduce(0, +) / Double(timingErrors.count)
+        timingHitHalfSecond = hitRate(within: 0.5)
+        timingHitOneSecond = hitRate(within: 1.0)
+        timingHitTwoSeconds = hitRate(within: 2.0)
+
+        Self.logger.info("timing peak=\(peak.1, privacy: .public) error=\(error, privacy: .public)s mae=\(self.timingMAE ?? 0, privacy: .public)s")
+    }
+
+    func evaluateBatch(
+        model: PrayerAutoAdvanceCoreMLModel,
+        samples: [(features: [Float], label: Int64)],
+        phase: String
+    ) -> Double? {
+        var positive: [Float] = []
+        var negative: [Float] = []
+        var losses: [Double] = []
+
+        for sample in samples {
+            guard let prediction = try? model.prediction(for: sample.features) else { continue }
+            let p = min(max(Double(prediction), 1e-6), 1 - 1e-6)
+            if sample.label == 1 {
+                positive.append(prediction)
+                losses.append(-log(p))
+            } else {
+                negative.append(prediction)
+                losses.append(-log(1 - p))
+            }
+        }
+
+        positiveSamples = samples.filter { $0.label == 1 }.count
+        negativeSamples = samples.filter { $0.label == 0 }.count
+        positivePredictionAverage = average(positive)
+        negativePredictionAverage = average(negative)
+        if let pos = positivePredictionAverage, let neg = negativePredictionAverage {
+            predictionMargin = pos - neg
+        } else {
+            predictionMargin = nil
+        }
+        let loss = losses.isEmpty ? nil : losses.reduce(0, +) / Double(losses.count)
+        logLoss = loss
+
+        Self.logger.info(
+            "batch \(phase, privacy: .public) P=\(self.positiveSamples, privacy: .public) N=\(self.negativeSamples, privacy: .public) posAvg=\(self.positivePredictionAverage ?? -1, privacy: .public) negAvg=\(self.negativePredictionAverage ?? -1, privacy: .public) margin=\(self.predictionMargin ?? 0, privacy: .public) loss=\(loss ?? -1, privacy: .public)"
+        )
+        return loss
+    }
+
+    func recordLossChange(before: Double?, after: Double?) {
+        guard let before, let after else {
+            lastTrainingLossChange = nil
+            return
+        }
+        lastTrainingLossChange = before - after
     }
 
     func event(_ message: String) {
@@ -49,5 +141,16 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
             recentMessages.removeFirst(recentMessages.count - 6)
         }
         Self.logger.error("\(message, privacy: .public)")
+    }
+
+    private func average(_ values: [Float]) -> Float? {
+        guard !values.isEmpty else { return nil }
+        return values.reduce(0, +) / Float(values.count)
+    }
+
+    private func hitRate(within tolerance: TimeInterval) -> Double? {
+        guard !timingErrors.isEmpty else { return nil }
+        let hits = timingErrors.filter { abs($0) <= tolerance }.count
+        return Double(hits) / Double(timingErrors.count)
     }
 }
