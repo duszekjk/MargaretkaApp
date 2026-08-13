@@ -6,6 +6,11 @@ struct PrayerAutoAdvanceTimingHistory: Codable, Sendable {
 
     var canDetectOutliers: Bool { values.count >= Self.minimumCountForOutliers }
 
+    var typicalDelay: TimeInterval? {
+        guard canDetectOutliers else { return nil }
+        return median(values.sorted())
+    }
+
     mutating func append(_ value: TimeInterval) {
         guard value.isFinite else { return }
         values.append(value)
@@ -15,11 +20,11 @@ struct PrayerAutoAdvanceTimingHistory: Codable, Sendable {
     func isOutlier(_ value: TimeInterval) -> Bool {
         guard canDetectOutliers else { return false }
         let sorted = values.sorted()
-        let m = median(sorted)
-        let deviations = sorted.map { abs($0 - m) }.sorted()
+        let center = median(sorted)
+        let deviations = sorted.map { abs($0 - center) }.sorted()
         let mad = median(deviations)
         guard mad > 0.05 else { return false }
-        return 0.6745 * abs(value - m) / mad > 3.5
+        return 0.6745 * abs(value - center) / mad > 3.5
     }
 
     private func median(_ sorted: [TimeInterval]) -> TimeInterval {
@@ -33,7 +38,7 @@ struct PrayerAutoAdvanceTimingHistory: Codable, Sendable {
 
 struct PrayerAutoAdvanceLabeledBatch: Sendable {
     let samples: [(features: [Float], label: Int64)]
-    let observedDelay: TimeInterval
+    let observedDelay: TimeInterval?
 }
 
 enum PrayerAutoAdvanceTrainingPolicy {
@@ -44,46 +49,88 @@ enum PrayerAutoAdvanceTrainingPolicy {
     ) -> PrayerAutoAdvanceLabeledBatch? {
         let ordered = snapshots.sorted { $0.date < $1.date }
         guard ordered.count >= 4 else { return nil }
-        guard let idealIndex = idealIndex(in: ordered) else { return nil }
 
-        let ideal = ordered[idealIndex]
-        let delay = manualAdvanceAt.timeIntervalSince(ideal.date)
-        if history.isOutlier(delay) { return nil }
+        let completion = reliableCompletionIndex(in: ordered).map { ordered[$0] }
+        let observedDelay = completion.map { manualAdvanceAt.timeIntervalSince($0.date) }
 
-        var result: [(features: [Float], label: Int64)] = [(ideal.features, 1)]
-
-        if delay <= 1.5,
-           let near = nearest(to: ideal.date.addingTimeInterval(0.8), maxDistance: 0.4, in: ordered) {
-            result.append((near.features, 1))
+        // During calibration we do not pretend to know the user's reaction delay.
+        // The manual gesture is the noisy training anchor. Once enough personal
+        // timing data exists, we may compensate only by the user's robust median.
+        // A strong statistical outlier is discarded, never repaired.
+        let anchor: Date
+        if let typicalDelay = history.typicalDelay {
+            guard let observedDelay else { return nil }
+            guard !history.isOutlier(observedDelay) else { return nil }
+            anchor = manualAdvanceAt.addingTimeInterval(-typicalDelay)
+        } else {
+            anchor = manualAdvanceAt
         }
 
+        var result: [(features: [Float], label: Int64)] = []
+
+        // Approximate a smooth timing penalty with sample multiplicity:
+        // <= 0.5 s is effectively equivalent, around 1 s remains useful but
+        // receives less weight, and farther samples are not positive examples.
+        let positiveCandidates = ordered
+            .map { ($0, abs($0.date.timeIntervalSince(anchor))) }
+            .filter { $0.1 <= 1.6 }
+            .sorted { $0.1 < $1.1 }
+            .prefix(2)
+
+        for (snapshot, distance) in positiveCandidates {
+            let copies: Int
+            if distance <= 0.55 {
+                copies = 3
+            } else if distance <= 1.10 {
+                copies = 2
+            } else {
+                copies = 1
+            }
+            for _ in 0..<copies {
+                result.append((snapshot.features, 1))
+            }
+        }
+
+        // Leave an ambiguous band around the anchor. Negatives are sampled far
+        // enough before it that a normal human reaction delay cannot relabel them.
         for offset in [-8.0, -4.0, -2.0] {
-            if let negative = nearest(to: ideal.date.addingTimeInterval(offset), maxDistance: 1.2, in: ordered),
-               negative.date < ideal.date.addingTimeInterval(-1.25) {
+            if let negative = nearest(
+                to: anchor.addingTimeInterval(offset),
+                maxDistance: 1.2,
+                in: ordered
+            ), negative.date < anchor.addingTimeInterval(-1.25) {
                 result.append((negative.features, 0))
             }
         }
 
-        guard result.contains(where: { $0.label == 0 }) else { return nil }
-        return PrayerAutoAdvanceLabeledBatch(samples: result, observedDelay: delay)
+        guard result.contains(where: { $0.label == 1 }),
+              result.contains(where: { $0.label == 0 }) else { return nil }
+
+        return PrayerAutoAdvanceLabeledBatch(
+            samples: result,
+            observedDelay: observedDelay
+        )
     }
 
-    private static func idealIndex(in snapshots: [PrayerAutoAdvanceTrainingSnapshot]) -> Int? {
-        let scores = snapshots.map(score)
+    private static func reliableCompletionIndex(
+        in snapshots: [PrayerAutoAdvanceTrainingSnapshot]
+    ) -> Int? {
+        let scores = snapshots.map(readinessScore)
         guard scores.count >= 2 else { return nil }
-        for i in 0..<(scores.count - 1) where scores[i] >= 0.72 && scores[i + 1] >= 0.72 {
-            return i
+        for index in 0..<(scores.count - 1)
+        where scores[index] >= 0.72 && scores[index + 1] >= 0.72 {
+            return index
         }
         return nil
     }
 
-    private static func score(_ s: PrayerAutoAdvanceTrainingSnapshot) -> Float {
-        let nextLead = max(s.nextSimilarity - s.currentSimilarity, 0)
-        let silence = Float(min(max(s.silenceDuration / 2.0, 0), 1))
+    private static func readinessScore(_ snapshot: PrayerAutoAdvanceTrainingSnapshot) -> Float {
+        let nextLead = max(snapshot.nextSimilarity - snapshot.currentSimilarity, 0)
+        let silence = Float(min(max(snapshot.silenceDuration / 2.0, 0), 1))
         return min(max(
-            s.endingCoverage * 0.42
-            + s.spokenRatio * 0.28
-            + s.currentSimilarity * 0.18
+            snapshot.endingCoverage * 0.42
+            + snapshot.spokenRatio * 0.28
+            + snapshot.currentSimilarity * 0.18
             + min(nextLead * 1.5, 1) * 0.07
             + silence * 0.05,
             0
