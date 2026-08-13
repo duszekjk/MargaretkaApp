@@ -8,6 +8,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
     private let engine = AVAudioEngine()
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
+    private var hasInputTap = false
     private(set) var transcript = ""
     private(set) var energy: Float = 0
     private var lastVoiceAt = Date()
@@ -25,7 +26,11 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         }
         guard microphone else { throw CaptureError.permission }
 
-        let locale = language == .english ? Locale(identifier: "en_US") : language == .latin ? Locale(identifier: "la") : Locale(identifier: "pl_PL")
+        let locale = language == .english
+            ? Locale(identifier: "en_US")
+            : language == .latin
+                ? Locale(identifier: "la")
+                : Locale(identifier: "pl_PL")
         guard let recognizer = SFSpeechRecognizer(locale: locale), recognizer.supportsOnDeviceRecognition else {
             throw CaptureError.offlineUnavailable
         }
@@ -56,8 +61,15 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
                 if rms > 0.012 { self?.lastVoiceAt = Date() }
             }
         }
-        engine.prepare()
-        try engine.start()
+        hasInputTap = true
+
+        do {
+            engine.prepare()
+            try engine.start()
+        } catch {
+            stopAudioOnly()
+            throw error
+        }
 
         task = recognizer.recognitionTask(with: speechRequest) { [weak self] result, error in
             Task { @MainActor [weak self] in
@@ -74,11 +86,15 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         request = nil
         stopAudioOnly()
         transcript = ""
+        energy = 0
     }
 
     private func stopAudioOnly() {
         if engine.isRunning { engine.stop() }
-        engine.inputNode.removeTap(onBus: 0)
+        if hasInputTap {
+            engine.inputNode.removeTap(onBus: 0)
+            hasInputTap = false
+        }
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
