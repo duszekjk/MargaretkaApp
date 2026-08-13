@@ -9,6 +9,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
     private var hasInputTap = false
+    private var isStarting = false
     private(set) var transcript = ""
     private(set) var energy: Float = 0
     private var lastVoiceAt = Date()
@@ -16,6 +17,9 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
     var silenceDuration: TimeInterval { Date().timeIntervalSince(lastVoiceAt) }
 
     func start(language: PrayerLanguage, context: [String]) async throws {
+        guard !isStarting else { return }
+        isStarting = true
+        defer { isStarting = false }
         stop()
         let speech = await withCheckedContinuation { continuation in
             SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0) }
