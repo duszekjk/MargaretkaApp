@@ -109,6 +109,14 @@ struct SettingsMenuView: View {
                 ) {
                     Label("Import i eksport", systemImage: "arrow.up.arrow.down.circle")
                 }
+
+                Section("Zaawansowane") {
+                    NavigationLink {
+                        PrayerAutoAdvanceSettingsView()
+                    } label: {
+                        Label("Automatyczne przełączanie", systemImage: "waveform.and.mic")
+                    }
+                }
                 
                     Section("Przesuwanie modlitw") {
                         Picker("Tryb", selection: $prayerSwipeModeRaw) {
