@@ -1,4 +1,4 @@
-adding current photo cleanup breakpoint
+enforce device-sized local photo storage after synchronization
 
-Preserve the existing debugger breakpoint before correcting legacy local photo
-cleanup.
+Recompress every local photo to the device limit and delete a retained legacy
+original whenever the local compressed preview is available.

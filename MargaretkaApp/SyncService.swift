@@ -561,8 +561,17 @@ final class SyncService: ObservableObject {
         guard let token = accessToken else { throw SyncServiceError.signedOut }
         let family = DeviceDescription.current.family.rawValue.lowercased()
         for index in targetStore.priests.indices {
-            guard let assetID = targetStore.priests[index].photoAssetID else { continue }
-            guard SyncedPhotoStorage.shared.contains(assetID) || targetStore.priests[index].photoData == nil else {
+            if let photoData = targetStore.priests[index].photoData,
+               let image = UIImage(data: photoData),
+               let compacted = devicePhotoData(from: image),
+               targetStore.priests[index].photoData != compacted {
+                targetStore.priests[index].photoData = compacted
+            }
+
+            guard let assetID = targetStore.priests[index].photoAssetID,
+                  SyncedPhotoStorage.shared.contains(assetID) else { continue }
+            if targetStore.priests[index].photoData != nil {
+                SyncedPhotoStorage.shared.removeOriginal(for: assetID)
                 continue
             }
             var urlRequest = URLRequest(url: Self.baseURL.appending(path: "media/photos/\(assetID.uuidString.lowercased())/variants/\(family)/"))
@@ -578,6 +587,18 @@ final class SyncService: ObservableObject {
         SyncedPhotoStorage.shared.removeOrphanedOriginals(
             referencedBy: Set(targetStore.priests.compactMap(\.photoAssetID))
         )
+    }
+
+    private func devicePhotoData(from image: UIImage) -> Data? {
+        #if os(iOS) || os(tvOS) || os(visionOS)
+        let family = DeviceDescription.current.family
+        return image.storageJPEGData(
+            maxDimension: family == .iPad ? 1024 : 552,
+            byteLimit: family == .iPad ? 350_000 : 160_000
+        )
+        #else
+        return image.storageJPEGData(maxDimension: 1024, byteLimit: 350_000)
+        #endif
     }
 
     private var uploadedPhotoIDs: Set<UUID> {
