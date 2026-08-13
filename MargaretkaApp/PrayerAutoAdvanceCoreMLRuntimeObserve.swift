@@ -1,19 +1,23 @@
 import Foundation
 
 extension PrayerAutoAdvanceCoreMLRuntime {
-    func observe(transcript: String, energy: Float, silence: TimeInterval) {
+    func observe(transcript: String, energy: Float, silence: TimeInterval) async {
         guard let context,
               let model = state.model,
               !transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
         let elapsed = Date().timeIntervalSince(contextStartedAt)
-        let features = PrayerAutoAdvanceFeatureExtractor.features(
-            transcript: transcript,
-            context: context,
-            elapsed: elapsed,
-            silence: silence,
-            energy: energy
-        )
+        let features: [Float] = await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .utility).async {
+                continuation.resume(returning: PrayerAutoAdvanceFeatureExtractor.features(
+                    transcript: transcript,
+                    context: context,
+                    elapsed: elapsed,
+                    silence: silence,
+                    energy: energy
+                ))
+            }
+        }
         guard features.count == PrayerAutoAdvanceCoreMLModel.inputSize else { return }
 
         snapshots.append(
