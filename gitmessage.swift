@@ -1,4 +1,4 @@
-fix the storage settings rows for Xcode's SwiftUI overloads
+fix storage section headers for this SwiftUI SDK
 
-Use explicit HStack rows for storage values rather than the unavailable
-LabeledContent string-value overload, restoring compilation in Xcode.
+Use explicit Section content, header, and footer closures rather than the
+unavailable string-header overload that Xcode rejects in StorageSettingsView.

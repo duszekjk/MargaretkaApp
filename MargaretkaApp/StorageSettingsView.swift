@@ -13,18 +13,20 @@ struct StorageSettingsView: View {
 
     var body: some View {
         List {
-            Section("Zajęte miejsce") {
+            Section {
                 storageRow("Dane aplikacji", report.total.formattedSize)
                     .font(.headline)
                 ForEach(report.entries) { entry in
                     storageRow(entry.title, entry.size.formattedSize)
                 }
                 Button("Odśwież") { refresh() }
+            } header: {
+                Text("Zajęte miejsce")
             } footer: {
                 Text("Pokazane są dane zapisane przez aplikację. iOS może dodatkowo naliczać własny cache i pliki diagnostyczne wersji deweloperskiej.")
             }
 
-            Section("Zdjęcia") {
+            Section {
                 storageRow("Zdjęcia przy osobach", report.photoPreviews.formattedSize)
                 storageRow("Oryginały oczekujące na synchronizację", report.pendingOriginals.formattedSize)
                 Button("Zastosuj silną kompresję zdjęć") {
@@ -33,9 +35,11 @@ struct StorageSettingsView: View {
                 Text("Zmniejsza wyłącznie lokalne podglądy: do 96 KB na iPhonie albo 220 KB na iPadzie. Kadrowanie i funkcja zdjęć pozostają bez zmian.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+            } header: {
+                Text("Zdjęcia")
             }
 
-            Section("Brewiarz offline") {
+            Section {
                 storageRow("Teksty oficjów", report.offlineText.formattedSize)
                 storageRow("Wygenerowane obrazy oficjów", report.offlineImages.formattedSize)
                 NavigationLink("Zarządzaj dniami i oficjami") {
@@ -50,14 +54,18 @@ struct StorageSettingsView: View {
                 Button("Usuń dni z wybranego zakresu", role: .destructive) {
                     confirmRangeDeletion = true
                 }
+            } header: {
+                Text("Brewiarz offline")
             } footer: {
                 Text("Tekst EPUB jest upraszczany, zapisywany bez ozdobników i kompresowany. Plik EPUB nie pozostaje w aplikacji po imporcie.")
             }
 
-            Section("Pozostałe") {
+            Section {
                 storageRow("Nagrania audio", report.audio.formattedSize)
                 storageRow("Cache aplikacji", report.cache.formattedSize)
                 storageRow("Inne dane", report.other.formattedSize)
+            } header: {
+                Text("Pozostałe")
             }
         }
         .navigationTitle("Pamięć")
