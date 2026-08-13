@@ -123,6 +123,7 @@ final class SyncService: ObservableObject {
         configuredPrayerStore = prayerStore
         configuredTargetStore = targetStore
         configuredOfflineStore = offlineStore
+        maintainLocalPhotoStorage(for: targetStore)
     }
 
     func requestImmediateSync() {
@@ -587,6 +588,31 @@ final class SyncService: ObservableObject {
         SyncedPhotoStorage.shared.removeOrphanedOriginals(
             referencedBy: Set(targetStore.priests.compactMap(\.photoAssetID))
         )
+    }
+
+    /// Keeps the on-device cache small even before the next synchronization starts.
+    /// An original is deleted here only when its exact fingerprint was already
+    /// acknowledged by the server; unsent originals are retained for upload.
+    private func maintainLocalPhotoStorage(for targetStore: PriestStore) {
+        let acknowledgedFingerprints = photoFingerprints
+        let referencedAssetIDs = Set(targetStore.priests.compactMap(\.photoAssetID))
+
+        for index in targetStore.priests.indices {
+            if let photoData = targetStore.priests[index].photoData,
+               let image = UIImage(data: photoData),
+               let compacted = devicePhotoData(from: image),
+               photoData != compacted {
+                targetStore.priests[index].photoData = compacted
+            }
+
+            guard let assetID = targetStore.priests[index].photoAssetID,
+                  SyncedPhotoStorage.shared.contains(assetID),
+                  let fingerprint = SyncedPhotoStorage.shared.fingerprint(for: assetID),
+                  acknowledgedFingerprints[assetID] == fingerprint else { continue }
+            SyncedPhotoStorage.shared.removeOriginal(for: assetID)
+        }
+
+        SyncedPhotoStorage.shared.removeOrphanedOriginals(referencedBy: referencedAssetIDs)
     }
 
     private func devicePhotoData(from image: UIImage) -> Data? {
