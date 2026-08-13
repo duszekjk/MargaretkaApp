@@ -10,7 +10,7 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
     let lastDisplayIndex: Int
     let moveToIndex: (Int) -> Void
 
-    @StateObject private var controller = PrayerAutoAdvanceController()
+    @StateObject private var controller = PrayerAutoAdvanceCoreMLRuntime()
     @Environment(\.scenePhase) private var scenePhase
     @State private var suppressNextTrainingTransition = false
 
