@@ -1,4 +1,4 @@
-add current localization and Xcode breakpoint changes
+prepare every downloaded photo for immediate display
 
-Preserve the existing local localization catalog and debugger breakpoint
-changes without modifying their contents before fixing photo display latency.
+Decode each downloaded JPEG before marking its progress complete and cache the
+renderable image, preventing a black background when opening a person. Build 81.

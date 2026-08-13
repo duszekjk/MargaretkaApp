@@ -618,20 +618,22 @@ final class SyncService: ObservableObject {
             }
 
             while let (index, assetID, data) = await group.next() {
-                completed += 1
-                photoDownloadProgress = (completed, downloads.count)
                 if let data,
                    let image = UIImage(data: data),
                    image.cgImage != nil,
-                   targetStore.priests.indices.contains(index),
-                   targetStore.priests[index].photoData != data {
-                    targetStore.priests[index].photoData = data
-                    // A photo asset keeps the same ID when a device downloads its
-                    // own size variant. Bump the version used by displayPhoto's
-                    // cache key, otherwise SwiftUI keeps showing the old image.
-                    targetStore.priests[index].photoUpdatedAt = .now
+                   targetStore.priests.indices.contains(index) {
+                    if targetStore.priests[index].photoData != data {
+                        targetStore.priests[index].photoData = data
+                        // A photo asset keeps the same ID when a device downloads its
+                        // own size variant. Bump the version used by displayPhoto's
+                        // cache key, otherwise SwiftUI keeps showing the old image.
+                        targetStore.priests[index].photoUpdatedAt = .now
+                    }
+                    targetStore.priests[index].prepareDisplayPhoto()
                     SyncedPhotoStorage.shared.removeOriginal(for: assetID)
                 }
+                completed += 1
+                photoDownloadProgress = (completed, downloads.count)
                 if nextDownload < downloads.count {
                     try? await Task.sleep(for: .milliseconds(300))
                     addDownload(downloads[nextDownload])

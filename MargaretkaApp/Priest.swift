@@ -521,9 +521,10 @@ extension Priest {
         }
         if let data = photoData,
            let image = UIImage(data: data) {
-            displayPhotoCache.setObject(image, forKey: key)
+            let preparedImage = image.preparedForImmediateDisplay
+            displayPhotoCache.setObject(preparedImage, forKey: key)
             print("🖼️ displayPhoto cache miss: \(id.uuidString), bytes \(data.count), size \(Int(image.size.width))x\(Int(image.size.height))")
-            return image
+            return preparedImage
         }
         guard let bundledPhotoAssetName else { return nil }
         return UIImage(named: bundledPhotoAssetName)
@@ -533,6 +534,18 @@ extension Priest {
         let version = photoUpdatedAt?.timeIntervalSince1970 ?? 0
         let assetID = photoAssetID?.uuidString.lowercased() ?? "no-asset"
         return "\(id.uuidString.lowercased()):\(version):\(assetID)" as NSString
+    }
+
+    /// Decodes a downloaded JPEG while synchronization is still in progress.
+    /// Opening the prayer screen can then use an already-renderable image rather
+    /// than showing a black background during the first decode.
+    func prepareDisplayPhoto() {
+        guard let data = photoData,
+              let image = UIImage(data: data) else { return }
+        displayPhotoCache.setObject(
+            image.preparedForImmediateDisplay,
+            forKey: displayPhotoCacheKey
+        )
     }
 
     func photoPlacement(for family: PhotoLayoutFamily) -> PhotoPlacement {
@@ -582,5 +595,15 @@ extension Priest {
         }
 
         return compacted
+    }
+}
+
+private extension UIImage {
+    var preparedForImmediateDisplay: UIImage {
+#if os(iOS) || os(tvOS) || os(visionOS)
+        preparingForDisplay() ?? self
+#else
+        self
+#endif
     }
 }
