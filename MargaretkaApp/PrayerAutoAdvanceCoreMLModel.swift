@@ -61,15 +61,23 @@ final class PrayerAutoAdvanceCoreMLModel {
                     trainingData: retention.batch,
                     configuration: configuration
                 ) { context in
-                    defer { retention.task = nil }
+                    if context.task.state == .failed {
+                        let error = context.task.error ?? ModelError.updateFailedWithoutError
+                        retention.task = nil
+                        continuation.resume(throwing: error)
+                        return
+                    }
+
                     do {
                         let fileManager = FileManager.default
                         if fileManager.fileExists(atPath: destinationURL.path) {
                             try fileManager.removeItem(at: destinationURL)
                         }
                         try context.model.write(to: destinationURL)
+                        retention.task = nil
                         continuation.resume()
                     } catch {
+                        retention.task = nil
                         continuation.resume(throwing: error)
                     }
                 }
@@ -95,6 +103,7 @@ final class PrayerAutoAdvanceCoreMLModel {
     enum ModelError: LocalizedError {
         case invalidFeatureCount
         case invalidOutput
+        case updateFailedWithoutError
 
         var errorDescription: String? {
             switch self {
@@ -102,6 +111,8 @@ final class PrayerAutoAdvanceCoreMLModel {
                 "Model automatycznego przełączania otrzymał nieprawidłowy zestaw cech."
             case .invalidOutput:
                 "Model automatycznego przełączania zwrócił nieprawidłowy wynik."
+            case .updateFailedWithoutError:
+                "Core ML zakończył aktualizację modelu niepowodzeniem bez szczegółowego błędu."
             }
         }
     }
