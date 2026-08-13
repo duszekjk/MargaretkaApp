@@ -1,5 +1,4 @@
-fix storage measurements and show system-managed data
+hide iOS-managed files from Margaretka storage totals
 
-Calculate both files and directories through file attributes so the storage
-screen no longer reports zero. Include the app container's cache, splash
-snapshots, and temporary files in the measured breakdown.
+Keep Pamięć focused on data that Margaretka owns and can manage. Exclude iOS
+snapshot and temporary files from the displayed categories and total.

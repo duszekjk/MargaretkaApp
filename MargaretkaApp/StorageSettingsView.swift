@@ -23,7 +23,7 @@ struct StorageSettingsView: View {
             } header: {
                 Text("Zajęte miejsce")
             } footer: {
-                Text("Pokazane są dane zapisane przez aplikację. iOS może dodatkowo naliczać własny cache i pliki diagnostyczne wersji deweloperskiej.")
+                Text("Pokazane są dane, którymi zarządza Margaretka. Systemowe podglądy i tymczasowe pliki iOS nie są tu wliczane.")
             }
 
             Section {
@@ -63,8 +63,6 @@ struct StorageSettingsView: View {
             Section {
                 storageRow("Nagrania audio", report.audio.formattedSize)
                 storageRow("Cache aplikacji", report.cache.formattedSize)
-                storageRow("Systemowe snapshoty ekranu", report.snapshots.formattedSize)
-                storageRow("Pliki tymczasowe", report.temporary.formattedSize)
                 storageRow("Inne dane", report.other.formattedSize)
             } header: {
                 Text("Pozostałe")
@@ -129,8 +127,6 @@ private struct AppStorageReport {
     let offlineImages: Int64
     let audio: Int64
     let cache: Int64
-    let snapshots: Int64
-    let temporary: Int64
     let other: Int64
 
     static func current() -> Self {
@@ -138,10 +134,6 @@ private struct AppStorageReport {
         let documents = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let support = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-        let container = documents.deletingLastPathComponent()
-        let snapshots = size(of: container
-            .appendingPathComponent("Library/SplashBoard/Snapshots", isDirectory: true))
-        let temporary = size(of: fileManager.temporaryDirectory)
         let offlineText = size(of: LocalDatabase.shared.path(for: OfflineBreviaryStore.storageKey))
         let prayerData = size(of: LocalDatabase.shared.path(for: Priest.storageKey))
         let pendingOriginals = size(of: SyncedPhotoStorage.shared.directory)
@@ -150,8 +142,8 @@ private struct AppStorageReport {
         let cache = size(of: caches)
         let documentsSize = size(of: documents)
         let supportSize = size(of: support)
-        let known = offlineText + prayerData + pendingOriginals + offlineImages + audio + cache + snapshots + temporary
-        let total = documentsSize + supportSize + cache + snapshots + temporary
+        let known = offlineText + prayerData + pendingOriginals + offlineImages + audio + cache
+        let total = documentsSize + supportSize + cache
         let other = max(0, total - known)
         let entries = [
             AppStorageEntry(title: "Dane modlitw i podglądy zdjęć", size: prayerData),
@@ -160,8 +152,6 @@ private struct AppStorageReport {
             AppStorageEntry(title: "Oryginały do synchronizacji", size: pendingOriginals),
             AppStorageEntry(title: "Nagrania", size: audio),
             AppStorageEntry(title: "Cache", size: cache),
-            AppStorageEntry(title: "Systemowe snapshoty ekranu", size: snapshots),
-            AppStorageEntry(title: "Pliki tymczasowe", size: temporary),
             AppStorageEntry(title: "Pozostałe dane", size: other)
         ].filter { $0.size > 0 }
         return Self(
@@ -173,8 +163,6 @@ private struct AppStorageReport {
             offlineImages: offlineImages,
             audio: audio,
             cache: cache,
-            snapshots: snapshots,
-            temporary: temporary,
             other: other
         )
     }
