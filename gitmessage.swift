@@ -1,4 +1,4 @@
-show photo upload response diagnostics
+adding current photo upload breakpoint
 
-Include the HTTP status and a bounded server response detail when photo upload
-fails so the remaining synchronization rejection can be identified.
+Preserve the existing SyncService debugger breakpoint before changing photo
+variant synchronization.
