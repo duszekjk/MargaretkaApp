@@ -12,7 +12,7 @@ import AppKit
 typealias UIImage = NSImage
 
 extension NSImage {
-    static let storagePhotoByteLimit = 160_000
+    static let storagePhotoByteLimit = 550_000
 
     func jpegData(compressionQuality: CGFloat) -> Data? {
         guard let tiffRepresentation,
@@ -571,6 +571,10 @@ extension Priest {
         let pngSignature = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
         if bundledPhotoAssetName != nil, data.starts(with: pngSignature) {
             compacted.photoData = nil
+        } else if photoAssetID != nil {
+            // Server variants were already encoded for this device. Recompressing
+            // them here used the old phone-sized fallback and erased their detail.
+            return compacted
         } else if data.count > UIImage.storagePhotoByteLimit,
                   let image = UIImage(data: data),
                   let compressed = image.storageJPEGData() {

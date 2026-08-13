@@ -1,4 +1,4 @@
-add current Xcode breakpoint configuration
+increase device photo quality without recompressing server variants
 
-Preserve the existing local Xcode breakpoint configuration without modifying
-its contents before updating photo quality settings.
+Use 1080 px iPhone and 1600 px iPad photo limits, and preserve the matching
+server variant when saving it locally. Bump the validated app build to 76.
