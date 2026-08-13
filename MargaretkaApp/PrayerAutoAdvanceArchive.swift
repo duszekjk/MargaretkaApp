@@ -44,7 +44,7 @@ enum PrayerAutoAdvanceArchive {
         ) { fileStream in
             try ArchiveByteStream.withDecompressionStream(readingFrom: fileStream) { decompressedStream in
                 try ArchiveStream.withDecodeStream(readingFrom: decompressedStream) { decodeStream in
-                    try ArchiveStream.withExtractStream(extractTo: FilePath(destinationURL.path)) { extractStream in
+                    try ArchiveStream.withExtractStream(extractingTo: FilePath(destinationURL.path)) { extractStream in
                         _ = try ArchiveStream.process(readingFrom: decodeStream, writingTo: extractStream)
                     }
                 }
