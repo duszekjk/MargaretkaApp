@@ -9,6 +9,7 @@ extension PrayerAutoAdvanceCoreMLState {
         do {
             let downloaded = try await PrayerAutoAdvanceCoreMLDownloader.fetch()
             try PrayerAutoAdvanceCoreMLInstall.run(downloaded, state: self)
+            try PrayerAutoAdvanceCoreMLDiskState.save(self)
             lastError = nil
             return model != nil
         } catch {
