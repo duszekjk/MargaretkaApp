@@ -4,6 +4,7 @@ extension PrayerAutoAdvanceCoreMLState {
     func train(_ batch: PrayerAutoAdvanceLabeledBatch) async {
         guard !isTraining, let current = model else { return }
         isTraining = true
+        lastTrainingEvent = "Aktualizowanie modelu lokalnego…"
         defer { isTraining = false }
 
         let updatedURL = directory.appendingPathComponent("Updated.mlmodelc", isDirectory: true)
@@ -25,9 +26,11 @@ extension PrayerAutoAdvanceCoreMLState {
             }
             try PrayerAutoAdvanceCoreMLDiskState.save(self)
             lastError = nil
+            lastTrainingEvent = "Model zaktualizowany na podstawie \(batch.samples.count) próbek."
         } catch {
             try? fileManager.removeItem(at: updatedURL)
             lastError = error.localizedDescription
+            lastTrainingEvent = "Błąd aktualizacji modelu: \(error.localizedDescription)"
         }
     }
 }
