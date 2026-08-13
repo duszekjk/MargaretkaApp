@@ -51,8 +51,8 @@ struct PrayerAutoAdvanceCoreMLSettingsView: View {
             }
 
 #if DEBUG
-            if state.hasModel {
-                Section("Developer") {
+            Section("Developer") {
+                if state.hasModel {
                     Button("Przygotuj model do udostępnienia") {
                         do {
                             exportURL = try state.exportURL()
@@ -65,6 +65,15 @@ struct PrayerAutoAdvanceCoreMLSettingsView: View {
                     if let exportURL {
                         ShareLink(item: exportURL) {
                             Label("Udostępnij wytrenowany model", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                } else {
+                    Button("Zainstaluj model startowy z buildu") {
+                        do {
+                            try state.installBundledDeveloperSeed()
+                            localError = nil
+                        } catch {
+                            localError = "Brak modelu startowego. Wygeneruj PrayerAutoAdvance.mlmodel skryptem tools/generate_prayer_auto_advance_model.py i dodaj go do targetu aplikacji."
                         }
                     }
                 }
