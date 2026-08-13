@@ -104,6 +104,12 @@ struct SettingsMenuView: View {
                     Label("Pamięć", systemImage: "internaldrive")
                 }
 
+                NavigationLink {
+                    PrayerAutoAdvanceSettingsView()
+                } label: {
+                    Label("Automatyczne przełączanie", systemImage: "waveform.and.mic")
+                }
+
                 NavigationLink(
                     destination: DataTransferView(targetStore: priestStore)
                 ) {
