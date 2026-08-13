@@ -33,19 +33,71 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
     func recordManualAdvance(at date: Date = Date()) {
         guard UserDefaults.standard.bool(forKey: PrayerAutoAdvancePreferences.trainingEnabledKey),
-              let pageID = context?.pageID,
+              let currentContext = context,
               state.model != nil,
               !state.isTraining else { return }
 
-        let candidates = snapshots.filter { $0.pageID == pageID }
-        guard let batch = PrayerAutoAdvanceTrainingPolicy.makeBatch(
-            snapshots: candidates,
-            manualAdvanceAt: date,
-            history: state.timingHistory
-        ) else { return }
+        let pageID = currentContext.pageID
+        let startedAt = contextStartedAt
+        var candidates = snapshots.filter { $0.pageID == pageID }
+
+#if os(iOS)
+        let finalTranscript = capture.transcript
+        let finalEnergy = capture.energy
+        let finalSilence = capture.silenceDuration
+#else
+        let finalTranscript = ""
+        let finalEnergy: Float = 0
+        let finalSilence: TimeInterval = 0
+#endif
+
+        state.lastTrainingEvent = "Analizowanie ręcznego przejścia…"
 
         Task { @MainActor [weak self] in
             guard let self else { return }
+
+            if !finalTranscript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                let elapsed = date.timeIntervalSince(startedAt)
+                let features = await Task.detached(priority: .utility) {
+                    PrayerAutoAdvanceFeatureExtractor.features(
+                        transcript: finalTranscript,
+                        context: currentContext,
+                        elapsed: elapsed,
+                        silence: finalSilence,
+                        energy: finalEnergy
+                    )
+                }.value
+
+                if features.count == PrayerAutoAdvanceCoreMLModel.inputSize {
+                    candidates.append(
+                        PrayerAutoAdvanceTrainingSnapshot(
+                            pageID: pageID,
+                            date: date,
+                            features: features,
+                            endingCoverage: features[4],
+                            spokenRatio: features[8],
+                            currentSimilarity: features[0],
+                            nextSimilarity: features[1],
+                            silenceDuration: finalSilence
+                        )
+                    )
+                }
+            }
+
+            guard candidates.count >= 4 else {
+                self.state.lastTrainingEvent = "Pominięto: za mało próbek z tej strony (\(candidates.count)/4)."
+                return
+            }
+
+            guard let batch = PrayerAutoAdvanceTrainingPolicy.makeBatch(
+                snapshots: candidates,
+                manualAdvanceAt: date,
+                history: self.state.timingHistory
+            ) else {
+                self.state.lastTrainingEvent = "Pominięto: brak wystarczająco wiarygodnego sygnału zakończenia modlitwy albo zdarzenie zostało uznane za outlier."
+                return
+            }
+
             await self.state.train(batch)
             self.statusMessage = self.state.lastError
         }
