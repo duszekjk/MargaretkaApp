@@ -3,7 +3,7 @@ internal import Combine
 
 @MainActor
 final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
-    @Published private(set) var advanceRequestSerial = 0
+    @Published var advanceRequestSerial = 0
     @Published var lastPrediction: Float = 0
     @Published var statusMessage: String?
 
