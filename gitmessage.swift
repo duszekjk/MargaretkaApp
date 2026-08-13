@@ -1,4 +1,4 @@
-store only device-sized photo variants locally
+increment build for device-sized photo synchronization
 
-Upload a JPEG capped at 2048 px, discard it after server confirmation, and
-download authenticated 552 px iPhone or 1024 px iPad variants for display.
+Raise the app and widget build number to 70 after the successful build of the
+server-limited and device-sized photo synchronization changes.
