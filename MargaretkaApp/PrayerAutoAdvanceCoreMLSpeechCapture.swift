@@ -46,7 +46,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
 
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.record, mode: .measurement, options: [.duckOthers])
-        try session.setActive(true, options: .notifyOthersOnDeactivation)
+        _ = try await session.activate()
 
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
@@ -95,7 +95,9 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
             engine.inputNode.removeTap(onBus: 0)
             hasInputTap = false
         }
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        Task {
+            _ = try? await AVAudioSession.sharedInstance().deactivate(options: [.notifyOthersOnDeactivation])
+        }
     }
 
     enum CaptureError: LocalizedError {
