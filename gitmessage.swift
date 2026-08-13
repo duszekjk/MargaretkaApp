@@ -1,4 +1,4 @@
-adding updated photo cleanup breakpoint
+increment build for enforced local photo limits
 
-Preserve the debugger breakpoint update created while validating local photo
-cleanup.
+Raise the app and widget build number to 72 after successful validation that
+every retained local photo is recompressed to the current device limit.
