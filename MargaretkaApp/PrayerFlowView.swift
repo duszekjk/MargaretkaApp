@@ -1487,6 +1487,21 @@ struct PrayerFlowView: View {
         .safeStatusBarHidden(isFullscreen)
         .persistentSystemOverlays(isFullscreen ? .hidden : .visible)
         .safeNavigationChrome(isFullscreen: isFullscreen || isIPad)
+        .prayerAutoAdvanceFlow(
+            activeIndex: $activeIndex,
+            steps: prayerSteps,
+            prayersByID: allPrayers,
+            flowID: selectedPriest?.id,
+            languageCode: selectedPriest?.title,
+            automaticTargetIndex: min(
+                (visiblePrayerStepIndices.last.map { $0 + 1 } ?? activeIndex) + 1,
+                lastDisplayIndex
+            ),
+            lastDisplayIndex: lastDisplayIndex,
+            moveToIndex: { index in
+                moveToIndex(index, animated: true)
+            }
+        )
     }
 
     private func startSession() {
