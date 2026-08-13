@@ -46,7 +46,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
 
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.record, mode: .measurement, options: [.duckOthers])
-        _ = try await session.activate()
+        try await Self.setAudioSessionActive(true)
 
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
@@ -96,7 +96,23 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
             hasInputTap = false
         }
         Task {
-            _ = try? await AVAudioSession.sharedInstance().deactivate(options: [.notifyOthersOnDeactivation])
+            try? await Self.setAudioSessionActive(false)
+        }
+    }
+
+    nonisolated private static func setAudioSessionActive(_ active: Bool) async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                do {
+                    try AVAudioSession.sharedInstance().setActive(
+                        active,
+                        options: active ? [] : [.notifyOthersOnDeactivation]
+                    )
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
         }
     }
 
