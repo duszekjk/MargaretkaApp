@@ -11,6 +11,7 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
     @Published var isDownloading = false
     @Published var isTraining = false
     @Published var lastError: String?
+    @Published var lastTrainingEvent: String?
 
     let fileManager = FileManager.default
 
