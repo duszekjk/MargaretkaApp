@@ -51,12 +51,14 @@ final class PrayerAutoAdvanceCoreMLModel {
             try trainingProvider(features: $0.features, label: $0.label)
         }
         let batch = MLArrayBatchProvider(array: providers)
+        let configuration = MLModelConfiguration()
+        configuration.computeUnits = .cpuOnly
         try await withCheckedThrowingContinuation { continuation in
             do {
                 let task = try MLUpdateTask(
                     forModelAt: compiledURL,
                     trainingData: batch,
-                    configuration: MLModelConfiguration()
+                    configuration: configuration
                 ) { context in
                     do {
                         let fileManager = FileManager.default
