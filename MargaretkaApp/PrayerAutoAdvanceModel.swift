@@ -14,5 +14,6 @@ struct PrayerAutoAdvanceManifest: Codable, Sendable {
     let featureSchemaVersion: Int
     let modelURL: URL
     let sha256: String
+    let size: Int?
     let publishedAt: Date?
 }
