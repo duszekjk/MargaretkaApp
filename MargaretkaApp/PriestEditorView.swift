@@ -42,11 +42,11 @@ struct PriestEditorView: View {
     }
 
     private var devicePhotoMaxDimension: CGFloat {
-        photoLayoutFamily == .iPad ? 1600 : 1080
+        photoLayoutFamily == .iPad ? 1600 : 1440
     }
 
     private var devicePhotoByteLimit: Int {
-        photoLayoutFamily == .iPad ? 900_000 : 550_000
+        photoLayoutFamily == .iPad ? 900_000 : 700_000
     }
 
     private var editorTitle: String {
@@ -388,8 +388,8 @@ private extension View {
 
 #if os(iOS) || os(tvOS) || os(visionOS)
 extension UIImage {
-    static let storagePhotoByteLimit = 550_000
-    static let storagePhotoMaxDimension: CGFloat = 1080
+    static let storagePhotoByteLimit = 700_000
+    static let storagePhotoMaxDimension: CGFloat = 1440
 
     func resized(maxDimension: CGFloat) -> UIImage {
         let w = size.width, h = size.height

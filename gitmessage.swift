@@ -1,4 +1,4 @@
-normalize photo orientation before upload
+increase iPhone photo detail within a compact storage limit
 
-Render every selected image once before JPEG upload so the EXIF orientation is
-applied. This keeps the server original and the crop upright. Bump build to 77.
+Use a 1440 px and 700 KB iPhone photo limit, matching the higher-quality server
+variant while remaining substantially below native iPhone screen resolution.
