@@ -1,4 +1,4 @@
-increase device photo quality without recompressing server variants
+normalize photo orientation before upload
 
-Use 1080 px iPhone and 1600 px iPad photo limits, and preserve the matching
-server variant when saving it locally. Bump the validated app build to 76.
+Render every selected image once before JPEG upload so the EXIF orientation is
+applied. This keeps the server original and the crop upright. Bump build to 77.

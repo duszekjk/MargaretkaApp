@@ -393,8 +393,7 @@ extension UIImage {
 
     func resized(maxDimension: CGFloat) -> UIImage {
         let w = size.width, h = size.height
-        guard max(w, h) > maxDimension else { return self } 
-        let scale = maxDimension / max(w, h)
+        let scale = min(1, maxDimension / max(w, h))
         let newSize = CGSize(width: w * scale, height: h * scale)
 
         let format = UIGraphicsImageRendererFormat.default()
