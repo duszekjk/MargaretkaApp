@@ -625,6 +625,16 @@
     "Po co?" : {
 
     },
+    "Pobieram zdjęcia %lld z %lld…" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Pobieram zdjęcia %1$lld z %2$lld…"
+          }
+        }
+      }
+    },
     "Pobierz ponownie zdjęcia" : {
 
     },
@@ -811,9 +821,6 @@
 
     },
     "Synchronizacja przez Apple" : {
-
-    },
-    "Synchronizowane są modlitwy, osoby, harmonogramy, historia, ustawienia, dane brewiarza i zdjęcia w pełnej rozdzielczości." : {
 
     },
     "Synchronizuj" : {
@@ -1527,6 +1534,9 @@
 
     },
     "Zdjęcia" : {
+
+    },
+    "Zdjęcia pobierają się od razu dla wszystkich osób, jedno po drugim z krótką przerwą. Na urządzeniu pozostaje wyłącznie wariant dopasowany do ekranu." : {
 
     },
     "Zdjęcie" : {
