@@ -20,9 +20,9 @@ extension PrayerAutoAdvanceCoreMLRuntime {
 #endif
     }
 
-    func evaluateCurrentCapture() {
+    func evaluateCurrentCapture() async {
 #if os(iOS)
-        observe(
+        await observe(
             transcript: capture.transcript,
             energy: capture.energy,
             silence: capture.silenceDuration
