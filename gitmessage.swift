@@ -1,4 +1,4 @@
-refresh the displayed image after downloading a photo variant
+split prayer flow models out of the main view
 
-Give a freshly downloaded device photo variant a new cache version, so the
-"Pobierz ponownie zdjęcia" action replaces an invalid or stale image on screen.
+Move immutable prayer-flow step construction, page pairing, and background
+selection into their own focused source file without changing app behavior.
