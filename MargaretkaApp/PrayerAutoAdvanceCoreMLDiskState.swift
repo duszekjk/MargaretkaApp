@@ -16,6 +16,10 @@ enum PrayerAutoAdvanceCoreMLDiskState {
            let history = try? decoder.decode(PrayerAutoAdvanceTimingHistory.self, from: data) {
             state.timingHistory = history
         }
+        if let data = try? Data(contentsOf: state.validationURL),
+           let validation = try? decoder.decode(PrayerAutoAdvanceValidationStore.self, from: data) {
+            state.validationStore = validation
+        }
     }
 
     @MainActor
@@ -27,5 +31,6 @@ enum PrayerAutoAdvanceCoreMLDiskState {
             try encoder.encode(metadata).write(to: state.metadataURL, options: .atomic)
         }
         try encoder.encode(state.timingHistory).write(to: state.timingURL, options: .atomic)
+        try encoder.encode(state.validationStore).write(to: state.validationURL, options: .atomic)
     }
 }
