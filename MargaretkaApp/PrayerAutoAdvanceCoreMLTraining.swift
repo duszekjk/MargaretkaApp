@@ -26,15 +26,24 @@ extension PrayerAutoAdvanceCoreMLState {
             _ = try fileManager.replaceItemAt(modelURL, withItemAt: updatedURL)
             model = try PrayerAutoAdvanceCoreMLModel(compiledURL: modelURL)
 
-            let lossAfter = model.map {
-                diagnostics.evaluateBatch(
-                    model: $0,
+            let lossAfter: Double?
+            let validationMargin: Double?
+            if let updatedModel = model {
+                lossAfter = diagnostics.evaluateBatch(
+                    model: updatedModel,
                     samples: batch.samples,
                     phase: "after"
                 )
-            } ?? nil
+                validationMargin = validationStore.margin(using: updatedModel)
+            } else {
+                lossAfter = nil
+                validationMargin = nil
+            }
             diagnostics.recordLossChange(before: lossBefore, after: lossAfter)
-            diagnostics.recordSuccessfulTrainingEpochSample(margin: diagnostics.predictionMargin)
+            diagnostics.recordSuccessfulTrainingEpochSample(
+                trainingMargin: diagnostics.predictionMargin,
+                validationMargin: validationMargin
+            )
 
             if let observedDelay = batch.observedDelay {
                 timingHistory.append(observedDelay)
@@ -50,6 +59,9 @@ extension PrayerAutoAdvanceCoreMLState {
             lastTrainingEvent = "Model zaktualizowany na podstawie \(batch.samples.count) próbek."
             diagnostics.acceptedTrainingCount += 1
             diagnostics.pipelineState = "trained"
+            if let validationMargin {
+                diagnostics.event(String(format: "validation margin=%+.3f samples=%d", validationMargin, validationStore.sampleCount))
+            }
             diagnostics.event("MLUpdateTask complete")
         } catch {
             try? fileManager.removeItem(at: updatedURL)
