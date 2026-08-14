@@ -11,5 +11,6 @@ enum PrayerAutoAdvanceLocalReset {
         state.metadata = nil
         state.timingHistory = PrayerAutoAdvanceTimingHistory()
         state.lastError = nil
+        PrayerAutoAdvanceTrainingDiagnostics.shared.resetEpochHistory()
     }
 }
