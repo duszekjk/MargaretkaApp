@@ -8,6 +8,7 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
     @Published var model: PrayerAutoAdvanceCoreMLModel?
     @Published var metadata: PrayerAutoAdvanceLocalMetadata?
     @Published var timingHistory = PrayerAutoAdvanceTimingHistory()
+    @Published var validationStore = PrayerAutoAdvanceValidationStore()
     @Published var isDownloading = false
     @Published var isTraining = false
     @Published var lastError: String?
@@ -26,6 +27,7 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
 
     var metadataURL: URL { directory.appendingPathComponent("metadata.json") }
     var timingURL: URL { directory.appendingPathComponent("timing.json") }
+    var validationURL: URL { directory.appendingPathComponent("validation.json") }
 
     var hasModel: Bool { model != nil }
 
