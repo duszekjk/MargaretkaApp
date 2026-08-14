@@ -1,4 +1,4 @@
-adding prayer auto-advance assets and localization updates
+remove expensive full-screen photo blur from startup rendering
 
-Record the existing bundled Core ML model, its development environment, and
-the associated project and localization changes before merging this branch.
+Render synchronized photos directly without a SwiftUI blur pass, avoiding a
+black background while the app opens an already-downloaded image. Build 82.
