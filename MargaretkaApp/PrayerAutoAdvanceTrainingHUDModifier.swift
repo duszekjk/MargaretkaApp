@@ -24,47 +24,62 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
                         HStack(spacing: 7) {
                             Text("pipe \(diagnostics.pipelineState)")
                             Text("timing \(state.timingHistory.values.count)/\(PrayerAutoAdvanceTimingHistory.minimumCountForOutliers)")
-                            Text("P/N \(diagnostics.positiveSamples)/\(diagnostics.negativeSamples)")
+                            Text("val \(state.validationStore.records.count)r/\(state.validationStore.sampleCount)s")
                         }
 
                         HStack(spacing: 7) {
                             Text("E\(diagnostics.currentEpochNumber) \(diagnostics.currentEpochSampleCount)/\(PrayerAutoAdvanceTrainingDiagnostics.epochSize)")
-                            if let margin = diagnostics.currentEpochMarginAverage {
-                                Text(String(format: "E margin %+.3f", margin))
+                            if let margin = diagnostics.currentEpochTrainingMarginAverage {
+                                Text(String(format: "T %+.3f", margin))
                             } else {
-                                Text("E margin —")
+                                Text("T —")
                             }
-                            if let previous = diagnostics.previousEpochMargin {
-                                Text(String(format: "prev %+.3f", previous))
+                            if let margin = diagnostics.currentValidationMargin {
+                                Text(String(format: "V %+.3f", margin))
+                            } else {
+                                Text("V —")
                             }
                         }
 
-                        if !diagnostics.completedEpochMargins.isEmpty || diagnostics.currentEpochMarginAverage != nil {
-                            HStack(alignment: .bottom, spacing: 3) {
-                                ForEach(Array(diagnostics.completedEpochMargins.suffix(12).enumerated()), id: \.offset) { _, margin in
-                                    VStack(spacing: 1) {
-                                        Text(margin >= 0 ? "+" : "−")
-                                            .font(.system(size: 6, design: .monospaced))
-                                        Rectangle()
-                                            .frame(width: 5, height: max(2, min(22, CGFloat(abs(margin)) * 22)))
-                                    }
+                        if let previous = diagnostics.previousEpoch {
+                            HStack(spacing: 7) {
+                                Text("prev E\(previous.id)")
+                                Text(String(format: "T %+.3f", previous.trainingMargin))
+                                if let validation = previous.validationMargin {
+                                    Text(String(format: "V %+.3f", validation))
                                 }
-                                if let current = diagnostics.currentEpochMarginAverage {
+                            }
+                        }
+
+                        if diagnostics.completedEpochs.count >= 3 {
+                            HStack(alignment: .bottom, spacing: 3) {
+                                ForEach(diagnostics.completedEpochs.suffix(12)) { epoch in
                                     VStack(spacing: 1) {
-                                        Text("*")
-                                            .font(.system(size: 6, design: .monospaced))
-                                        Rectangle()
-                                            .frame(width: 5, height: max(2, min(22, CGFloat(abs(current)) * 22)))
+                                        HStack(alignment: .bottom, spacing: 1) {
+                                            Rectangle()
+                                                .opacity(0.45)
+                                                .frame(width: 3, height: epochHeight(epoch.trainingMargin))
+                                            if let validation = epoch.validationMargin {
+                                                Rectangle()
+                                                    .frame(width: 3, height: epochHeight(validation))
+                                            }
+                                        }
+                                        Text("\(epoch.id)")
+                                            .font(.system(size: 5, design: .monospaced))
                                     }
                                 }
                             }
-                            .frame(height: 31, alignment: .bottom)
+                            .frame(height: 34, alignment: .bottom)
+                            Text("epochs: T dim / V bright")
+                                .font(.system(size: 6, design: .monospaced))
+                                .opacity(0.8)
                         }
 
                         if let pos = diagnostics.positivePredictionAverage,
                            let neg = diagnostics.negativePredictionAverage,
                            let margin = diagnostics.predictionMargin {
                             HStack(spacing: 7) {
+                                Text("P/N \(diagnostics.positiveSamples)/\(diagnostics.negativeSamples)")
                                 Text(String(format: "pos %.3f", pos))
                                 Text(String(format: "neg %.3f", neg))
                                 Text(String(format: "batch %+.3f", margin))
@@ -90,17 +105,6 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
                                 Text(String(format: "bias %+.2fs", bias))
                                 if let hit = diagnostics.timingHitOneSecond {
                                     Text(String(format: "±1s %.0f%%", hit * 100))
-                                }
-                            }
-                            HStack(spacing: 7) {
-                                if let hit = diagnostics.timingHitHalfSecond {
-                                    Text(String(format: "±0.5s %.0f%%", hit * 100))
-                                }
-                                if let hit = diagnostics.timingHitTwoSeconds {
-                                    Text(String(format: "±2s %.0f%%", hit * 100))
-                                }
-                                if let error = diagnostics.lastPeakTimingError {
-                                    Text(String(format: "last %+.2fs", error))
                                 }
                             }
                         }
@@ -146,6 +150,10 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
                 .allowsHitTesting(false)
             }
         }
+    }
+
+    private func epochHeight(_ margin: Double) -> CGFloat {
+        max(2, min(22, CGFloat(abs(margin)) * 22))
     }
 }
 
