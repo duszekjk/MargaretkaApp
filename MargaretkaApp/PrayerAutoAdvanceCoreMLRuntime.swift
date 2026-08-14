@@ -55,6 +55,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
         Task { @MainActor [weak self] in
             guard let self else { return }
+            let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
 
             if !finalTranscript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 let elapsed = date.timeIntervalSince(startedAt)
@@ -85,6 +86,9 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
             }
 
             guard candidates.count >= 4 else {
+                diagnostics.skippedTrainingCount += 1
+                diagnostics.pipelineState = "skipped"
+                diagnostics.event("training skipped: samples \(candidates.count)/4")
                 self.state.lastTrainingEvent = "Pominięto: za mało próbek z tej strony (\(candidates.count)/4)."
                 return
             }
@@ -94,7 +98,29 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
                 manualAdvanceAt: date,
                 history: self.state.timingHistory
             ) else {
+                diagnostics.skippedTrainingCount += 1
+                diagnostics.pipelineState = "skipped"
+                diagnostics.event("training skipped: policy rejected event")
                 self.state.lastTrainingEvent = "Pominięto: brak wystarczająco wiarygodnego sygnału zakończenia modlitwy albo zdarzenie zostało uznane za outlier."
+                return
+            }
+
+            if self.state.validationStore.shouldHoldOut(pageID: pageID) {
+                self.state.validationStore.append(pageID: pageID, batch: batch, at: date)
+                do {
+                    try PrayerAutoAdvanceCoreMLDiskState.save(self.state)
+                    diagnostics.pipelineState = "validation"
+                    diagnostics.event(
+                        "validation holdout page=\(pageID) records=\(self.state.validationStore.records.count) samples=\(self.state.validationStore.sampleCount)"
+                    )
+                    self.state.lastTrainingEvent = "Próbka trafiła do lokalnego zbioru walidacyjnego; model nie został na niej wytrenowany."
+                    self.statusMessage = nil
+                } catch {
+                    diagnostics.pipelineState = "error"
+                    diagnostics.error("validation save: \(error.localizedDescription)")
+                    self.state.lastError = error.localizedDescription
+                    self.statusMessage = error.localizedDescription
+                }
                 return
             }
 
