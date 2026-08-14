@@ -57,18 +57,27 @@ struct PrayerAutoAdvanceCoreMLSettingsView: View {
                 }
             }
 
-            Section {
-                LabeledContent("Rekordy", value: "\(state.validationStore.records.count)")
-                LabeledContent("Próbki", value: "\(state.validationStore.sampleCount)")
+            Section(
+                header: Text("Walidacja"),
+                footer: Text("Co dziesiąte poprawne zdarzenie może trafić do lokalnego zbioru walidacyjnego, maksymalnie pięć rekordów dla jednej modlitwy. Zapisujemy tylko wektory cech i etykiety — bez nagrań i bez transkrypcji.")
+            ) {
+                HStack {
+                    Text("Rekordy")
+                    Spacer()
+                    Text("\(state.validationStore.records.count)")
+                        .foregroundStyle(.secondary)
+                }
+                HStack {
+                    Text("Próbki")
+                    Spacer()
+                    Text("\(state.validationStore.sampleCount)")
+                        .foregroundStyle(.secondary)
+                }
 
                 Button("Usuń zbiór walidacyjny", role: .destructive) {
                     showingValidationResetConfirmation = true
                 }
                 .disabled(state.validationStore.records.isEmpty || state.isTraining)
-            } header: {
-                Text("Walidacja")
-            } footer: {
-                Text("Co dziesiąte poprawne zdarzenie może trafić do lokalnego zbioru walidacyjnego, maksymalnie pięć rekordów dla jednej modlitwy. Zapisujemy tylko wektory cech i etykiety — bez nagrań i bez transkrypcji.")
             }
 
 #if DEBUG
