@@ -27,13 +27,47 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
                             Text("P/N \(diagnostics.positiveSamples)/\(diagnostics.negativeSamples)")
                         }
 
+                        HStack(spacing: 7) {
+                            Text("E\(diagnostics.currentEpochNumber) \(diagnostics.currentEpochSampleCount)/\(PrayerAutoAdvanceTrainingDiagnostics.epochSize)")
+                            if let margin = diagnostics.currentEpochMarginAverage {
+                                Text(String(format: "E margin %+.3f", margin))
+                            } else {
+                                Text("E margin —")
+                            }
+                            if let previous = diagnostics.previousEpochMargin {
+                                Text(String(format: "prev %+.3f", previous))
+                            }
+                        }
+
+                        if !diagnostics.completedEpochMargins.isEmpty || diagnostics.currentEpochMarginAverage != nil {
+                            HStack(alignment: .bottom, spacing: 3) {
+                                ForEach(Array(diagnostics.completedEpochMargins.suffix(12).enumerated()), id: \.offset) { _, margin in
+                                    VStack(spacing: 1) {
+                                        Text(margin >= 0 ? "+" : "−")
+                                            .font(.system(size: 6, design: .monospaced))
+                                        Rectangle()
+                                            .frame(width: 5, height: max(2, min(22, CGFloat(abs(margin)) * 22)))
+                                    }
+                                }
+                                if let current = diagnostics.currentEpochMarginAverage {
+                                    VStack(spacing: 1) {
+                                        Text("*")
+                                            .font(.system(size: 6, design: .monospaced))
+                                        Rectangle()
+                                            .frame(width: 5, height: max(2, min(22, CGFloat(abs(current)) * 22)))
+                                    }
+                                }
+                            }
+                            .frame(height: 31, alignment: .bottom)
+                        }
+
                         if let pos = diagnostics.positivePredictionAverage,
                            let neg = diagnostics.negativePredictionAverage,
                            let margin = diagnostics.predictionMargin {
                             HStack(spacing: 7) {
                                 Text(String(format: "pos %.3f", pos))
                                 Text(String(format: "neg %.3f", neg))
-                                Text(String(format: "margin %+.3f", margin))
+                                Text(String(format: "batch %+.3f", margin))
                             }
                         }
 
