@@ -10,6 +10,9 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         category: "PrayerAutoAdvanceTraining"
     )
 
+    static let epochSize = 100
+    private static let epochStorageKey = "PrayerAutoAdvanceTrainingEpochHistoryV1"
+
     @Published var speechState = "idle"
     @Published var pipelineState = "idle"
     @Published var snapshotCount = 0
@@ -28,6 +31,10 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     @Published var logLoss: Double?
     @Published var lastTrainingLossChange: Double?
 
+    @Published private(set) var completedEpochMargins: [Double] = []
+    @Published private(set) var currentEpochSampleCount = 0
+    @Published private(set) var currentEpochMarginAverage: Double?
+
     @Published var timingMAE: TimeInterval?
     @Published var timingBias: TimeInterval?
     @Published var timingHitHalfSecond: Double?
@@ -37,6 +44,14 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     @Published var lastPeakPrediction: Float?
 
     private var timingErrors: [TimeInterval] = []
+    private var currentEpochMarginSum: Double = 0
+
+    private init() {
+        loadEpochState()
+    }
+
+    var currentEpochNumber: Int { completedEpochMargins.count + 1 }
+    var previousEpochMargin: Double? { completedEpochMargins.last }
 
     func prediction(_ value: Float, snapshotCount: Int, features: [Float]) {
         self.snapshotCount = snapshotCount
@@ -119,6 +134,39 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         return loss
     }
 
+    func recordSuccessfulTrainingEpochSample(margin: Float?) {
+        guard let margin else { return }
+
+        currentEpochMarginSum += Double(margin)
+        currentEpochSampleCount += 1
+        currentEpochMarginAverage = currentEpochMarginSum / Double(currentEpochSampleCount)
+
+        if currentEpochSampleCount >= Self.epochSize {
+            let completedAverage = currentEpochMarginAverage ?? 0
+            completedEpochMargins.append(completedAverage)
+            if completedEpochMargins.count > 24 {
+                completedEpochMargins.removeFirst(completedEpochMargins.count - 24)
+            }
+            Self.logger.info(
+                "epoch complete number=\(self.completedEpochMargins.count, privacy: .public) samples=\(Self.epochSize, privacy: .public) margin=\(completedAverage, privacy: .public)"
+            )
+            event(String(format: "epoch %d complete margin=%+.3f", completedEpochMargins.count, completedAverage))
+            currentEpochSampleCount = 0
+            currentEpochMarginSum = 0
+            currentEpochMarginAverage = nil
+        }
+
+        saveEpochState()
+    }
+
+    func resetEpochHistory() {
+        completedEpochMargins = []
+        currentEpochSampleCount = 0
+        currentEpochMarginSum = 0
+        currentEpochMarginAverage = nil
+        UserDefaults.standard.removeObject(forKey: Self.epochStorageKey)
+    }
+
     func recordLossChange(before: Double?, after: Double?) {
         guard let before, let after else {
             lastTrainingLossChange = nil
@@ -152,5 +200,33 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         guard !timingErrors.isEmpty else { return nil }
         let hits = timingErrors.filter { abs($0) <= tolerance }.count
         return Double(hits) / Double(timingErrors.count)
+    }
+
+    private func loadEpochState() {
+        guard let data = UserDefaults.standard.data(forKey: Self.epochStorageKey),
+              let value = try? JSONDecoder().decode(EpochState.self, from: data) else { return }
+        completedEpochMargins = value.completedMargins
+        currentEpochSampleCount = value.currentCount
+        currentEpochMarginSum = value.currentMarginSum
+        if currentEpochSampleCount > 0 {
+            currentEpochMarginAverage = currentEpochMarginSum / Double(currentEpochSampleCount)
+        }
+    }
+
+    private func saveEpochState() {
+        let value = EpochState(
+            completedMargins: completedEpochMargins,
+            currentCount: currentEpochSampleCount,
+            currentMarginSum: currentEpochMarginSum
+        )
+        if let data = try? JSONEncoder().encode(value) {
+            UserDefaults.standard.set(data, forKey: Self.epochStorageKey)
+        }
+    }
+
+    private struct EpochState: Codable {
+        let completedMargins: [Double]
+        let currentCount: Int
+        let currentMarginSum: Double
     }
 }
