@@ -110,6 +110,9 @@
         }
       }
     },
+    "Aktualizowanie modelu lokalnego…" : {
+
+    },
     "Aktualne dane zostaną zastąpione stanem z %@. Tej operacji nie można cofnąć bez innej kopii zapasowej." : {
 
     },
@@ -139,6 +142,12 @@
 
     },
     "Audio niedostępne dla modlitw online." : {
+
+    },
+    "Automatyczne przełączanie" : {
+
+    },
+    "Automatycznie przełączaj" : {
 
     },
     "Average prayer duration" : {
@@ -188,6 +197,9 @@
 
     },
     "Chór prawy. %@" : {
+
+    },
+    "Co dziesiąte poprawne zdarzenie może trafić do lokalnego zbioru walidacyjnego, maksymalnie pięć rekordów dla jednej modlitwy. Zapisujemy tylko wektory cech i etykiety — bez nagrań i bez transkrypcji." : {
 
     },
     "Co wyeksportować?" : {
@@ -258,6 +270,9 @@
         }
       }
     },
+    "Developer" : {
+
+    },
     "Diagram Margaretki: siedem płatków – dni tygodnia – wokół kapłana." : {
 
     },
@@ -310,6 +325,16 @@
     "E-mail" : {
 
     },
+    "E%lld %lld/%lld" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "E%1$lld %2$lld/%3$lld"
+          }
+        }
+      }
+    },
     "Edit" : {
       "localizations" : {
         "pl" : {
@@ -348,6 +373,12 @@
         }
       }
     },
+    "epochs: T dim / V bright" : {
+
+    },
+    "ERR: %@" : {
+
+    },
     "every %lld %@" : {
       "localizations" : {
         "pl" : {
@@ -375,6 +406,9 @@
 
     },
     "frequency_label" : {
+
+    },
+    "Funkcja działa lokalnie. Dźwięk z mikrofonu nie jest zapisywany ani wysyłany na serwer. Rozpoznawanie mowy jest wymuszane w trybie on-device. Model bazowy jest pobierany dopiero przy pierwszym włączeniu tej funkcji." : {
 
     },
     "Gotowe" : {
@@ -426,6 +460,9 @@
 
     },
     "Jak to działa (w skrócie)" : {
+
+    },
+    "Kalibracja czasu" : {
 
     },
     "Kapłan" : {
@@ -487,6 +524,15 @@
       }
     },
     "Logs a completed prayer without opening the app. Duration is optional." : {
+
+    },
+    "Model" : {
+
+    },
+    "Model bazowy" : {
+
+    },
+    "Model nie został jeszcze pobrany. Zostanie pobrany dopiero po włączeniu uczenia lub automatycznego przełączania." : {
 
     },
     "Modlitwa Margaretka" : {
@@ -586,6 +632,9 @@
     "OK" : {
 
     },
+    "ok %lld" : {
+
+    },
     "Opening prayer for %@." : {
 
     },
@@ -613,6 +662,16 @@
     "Otwórz tę stronę i wybierz link „Liturgia horarum”. Przeglądarka pobierze bezpłatny EPUB; potem wskaż go podczas importu w aplikacji." : {
 
     },
+    "P/N %lld/%lld" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "P/N %1$lld/%2$lld"
+          }
+        }
+      }
+    },
     "Pamięć" : {
 
     },
@@ -620,6 +679,9 @@
 
     },
     "Pełny ekran" : {
+
+    },
+    "pipe %@" : {
 
     },
     "Po co?" : {
@@ -634,6 +696,9 @@
           }
         }
       }
+    },
+    "Pobieranie modelu…" : {
+
     },
     "Pobierz ponownie zdjęcia" : {
 
@@ -683,10 +748,16 @@
     "Prayer streak" : {
 
     },
+    "prev E%lld" : {
+
+    },
     "priest, person, or complex prayer" : {
 
     },
     "Priest, person, or complex prayer" : {
+
+    },
+    "Próbki" : {
 
     },
     "Przeciągnij zdjęcie, żeby zmienić pozycję" : {
@@ -705,6 +776,9 @@
 
     },
     "Przygotowuję tworzenie obrazu…" : {
+
+    },
+    "Przygotuj model do udostępnienia" : {
 
     },
     "Przykładowe komendy" : {
@@ -729,6 +803,9 @@
 
     },
     "Przywrócono ustawienia domyślne" : {
+
+    },
+    "Rekordy" : {
 
     },
     "Remove last" : {
@@ -780,6 +857,9 @@
         }
       }
     },
+    "Sesje treningowe" : {
+
+    },
     "Sesje: %lld" : {
 
     },
@@ -792,10 +872,19 @@
     "Siri, Skróty i NFC" : {
 
     },
+    "skip %lld" : {
+
+    },
     "Skopiowano" : {
 
     },
     "Skrót w skrócie" : {
+
+    },
+    "snap %lld" : {
+
+    },
+    "speech %@" : {
 
     },
     "start date" : {
@@ -817,6 +906,9 @@
     "Święty dnia" : {
 
     },
+    "swipe %lld" : {
+
+    },
     "Synchronizacja" : {
 
     },
@@ -830,6 +922,9 @@
 
     },
     "Synchronizuję…" : {
+
+    },
+    "T —" : {
 
     },
     "Tekst EPUB jest upraszczany, zapisywany bez ozdobników i kompresowany. Plik EPUB nie pozostaje w aplikacji po imporcie." : {
@@ -1290,6 +1385,16 @@
         }
       }
     },
+    "timing %lld/%lld" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "timing %1$lld/%2$lld"
+          }
+        }
+      }
+    },
     "To modlitwa siedmiu osób za **jednego konkretnego kapłana** – każda osoba obejmuje go modlitwą w wybrany dzień tygodnia. Razem tworzą „stokrotkę” (7 płatków) z kapłanem w środku. Zobowiązanie ma charakter **stały** (długoterminowy)." : {
 
     },
@@ -1297,6 +1402,9 @@
 
     },
     "To szybki sposób na uruchamianie modlitwy głosem albo jednym dotknięciem telefonu do znacznika NFC." : {
+
+    },
+    "TRAIN" : {
 
     },
     "Tryb" : {
@@ -1311,10 +1419,16 @@
     "Tytuł" : {
 
     },
+    "Ucz podczas modlitwy" : {
+
+    },
     "Udostępnij" : {
 
     },
     "Udostępnij modlitwy" : {
+
+    },
+    "Udostępnij wytrenowany model" : {
 
     },
     "Unit" : {
@@ -1342,6 +1456,12 @@
     "Usuń cały dzień" : {
 
     },
+    "Usuń dane" : {
+
+    },
+    "Usuń dane automatycznego przełączania" : {
+
+    },
     "Usuń dni z wybranego zakresu" : {
 
     },
@@ -1363,16 +1483,28 @@
     "Usuń wygasłe teraz" : {
 
     },
+    "Usuń zbiór walidacyjny" : {
+
+    },
     "Usunąć cały import?" : {
 
     },
     "Usunąć konto synchronizacji?" : {
 
     },
+    "Usunąć lokalne dane automatycznego przełączania?" : {
+
+    },
+    "Usunąć lokalny zbiór walidacyjny?" : {
+
+    },
     "Usunąć wybrany zakres?" : {
 
     },
     "Usunięte zostaną pobrane oficja oraz obrazy należące tylko do tych dni." : {
+
+    },
+    "Usuwa lokalny spersonalizowany model, metadane, historię kalibracji czasu, historię epok i zbiór walidacyjny. Po ponownym włączeniu funkcji zostanie pobrany aktualny model bazowy z serwera." : {
 
     },
     "Usuwanie zakresu" : {
@@ -1392,6 +1524,19 @@
     },
     "Użytkownik" : {
 
+    },
+    "V —" : {
+
+    },
+    "val %lldr/%llds" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "val %1$lldr/%2$llds"
+          }
+        }
+      }
     },
     "Value" : {
       "localizations" : {
@@ -1413,6 +1558,9 @@
 
     },
     "W toku" : {
+
+    },
+    "Walidacja" : {
 
     },
     "Warianty oficjum" : {
@@ -1485,6 +1633,12 @@
     "Wyloguj" : {
 
     },
+    "Wyuczone przejścia" : {
+
+    },
+    "Zaawansowane" : {
+
+    },
     "Zachowaj dane z chmury" : {
 
     },
@@ -1495,6 +1649,9 @@
 
     },
     "Zaimportuj eksport EPUB z brewiarz.pl." : {
+
+    },
+    "Zainstaluj model startowy z buildu" : {
 
     },
     "Zajęte miejsce" : {

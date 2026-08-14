@@ -1,4 +1,4 @@
-prepare every downloaded photo for immediate display
+adding prayer auto-advance assets and localization updates
 
-Decode each downloaded JPEG before marking its progress complete and cache the
-renderable image, preventing a black background when opening a person. Build 81.
+Record the existing bundled Core ML model, its development environment, and
+the associated project and localization changes before merging this branch.
