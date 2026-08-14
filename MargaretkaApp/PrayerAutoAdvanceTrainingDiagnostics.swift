@@ -2,6 +2,12 @@ import Foundation
 import OSLog
 internal import Combine
 
+struct PrayerAutoAdvanceEpochMetric: Codable, Sendable, Identifiable {
+    let id: Int
+    let trainingMargin: Double
+    let validationMargin: Double?
+}
+
 @MainActor
 final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     static let shared = PrayerAutoAdvanceTrainingDiagnostics()
@@ -11,7 +17,7 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     )
 
     static let epochSize = 100
-    private static let epochStorageKey = "PrayerAutoAdvanceTrainingEpochHistoryV1"
+    private static let epochStorageKey = "PrayerAutoAdvanceTrainingEpochHistoryV2"
 
     @Published var speechState = "idle"
     @Published var pipelineState = "idle"
@@ -31,9 +37,10 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     @Published var logLoss: Double?
     @Published var lastTrainingLossChange: Double?
 
-    @Published private(set) var completedEpochMargins: [Double] = []
+    @Published private(set) var completedEpochs: [PrayerAutoAdvanceEpochMetric] = []
     @Published private(set) var currentEpochSampleCount = 0
-    @Published private(set) var currentEpochMarginAverage: Double?
+    @Published private(set) var currentEpochTrainingMarginAverage: Double?
+    @Published private(set) var currentValidationMargin: Double?
 
     @Published var timingMAE: TimeInterval?
     @Published var timingBias: TimeInterval?
@@ -44,14 +51,14 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     @Published var lastPeakPrediction: Float?
 
     private var timingErrors: [TimeInterval] = []
-    private var currentEpochMarginSum: Double = 0
+    private var currentEpochTrainingMarginSum: Double = 0
 
     private init() {
         loadEpochState()
     }
 
-    var currentEpochNumber: Int { completedEpochMargins.count + 1 }
-    var previousEpochMargin: Double? { completedEpochMargins.last }
+    var currentEpochNumber: Int { completedEpochs.count + 1 }
+    var previousEpoch: PrayerAutoAdvanceEpochMetric? { completedEpochs.last }
 
     func prediction(_ value: Float, snapshotCount: Int, features: [Float]) {
         self.snapshotCount = snapshotCount
@@ -134,36 +141,50 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         return loss
     }
 
-    func recordSuccessfulTrainingEpochSample(margin: Float?) {
-        guard let margin else { return }
+    func recordSuccessfulTrainingEpochSample(trainingMargin: Float?, validationMargin: Double?) {
+        guard let trainingMargin else { return }
 
-        currentEpochMarginSum += Double(margin)
+        currentValidationMargin = validationMargin
+        currentEpochTrainingMarginSum += Double(trainingMargin)
         currentEpochSampleCount += 1
-        currentEpochMarginAverage = currentEpochMarginSum / Double(currentEpochSampleCount)
+        currentEpochTrainingMarginAverage = currentEpochTrainingMarginSum / Double(currentEpochSampleCount)
 
         if currentEpochSampleCount >= Self.epochSize {
-            let completedAverage = currentEpochMarginAverage ?? 0
-            completedEpochMargins.append(completedAverage)
-            if completedEpochMargins.count > 24 {
-                completedEpochMargins.removeFirst(completedEpochMargins.count - 24)
+            let trainingAverage = currentEpochTrainingMarginAverage ?? 0
+            let epoch = PrayerAutoAdvanceEpochMetric(
+                id: completedEpochs.count + 1,
+                trainingMargin: trainingAverage,
+                validationMargin: validationMargin
+            )
+            completedEpochs.append(epoch)
+            if completedEpochs.count > 24 {
+                completedEpochs.removeFirst(completedEpochs.count - 24)
             }
             Self.logger.info(
-                "epoch complete number=\(self.completedEpochMargins.count, privacy: .public) samples=\(Self.epochSize, privacy: .public) margin=\(completedAverage, privacy: .public)"
+                "epoch complete number=\(epoch.id, privacy: .public) trainMargin=\(trainingAverage, privacy: .public) validationMargin=\(validationMargin ?? -1, privacy: .public)"
             )
-            event(String(format: "epoch %d complete margin=%+.3f", completedEpochMargins.count, completedAverage))
+            event(
+                String(
+                    format: "epoch %d complete train=%+.3f val=%@",
+                    epoch.id,
+                    trainingAverage,
+                    validationMargin.map { String(format: "%+.3f", $0) } ?? "—"
+                )
+            )
             currentEpochSampleCount = 0
-            currentEpochMarginSum = 0
-            currentEpochMarginAverage = nil
+            currentEpochTrainingMarginSum = 0
+            currentEpochTrainingMarginAverage = nil
         }
 
         saveEpochState()
     }
 
     func resetEpochHistory() {
-        completedEpochMargins = []
+        completedEpochs = []
         currentEpochSampleCount = 0
-        currentEpochMarginSum = 0
-        currentEpochMarginAverage = nil
+        currentEpochTrainingMarginSum = 0
+        currentEpochTrainingMarginAverage = nil
+        currentValidationMargin = nil
         UserDefaults.standard.removeObject(forKey: Self.epochStorageKey)
     }
 
@@ -205,19 +226,21 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     private func loadEpochState() {
         guard let data = UserDefaults.standard.data(forKey: Self.epochStorageKey),
               let value = try? JSONDecoder().decode(EpochState.self, from: data) else { return }
-        completedEpochMargins = value.completedMargins
+        completedEpochs = value.completedEpochs
         currentEpochSampleCount = value.currentCount
-        currentEpochMarginSum = value.currentMarginSum
+        currentEpochTrainingMarginSum = value.currentTrainingMarginSum
+        currentValidationMargin = value.currentValidationMargin
         if currentEpochSampleCount > 0 {
-            currentEpochMarginAverage = currentEpochMarginSum / Double(currentEpochSampleCount)
+            currentEpochTrainingMarginAverage = currentEpochTrainingMarginSum / Double(currentEpochSampleCount)
         }
     }
 
     private func saveEpochState() {
         let value = EpochState(
-            completedMargins: completedEpochMargins,
+            completedEpochs: completedEpochs,
             currentCount: currentEpochSampleCount,
-            currentMarginSum: currentEpochMarginSum
+            currentTrainingMarginSum: currentEpochTrainingMarginSum,
+            currentValidationMargin: currentValidationMargin
         )
         if let data = try? JSONEncoder().encode(value) {
             UserDefaults.standard.set(data, forKey: Self.epochStorageKey)
@@ -225,8 +248,9 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     }
 
     private struct EpochState: Codable {
-        let completedMargins: [Double]
+        let completedEpochs: [PrayerAutoAdvanceEpochMetric]
         let currentCount: Int
-        let currentMarginSum: Double
+        let currentTrainingMarginSum: Double
+        let currentValidationMargin: Double?
     }
 }
