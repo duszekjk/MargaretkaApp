@@ -6,6 +6,7 @@ struct PrayerAutoAdvanceCoreMLSettingsView: View {
     @AppStorage(PrayerAutoAdvancePreferences.automaticEnabledKey) private var automaticEnabled = false
     @State private var exportURL: URL?
     @State private var showingResetConfirmation = false
+    @State private var showingValidationResetConfirmation = false
     @State private var localError: String?
 
     var body: some View {
@@ -56,6 +57,18 @@ struct PrayerAutoAdvanceCoreMLSettingsView: View {
                 }
             }
 
+            Section("Walidacja") {
+                LabeledContent("Rekordy", value: "\(state.validationStore.records.count)")
+                LabeledContent("Próbki", value: "\(state.validationStore.sampleCount)")
+
+                Button("Usuń zbiór walidacyjny", role: .destructive) {
+                    showingValidationResetConfirmation = true
+                }
+                .disabled(state.validationStore.records.isEmpty || state.isTraining)
+            } footer: {
+                Text("Co dziesiąte poprawne zdarzenie może trafić do lokalnego zbioru walidacyjnego, maksymalnie pięć rekordów dla jednej modlitwy. Zapisujemy tylko wektory cech i etykiety — bez nagrań i bez transkrypcji.")
+            }
+
 #if DEBUG
             Section("Developer") {
                 if state.hasModel {
@@ -91,10 +104,26 @@ struct PrayerAutoAdvanceCoreMLSettingsView: View {
                     showingResetConfirmation = true
                 }
             } footer: {
-                Text("Usuwa lokalny spersonalizowany model, metadane i historię kalibracji czasu. Po ponownym włączeniu funkcji zostanie pobrany aktualny model bazowy z serwera.")
+                Text("Usuwa lokalny spersonalizowany model, metadane, historię kalibracji czasu, historię epok i zbiór walidacyjny. Po ponownym włączeniu funkcji zostanie pobrany aktualny model bazowy z serwera.")
             }
         }
         .navigationTitle("Automatyczne przełączanie")
+        .confirmationDialog(
+            "Usunąć lokalny zbiór walidacyjny?",
+            isPresented: $showingValidationResetConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Usuń zbiór walidacyjny", role: .destructive) {
+                do {
+                    state.validationStore.removeAll()
+                    try PrayerAutoAdvanceCoreMLDiskState.save(state)
+                    localError = nil
+                } catch {
+                    localError = error.localizedDescription
+                }
+            }
+            Button("Anuluj", role: .cancel) {}
+        }
         .confirmationDialog(
             "Usunąć lokalne dane automatycznego przełączania?",
             isPresented: $showingResetConfirmation,
