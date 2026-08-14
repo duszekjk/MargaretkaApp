@@ -57,7 +57,7 @@ struct PrayerAutoAdvanceCoreMLSettingsView: View {
                 }
             }
 
-            Section("Walidacja") {
+            Section {
                 LabeledContent("Rekordy", value: "\(state.validationStore.records.count)")
                 LabeledContent("Próbki", value: "\(state.validationStore.sampleCount)")
 
@@ -65,6 +65,8 @@ struct PrayerAutoAdvanceCoreMLSettingsView: View {
                     showingValidationResetConfirmation = true
                 }
                 .disabled(state.validationStore.records.isEmpty || state.isTraining)
+            } header: {
+                Text("Walidacja")
             } footer: {
                 Text("Co dziesiąte poprawne zdarzenie może trafić do lokalnego zbioru walidacyjnego, maksymalnie pięć rekordów dla jednej modlitwy. Zapisujemy tylko wektory cech i etykiety — bez nagrań i bez transkrypcji.")
             }
