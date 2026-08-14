@@ -34,6 +34,7 @@ extension PrayerAutoAdvanceCoreMLState {
                 )
             } ?? nil
             diagnostics.recordLossChange(before: lossBefore, after: lossAfter)
+            diagnostics.recordSuccessfulTrainingEpochSample(margin: diagnostics.predictionMargin)
 
             if let observedDelay = batch.observedDelay {
                 timingHistory.append(observedDelay)
