@@ -51,22 +51,17 @@ enum PrayerAutoAdvanceTrainingPolicy {
     static func makeBatch(
         snapshots: [PrayerAutoAdvanceTrainingSnapshot],
         manualAdvanceAt: Date,
-        history: PrayerAutoAdvanceTimingHistory
+        history _: PrayerAutoAdvanceTimingHistory
     ) -> PrayerAutoAdvanceLabeledBatch? {
         let ordered = snapshots.sorted { $0.date < $1.date }
         guard ordered.count >= 4 else { return nil }
 
-        let completion = reliableCompletionIndex(in: ordered).map { ordered[$0] }
-        let observedDelay = completion.map { manualAdvanceAt.timeIntervalSince($0.date) }
-
-        let anchor: Date
-        if let typicalDelay = history.typicalDelay {
-            guard let observedDelay,
-                  !history.isOutlier(observedDelay) else { return nil }
-            anchor = manualAdvanceAt.addingTimeInterval(-typicalDelay)
-        } else {
-            anchor = manualAdvanceAt
-        }
+        // Schema v4 deliberately removes hand-authored text comparison from
+        // completion detection. Until a model-derived completion signal is
+        // mature enough to calibrate reaction delay, the manual swipe remains
+        // the noisy supervision anchor and no timing value is invented.
+        let anchor = manualAdvanceAt
+        let observedDelay: TimeInterval? = nil
 
         var result: [PrayerAutoAdvanceLabeledSample] = []
 
@@ -119,29 +114,6 @@ enum PrayerAutoAdvanceTrainingPolicy {
             samples: result,
             observedDelay: observedDelay
         )
-    }
-
-    private static func reliableCompletionIndex(
-        in snapshots: [PrayerAutoAdvanceTrainingSnapshot]
-    ) -> Int? {
-        let scores = snapshots.map(readinessScore)
-        guard scores.count >= 2 else { return nil }
-        for index in 0..<(scores.count - 1)
-        where scores[index] >= 0.72 && scores[index + 1] >= 0.72 {
-            return index
-        }
-        return nil
-    }
-
-    private static func readinessScore(_ snapshot: PrayerAutoAdvanceTrainingSnapshot) -> Float {
-        let nextLead = max(snapshot.nextSimilarity - snapshot.currentSimilarity, 0)
-        return min(max(
-            snapshot.endingCoverage * 0.45
-            + snapshot.spokenRatio * 0.30
-            + snapshot.currentSimilarity * 0.18
-            + min(nextLead * 1.5, 1) * 0.07,
-            0
-        ), 1)
     }
 
     private static func nearest(
