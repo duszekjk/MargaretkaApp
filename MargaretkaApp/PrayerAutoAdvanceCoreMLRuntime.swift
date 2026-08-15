@@ -79,11 +79,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
                             pageID: pageID,
                             date: date,
                             features: features,
-                            longAudioFeatures: longAudioFeatures,
-                            endingCoverage: features[4],
-                            spokenRatio: features[6],
-                            currentSimilarity: features[0],
-                            nextSimilarity: features[1]
+                            longAudioFeatures: longAudioFeatures
                         )
                     )
                 }
@@ -105,7 +101,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
                 diagnostics.skippedTrainingCount += 1
                 diagnostics.pipelineState = "skipped"
                 diagnostics.event("training skipped: policy rejected event")
-                self.state.lastTrainingEvent = "Pominięto: brak wystarczająco wiarygodnego sygnału zakończenia modlitwy albo zdarzenie zostało uznane za outlier."
+                self.state.lastTrainingEvent = "Pominięto: nie udało się zbudować poprawnego batcha treningowego."
                 return
             }
 
