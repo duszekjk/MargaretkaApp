@@ -33,8 +33,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
 #if os(iOS)
         await observe(
             transcript: capture.transcript,
-            energy: capture.energy,
-            silence: capture.silenceDuration
+            audioWindow: capture.audioWindow()
         )
 #endif
     }
