@@ -4,7 +4,11 @@ import Foundation
 final class PrayerAutoAdvanceCoreMLModel {
     static let inputSize = PrayerAutoAdvanceFeatureExtractor.featureCount
     static let longAudioInputSize = PrayerAutoAdvanceLongAudioFeatureExtractor.featureCount
-    static let currentFeatureSchemaVersion = 5
+    static let currentFeatureSchemaVersion = 6
+
+    private static let scalarCount = PrayerAutoAdvanceFeatureExtractor.progressFeatureCount
+    private static let embeddingSize = PrayerAutoAdvanceFeatureExtractor.textEmbeddingSize
+    private static let shortAudioCount = PrayerAutoAdvanceAudioFeatureExtractor.featureCount
 
     let compiledURL: URL
     private(set) var model: MLModel
@@ -19,8 +23,12 @@ final class PrayerAutoAdvanceCoreMLModel {
               longAudioFeatures.count == Self.longAudioInputSize else {
             throw ModelError.invalidFeatureCount
         }
+        let split = try Self.splitFeatureArrays(features)
         let provider = try MLDictionaryFeatureProvider(dictionary: [
-            "features": MLFeatureValue(multiArray: try Self.featureArray(features)),
+            "scalars": MLFeatureValue(multiArray: split.scalars),
+            "spoken_embedding": MLFeatureValue(multiArray: split.spokenEmbedding),
+            "page_embedding": MLFeatureValue(multiArray: split.pageEmbedding),
+            "short_audio": MLFeatureValue(multiArray: split.shortAudio),
             "long_audio": MLFeatureValue(multiArray: try Self.longAudioArray(longAudioFeatures)),
         ])
         let output = try model.prediction(from: provider)
@@ -37,11 +45,15 @@ final class PrayerAutoAdvanceCoreMLModel {
             throw ModelError.invalidFeatureCount
         }
 
+        let split = try splitFeatureArrays(sample.features)
         let labelArray = try MLMultiArray(shape: [1], dataType: .int32)
         labelArray[0] = NSNumber(value: Int32(sample.label))
 
         return try MLDictionaryFeatureProvider(dictionary: [
-            "features": MLFeatureValue(multiArray: try featureArray(sample.features)),
+            "scalars": MLFeatureValue(multiArray: split.scalars),
+            "spoken_embedding": MLFeatureValue(multiArray: split.spokenEmbedding),
+            "page_embedding": MLFeatureValue(multiArray: split.pageEmbedding),
+            "short_audio": MLFeatureValue(multiArray: split.shortAudio),
             "long_audio": MLFeatureValue(multiArray: try longAudioArray(sample.longAudioFeatures)),
             "probabilities_true": MLFeatureValue(multiArray: labelArray),
         ])
@@ -92,12 +104,30 @@ final class PrayerAutoAdvanceCoreMLModel {
         }
     }
 
-    private static func featureArray(_ features: [Float]) throws -> MLMultiArray {
-        let inputArray = try MLMultiArray(shape: [NSNumber(value: inputSize)], dataType: .float32)
-        for (index, feature) in features.enumerated() {
-            inputArray[index] = NSNumber(value: feature.isFinite ? feature : 0)
+    private static func splitFeatureArrays(_ features: [Float]) throws -> FeatureArrays {
+        guard features.count == inputSize else { throw ModelError.invalidFeatureCount }
+
+        let spokenStart = scalarCount
+        let pageStart = spokenStart + embeddingSize
+        let shortAudioStart = pageStart + embeddingSize
+        guard shortAudioStart + shortAudioCount == features.count else {
+            throw ModelError.invalidFeatureCount
         }
-        return inputArray
+
+        return FeatureArrays(
+            scalars: try multiArray(Array(features[0..<spokenStart])),
+            spokenEmbedding: try multiArray(Array(features[spokenStart..<pageStart])),
+            pageEmbedding: try multiArray(Array(features[pageStart..<shortAudioStart])),
+            shortAudio: try multiArray(Array(features[shortAudioStart..<features.count]))
+        )
+    }
+
+    private static func multiArray(_ values: [Float]) throws -> MLMultiArray {
+        let array = try MLMultiArray(shape: [NSNumber(value: values.count)], dataType: .float32)
+        for (index, value) in values.enumerated() {
+            array[index] = NSNumber(value: value.isFinite ? value : 0)
+        }
+        return array
     }
 
     private static func longAudioArray(_ features: [Float]) throws -> MLMultiArray {
@@ -113,6 +143,13 @@ final class PrayerAutoAdvanceCoreMLModel {
             inputArray[index] = NSNumber(value: feature.isFinite ? feature : 0)
         }
         return inputArray
+    }
+
+    private struct FeatureArrays {
+        let scalars: MLMultiArray
+        let spokenEmbedding: MLMultiArray
+        let pageEmbedding: MLMultiArray
+        let shortAudio: MLMultiArray
     }
 
     private final class UpdateRetention {
