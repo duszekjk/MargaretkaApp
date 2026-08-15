@@ -17,7 +17,7 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     )
 
     static let epochSize = 100
-    private static let epochStorageKey = "PrayerAutoAdvanceTrainingEpochHistoryV2"
+    private static let epochStorageKey = "PrayerAutoAdvanceTrainingEpochHistoryV3"
 
     @Published var speechState = "idle"
     @Published var pipelineState = "idle"
@@ -66,10 +66,10 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         if predictionHistory.count > 48 {
             predictionHistory.removeFirst(predictionHistory.count - 48)
         }
-        if features.count >= 10 {
+        if features.count >= PrayerAutoAdvanceFeatureExtractor.progressFeatureCount {
             lastFeatureSummary = String(
-                format: "cur %.2f next %.2f end %.2f ratio %.2f sil %.2f",
-                features[0], features[1], features[4], features[8], features[6]
+                format: "cur %.2f next %.2f end %.2f ratio %.2f emb 512 aud 600",
+                features[0], features[1], features[4], features[6]
             )
         }
         Self.logger.debug("prediction=\(value, privacy: .public) snapshots=\(snapshotCount, privacy: .public) features=\(self.lastFeatureSummary, privacy: .public)")
