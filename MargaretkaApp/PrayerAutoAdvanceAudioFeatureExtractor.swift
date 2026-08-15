@@ -6,8 +6,8 @@ struct PrayerAutoAdvanceAudioWindow: Sendable {
 }
 
 enum PrayerAutoAdvanceAudioFeatureExtractor {
-    static let duration: TimeInterval = 7.0
-    static let temporalBins = 35
+    static let duration: TimeInterval = 10.0
+    static let temporalBins = 50
     static let frequencyBands = 24
     static let featureCount = temporalBins * frequencyBands
 
