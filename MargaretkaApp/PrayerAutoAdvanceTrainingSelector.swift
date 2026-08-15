@@ -8,5 +8,4 @@ struct PrayerAutoAdvanceTrainingSnapshot: Sendable {
     let spokenRatio: Float
     let currentSimilarity: Float
     let nextSimilarity: Float
-    let silenceDuration: TimeInterval
 }
