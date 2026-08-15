@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Generate the updatable multimodal Core ML model used by prayer auto-advance.
 
-Input schema v3:
-- features[1120]
-  - 8 prayer-progress/text-alignment scalars
-  - 512-value normalized sentence embedding of recognized text
+Input schema v4:
+- features[1627]
+  - 3 non-comparison progress scalars
+  - 512-value normalized embedding of the last recognized spoken words
+  - 512-value normalized embedding of the complete current page text
   - 600 audio values: 25 temporal slices x 24 bands over the last 5 seconds
 - long_audio[1,80,16]
   - 40 seconds of coarse time/frequency context
@@ -21,7 +22,7 @@ import coremltools as ct
 from coremltools.models import datatypes
 from coremltools.models.neural_network import AdamParams, NeuralNetworkBuilder
 
-INPUT_SIZE = 1120
+INPUT_SIZE = 1627
 LONG_TIME = 80
 LONG_BANDS = 16
 SHORT_HIDDEN_SIZE = 256
@@ -71,10 +72,10 @@ def build_model(model_version: int):
         output_features=[("probabilities", datatypes.Array(2))],
     )
 
-    # High-resolution branch: prayer progress + full transcript embedding + 5 s audio.
+    # High-resolution branch: independent spoken/page text representations + 5 s audio.
     builder.add_inner_product(
         name="short_hidden",
-        W=seeded((SHORT_HIDDEN_SIZE, INPUT_SIZE), 0.035, 11),
+        W=seeded((SHORT_HIDDEN_SIZE, INPUT_SIZE), 0.03, 11),
         b=np.zeros(SHORT_HIDDEN_SIZE, dtype=np.float32),
         input_channels=INPUT_SIZE,
         output_channels=SHORT_HIDDEN_SIZE,
@@ -89,8 +90,6 @@ def build_model(model_version: int):
         output_name="short_hidden_output",
     )
 
-    # Long-context branch. Its trainable parameter count stays far below the
-    # short branch while retaining 40 seconds of acoustic rhythm/context.
     long_blob = add_conv(
         builder,
         name="long_conv1",
@@ -229,25 +228,25 @@ def build_model(model_version: int):
     builder.set_epochs(3)
 
     spec = builder.spec
-    spec.description.input[0].shortDescription = "1120 prayer progress, transcript embedding, and 5-second high-resolution audio features."
+    spec.description.input[0].shortDescription = "1627 direct multimodal features: independent spoken/page embeddings plus 5-second audio."
     spec.description.input[1].shortDescription = "40-second coarse audio context [1,80,16] compressed by learnable convolutions."
     spec.description.output[0].shortDescription = "[stay, advance] probabilities."
-    spec.description.trainingInput[0].shortDescription = "Multimodal v3 short/text features."
-    spec.description.trainingInput[1].shortDescription = "Multimodal v3 long audio context."
+    spec.description.trainingInput[0].shortDescription = "Multimodal v4 direct-text short features."
+    spec.description.trainingInput[1].shortDescription = "Multimodal v4 long audio context."
     spec.description.trainingInput[2].shortDescription = "0 = stay, 1 = advance."
 
     model = ct.models.MLModel(spec)
     model.author = "Margaretka"
     model.short_description = "Updatable on-device multimodal prayer auto-advance classifier"
     model.user_defined_metadata["modelVersion"] = str(model_version)
-    model.user_defined_metadata["featureSchemaVersion"] = "3"
+    model.user_defined_metadata["featureSchemaVersion"] = "4"
     return model
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", default="PrayerAutoAdvance.mlmodel")
-    parser.add_argument("--model-version", type=int, default=3)
+    parser.add_argument("--model-version", type=int, default=4)
     args = parser.parse_args()
 
     output = Path(args.output)
