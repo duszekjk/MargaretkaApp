@@ -36,8 +36,14 @@ struct PrayerAutoAdvanceTimingHistory: Codable, Sendable {
     }
 }
 
+struct PrayerAutoAdvanceLabeledSample: Sendable {
+    let features: [Float]
+    let longAudioFeatures: [Float]
+    let label: Int64
+}
+
 struct PrayerAutoAdvanceLabeledBatch: Sendable {
-    let samples: [(features: [Float], label: Int64)]
+    let samples: [PrayerAutoAdvanceLabeledSample]
     let observedDelay: TimeInterval?
 }
 
@@ -62,7 +68,7 @@ enum PrayerAutoAdvanceTrainingPolicy {
             anchor = manualAdvanceAt
         }
 
-        var result: [(features: [Float], label: Int64)] = []
+        var result: [PrayerAutoAdvanceLabeledSample] = []
 
         let positiveCandidates = ordered
             .map { ($0, abs($0.date.timeIntervalSince(anchor))) }
@@ -80,7 +86,13 @@ enum PrayerAutoAdvanceTrainingPolicy {
                 copies = 1
             }
             for _ in 0..<copies {
-                result.append((snapshot.features, 1))
+                result.append(
+                    PrayerAutoAdvanceLabeledSample(
+                        features: snapshot.features,
+                        longAudioFeatures: snapshot.longAudioFeatures,
+                        label: 1
+                    )
+                )
             }
         }
 
@@ -90,7 +102,13 @@ enum PrayerAutoAdvanceTrainingPolicy {
                 maxDistance: 1.2,
                 in: ordered
             ), negative.date < anchor.addingTimeInterval(-1.25) {
-                result.append((negative.features, 0))
+                result.append(
+                    PrayerAutoAdvanceLabeledSample(
+                        features: negative.features,
+                        longAudioFeatures: negative.longAudioFeatures,
+                        label: 0
+                    )
+                )
             }
         }
 
