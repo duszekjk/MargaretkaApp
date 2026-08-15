@@ -14,7 +14,7 @@ extension PrayerAutoAdvanceCoreMLState {
 
         let now = Date()
         metadata = PrayerAutoAdvanceLocalMetadata(
-            baseModelVersion: 1,
+            baseModelVersion: 3,
             featureSchemaVersion: PrayerAutoAdvanceCoreMLModel.currentFeatureSchemaVersion,
             createdAt: now,
             lastUpdatedAt: now,
@@ -22,6 +22,8 @@ extension PrayerAutoAdvanceCoreMLState {
             trainedTransitions: 0
         )
         timingHistory = PrayerAutoAdvanceTimingHistory()
+        validationStore = PrayerAutoAdvanceValidationStore()
+        PrayerAutoAdvanceTrainingDiagnostics.shared.resetEpochHistory()
         try PrayerAutoAdvanceCoreMLDiskState.save(self)
     }
 }
