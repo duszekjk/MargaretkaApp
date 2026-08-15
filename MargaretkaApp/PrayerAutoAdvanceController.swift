@@ -10,12 +10,16 @@ struct PrayerAutoAdvanceContext: Equatable, Sendable {
 }
 
 enum PrayerAutoAdvanceFeatureExtractor {
+    static let progressFeatureCount = 8
+    static let textEmbeddingSize = 512
+    static let audioFeatureCount = PrayerAutoAdvanceAudioFeatureExtractor.featureCount
+    static let featureCount = progressFeatureCount + textEmbeddingSize + audioFeatureCount
+
     static func features(
         transcript: String,
         context: PrayerAutoAdvanceContext,
         elapsed: TimeInterval,
-        silence: TimeInterval,
-        energy: Float
+        audioFeatures: [Float]
     ) -> [Float] {
         let currentSemantic = semanticSimilarity(transcript, context.currentText)
         let nextSemantic = context.nextText.map { semanticSimilarity(transcript, $0) } ?? 0
@@ -23,29 +27,53 @@ enum PrayerAutoAdvanceFeatureExtractor {
         let nextLexical = context.nextText.map { lexicalSimilarity(transcript, $0) } ?? 0
         let ending = endingCoverage(transcript: transcript, expected: context.currentText)
         let elapsedNormalized = Float(min(max(elapsed / 120.0, 0), 1))
-        let silenceNormalized = Float(min(max(silence / 4.0, 0), 1))
-        let energyNormalized = min(max(energy * 10, 0), 1)
         let expectedWordCount = max(tokens(context.currentText).count, 1)
         let spokenRatio = Float(min(Double(tokens(transcript).count) / Double(expectedWordCount), 1))
         let semanticMargin = min(max((currentSemantic - nextSemantic + 1) / 2, 0), 1)
 
-        return [
+        let progress: [Float] = [
             currentSemantic,
             nextSemantic,
             currentLexical,
             nextLexical,
             ending,
             elapsedNormalized,
-            silenceNormalized,
-            energyNormalized,
             spokenRatio,
             semanticMargin,
         ]
+
+        let embedding = textEmbedding(transcript)
+        let audio: [Float]
+        if audioFeatures.count == audioFeatureCount {
+            audio = audioFeatures
+        } else {
+            audio = Array(repeating: 0, count: audioFeatureCount)
+        }
+        return progress + embedding + audio
+    }
+
+    static func textEmbedding(_ text: String) -> [Float] {
+        guard let embedding = NLEmbedding.sentenceEmbedding(for: .english),
+              let vector = embedding.vector(for: normalized(text)),
+              !vector.isEmpty else {
+            return Array(repeating: 0, count: textEmbeddingSize)
+        }
+
+        var result = Array(repeating: Float(0), count: textEmbeddingSize)
+        let count = min(vector.count, textEmbeddingSize)
+        var normSquared = 0.0
+        for index in 0..<count {
+            normSquared += vector[index] * vector[index]
+        }
+        let norm = sqrt(normSquared)
+        guard norm > 1e-12 else { return result }
+        for index in 0..<count {
+            result[index] = Float(vector[index] / norm)
+        }
+        return result
     }
 
     private static func semanticSimilarity(_ lhs: String, _ rhs: String) -> Float {
-        // Use one stable embedding space for every prayer language. Speech
-        // recognition remains language-specific; embeddings do not need to.
         guard let embedding = NLEmbedding.sentenceEmbedding(for: .english),
               let left = embedding.vector(for: normalized(lhs)),
               let right = embedding.vector(for: normalized(rhs)),
