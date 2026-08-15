@@ -68,7 +68,7 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         }
         if features.count >= PrayerAutoAdvanceFeatureExtractor.progressFeatureCount {
             lastFeatureSummary = String(
-                format: "cur %.2f next %.2f end %.2f ratio %.2f emb 512 aud 600",
+                format: "cur %.2f next %.2f end %.2f ratio %.2f emb512 aud5=600 aud40=1280→conv",
                 features[0], features[1], features[4], features[6]
             )
         }
@@ -81,7 +81,10 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         manualAdvanceAt: Date
     ) {
         let scored = snapshots.compactMap { snapshot -> (PrayerAutoAdvanceTrainingSnapshot, Float)? in
-            guard let score = try? model.prediction(for: snapshot.features) else { return nil }
+            guard let score = try? model.prediction(
+                for: snapshot.features,
+                longAudioFeatures: snapshot.longAudioFeatures
+            ) else { return nil }
             return (snapshot, score)
         }
         guard let peak = scored.max(by: { $0.1 < $1.1 }) else { return }
@@ -104,7 +107,7 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
 
     func evaluateBatch(
         model: PrayerAutoAdvanceCoreMLModel,
-        samples: [(features: [Float], label: Int64)],
+        samples: [PrayerAutoAdvanceLabeledSample],
         phase: String
     ) -> Double? {
         var positive: [Float] = []
@@ -112,7 +115,10 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         var losses: [Double] = []
 
         for sample in samples {
-            guard let prediction = try? model.prediction(for: sample.features) else { continue }
+            guard let prediction = try? model.prediction(
+                for: sample.features,
+                longAudioFeatures: sample.longAudioFeatures
+            ) else { continue }
             let p = min(max(Double(prediction), 1e-6), 1 - 1e-6)
             if sample.label == 1 {
                 positive.append(prediction)
