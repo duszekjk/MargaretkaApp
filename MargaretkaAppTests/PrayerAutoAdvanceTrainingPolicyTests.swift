@@ -50,6 +50,7 @@ struct PrayerAutoAdvanceTrainingPolicyTests {
             .map { $0.features[0] }
         #expect(positiveMarkers.contains(10))
         #expect(!positiveMarkers.contains(0))
+        #expect(batch.samples.allSatisfy { $0.longAudioFeatures.count == PrayerAutoAdvanceCoreMLModel.longAudioInputSize })
     }
 
     @Test func calibrationCanTrainWithoutReliableCompletionTiming() throws {
@@ -98,6 +99,7 @@ struct PrayerAutoAdvanceTrainingPolicyTests {
             pageID: "test",
             date: base.addingTimeInterval(TimeInterval(index)),
             features: features,
+            longAudioFeatures: Array(repeating: 0, count: PrayerAutoAdvanceCoreMLModel.longAudioInputSize),
             endingCoverage: 1,
             spokenRatio: 1,
             currentSimilarity: 1,
@@ -112,6 +114,7 @@ struct PrayerAutoAdvanceTrainingPolicyTests {
             pageID: "test",
             date: base.addingTimeInterval(TimeInterval(index)),
             features: features,
+            longAudioFeatures: Array(repeating: 0, count: PrayerAutoAdvanceCoreMLModel.longAudioInputSize),
             endingCoverage: 0,
             spokenRatio: 0.5,
             currentSimilarity: 0.4,
