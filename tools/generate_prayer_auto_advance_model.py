@@ -1,27 +1,23 @@
 #!/usr/bin/env python3
-"""Generate the updatable multimodal Core ML model used by prayer auto-advance.
+"""Generate the updatable audio-primary Core ML model used by prayer auto-advance.
 
-Input schema v6:
-- scalars[3]
-  - elapsed time, recognized-word count, page-word count
-- spoken_embedding[512]
-  - normalized embedding of the last recognized spoken words
-- page_embedding[512]
-  - normalized embedding of the complete current page text
-- short_audio[1200]
-  - 50 temporal slices x 24 bands over the last 10 seconds
-  - projected through a dedicated Dense 1024 branch
-- long_audio[1,120,16]
-  - 60 seconds of coarse time/frequency context
-  - compressed by three learnable convolution layers and projected to 128
+Schema v7 deliberately uses ONE Core ML input so every trainable layer sits on a
+plain backpropagation path to the loss. Core ML's legacy updatable neural-network
+validator rejects CONCAT between an updatable layer and the loss.
 
-The two audio branches dominate the learned representation. Text and scalar inputs
-are auxiliary context. Requires macOS and coremltools. The resulting .mlmodel is a
-developer seed only; production users receive a trained compiled model from the server.
+The app concatenates locally, before Core ML:
+- 3 auxiliary scalars
+- 512 spoken-text embedding
+- 512 page-text embedding
+- 1200 short-audio features (10 s)
+- 1920 long-audio features (60 s; 120 x 16)
+Total: 4147 float values, of which 3120 (~75%) are audio.
 """
 
 from pathlib import Path
 import argparse
+import shutil
+import tempfile
 import numpy as np
 import coremltools as ct
 from coremltools.models import datatypes
@@ -30,53 +26,16 @@ from coremltools.models.neural_network import AdamParams, NeuralNetworkBuilder
 SCALAR_SIZE = 3
 TEXT_EMBEDDING_SIZE = 512
 SHORT_AUDIO_SIZE = 1200
-LONG_TIME = 120
-LONG_BANDS = 16
-SHORT_AUDIO_PROJECTION_SIZE = 1024
-SCALAR_PROJECTION_SIZE = 16
-LONG_PROJECTION_SIZE = 128
-FUSED_SIZE = (
-    SHORT_AUDIO_PROJECTION_SIZE
-    + LONG_PROJECTION_SIZE
-    + TEXT_EMBEDDING_SIZE
-    + TEXT_EMBEDDING_SIZE
-    + SCALAR_PROJECTION_SIZE
-)
-FUSION_HIDDEN_SIZE = 512
-SECOND_HIDDEN_SIZE = 256
-THIRD_HIDDEN_SIZE = 128
-FOURTH_HIDDEN_SIZE = 32
+LONG_AUDIO_SIZE = 120 * 16
+INPUT_SIZE = SCALAR_SIZE + 2 * TEXT_EMBEDDING_SIZE + SHORT_AUDIO_SIZE + LONG_AUDIO_SIZE
+HIDDEN_SIZES = [1024, 512, 256, 128, 32]
+MODEL_VERSION = 7
+SCHEMA_VERSION = 7
 
 
 def seeded(shape, scale, seed):
     rng = np.random.default_rng(seed)
     return rng.normal(0.0, scale, size=shape).astype(np.float32)
-
-
-def add_conv(builder, *, name, input_name, input_channels, output_channels, height, width, stride, seed):
-    builder.add_convolution(
-        name=name,
-        kernel_channels=input_channels,
-        output_channels=output_channels,
-        height=height,
-        width=width,
-        stride_height=stride,
-        stride_width=stride,
-        border_mode="same",
-        groups=1,
-        W=seeded((height, width, input_channels, output_channels), 0.045, seed),
-        b=np.zeros(output_channels, dtype=np.float32),
-        has_bias=True,
-        input_name=input_name,
-        output_name=f"{name}_linear",
-    )
-    builder.add_activation(
-        name=f"{name}_relu",
-        non_linearity="RELU",
-        input_name=f"{name}_linear",
-        output_name=f"{name}_output",
-    )
-    return f"{name}_output"
 
 
 def add_dense_relu(builder, *, name, input_name, input_size, output_size, scale, seed):
@@ -101,159 +60,41 @@ def add_dense_relu(builder, *, name, input_name, input_size, output_size, scale,
 
 def build_model(model_version: int):
     builder = NeuralNetworkBuilder(
-        input_features=[
-            ("scalars", datatypes.Array(SCALAR_SIZE)),
-            ("spoken_embedding", datatypes.Array(TEXT_EMBEDDING_SIZE)),
-            ("page_embedding", datatypes.Array(TEXT_EMBEDDING_SIZE)),
-            ("short_audio", datatypes.Array(SHORT_AUDIO_SIZE)),
-            ("long_audio", datatypes.Array(1, LONG_TIME, LONG_BANDS)),
-        ],
+        input_features=[("features", datatypes.Array(INPUT_SIZE))],
         output_features=[("probabilities", datatypes.Array(2))],
     )
 
-    # Primary high-resolution acoustic branch: the last 10 seconds.
-    short_audio_blob = add_dense_relu(
-        builder,
-        name="short_audio_projection",
-        input_name="short_audio",
-        input_size=SHORT_AUDIO_SIZE,
-        output_size=SHORT_AUDIO_PROJECTION_SIZE,
-        scale=0.025,
-        seed=11,
-    )
-
-    # Primary long acoustic branch: one minute of coarse rhythm/context.
-    long_blob = add_conv(
-        builder,
-        name="long_conv1",
-        input_name="long_audio",
-        input_channels=1,
-        output_channels=16,
-        height=5,
-        width=3,
-        stride=2,
-        seed=101,
-    )
-    long_blob = add_conv(
-        builder,
-        name="long_conv2",
-        input_name=long_blob,
-        input_channels=16,
-        output_channels=32,
-        height=5,
-        width=3,
-        stride=2,
-        seed=211,
-    )
-    long_blob = add_conv(
-        builder,
-        name="long_conv3",
-        input_name=long_blob,
-        input_channels=32,
-        output_channels=64,
-        height=3,
-        width=3,
-        stride=2,
-        seed=307,
-    )
-    builder.add_pooling(
-        name="long_global_average",
-        height=1,
-        width=1,
-        stride_height=1,
-        stride_width=1,
-        layer_type="AVERAGE",
-        padding_type="VALID",
-        input_name=long_blob,
-        output_name="long_pooled",
-        is_global=True,
-    )
-    builder.add_flatten(
-        name="long_flatten",
-        mode=0,
-        input_name="long_pooled",
-        output_name="long_flat",
-    )
-    long_projection_blob = add_dense_relu(
-        builder,
-        name="long_projection",
-        input_name="long_flat",
-        input_size=64,
-        output_size=LONG_PROJECTION_SIZE,
-        scale=0.06,
-        seed=401,
-    )
-
-    # Scalars are deliberately projected before fusion so three useful values do
-    # not disappear numerically next to the much wider audio/text representations.
-    scalar_blob = add_dense_relu(
-        builder,
-        name="scalar_projection",
-        input_name="scalars",
-        input_size=SCALAR_SIZE,
-        output_size=SCALAR_PROJECTION_SIZE,
-        scale=0.15,
-        seed=503,
-    )
-
-    builder.add_elementwise(
-        name="fusion_concat",
-        input_names=[
-            short_audio_blob,
-            long_projection_blob,
-            "spoken_embedding",
-            "page_embedding",
-            scalar_blob,
-        ],
-        output_name="fused_features",
-        mode="CONCAT",
-    )
-
-    fusion_blob = add_dense_relu(
-        builder,
-        name="fusion_hidden1",
-        input_name="fused_features",
-        input_size=FUSED_SIZE,
-        output_size=FUSION_HIDDEN_SIZE,
-        scale=0.022,
-        seed=1009,
-    )
-    fusion_blob = add_dense_relu(
-        builder,
-        name="fusion_hidden2",
-        input_name=fusion_blob,
-        input_size=FUSION_HIDDEN_SIZE,
-        output_size=SECOND_HIDDEN_SIZE,
-        scale=0.035,
-        seed=2017,
-    )
-    fusion_blob = add_dense_relu(
-        builder,
-        name="fusion_hidden3",
-        input_name=fusion_blob,
-        input_size=SECOND_HIDDEN_SIZE,
-        output_size=THIRD_HIDDEN_SIZE,
-        scale=0.045,
-        seed=3001,
-    )
-    fusion_blob = add_dense_relu(
-        builder,
-        name="fusion_hidden4",
-        input_name=fusion_blob,
-        input_size=THIRD_HIDDEN_SIZE,
-        output_size=FOURTH_HIDDEN_SIZE,
-        scale=0.06,
-        seed=3503,
-    )
+    blob = "features"
+    input_size = INPUT_SIZE
+    trainables = []
+    configs = [
+        ("hidden1", 1024, 0.018, 11),
+        ("hidden2", 512, 0.025, 1009),
+        ("hidden3", 256, 0.035, 2017),
+        ("hidden4", 128, 0.045, 3001),
+        ("hidden5", 32, 0.060, 3503),
+    ]
+    for name, output_size, scale, seed in configs:
+        blob = add_dense_relu(
+            builder,
+            name=name,
+            input_name=blob,
+            input_size=input_size,
+            output_size=output_size,
+            scale=scale,
+            seed=seed,
+        )
+        trainables.append(name)
+        input_size = output_size
 
     builder.add_inner_product(
         name="logits",
-        W=seeded((2, FOURTH_HIDDEN_SIZE), 0.08, 4001),
+        W=seeded((2, input_size), 0.08, 4001),
         b=np.array([1.0, -1.0], dtype=np.float32),
-        input_channels=FOURTH_HIDDEN_SIZE,
+        input_channels=input_size,
         output_channels=2,
         has_bias=True,
-        input_name=fusion_blob,
+        input_name=blob,
         output_name="logits_output",
     )
     builder.add_softmax(
@@ -261,55 +102,85 @@ def build_model(model_version: int):
         input_name="logits_output",
         output_name="probabilities",
     )
+    trainables.append("logits")
 
-    builder.make_updatable([
-        "short_audio_projection",
-        "long_conv1",
-        "long_conv2",
-        "long_conv3",
-        "long_projection",
-        "scalar_projection",
-        "fusion_hidden1",
-        "fusion_hidden2",
-        "fusion_hidden3",
-        "fusion_hidden4",
-        "logits",
-    ])
+    builder.make_updatable(trainables)
     builder.set_categorical_cross_entropy_loss(name="classification_loss", input="probabilities")
     builder.set_adam_optimizer(AdamParams(lr=0.002, batch=1))
     builder.set_epochs(3)
 
     spec = builder.spec
-    spec.description.input[0].shortDescription = "Three auxiliary timing/text-count scalars."
-    spec.description.input[1].shortDescription = "512-value embedding of the last recognized spoken words."
-    spec.description.input[2].shortDescription = "512-value embedding of the complete current page text."
-    spec.description.input[3].shortDescription = "1200 high-resolution acoustic features from the last 10 seconds."
-    spec.description.input[4].shortDescription = "60-second coarse audio context [1,120,16]."
+    spec.description.input[0].shortDescription = (
+        "4147 local features: 3 scalars + 512 spoken embedding + 512 page embedding + "
+        "1200 short-audio + 1920 long-audio values."
+    )
     spec.description.output[0].shortDescription = "[stay, advance] probabilities."
-    spec.description.trainingInput[0].shortDescription = "Auxiliary scalars."
-    spec.description.trainingInput[1].shortDescription = "Recognized-speech embedding."
-    spec.description.trainingInput[2].shortDescription = "Current-page embedding."
-    spec.description.trainingInput[3].shortDescription = "Ten-second high-resolution audio representation."
-    spec.description.trainingInput[4].shortDescription = "Sixty-second long audio representation."
-    spec.description.trainingInput[5].shortDescription = "0 = stay, 1 = advance."
+    spec.description.trainingInput[0].shortDescription = "Audio-primary multimodal schema v7 features."
+    spec.description.trainingInput[1].shortDescription = "0 = stay, 1 = advance."
 
     model = ct.models.MLModel(spec)
     model.author = "Margaretka"
     model.short_description = "Updatable on-device audio-primary prayer auto-advance classifier"
     model.user_defined_metadata["modelVersion"] = str(model_version)
-    model.user_defined_metadata["featureSchemaVersion"] = "6"
+    model.user_defined_metadata["featureSchemaVersion"] = str(SCHEMA_VERSION)
     return model
+
+
+def parameter_count():
+    sizes = [INPUT_SIZE] + HIDDEN_SIZES + [2]
+    return sum(a * b + b for a, b in zip(sizes, sizes[1:]))
+
+
+def self_test(output: Path, model_version: int):
+    spec = ct.models.utils.load_spec(str(output))
+    metadata = spec.description.metadata.userDefined
+    inputs = [(x.name, list(x.type.multiArrayType.shape)) for x in spec.description.input]
+    updatable = [layer.name for layer in spec.neuralNetwork.layers if layer.isUpdatable]
+    params = parameter_count()
+    size_bytes = output.stat().st_size
+
+    if metadata.get("modelVersion") != str(model_version):
+        raise RuntimeError(f"modelVersion mismatch: {metadata.get('modelVersion')!r}")
+    if metadata.get("featureSchemaVersion") != str(SCHEMA_VERSION):
+        raise RuntimeError(f"featureSchemaVersion mismatch: {metadata.get('featureSchemaVersion')!r}")
+    if inputs != [("features", [INPUT_SIZE])]:
+        raise RuntimeError(f"Unexpected inputs: {inputs}")
+    if len(updatable) != 6:
+        raise RuntimeError(f"Expected 6 updatable layers, found {len(updatable)}: {updatable}")
+    if size_bytes < 10_000_000:
+        raise RuntimeError(
+            f"Generated model is only {size_bytes} bytes; expected a many-megabyte model. "
+            "Do not add this file to Xcode."
+        )
+
+    # This invokes Apple's Core ML compiler and catches validator/backprop errors.
+    compiled_dir = None
+    try:
+        compiled_dir = ct.models.utils.compile_model(str(output))
+    finally:
+        if compiled_dir:
+            shutil.rmtree(compiled_dir, ignore_errors=True)
+
+    print(f"modelVersion: {model_version}")
+    print(f"featureSchemaVersion: {SCHEMA_VERSION}")
+    print(f"trainable parameters: {params:,}")
+    print(f"Float32 parameter payload: {params * 4 / 1024 / 1024:.2f} MiB")
+    print(f"saved .mlmodel size: {size_bytes / 1024 / 1024:.2f} MiB")
+    print(f"inputs: features[{INPUT_SIZE}]")
+    print(f"updatable layers: {', '.join(updatable)}")
+    print("SELF-TEST: OK")
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", default="PrayerAutoAdvance.mlmodel")
-    parser.add_argument("--model-version", type=int, default=6)
+    parser.add_argument("--model-version", type=int, default=MODEL_VERSION)
     args = parser.parse_args()
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     build_model(args.model_version).save(str(output))
+    self_test(output, args.model_version)
     print(output.resolve())
 
 
