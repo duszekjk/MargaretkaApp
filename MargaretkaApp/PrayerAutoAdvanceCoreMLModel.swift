@@ -18,6 +18,18 @@ final class PrayerAutoAdvanceCoreMLModel {
         self.model = try MLModel(contentsOf: compiledURL)
     }
 
+    var declaredModelVersion: Int? {
+        creatorDefinedMetadata["modelVersion"].flatMap(Int.init)
+    }
+
+    var declaredFeatureSchemaVersion: Int? {
+        creatorDefinedMetadata["featureSchemaVersion"].flatMap(Int.init)
+    }
+
+    private var creatorDefinedMetadata: [String: String] {
+        model.modelDescription.metadata[.creatorDefinedKey] as? [String: String] ?? [:]
+    }
+
     func prediction(for features: [Float], longAudioFeatures: [Float]) throws -> Float {
         guard features.count == Self.inputSize,
               longAudioFeatures.count == Self.longAudioInputSize else {
