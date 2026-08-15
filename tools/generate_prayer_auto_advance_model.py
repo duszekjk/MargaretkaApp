@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Generate the updatable multimodal Core ML model used by prayer auto-advance.
 
-Input schema v4:
-- features[1627]
+Input schema v5:
+- features[1867]
   - 3 non-comparison progress scalars
   - 512-value normalized embedding of the last recognized spoken words
   - 512-value normalized embedding of the complete current page text
-  - 600 audio values: 25 temporal slices x 24 bands over the last 5 seconds
+  - 840 audio values: 35 temporal slices x 24 bands over the last 7 seconds
 - long_audio[1,80,16]
   - 40 seconds of coarse time/frequency context
   - compressed by three learnable convolution layers before fusion
@@ -22,12 +22,13 @@ import coremltools as ct
 from coremltools.models import datatypes
 from coremltools.models.neural_network import AdamParams, NeuralNetworkBuilder
 
-INPUT_SIZE = 1627
+INPUT_SIZE = 1867
 LONG_TIME = 80
 LONG_BANDS = 16
-SHORT_HIDDEN_SIZE = 256
+SHORT_FIRST_HIDDEN_SIZE = 512
+SHORT_SECOND_HIDDEN_SIZE = 256
 LONG_PROJECTION_SIZE = 32
-FUSED_SIZE = SHORT_HIDDEN_SIZE + LONG_PROJECTION_SIZE
+FUSED_SIZE = SHORT_SECOND_HIDDEN_SIZE + LONG_PROJECTION_SIZE
 SECOND_HIDDEN_SIZE = 128
 THIRD_HIDDEN_SIZE = 32
 
@@ -72,24 +73,41 @@ def build_model(model_version: int):
         output_features=[("probabilities", datatypes.Array(2))],
     )
 
-    # High-resolution branch: independent spoken/page text representations + 5 s audio.
+    # High-resolution branch: independent spoken/page text representations + 7 s audio.
     builder.add_inner_product(
-        name="short_hidden",
-        W=seeded((SHORT_HIDDEN_SIZE, INPUT_SIZE), 0.03, 11),
-        b=np.zeros(SHORT_HIDDEN_SIZE, dtype=np.float32),
+        name="short_hidden1",
+        W=seeded((SHORT_FIRST_HIDDEN_SIZE, INPUT_SIZE), 0.025, 11),
+        b=np.zeros(SHORT_FIRST_HIDDEN_SIZE, dtype=np.float32),
         input_channels=INPUT_SIZE,
-        output_channels=SHORT_HIDDEN_SIZE,
+        output_channels=SHORT_FIRST_HIDDEN_SIZE,
         has_bias=True,
         input_name="features",
-        output_name="short_hidden_linear",
+        output_name="short_hidden1_linear",
     )
     builder.add_activation(
-        name="short_hidden_relu",
+        name="short_hidden1_relu",
         non_linearity="RELU",
-        input_name="short_hidden_linear",
-        output_name="short_hidden_output",
+        input_name="short_hidden1_linear",
+        output_name="short_hidden1_output",
+    )
+    builder.add_inner_product(
+        name="short_hidden2",
+        W=seeded((SHORT_SECOND_HIDDEN_SIZE, SHORT_FIRST_HIDDEN_SIZE), 0.035, 53),
+        b=np.zeros(SHORT_SECOND_HIDDEN_SIZE, dtype=np.float32),
+        input_channels=SHORT_FIRST_HIDDEN_SIZE,
+        output_channels=SHORT_SECOND_HIDDEN_SIZE,
+        has_bias=True,
+        input_name="short_hidden1_output",
+        output_name="short_hidden2_linear",
+    )
+    builder.add_activation(
+        name="short_hidden2_relu",
+        non_linearity="RELU",
+        input_name="short_hidden2_linear",
+        output_name="short_hidden2_output",
     )
 
+    # Long-context branch: 40 seconds compressed to a small learned representation.
     long_blob = add_conv(
         builder,
         name="long_conv1",
@@ -160,7 +178,7 @@ def build_model(model_version: int):
 
     builder.add_elementwise(
         name="fusion_concat",
-        input_names=["short_hidden_output", "long_projection_output"],
+        input_names=["short_hidden2_output", "long_projection_output"],
         output_name="fused_features",
         mode="CONCAT",
     )
@@ -214,7 +232,8 @@ def build_model(model_version: int):
     )
 
     builder.make_updatable([
-        "short_hidden",
+        "short_hidden1",
+        "short_hidden2",
         "long_conv1",
         "long_conv2",
         "long_conv3",
@@ -228,25 +247,25 @@ def build_model(model_version: int):
     builder.set_epochs(3)
 
     spec = builder.spec
-    spec.description.input[0].shortDescription = "1627 direct multimodal features: independent spoken/page embeddings plus 5-second audio."
+    spec.description.input[0].shortDescription = "1867 direct multimodal features: independent spoken/page embeddings plus 7-second audio."
     spec.description.input[1].shortDescription = "40-second coarse audio context [1,80,16] compressed by learnable convolutions."
     spec.description.output[0].shortDescription = "[stay, advance] probabilities."
-    spec.description.trainingInput[0].shortDescription = "Multimodal v4 direct-text short features."
-    spec.description.trainingInput[1].shortDescription = "Multimodal v4 long audio context."
+    spec.description.trainingInput[0].shortDescription = "Multimodal v5 direct-text and 7-second short-audio features."
+    spec.description.trainingInput[1].shortDescription = "Multimodal v5 long audio context."
     spec.description.trainingInput[2].shortDescription = "0 = stay, 1 = advance."
 
     model = ct.models.MLModel(spec)
     model.author = "Margaretka"
     model.short_description = "Updatable on-device multimodal prayer auto-advance classifier"
     model.user_defined_metadata["modelVersion"] = str(model_version)
-    model.user_defined_metadata["featureSchemaVersion"] = "4"
+    model.user_defined_metadata["featureSchemaVersion"] = "5"
     return model
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", default="PrayerAutoAdvance.mlmodel")
-    parser.add_argument("--model-version", type=int, default=4)
+    parser.add_argument("--model-version", type=int, default=5)
     args = parser.parse_args()
 
     output = Path(args.output)
