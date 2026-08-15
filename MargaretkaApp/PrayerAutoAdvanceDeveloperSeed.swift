@@ -14,7 +14,7 @@ extension PrayerAutoAdvanceCoreMLState {
 
         let now = Date()
         metadata = PrayerAutoAdvanceLocalMetadata(
-            baseModelVersion: 5,
+            baseModelVersion: 6,
             featureSchemaVersion: PrayerAutoAdvanceCoreMLModel.currentFeatureSchemaVersion,
             createdAt: now,
             lastUpdatedAt: now,
