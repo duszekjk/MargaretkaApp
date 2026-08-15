@@ -53,11 +53,6 @@ enum PrayerAutoAdvanceTrainingPolicy {
         let completion = reliableCompletionIndex(in: ordered).map { ordered[$0] }
         let observedDelay = completion.map { manualAdvanceAt.timeIntervalSince($0.date) }
 
-        // During calibration the manual gesture itself is the noisy training
-        // anchor. If completion timing cannot be measured reliably, train the
-        // classifier but do not invent a delay or add anything to timing history.
-        // Once the personal timing baseline is mature, we require a measured
-        // delay so that strong outliers can be rejected before training.
         let anchor: Date
         if let typicalDelay = history.typicalDelay {
             guard let observedDelay,
@@ -69,9 +64,6 @@ enum PrayerAutoAdvanceTrainingPolicy {
 
         var result: [(features: [Float], label: Int64)] = []
 
-        // Approximate the asymmetric timing cost with sample multiplicity:
-        // <= 0.5 s is effectively equivalent, around 1 s remains useful but
-        // receives less weight, and farther samples are not positive examples.
         let positiveCandidates = ordered
             .map { ($0, abs($0.date.timeIntervalSince(anchor))) }
             .filter { $0.1 <= 1.6 }
@@ -92,8 +84,6 @@ enum PrayerAutoAdvanceTrainingPolicy {
             }
         }
 
-        // Leave an ambiguous band around the anchor. Negatives are sampled far
-        // enough before it that a normal human reaction delay cannot relabel them.
         for offset in [-8.0, -4.0, -2.0] {
             if let negative = nearest(
                 to: anchor.addingTimeInterval(offset),
@@ -127,13 +117,11 @@ enum PrayerAutoAdvanceTrainingPolicy {
 
     private static func readinessScore(_ snapshot: PrayerAutoAdvanceTrainingSnapshot) -> Float {
         let nextLead = max(snapshot.nextSimilarity - snapshot.currentSimilarity, 0)
-        let silence = Float(min(max(snapshot.silenceDuration / 2.0, 0), 1))
         return min(max(
-            snapshot.endingCoverage * 0.42
-            + snapshot.spokenRatio * 0.28
+            snapshot.endingCoverage * 0.45
+            + snapshot.spokenRatio * 0.30
             + snapshot.currentSimilarity * 0.18
-            + min(nextLead * 1.5, 1) * 0.07
-            + silence * 0.05,
+            + min(nextLead * 1.5, 1) * 0.07,
             0
         ), 1)
     }
