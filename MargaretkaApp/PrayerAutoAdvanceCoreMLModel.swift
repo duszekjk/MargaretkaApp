@@ -3,7 +3,8 @@ import Foundation
 
 final class PrayerAutoAdvanceCoreMLModel {
     static let inputSize = PrayerAutoAdvanceFeatureExtractor.featureCount
-    static let currentFeatureSchemaVersion = 2
+    static let longAudioInputSize = PrayerAutoAdvanceLongAudioFeatureExtractor.featureCount
+    static let currentFeatureSchemaVersion = 3
 
     let compiledURL: URL
     private(set) var model: MLModel
@@ -13,11 +14,14 @@ final class PrayerAutoAdvanceCoreMLModel {
         self.model = try MLModel(contentsOf: compiledURL)
     }
 
-    func prediction(for features: [Float]) throws -> Float {
-        guard features.count == Self.inputSize else { throw ModelError.invalidFeatureCount }
-        let inputArray = try Self.multiArray(features)
+    func prediction(for features: [Float], longAudioFeatures: [Float]) throws -> Float {
+        guard features.count == Self.inputSize,
+              longAudioFeatures.count == Self.longAudioInputSize else {
+            throw ModelError.invalidFeatureCount
+        }
         let provider = try MLDictionaryFeatureProvider(dictionary: [
-            "features": MLFeatureValue(multiArray: inputArray)
+            "features": MLFeatureValue(multiArray: try Self.featureArray(features)),
+            "long_audio": MLFeatureValue(multiArray: try Self.longAudioArray(longAudioFeatures)),
         ])
         let output = try model.prediction(from: provider)
         guard let probabilities = output.featureValue(for: "probabilities")?.multiArrayValue,
@@ -27,27 +31,28 @@ final class PrayerAutoAdvanceCoreMLModel {
         return probabilities[1].floatValue
     }
 
-    static func trainingProvider(features: [Float], label: Int64) throws -> MLFeatureProvider {
-        guard features.count == inputSize else { throw ModelError.invalidFeatureCount }
-        let inputArray = try multiArray(features)
+    static func trainingProvider(sample: PrayerAutoAdvanceLabeledSample) throws -> MLFeatureProvider {
+        guard sample.features.count == inputSize,
+              sample.longAudioFeatures.count == longAudioInputSize else {
+            throw ModelError.invalidFeatureCount
+        }
 
         let labelArray = try MLMultiArray(shape: [1], dataType: .int32)
-        labelArray[0] = NSNumber(value: Int32(label))
+        labelArray[0] = NSNumber(value: Int32(sample.label))
 
         return try MLDictionaryFeatureProvider(dictionary: [
-            "features": MLFeatureValue(multiArray: inputArray),
+            "features": MLFeatureValue(multiArray: try featureArray(sample.features)),
+            "long_audio": MLFeatureValue(multiArray: try longAudioArray(sample.longAudioFeatures)),
             "probabilities_true": MLFeatureValue(multiArray: labelArray),
         ])
     }
 
     static func update(
         modelAt compiledURL: URL,
-        samples: [(features: [Float], label: Int64)],
+        samples: [PrayerAutoAdvanceLabeledSample],
         savingTo destinationURL: URL
     ) async throws {
-        let providers = try samples.map {
-            try trainingProvider(features: $0.features, label: $0.label)
-        }
+        let providers = try samples.map(trainingProvider)
         let retention = UpdateRetention(providers: providers)
         let configuration = MLModelConfiguration()
         configuration.computeUnits = .cpuOnly
@@ -87,8 +92,23 @@ final class PrayerAutoAdvanceCoreMLModel {
         }
     }
 
-    private static func multiArray(_ features: [Float]) throws -> MLMultiArray {
+    private static func featureArray(_ features: [Float]) throws -> MLMultiArray {
         let inputArray = try MLMultiArray(shape: [NSNumber(value: inputSize)], dataType: .float32)
+        for (index, feature) in features.enumerated() {
+            inputArray[index] = NSNumber(value: feature.isFinite ? feature : 0)
+        }
+        return inputArray
+    }
+
+    private static func longAudioArray(_ features: [Float]) throws -> MLMultiArray {
+        let inputArray = try MLMultiArray(
+            shape: [
+                1,
+                NSNumber(value: PrayerAutoAdvanceLongAudioFeatureExtractor.temporalBins),
+                NSNumber(value: PrayerAutoAdvanceLongAudioFeatureExtractor.frequencyBands),
+            ],
+            dataType: .float32
+        )
         for (index, feature) in features.enumerated() {
             inputArray[index] = NSNumber(value: feature.isFinite ? feature : 0)
         }
