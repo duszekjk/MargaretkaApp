@@ -101,8 +101,7 @@ struct PrayerAutoAdvanceTrainingPolicyTests {
             endingCoverage: 1,
             spokenRatio: 1,
             currentSimilarity: 1,
-            nextSimilarity: 0,
-            silenceDuration: 0.5
+            nextSimilarity: 0
         )
     }
 
@@ -116,8 +115,7 @@ struct PrayerAutoAdvanceTrainingPolicyTests {
             endingCoverage: 0,
             spokenRatio: 0.5,
             currentSimilarity: 0.4,
-            nextSimilarity: 0.4,
-            silenceDuration: 0.2
+            nextSimilarity: 0.4
         )
     }
 }
