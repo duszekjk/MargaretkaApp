@@ -5,12 +5,24 @@ enum PrayerAutoAdvanceCoreMLDiskState {
     static func load(_ state: PrayerAutoAdvanceCoreMLState) {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
+
+        guard let metadataData = try? Data(contentsOf: state.metadataURL),
+              let metadata = try? decoder.decode(PrayerAutoAdvanceLocalMetadata.self, from: metadataData),
+              metadata.featureSchemaVersion == PrayerAutoAdvanceCoreMLModel.currentFeatureSchemaVersion else {
+            if state.fileManager.fileExists(atPath: state.directory.path) {
+                try? state.fileManager.removeItem(at: state.directory)
+            }
+            state.model = nil
+            state.metadata = nil
+            state.timingHistory = PrayerAutoAdvanceTimingHistory()
+            state.validationStore = PrayerAutoAdvanceValidationStore()
+            PrayerAutoAdvanceTrainingDiagnostics.shared.resetEpochHistory()
+            return
+        }
+
+        state.metadata = metadata
         if let model = try? PrayerAutoAdvanceCoreMLModel(compiledURL: state.modelURL) {
             state.model = model
-        }
-        if let data = try? Data(contentsOf: state.metadataURL),
-           let metadata = try? decoder.decode(PrayerAutoAdvanceLocalMetadata.self, from: data) {
-            state.metadata = metadata
         }
         if let data = try? Data(contentsOf: state.timingURL),
            let history = try? decoder.decode(PrayerAutoAdvanceTimingHistory.self, from: data) {
