@@ -1,8 +1,8 @@
 import Foundation
 
 enum PrayerAutoAdvanceLongAudioFeatureExtractor {
-    static let duration: TimeInterval = 40.0
-    static let temporalBins = 80
+    static let duration: TimeInterval = 60.0
+    static let temporalBins = 120
     static let frequencyBands = 16
     static let featureCount = temporalBins * frequencyBands
 
