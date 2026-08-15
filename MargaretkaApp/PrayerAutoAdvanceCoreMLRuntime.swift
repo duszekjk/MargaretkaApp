@@ -58,22 +58,28 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
             if !finalTranscript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 let elapsed = date.timeIntervalSince(startedAt)
-                let features = await Task.detached(priority: .utility) {
-                    let audioFeatures = PrayerAutoAdvanceAudioFeatureExtractor.features(window: finalAudio)
-                    return PrayerAutoAdvanceFeatureExtractor.features(
+                let extracted = await Task.detached(priority: .utility) {
+                    let shortAudio = PrayerAutoAdvanceAudioFeatureExtractor.features(window: finalAudio)
+                    let longAudio = PrayerAutoAdvanceLongAudioFeatureExtractor.features(window: finalAudio)
+                    let features = PrayerAutoAdvanceFeatureExtractor.features(
                         transcript: finalTranscript,
                         context: currentContext,
                         elapsed: elapsed,
-                        audioFeatures: audioFeatures
+                        audioFeatures: shortAudio
                     )
+                    return (features, longAudio)
                 }.value
+                let features = extracted.0
+                let longAudioFeatures = extracted.1
 
-                if features.count == PrayerAutoAdvanceCoreMLModel.inputSize {
+                if features.count == PrayerAutoAdvanceCoreMLModel.inputSize,
+                   longAudioFeatures.count == PrayerAutoAdvanceCoreMLModel.longAudioInputSize {
                     candidates.append(
                         PrayerAutoAdvanceTrainingSnapshot(
                             pageID: pageID,
                             date: date,
                             features: features,
+                            longAudioFeatures: longAudioFeatures,
                             endingCoverage: features[4],
                             spokenRatio: features[6],
                             currentSimilarity: features[0],
