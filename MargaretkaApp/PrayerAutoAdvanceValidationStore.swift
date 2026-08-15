@@ -2,6 +2,7 @@ import Foundation
 
 struct PrayerAutoAdvanceValidationSample: Codable, Sendable {
     let features: [Float]
+    let longAudioFeatures: [Float]
     let label: Int64
 }
 
@@ -41,7 +42,11 @@ struct PrayerAutoAdvanceValidationStore: Codable, Sendable {
                 pageID: pageID,
                 createdAt: date,
                 samples: batch.samples.map {
-                    PrayerAutoAdvanceValidationSample(features: $0.features, label: $0.label)
+                    PrayerAutoAdvanceValidationSample(
+                        features: $0.features,
+                        longAudioFeatures: $0.longAudioFeatures,
+                        label: $0.label
+                    )
                 }
             )
         )
@@ -58,7 +63,10 @@ struct PrayerAutoAdvanceValidationStore: Codable, Sendable {
 
         for record in records {
             for sample in record.samples {
-                guard let prediction = try? model.prediction(for: sample.features) else { continue }
+                guard let prediction = try? model.prediction(
+                    for: sample.features,
+                    longAudioFeatures: sample.longAudioFeatures
+                ) else { continue }
                 if sample.label == 1 {
                     positive.append(Double(prediction))
                 } else {
