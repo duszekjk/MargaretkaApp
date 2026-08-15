@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """Generate the updatable multimodal Core ML model used by prayer auto-advance.
 
-Input schema v2:
-- 8 prayer-progress/text-alignment scalars
-- 512-value normalized sentence embedding of the recognized text
-- 600 audio values: 25 temporal slices x 24 voice-frequency bands over 5 seconds
+Input schema v3:
+- features[1120]
+  - 8 prayer-progress/text-alignment scalars
+  - 512-value normalized sentence embedding of recognized text
+  - 600 audio values: 25 temporal slices x 24 bands over the last 5 seconds
+- long_audio[1,80,16]
+  - 40 seconds of coarse time/frequency context
+  - compressed by three learnable convolution layers before fusion
 
 Requires macOS and coremltools. The resulting .mlmodel is a developer seed only;
 production users receive a trained compiled model from the Margaretka server.
@@ -18,7 +22,11 @@ from coremltools.models import datatypes
 from coremltools.models.neural_network import AdamParams, NeuralNetworkBuilder
 
 INPUT_SIZE = 1120
-HIDDEN_SIZE = 256
+LONG_TIME = 80
+LONG_BANDS = 16
+SHORT_HIDDEN_SIZE = 256
+LONG_PROJECTION_SIZE = 32
+FUSED_SIZE = SHORT_HIDDEN_SIZE + LONG_PROJECTION_SIZE
 SECOND_HIDDEN_SIZE = 128
 THIRD_HIDDEN_SIZE = 32
 
@@ -28,36 +36,144 @@ def seeded(shape, scale, seed):
     return rng.normal(0.0, scale, size=shape).astype(np.float32)
 
 
+def add_conv(builder, *, name, input_name, input_channels, output_channels, height, width, stride, seed):
+    builder.add_convolution(
+        name=name,
+        kernel_channels=input_channels,
+        output_channels=output_channels,
+        height=height,
+        width=width,
+        stride_height=stride,
+        stride_width=stride,
+        border_mode="same",
+        groups=1,
+        W=seeded((height, width, input_channels, output_channels), 0.05, seed),
+        b=np.zeros(output_channels, dtype=np.float32),
+        has_bias=True,
+        input_name=input_name,
+        output_name=f"{name}_linear",
+    )
+    builder.add_activation(
+        name=f"{name}_relu",
+        non_linearity="RELU",
+        input_name=f"{name}_linear",
+        output_name=f"{name}_output",
+    )
+    return f"{name}_output"
+
+
 def build_model(model_version: int):
     builder = NeuralNetworkBuilder(
-        input_features=[("features", datatypes.Array(INPUT_SIZE))],
+        input_features=[
+            ("features", datatypes.Array(INPUT_SIZE)),
+            ("long_audio", datatypes.Array(1, LONG_TIME, LONG_BANDS)),
+        ],
         output_features=[("probabilities", datatypes.Array(2))],
     )
 
+    # High-resolution branch: prayer progress + full transcript embedding + 5 s audio.
     builder.add_inner_product(
-        name="hidden1",
-        W=seeded((HIDDEN_SIZE, INPUT_SIZE), 0.035, 11),
-        b=np.zeros(HIDDEN_SIZE, dtype=np.float32),
+        name="short_hidden",
+        W=seeded((SHORT_HIDDEN_SIZE, INPUT_SIZE), 0.035, 11),
+        b=np.zeros(SHORT_HIDDEN_SIZE, dtype=np.float32),
         input_channels=INPUT_SIZE,
-        output_channels=HIDDEN_SIZE,
+        output_channels=SHORT_HIDDEN_SIZE,
         has_bias=True,
         input_name="features",
-        output_name="hidden1_linear",
+        output_name="short_hidden_linear",
     )
     builder.add_activation(
-        name="hidden1_relu",
+        name="short_hidden_relu",
         non_linearity="RELU",
-        input_name="hidden1_linear",
-        output_name="hidden1_output",
+        input_name="short_hidden_linear",
+        output_name="short_hidden_output",
+    )
+
+    # Long-context branch. Its trainable parameter count stays far below the
+    # short branch while retaining 40 seconds of acoustic rhythm/context.
+    long_blob = add_conv(
+        builder,
+        name="long_conv1",
+        input_name="long_audio",
+        input_channels=1,
+        output_channels=8,
+        height=5,
+        width=3,
+        stride=2,
+        seed=101,
+    )
+    long_blob = add_conv(
+        builder,
+        name="long_conv2",
+        input_name=long_blob,
+        input_channels=8,
+        output_channels=12,
+        height=5,
+        width=3,
+        stride=2,
+        seed=211,
+    )
+    long_blob = add_conv(
+        builder,
+        name="long_conv3",
+        input_name=long_blob,
+        input_channels=12,
+        output_channels=16,
+        height=3,
+        width=3,
+        stride=2,
+        seed=307,
+    )
+    builder.add_pooling(
+        name="long_global_average",
+        height=1,
+        width=1,
+        stride_height=1,
+        stride_width=1,
+        layer_type="AVERAGE",
+        padding_type="VALID",
+        input_name=long_blob,
+        output_name="long_pooled",
+        is_global=True,
+    )
+    builder.add_flatten(
+        name="long_flatten",
+        mode=0,
+        input_name="long_pooled",
+        output_name="long_flat",
     )
     builder.add_inner_product(
+        name="long_projection",
+        W=seeded((LONG_PROJECTION_SIZE, 16), 0.08, 401),
+        b=np.zeros(LONG_PROJECTION_SIZE, dtype=np.float32),
+        input_channels=16,
+        output_channels=LONG_PROJECTION_SIZE,
+        has_bias=True,
+        input_name="long_flat",
+        output_name="long_projection_linear",
+    )
+    builder.add_activation(
+        name="long_projection_relu",
+        non_linearity="RELU",
+        input_name="long_projection_linear",
+        output_name="long_projection_output",
+    )
+
+    builder.add_elementwise(
+        name="fusion_concat",
+        input_names=["short_hidden_output", "long_projection_output"],
+        output_name="fused_features",
+        mode="CONCAT",
+    )
+
+    builder.add_inner_product(
         name="hidden2",
-        W=seeded((SECOND_HIDDEN_SIZE, HIDDEN_SIZE), 0.045, 1009),
+        W=seeded((SECOND_HIDDEN_SIZE, FUSED_SIZE), 0.045, 1009),
         b=np.zeros(SECOND_HIDDEN_SIZE, dtype=np.float32),
-        input_channels=HIDDEN_SIZE,
+        input_channels=FUSED_SIZE,
         output_channels=SECOND_HIDDEN_SIZE,
         has_bias=True,
-        input_name="hidden1_output",
+        input_name="fused_features",
         output_name="hidden2_linear",
     )
     builder.add_activation(
@@ -98,29 +214,40 @@ def build_model(model_version: int):
         output_name="probabilities",
     )
 
-    builder.make_updatable(["hidden1", "hidden2", "hidden3", "logits"])
+    builder.make_updatable([
+        "short_hidden",
+        "long_conv1",
+        "long_conv2",
+        "long_conv3",
+        "long_projection",
+        "hidden2",
+        "hidden3",
+        "logits",
+    ])
     builder.set_categorical_cross_entropy_loss(name="classification_loss", input="probabilities")
     builder.set_adam_optimizer(AdamParams(lr=0.002, batch=1))
     builder.set_epochs(3)
 
     spec = builder.spec
-    spec.description.input[0].shortDescription = "1120 multimodal prayer-progress, transcript embedding, and 5-second audio features."
+    spec.description.input[0].shortDescription = "1120 prayer progress, transcript embedding, and 5-second high-resolution audio features."
+    spec.description.input[1].shortDescription = "40-second coarse audio context [1,80,16] compressed by learnable convolutions."
     spec.description.output[0].shortDescription = "[stay, advance] probabilities."
-    spec.description.trainingInput[0].shortDescription = "Multimodal v2 features."
-    spec.description.trainingInput[1].shortDescription = "0 = stay, 1 = advance."
+    spec.description.trainingInput[0].shortDescription = "Multimodal v3 short/text features."
+    spec.description.trainingInput[1].shortDescription = "Multimodal v3 long audio context."
+    spec.description.trainingInput[2].shortDescription = "0 = stay, 1 = advance."
 
     model = ct.models.MLModel(spec)
     model.author = "Margaretka"
     model.short_description = "Updatable on-device multimodal prayer auto-advance classifier"
     model.user_defined_metadata["modelVersion"] = str(model_version)
-    model.user_defined_metadata["featureSchemaVersion"] = "2"
+    model.user_defined_metadata["featureSchemaVersion"] = "3"
     return model
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", default="PrayerAutoAdvance.mlmodel")
-    parser.add_argument("--model-version", type=int, default=2)
+    parser.add_argument("--model-version", type=int, default=3)
     args = parser.parse_args()
 
     output = Path(args.output)
