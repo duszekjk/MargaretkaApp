@@ -2,8 +2,8 @@ import CoreML
 import Foundation
 
 final class PrayerAutoAdvanceCoreMLModel {
-    static let inputSize = 10
-    static let currentFeatureSchemaVersion = 1
+    static let inputSize = PrayerAutoAdvanceFeatureExtractor.featureCount
+    static let currentFeatureSchemaVersion = 2
 
     let compiledURL: URL
     private(set) var model: MLModel
@@ -15,10 +15,7 @@ final class PrayerAutoAdvanceCoreMLModel {
 
     func prediction(for features: [Float]) throws -> Float {
         guard features.count == Self.inputSize else { throw ModelError.invalidFeatureCount }
-        let inputArray = try MLMultiArray(shape: [NSNumber(value: Self.inputSize)], dataType: .float32)
-        for (index, feature) in features.enumerated() {
-            inputArray[index] = NSNumber(value: min(max(feature, 0), 1))
-        }
+        let inputArray = try Self.multiArray(features)
         let provider = try MLDictionaryFeatureProvider(dictionary: [
             "features": MLFeatureValue(multiArray: inputArray)
         ])
@@ -32,10 +29,7 @@ final class PrayerAutoAdvanceCoreMLModel {
 
     static func trainingProvider(features: [Float], label: Int64) throws -> MLFeatureProvider {
         guard features.count == inputSize else { throw ModelError.invalidFeatureCount }
-        let inputArray = try MLMultiArray(shape: [NSNumber(value: inputSize)], dataType: .float32)
-        for (index, feature) in features.enumerated() {
-            inputArray[index] = NSNumber(value: min(max(feature, 0), 1))
-        }
+        let inputArray = try multiArray(features)
 
         let labelArray = try MLMultiArray(shape: [1], dataType: .int32)
         labelArray[0] = NSNumber(value: Int32(label))
@@ -91,6 +85,14 @@ final class PrayerAutoAdvanceCoreMLModel {
                 continuation.resume(throwing: error)
             }
         }
+    }
+
+    private static func multiArray(_ features: [Float]) throws -> MLMultiArray {
+        let inputArray = try MLMultiArray(shape: [NSNumber(value: inputSize)], dataType: .float32)
+        for (index, feature) in features.enumerated() {
+            inputArray[index] = NSNumber(value: feature.isFinite ? feature : 0)
+        }
+        return inputArray
     }
 
     private final class UpdateRetention {
