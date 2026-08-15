@@ -8,16 +8,21 @@ extension PrayerAutoAdvanceCoreMLRuntime {
 
         let now = Date()
         let elapsed = now.timeIntervalSince(contextStartedAt)
-        let features: [Float] = await Task.detached(priority: .utility) {
-            let audioFeatures = PrayerAutoAdvanceAudioFeatureExtractor.features(window: audioWindow)
-            return PrayerAutoAdvanceFeatureExtractor.features(
+        let extracted = await Task.detached(priority: .utility) {
+            let shortAudio = PrayerAutoAdvanceAudioFeatureExtractor.features(window: audioWindow)
+            let longAudio = PrayerAutoAdvanceLongAudioFeatureExtractor.features(window: audioWindow)
+            let features = PrayerAutoAdvanceFeatureExtractor.features(
                 transcript: transcript,
                 context: context,
                 elapsed: elapsed,
-                audioFeatures: audioFeatures
+                audioFeatures: shortAudio
             )
+            return (features, longAudio)
         }.value
-        guard features.count == PrayerAutoAdvanceCoreMLModel.inputSize else { return }
+        let features = extracted.0
+        let longAudioFeatures = extracted.1
+        guard features.count == PrayerAutoAdvanceCoreMLModel.inputSize,
+              longAudioFeatures.count == PrayerAutoAdvanceCoreMLModel.longAudioInputSize else { return }
 
         if now.timeIntervalSince(lastTrainingSnapshotAt) >= 0.5 {
             snapshots.append(
@@ -25,6 +30,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
                     pageID: context.pageID,
                     date: now,
                     features: features,
+                    longAudioFeatures: longAudioFeatures,
                     endingCoverage: features[4],
                     spokenRatio: features[6],
                     currentSimilarity: features[0],
@@ -32,11 +38,14 @@ extension PrayerAutoAdvanceCoreMLRuntime {
                 )
             )
             lastTrainingSnapshotAt = now
-            if snapshots.count > 40 { snapshots.removeFirst(snapshots.count - 40) }
+            if snapshots.count > 80 { snapshots.removeFirst(snapshots.count - 80) }
         }
 
         do {
-            let value = try model.prediction(for: features)
+            let value = try model.prediction(
+                for: features,
+                longAudioFeatures: longAudioFeatures
+            )
             lastPrediction = value
             PrayerAutoAdvanceTrainingDiagnostics.shared.prediction(
                 value,
