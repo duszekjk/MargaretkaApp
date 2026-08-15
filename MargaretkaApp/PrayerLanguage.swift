@@ -1,6 +1,6 @@
 import Foundation
 
-enum PrayerLanguage: String, CaseIterable, Codable, Identifiable {
+enum PrayerLanguage: String, CaseIterable, Codable, Identifiable, Sendable {
     case polish = "pl"
     case english = "en"
     case latin = "la"

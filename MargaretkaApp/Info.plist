@@ -4,5 +4,9 @@
 <dict>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>Przypomnienia o modlitwie</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Mikrofon jest używany lokalnie do rozpoznawania odmawianej modlitwy i automatycznego przełączania stron. Nagrania nie są zapisywane ani wysyłane.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Rozpoznawanie mowy jest używane lokalnie do dopasowania wypowiadanej modlitwy do aktualnej strony. Aplikacja wymaga rozpoznawania on-device.</string>
 </dict>
 </plist>
