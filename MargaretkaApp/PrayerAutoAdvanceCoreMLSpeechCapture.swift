@@ -10,7 +10,10 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
     private var hasInputTap = false
     private var isStarting = false
     private(set) var transcript = ""
-    nonisolated private let audioRing = PrayerAutoAdvanceAudioRingBuffer(duration: PrayerAutoAdvanceAudioFeatureExtractor.duration)
+    nonisolated private let audioRing = PrayerAutoAdvanceAudioRingBuffer(
+        duration: PrayerAutoAdvanceLongAudioFeatureExtractor.duration,
+        targetSampleRate: 8_000
+    )
 
     func start(language: PrayerLanguage, context: [String]) async throws {
         guard !isStarting else { return }
@@ -53,7 +56,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
             hasInputTap = false
         }
         let format = input.outputFormat(forBus: 0)
-        audioRing.configure(sampleRate: format.sampleRate)
+        audioRing.configure(sourceSampleRate: format.sampleRate)
         input.installTap(onBus: 0, bufferSize: 2048, format: format) { [weak self] buffer, _ in
             speechRequest.append(buffer)
             guard let channel = buffer.floatChannelData?[0] else { return }
@@ -134,16 +137,20 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
 private final class PrayerAutoAdvanceAudioRingBuffer: @unchecked Sendable {
     private let lock = NSLock()
     private let duration: TimeInterval
-    private var sampleRate: Double = 48_000
+    private let targetSampleRate: Double
+    private var sourceSampleRate: Double = 48_000
     private var storage: [Float] = []
+    private var sourcePhase: Double = 0
 
-    init(duration: TimeInterval) {
+    init(duration: TimeInterval, targetSampleRate: Double) {
         self.duration = duration
+        self.targetSampleRate = targetSampleRate
     }
 
-    func configure(sampleRate: Double) {
+    func configure(sourceSampleRate: Double) {
         lock.lock()
-        self.sampleRate = max(sampleRate, 1)
+        self.sourceSampleRate = max(sourceSampleRate, 1)
+        sourcePhase = 0
         trimLocked()
         lock.unlock()
     }
@@ -151,14 +158,21 @@ private final class PrayerAutoAdvanceAudioRingBuffer: @unchecked Sendable {
     func append(_ pointer: UnsafePointer<Float>, count: Int) {
         guard count > 0 else { return }
         lock.lock()
-        storage.append(contentsOf: UnsafeBufferPointer(start: pointer, count: count))
+        let step = sourceSampleRate / targetSampleRate
+        var position = sourcePhase
+        while position < Double(count) {
+            let index = min(max(Int(position.rounded(.down)), 0), count - 1)
+            storage.append(pointer[index])
+            position += step
+        }
+        sourcePhase = position - Double(count)
         trimLocked()
         lock.unlock()
     }
 
     func snapshot() -> PrayerAutoAdvanceAudioWindow {
         lock.lock()
-        let value = PrayerAutoAdvanceAudioWindow(samples: storage, sampleRate: sampleRate)
+        let value = PrayerAutoAdvanceAudioWindow(samples: storage, sampleRate: targetSampleRate)
         lock.unlock()
         return value
     }
@@ -166,11 +180,12 @@ private final class PrayerAutoAdvanceAudioRingBuffer: @unchecked Sendable {
     func reset() {
         lock.lock()
         storage.removeAll(keepingCapacity: true)
+        sourcePhase = 0
         lock.unlock()
     }
 
     private func trimLocked() {
-        let maximumCount = max(1, Int((duration * sampleRate).rounded()))
+        let maximumCount = max(1, Int((duration * targetSampleRate).rounded()))
         if storage.count > maximumCount {
             storage.removeFirst(storage.count - maximumCount)
         }
