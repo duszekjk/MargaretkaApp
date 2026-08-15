@@ -17,6 +17,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
     var evaluationTask: Task<Void, Never>?
     var consecutiveAdvancePredictions = 0
     var cooldownUntil = Date.distantPast
+    var lastTrainingSnapshotAt = Date.distantPast
 
     init() {
         PrayerAutoAdvanceCoreMLDiskState.load(state)
@@ -43,12 +44,10 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
 #if os(iOS)
         let finalTranscript = capture.transcript
-        let finalEnergy = capture.energy
-        let finalSilence = capture.silenceDuration
+        let finalAudio = capture.audioWindow()
 #else
         let finalTranscript = ""
-        let finalEnergy: Float = 0
-        let finalSilence: TimeInterval = 0
+        let finalAudio = PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: 8_000)
 #endif
 
         state.lastTrainingEvent = "Analizowanie ręcznego przejścia…"
@@ -60,12 +59,12 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
             if !finalTranscript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 let elapsed = date.timeIntervalSince(startedAt)
                 let features = await Task.detached(priority: .utility) {
-                    PrayerAutoAdvanceFeatureExtractor.features(
+                    let audioFeatures = PrayerAutoAdvanceAudioFeatureExtractor.features(window: finalAudio)
+                    return PrayerAutoAdvanceFeatureExtractor.features(
                         transcript: finalTranscript,
                         context: currentContext,
                         elapsed: elapsed,
-                        silence: finalSilence,
-                        energy: finalEnergy
+                        audioFeatures: audioFeatures
                     )
                 }.value
 
@@ -76,10 +75,9 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
                             date: date,
                             features: features,
                             endingCoverage: features[4],
-                            spokenRatio: features[8],
+                            spokenRatio: features[6],
                             currentSimilarity: features[0],
-                            nextSimilarity: features[1],
-                            silenceDuration: finalSilence
+                            nextSimilarity: features[1]
                         )
                     )
                 }
