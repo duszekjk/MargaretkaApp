@@ -1,4 +1,3 @@
-import Accelerate
 import AVFoundation
 import Speech
 
@@ -11,10 +10,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
     private var hasInputTap = false
     private var isStarting = false
     private(set) var transcript = ""
-    private(set) var energy: Float = 0
-    private var lastVoiceAt = Date()
-
-    var silenceDuration: TimeInterval { Date().timeIntervalSince(lastVoiceAt) }
+    nonisolated private let audioRing = PrayerAutoAdvanceAudioRingBuffer(duration: PrayerAutoAdvanceAudioFeatureExtractor.duration)
 
     func start(language: PrayerLanguage, context: [String]) async throws {
         guard !isStarting else { return }
@@ -45,8 +41,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         speechRequest.contextualStrings = context.map { String($0.prefix(500)) }
         request = speechRequest
         transcript = ""
-        energy = 0
-        lastVoiceAt = Date()
+        audioRing.reset()
 
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.record, mode: .measurement, options: [.duckOthers])
@@ -58,16 +53,11 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
             hasInputTap = false
         }
         let format = input.outputFormat(forBus: 0)
+        audioRing.configure(sampleRate: format.sampleRate)
         input.installTap(onBus: 0, bufferSize: 2048, format: format) { [weak self] buffer, _ in
             speechRequest.append(buffer)
             guard let channel = buffer.floatChannelData?[0] else { return }
-            var square: Float = 0
-            vDSP_measqv(channel, 1, &square, vDSP_Length(buffer.frameLength))
-            let rms = sqrt(max(square, 0))
-            Task { @MainActor [weak self] in
-                self?.energy = rms
-                if rms > 0.012 { self?.lastVoiceAt = Date() }
-            }
+            self?.audioRing.append(channel, count: Int(buffer.frameLength))
         }
         hasInputTap = true
 
@@ -87,6 +77,10 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         }
     }
 
+    func audioWindow() -> PrayerAutoAdvanceAudioWindow {
+        audioRing.snapshot()
+    }
+
     func stop() {
         task?.cancel()
         task = nil
@@ -94,7 +88,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         request = nil
         stopAudioOnly()
         transcript = ""
-        energy = 0
+        audioRing.reset()
     }
 
     private func stopAudioOnly() {
@@ -133,6 +127,52 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
             case .permission: "Brak wymaganych uprawnień do mikrofonu lub rozpoznawania mowy."
             case .offlineUnavailable: "Rozpoznawanie mowy offline nie jest dostępne dla języka tej modlitwy na tym urządzeniu."
             }
+        }
+    }
+}
+
+private final class PrayerAutoAdvanceAudioRingBuffer: @unchecked Sendable {
+    private let lock = NSLock()
+    private let duration: TimeInterval
+    private var sampleRate: Double = 48_000
+    private var storage: [Float] = []
+
+    init(duration: TimeInterval) {
+        self.duration = duration
+    }
+
+    func configure(sampleRate: Double) {
+        lock.lock()
+        self.sampleRate = max(sampleRate, 1)
+        trimLocked()
+        lock.unlock()
+    }
+
+    func append(_ pointer: UnsafePointer<Float>, count: Int) {
+        guard count > 0 else { return }
+        lock.lock()
+        storage.append(contentsOf: UnsafeBufferPointer(start: pointer, count: count))
+        trimLocked()
+        lock.unlock()
+    }
+
+    func snapshot() -> PrayerAutoAdvanceAudioWindow {
+        lock.lock()
+        let value = PrayerAutoAdvanceAudioWindow(samples: storage, sampleRate: sampleRate)
+        lock.unlock()
+        return value
+    }
+
+    func reset() {
+        lock.lock()
+        storage.removeAll(keepingCapacity: true)
+        lock.unlock()
+    }
+
+    private func trimLocked() {
+        let maximumCount = max(1, Int((duration * sampleRate).rounded()))
+        if storage.count > maximumCount {
+            storage.removeFirst(storage.count - maximumCount)
         }
     }
 }
