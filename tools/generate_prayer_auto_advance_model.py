@@ -1,27 +1,21 @@
 #!/usr/bin/env python3
-"""Generate the updatable multimodal Core ML model used by prayer auto-advance.
+"""Generate and verify the updatable multimodal Core ML prayer auto-advance seed.
 
 Input schema v6:
 - scalars[3]
-  - elapsed time, recognized-word count, page-word count
 - spoken_embedding[512]
-  - normalized embedding of the last recognized spoken words
 - page_embedding[512]
-  - normalized embedding of the complete current page text
-- short_audio[1200]
-  - 50 temporal slices x 24 bands over the last 10 seconds
-  - projected through a dedicated Dense 1024 branch
-- long_audio[1,120,16]
-  - 60 seconds of coarse time/frequency context
-  - compressed by three learnable convolution layers and projected to 128
+- short_audio[1200]: 50 x 24 over the last 10 seconds, projected to 1024
+- long_audio[1,120,16]: 60 seconds, convolutional branch projected to 128
 
-The two audio branches dominate the learned representation. Text and scalar inputs
-are auxiliary context. Requires macOS and coremltools. The resulting .mlmodel is a
-developer seed only; production users receive a trained compiled model from the server.
+The generator intentionally performs a strict post-save self-test. A valid v6 seed
+contains roughly 2.56M Float32 trainable parameters, so a tiny/stub .mlmodel must
+never silently make it into Xcode.
 """
 
 from pathlib import Path
 import argparse
+import sys
 import numpy as np
 import coremltools as ct
 from coremltools.models import datatypes
@@ -46,6 +40,31 @@ FUSION_HIDDEN_SIZE = 512
 SECOND_HIDDEN_SIZE = 256
 THIRD_HIDDEN_SIZE = 128
 FOURTH_HIDDEN_SIZE = 32
+FEATURE_SCHEMA_VERSION = 6
+
+TRAINABLE_PARAMETER_COUNT = (
+    SHORT_AUDIO_SIZE * SHORT_AUDIO_PROJECTION_SIZE + SHORT_AUDIO_PROJECTION_SIZE
+    + 5 * 3 * 1 * 16 + 16
+    + 5 * 3 * 16 * 32 + 32
+    + 3 * 3 * 32 * 64 + 64
+    + 64 * LONG_PROJECTION_SIZE + LONG_PROJECTION_SIZE
+    + SCALAR_SIZE * SCALAR_PROJECTION_SIZE + SCALAR_PROJECTION_SIZE
+    + FUSED_SIZE * FUSION_HIDDEN_SIZE + FUSION_HIDDEN_SIZE
+    + FUSION_HIDDEN_SIZE * SECOND_HIDDEN_SIZE + SECOND_HIDDEN_SIZE
+    + SECOND_HIDDEN_SIZE * THIRD_HIDDEN_SIZE + THIRD_HIDDEN_SIZE
+    + THIRD_HIDDEN_SIZE * FOURTH_HIDDEN_SIZE + FOURTH_HIDDEN_SIZE
+    + FOURTH_HIDDEN_SIZE * 2 + 2
+)
+EXPECTED_INPUT_NAMES = [
+    "scalars",
+    "spoken_embedding",
+    "page_embedding",
+    "short_audio",
+    "long_audio",
+]
+# 2.56M Float32 parameters alone are ~9.75 MiB. Leave some tolerance for how
+# coremltools serializes the protobuf, but reject anything remotely stub-sized.
+MINIMUM_MODEL_BYTES = 8 * 1024 * 1024
 
 
 def seeded(shape, scale, seed):
@@ -111,7 +130,6 @@ def build_model(model_version: int):
         output_features=[("probabilities", datatypes.Array(2))],
     )
 
-    # Primary high-resolution acoustic branch: the last 10 seconds.
     short_audio_blob = add_dense_relu(
         builder,
         name="short_audio_projection",
@@ -122,7 +140,6 @@ def build_model(model_version: int):
         seed=11,
     )
 
-    # Primary long acoustic branch: one minute of coarse rhythm/context.
     long_blob = add_conv(
         builder,
         name="long_conv1",
@@ -184,8 +201,6 @@ def build_model(model_version: int):
         seed=401,
     )
 
-    # Scalars are deliberately projected before fusion so three useful values do
-    # not disappear numerically next to the much wider audio/text representations.
     scalar_blob = add_dense_relu(
         builder,
         name="scalar_projection",
@@ -297,8 +312,70 @@ def build_model(model_version: int):
     model.author = "Margaretka"
     model.short_description = "Updatable on-device audio-primary prayer auto-advance classifier"
     model.user_defined_metadata["modelVersion"] = str(model_version)
-    model.user_defined_metadata["featureSchemaVersion"] = "6"
+    model.user_defined_metadata["featureSchemaVersion"] = str(FEATURE_SCHEMA_VERSION)
     return model
+
+
+def verify_saved_model(output: Path, expected_model_version: int):
+    if not output.is_file():
+        raise RuntimeError(f"Generator did not create a regular .mlmodel file: {output}")
+
+    size_bytes = output.stat().st_size
+    if size_bytes < MINIMUM_MODEL_BYTES:
+        raise RuntimeError(
+            f"Generated model is only {size_bytes:,} bytes; expected at least "
+            f"{MINIMUM_MODEL_BYTES:,} bytes for {TRAINABLE_PARAMETER_COUNT:,} Float32 parameters. "
+            "Do not add this file to Xcode."
+        )
+
+    loaded = ct.models.MLModel(str(output))
+    metadata = loaded.user_defined_metadata
+    model_version = metadata.get("modelVersion")
+    schema_version = metadata.get("featureSchemaVersion")
+    if model_version != str(expected_model_version):
+        raise RuntimeError(
+            f"modelVersion mismatch after reload: {model_version!r}, expected {expected_model_version}."
+        )
+    if schema_version != str(FEATURE_SCHEMA_VERSION):
+        raise RuntimeError(
+            f"featureSchemaVersion mismatch after reload: {schema_version!r}, expected {FEATURE_SCHEMA_VERSION}."
+        )
+
+    spec = loaded.get_spec()
+    input_names = [item.name for item in spec.description.input]
+    if input_names != EXPECTED_INPUT_NAMES:
+        raise RuntimeError(
+            f"Input schema mismatch after reload: {input_names!r}, expected {EXPECTED_INPUT_NAMES!r}."
+        )
+
+    updatable = [layer.name for layer in spec.neuralNetwork.layers if layer.isUpdatable]
+    expected_updatable = {
+        "short_audio_projection",
+        "long_conv1",
+        "long_conv2",
+        "long_conv3",
+        "long_projection",
+        "scalar_projection",
+        "fusion_hidden1",
+        "fusion_hidden2",
+        "fusion_hidden3",
+        "fusion_hidden4",
+        "logits",
+    }
+    missing_updatable = expected_updatable.difference(updatable)
+    if missing_updatable:
+        raise RuntimeError(
+            f"Missing updatable layers after reload: {sorted(missing_updatable)!r}."
+        )
+
+    print(f"modelVersion: {model_version}")
+    print(f"featureSchemaVersion: {schema_version}")
+    print(f"trainable parameters: {TRAINABLE_PARAMETER_COUNT:,}")
+    print(f"Float32 parameter payload: {TRAINABLE_PARAMETER_COUNT * 4 / (1024 * 1024):.2f} MiB")
+    print(f"saved .mlmodel size: {size_bytes / (1024 * 1024):.2f} MiB ({size_bytes:,} bytes)")
+    print(f"inputs: {', '.join(input_names)}")
+    print(f"updatable layers: {len(updatable)}")
+    print("SELF-TEST: OK")
 
 
 def main():
@@ -309,7 +386,14 @@ def main():
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    build_model(args.model_version).save(str(output))
+
+    try:
+        build_model(args.model_version).save(str(output))
+        verify_saved_model(output, args.model_version)
+    except Exception as error:
+        print(f"SELF-TEST: FAILED: {error}", file=sys.stderr)
+        raise
+
     print(output.resolve())
 
 
