@@ -36,6 +36,7 @@ struct PrayerAutoAdvanceCoreMLSettingsView: View {
                     }
                 } else if let metadata = state.metadata {
                     LabeledContent("Model bazowy", value: "v\(metadata.baseModelVersion)")
+                    LabeledContent("Schema cech", value: "v\(metadata.featureSchemaVersion)")
                     LabeledContent("Wyuczone przejścia", value: "\(metadata.trainedTransitions)")
                     LabeledContent("Sesje treningowe", value: "\(metadata.trainingSessions)")
                     LabeledContent("Kalibracja czasu", value: state.timingHistory.canDetectOutliers ? "aktywna" : "w toku")
@@ -103,7 +104,7 @@ struct PrayerAutoAdvanceCoreMLSettingsView: View {
                             try state.installBundledDeveloperSeed()
                             localError = nil
                         } catch {
-                            localError = "Brak modelu startowego. Wygeneruj PrayerAutoAdvance.mlmodel skryptem tools/generate_prayer_auto_advance_model.py i dodaj go do targetu aplikacji."
+                            localError = error.localizedDescription
                         }
                     }
                 }
