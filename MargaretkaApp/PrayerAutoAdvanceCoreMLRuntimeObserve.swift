@@ -30,11 +30,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
                     pageID: context.pageID,
                     date: now,
                     features: features,
-                    longAudioFeatures: longAudioFeatures,
-                    endingCoverage: features[4],
-                    spokenRatio: features[6],
-                    currentSimilarity: features[0],
-                    nextSimilarity: features[1]
+                    longAudioFeatures: longAudioFeatures
                 )
             )
             lastTrainingSnapshotAt = now
