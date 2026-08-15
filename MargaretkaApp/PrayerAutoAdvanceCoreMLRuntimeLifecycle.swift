@@ -6,6 +6,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         context = newContext
         contextStartedAt = Date()
         snapshots.removeAll(keepingCapacity: true)
+        lastTrainingSnapshotAt = Date.distantPast
         consecutiveAdvancePredictions = 0
         lastPrediction = 0
 
@@ -40,7 +41,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         evaluationTask = Task { @MainActor [weak self] in
             while let self, !Task.isCancelled {
                 await self.evaluateCurrentCapture()
-                try? await Task.sleep(for: .milliseconds(750))
+                try? await Task.sleep(for: .milliseconds(200))
             }
         }
     }
