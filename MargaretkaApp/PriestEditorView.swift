@@ -81,13 +81,17 @@ struct PriestEditorView: View {
         // it needs the new synchronized original rather than using its old one.
         let assetID = UUID()
         let fullResolutionData = originalData ?? image.jpegData(compressionQuality: 1)
+        do {
+            try DevicePhotoStorage.shared.save(photoData, for: assetID)
+            priest.photoAssetID = assetID
+        } catch {
+            print("Failed to save local photo: \(error.localizedDescription)")
+        }
         if let fullResolutionData {
             do {
                 try SyncedPhotoStorage.shared.saveOriginal(fullResolutionData, assetID: assetID)
-                try DevicePhotoStorage.shared.save(photoData, for: assetID)
-                priest.photoAssetID = assetID
             } catch {
-                print("Failed to preserve local photo: \(error.localizedDescription)")
+                print("Failed to preserve original photo: \(error.localizedDescription)")
             }
         }
         photo = storedImage

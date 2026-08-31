@@ -17,15 +17,9 @@ final class DevicePhotoStorage: @unchecked Sendable {
 
     private init() {}
 
-    var directory: URL {
+    private var directory: URL {
         let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let directory = base.appendingPathComponent("DevicePhotoVariants", isDirectory: true)
-        try? fileManager.createDirectory(
-            at: directory,
-            withIntermediateDirectories: true,
-            attributes: [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication]
-        )
-        return directory
+        return base.appendingPathComponent("DevicePhotoVariants", isDirectory: true)
     }
 
     func url(for assetID: UUID) -> URL {
@@ -33,10 +27,19 @@ final class DevicePhotoStorage: @unchecked Sendable {
     }
 
     func save(_ data: Data, for assetID: UUID) throws {
+        try fileManager.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true,
+            attributes: [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication]
+        )
         try data.write(
             to: url(for: assetID),
             options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication]
         )
+        let writtenSize = try fileManager.attributesOfItem(atPath: url(for: assetID).path)[.size] as? NSNumber
+        guard writtenSize?.intValue == data.count else {
+            throw CocoaError(.fileWriteUnknown)
+        }
     }
 
     func data(for assetID: UUID) -> Data? {
@@ -52,6 +55,7 @@ final class DevicePhotoStorage: @unchecked Sendable {
     }
 
     func removeOrphanedVariants(referencedBy assetIDs: Set<UUID>) {
+        guard fileManager.fileExists(atPath: directory.path) else { return }
         guard let files = try? fileManager.contentsOfDirectory(
             at: directory,
             includingPropertiesForKeys: nil,

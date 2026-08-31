@@ -1,4 +1,5 @@
-adding current EPUB importer and test changes
+verify local photo writes before reporting download success
 
-Preserve the existing EPUB importer, offline breviary, project, scheme, and test
-changes without modifying or removing their contents before fixing photo storage.
+Save each downloaded variant sequentially and verify its on-device file before
+advancing progress. Surface failed HTTP or file writes instead of reporting a
+false completed download. Bump build to 85.
