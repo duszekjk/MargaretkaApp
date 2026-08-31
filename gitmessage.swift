@@ -1,4 +1,4 @@
-remove expensive full-screen photo blur from startup rendering
+adding current generated Core ML environment files
 
-Render synchronized photos directly without a SwiftUI blur pass, avoiding a
-black background while the app opens an already-downloaded image. Build 82.
+Preserve the existing locally generated Core ML environment outputs without
+modifying or removing their contents before investigating local photo storage.
