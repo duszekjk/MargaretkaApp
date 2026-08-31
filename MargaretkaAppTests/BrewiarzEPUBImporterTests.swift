@@ -76,15 +76,7 @@ struct BrewiarzEPUBImporterTests {
     }
 
     @Test func preservesSubstantialMorningReadingForEveryAugustDay() async throws {
-        let fixtureNames = (1...6).map { String(format: "AugustWeek%02dPolish", $0) }
-        var days: [OfflineBreviaryDay] = []
-        for name in fixtureNames {
-            let url = try #require(Bundle(for: BrewiarzEPUBImporterTestBundle.self).url(forResource: name, withExtension: "epub"))
-            days += try await BrewiarzEPUBImporter.importEPUB(
-                from: url,
-                preferredVariantOrder: ["primary"]
-            ).days
-        }
+        let days = try await August2026PrimaryDayCache.shared.days()
         let augustDays = Dictionary(grouping: days.filter { $0.date.year == 2026 && $0.date.month == 8 }, by: \.date)
         #expect(augustDays.count == 31)
         for (date, variants) in augustDays {
@@ -101,6 +93,116 @@ struct BrewiarzEPUBImporterTests {
             let end = lines[(start + 1)...].firstIndex(where: { $0.text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current).hasPrefix("responsorium") }) ?? lines.endIndex
             let characterCount = lines[start..<end].filter { $0.role != .heading && $0.role != .rubric }.map(\.text.count).reduce(0, +)
             #expect(characterCount >= 40, "Za krótkie czytanie (\(characterCount) znaków): \(date)")
+        }
+    }
+
+    @Test func validatesRequiredAugustOfficesAndReadingsAcrossRepresentativeDates() async throws {
+        func normalized(_ text: String) -> String {
+            text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "pl_PL"))
+        }
+
+        func sectionCharacterCount(
+            in lines: [OfflineBreviaryLine],
+            startsWith startPrefixes: [String],
+            stopsAt stopPrefixes: [String]
+        ) -> Int {
+            guard let startIndex = lines.firstIndex(where: { line in
+                startPrefixes.contains { normalized(line.text).hasPrefix($0) }
+            }) else { return 0 }
+            let endIndex = lines[(startIndex + 1)...].firstIndex { line in
+                stopPrefixes.contains { normalized(line.text).hasPrefix($0) }
+            } ?? lines.endIndex
+            return lines[(startIndex + 1)..<endIndex]
+                .filter { $0.role != .heading && $0.role != .rubric }
+                .map(\.text.count)
+                .reduce(0, +)
+        }
+
+        let days = try await August2026PrimaryDayCache.shared.days()
+        let daysByDate = Dictionary(grouping: days, by: \.date)
+        #expect(daysByDate.count == 31)
+
+        // Every primary date must provide every office; this detects an
+        // entirely skipped anchor/document, regardless of its content type.
+        for dayNumber in 1...31 {
+            let date = BreviaryCivilDate(year: 2026, month: 8, day: dayNumber)
+            let candidates = daysByDate[date] ?? []
+            #expect(candidates.count == 1, "Nieprawidłowa liczba tekstów podstawowych: \(date.id)")
+            let day = try #require(candidates.first, "Brak tekstu podstawowego: \(date.id)")
+            #expect(
+                Set(day.offices.map(\.key)) == Set(BrewiarzPrayerKey.allCases),
+                "Brak oficjum: \(date.id)"
+            )
+            for office in day.offices {
+                let contentCharacterCount = office.cards.flatMap(\.lines)
+                    .filter { $0.role != .heading && $0.role != .rubric }
+                    .map(\.text.count)
+                    .reduce(0, +)
+                #expect(contentCharacterCount >= 40, "Puste oficjum \(office.key.displayName): \(date.id)")
+            }
+
+            // The short readings in both principal hours are required for
+            // every day, not merely for a representative sample.
+            for key in [BrewiarzPrayerKey.jutrznia, .nieszpory] {
+                let lines = try #require(day.offices.first(where: { $0.key == key }))
+                    .cards.flatMap(\.lines)
+                #expect(
+                    sectionCharacterCount(in: lines, startsWith: ["czytanie"], stopsAt: ["responsorium"]) >= 40,
+                    "Brak treści czytania \(key.displayName): \(date.id)"
+                )
+            }
+        }
+
+        // All Sundays plus ordinary and patronal/solemnity days cover the
+        // Mass readings without making the focused importer suite excessive.
+        let massDays = [2, 3, 6, 9, 11, 15, 16, 23, 29, 30]
+        for dayNumber in massDays {
+            let date = BreviaryCivilDate(year: 2026, month: 8, day: dayNumber)
+            let day = try #require(daysByDate[date]?.first)
+            let lines = try #require(day.offices.first(where: { $0.key == .msza }))
+                .cards.flatMap(\.lines)
+            #expect(sectionCharacterCount(in: lines, startsWith: ["pierwsze czytanie", "i czytanie"], stopsAt: ["psalm responsoryjny", "drugie czytanie", "ii czytanie", "aklamacja", "ewangelia"]) >= 40, "Brak I czytania mszalnego: \(date.id)")
+            #expect(sectionCharacterCount(in: lines, startsWith: ["psalm responsoryjny"], stopsAt: ["drugie czytanie", "ii czytanie", "aklamacja", "ewangelia"]) >= 40, "Brak psalmu mszalnego: \(date.id)")
+            #expect(sectionCharacterCount(in: lines, startsWith: ["ewangelia"], stopsAt: ["modlitwa powszechna", "modlitwa nad darami", "prefacja"]) >= 40, "Brak Ewangelii: \(date.id)")
+        }
+
+        // Ordinary days (3, 29), Sundays, a feast (6), memorials (8, 11),
+        // and the Assumption solemnity (15) exercise the special offices.
+        let officeOfReadingsAndComplineDays = [2, 3, 6, 8, 9, 11, 15, 16, 23, 29, 30]
+        for dayNumber in officeOfReadingsAndComplineDays {
+            let date = BreviaryCivilDate(year: 2026, month: 8, day: dayNumber)
+            let day = try #require(daysByDate[date]?.first)
+            let officeOfReadings = try #require(day.offices.first(where: { $0.key == .godzinaCzytan }))
+            let officeOfReadingsLines = officeOfReadings.cards.flatMap(\.lines)
+            #expect(
+                sectionCharacterCount(
+                    in: officeOfReadingsLines,
+                    startsWith: ["i czytanie", "pierwsze czytanie"],
+                    stopsAt: ["responsorium", "ii czytanie", "drugie czytanie"]
+                ) >= 40,
+                "Brak I czytania w Godzinie Czytań: \(date.id)"
+            )
+            if officeOfReadingsLines.contains(where: {
+                line in ["ii czytanie", "drugie czytanie"].contains { prefix in
+                    normalized(line.text).hasPrefix(prefix)
+                }
+            }) {
+                #expect(
+                    sectionCharacterCount(
+                        in: officeOfReadingsLines,
+                        startsWith: ["ii czytanie", "drugie czytanie"],
+                        stopsAt: ["responsorium", "te deum", "modlitwa"]
+                    ) >= 40,
+                    "Brak II czytania w Godzinie Czytań: \(date.id)"
+                )
+            }
+
+            let complineLines = try #require(day.offices.first(where: { $0.key == .kompleta }))
+                .cards.flatMap(\.lines)
+            #expect(
+                sectionCharacterCount(in: complineLines, startsWith: ["czytanie"], stopsAt: ["responsorium"]) >= 40,
+                "Brak czytania Komplety: \(date.id)"
+            )
         }
     }
 
@@ -178,17 +280,8 @@ struct BrewiarzEPUBImporterTests {
     }
 
     @Test func preservesReadingHeadingsAndClosingRubricsInRealPolishOfficeOfReadings() async throws {
-        let url = try #require(
-            Bundle(for: BrewiarzEPUBImporterTestBundle.self).url(
-                forResource: "AugustWeek02Polish",
-                withExtension: "epub"
-            )
-        )
-        let imported = try await BrewiarzEPUBImporter.importEPUB(
-            from: url,
-            preferredVariantOrder: ["primary"]
-        )
-        let day = try #require(imported.days.first {
+        let days = try await August2026PrimaryDayCache.shared.days()
+        let day = try #require(days.first {
             $0.date == BreviaryCivilDate(year: 2026, month: 8, day: 3)
                 && $0.variantIdentifier == "p"
         })
@@ -745,17 +838,8 @@ struct BrewiarzEPUBImporterTests {
     }
 
     @Test func importsSaintBiographyFromTheActualPolishEPUB() async throws {
-        let url = try #require(
-            Bundle(for: BrewiarzEPUBImporterTestBundle.self).url(
-                forResource: "AugustWeek03Polish",
-                withExtension: "epub"
-            )
-        )
-        let imported = try await BrewiarzEPUBImporter.importEPUB(
-            from: url,
-            preferredVariantOrder: ["primary"]
-        )
-        let day = try #require(imported.days.first {
+        let days = try await August2026PrimaryDayCache.shared.days()
+        let day = try #require(days.first {
             $0.date == BreviaryCivilDate(year: 2026, month: 8, day: 11)
                 && $0.variantIdentifier == "p"
         })
@@ -787,20 +871,7 @@ struct BrewiarzEPUBImporterTests {
                 .reduce(0, +)
         }
 
-        let fixtureNames = (1...5).map { String(format: "AugustWeek%02dPolish", $0) }
-        var importedDays: [OfflineBreviaryDay] = []
-        for fixtureName in fixtureNames {
-            let url = try #require(
-                Bundle(for: BrewiarzEPUBImporterTestBundle.self).url(
-                    forResource: fixtureName,
-                    withExtension: "epub"
-                )
-            )
-            importedDays += try await BrewiarzEPUBImporter.importEPUB(
-                from: url,
-                preferredVariantOrder: ["primary"]
-            ).days
-        }
+        let importedDays = try await August2026PrimaryDayCache.shared.days()
 
         let dates = [1, 8, 10, 11, 14, 15, 17, 20, 24, 26]
         for dayNumber in dates {
@@ -1384,3 +1455,33 @@ struct BrewiarzEPUBImporterTests {
 }
 
 private final class BrewiarzEPUBImporterTestBundle: NSObject {}
+
+private actor August2026PrimaryDayCache {
+    static let shared = August2026PrimaryDayCache()
+    private var cachedDays: [OfflineBreviaryDay]?
+
+    func days() async throws -> [OfflineBreviaryDay] {
+        if let cachedDays { return cachedDays }
+
+        var importedDays: [OfflineBreviaryDay] = []
+        for week in 1...6 {
+            let name = String(format: "AugustWeek%02dPolish", week)
+            guard let url = Bundle(for: BrewiarzEPUBImporterTestBundle.self).url(
+                forResource: name,
+                withExtension: "epub"
+            ) else {
+                throw CocoaError(.fileNoSuchFile)
+            }
+            importedDays += try await BrewiarzEPUBImporter.importEPUB(
+                from: url,
+                preferredVariantOrder: ["primary"]
+            ).days
+        }
+
+        let primaryAugustDays = importedDays.filter {
+            $0.date.year == 2026 && $0.date.month == 8 && $0.variantIdentifier == "p"
+        }
+        cachedDays = primaryAugustDays
+        return primaryAugustDays
+    }
+}
