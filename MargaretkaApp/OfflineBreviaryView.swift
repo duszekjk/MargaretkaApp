@@ -188,7 +188,7 @@ struct OfflineBreviaryManagerView: View {
 struct BreviaryVariantOrderView: View {
     @State private var variantOrder = BreviaryVariantPreferences.load()
 
-    var body: some View {
+    private var variantList: some View {
         List {
             ForEach(variantOrder, id: \.self) { identifier in
                 Label(BreviaryVariantPreferences.displayName(for: identifier), systemImage: "line.3.horizontal")
@@ -199,6 +199,14 @@ struct BreviaryVariantOrderView: View {
             }
         }
         .navigationTitle("Warianty oficjum")
+    }
+
+    var body: some View {
+        #if os(iOS)
+        variantList
         .environment(\.editMode, .constant(.active))
+        #else
+        variantList
+        #endif
     }
 }

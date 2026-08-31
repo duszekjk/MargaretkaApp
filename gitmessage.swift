@@ -1,4 +1,4 @@
-persist device photo variants outside synchronized target data
+adding current EPUB importer and test changes
 
-Store each downloaded display variant in a device-only file keyed by its asset
-ID, so photos survive restart and open without network access. Build 83.
+Preserve the existing EPUB importer, offline breviary, project, scheme, and test
+changes without modifying or removing their contents before fixing photo storage.

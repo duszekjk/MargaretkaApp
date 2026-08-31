@@ -707,8 +707,13 @@ nonisolated enum BrewiarzEPUBImporter {
             let lower = line.text.lowercased()
             let normalizedLine = normalizedForComparison(line.text)
             if navigationPhrases.contains(where: lower.contains) { continue }
-            if line.role == .rubric
-                || lower.hasPrefix("excerpt from")
+            // In brewiarz.pl EPUBs red text is not merely decorative: it
+            // contains the titles of readings, responsories, prayers, and
+            // rubrics that complete an office. Dropping every `.rubric`
+            // line made whole sections look as if they had been omitted.
+            // Navigation and the small amount of known metadata are handled
+            // explicitly above instead.
+            if lower.hasPrefix("excerpt from")
                 || lower == "brewiarz.pl" {
                 continue
             }
@@ -742,6 +747,13 @@ nonisolated enum BrewiarzEPUBImporter {
             if normalizedLine == normalizedOfficeTitle,
                result.last.map({ normalizedForComparison($0.text) }) == normalizedLine {
                 continue
+            }
+            // Some source pages leave a red span open across the following
+            // paragraph. Its actual prayer text is then parsed as a rubric.
+            // Keep section labels as headings (they were classified earlier),
+            // but render all remaining textual rubrics as readable content.
+            if line.role == .rubric {
+                line.role = .body
             }
             let isOurFather = lower == "ojcze nasz..."
                 || lower == "ojcze nasz…"
@@ -842,7 +854,10 @@ nonisolated enum BrewiarzEPUBImporter {
                 contentGroupID = nil
                 contentGroupHasBody = false
                 awaitingNumberedAntiphonTitle = true
-                nextFlush = true
+                // A numbered antiphon precedes the psalm heading and must be
+                // separated from it.  A psalm/canticle heading, on the other
+                // hand, belongs with its first content page.
+                nextFlush = !isPsalmOrCanticleHeading(line.text)
             }
             if(line.text.range(
                 of: #"^\s*[13579]\s+"#,
@@ -850,13 +865,6 @@ nonisolated enum BrewiarzEPUBImporter {
             ) != nil)
             {
                 flush()
-            }
-            if(line.text.range(
-                of: #"^\s*[2468]\s+"#,
-                options: .regularExpression
-            ) != nil)
-            {
-                line.text = "\n"+line.text
             }
             if line.role == .heading {
                 if inIntercessions && isIntercessionContinuation(line.text) {
@@ -1257,7 +1265,11 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
         let parser = XMLParser(data: data)
         parser.shouldResolveExternalEntities = false
         parser.delegate = delegate
-        _ = parser.parse()
+        guard parser.parse() else {
+            // EPUB is commonly XHTML in name but HTML in practice. Never let
+            // an unrecognised construct turn into a silently truncated office.
+            return fallbackLines(from: sanitized)
+        }
         delegate.flush()
         return delegate.lines
     }
@@ -1267,9 +1279,20 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
     }
 
     private static func sanitize(_ xhtml: String) -> String {
+        // XMLParser stops at the first HTML-only named entity. EPUBs from
+        // brewiarz.pl include them inside readings (for example `&ocirc;`),
+        // so ignoring `parser.parse()`'s failure silently truncated an office
+        // immediately after its heading. Convert every named entity present
+        // in the supported source corpus before XML parsing.
+        let htmlEntities = [
+            "nbsp": "\u{00A0}", "middot": "·", "copy": "©",
+            "eacute": "é", "ccedil": "ç", "ntilde": "ñ",
+            "ouml": "ö", "ocirc": "ô"
+        ]
         var value = xhtml
-            .replacingOccurrences(of: "&nbsp;", with: "\u{00A0}")
-            .replacingOccurrences(of: "&middot;", with: "·")
+        for (entity, replacement) in htmlEntities {
+            value = value.replacingOccurrences(of: "&\(entity);", with: replacement)
+        }
         if let doctypeStart = value.range(of: "<!DOCTYPE", options: .caseInsensitive),
            let doctypeEnd = value[doctypeStart.lowerBound...].range(of: ">") {
             value.removeSubrange(doctypeStart.lowerBound...doctypeEnd.lowerBound)
@@ -1278,6 +1301,27 @@ nonisolated private final class XHTMLPrayerLineParser: NSObject, XMLParserDelega
             value = "<root>\(value)</root>"
         }
         return value
+    }
+
+    private static func fallbackLines(from xhtml: String) -> [OfflineBreviaryLine] {
+        let withBreaks = xhtml
+            .replacingOccurrences(of: #"(?i)<br\s*/?>"#, with: "\n", options: .regularExpression)
+            .replacingOccurrences(of: #"(?i)</?(div|p|li|h[1-4]|tr|th)[^>]*>"#, with: "\n", options: .regularExpression)
+        let plain = withBreaks
+            .replacingOccurrences(of: #"<[^>]+>"#, with: "", options: .regularExpression)
+            .replacingOccurrences(of: "&amp;", with: "&")
+            .replacingOccurrences(of: "&lt;", with: "<")
+            .replacingOccurrences(of: "&gt;", with: ">")
+            .replacingOccurrences(of: "&quot;", with: "\"")
+
+        return plain.split(separator: "\n").compactMap { raw in
+            let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else { return nil }
+            return OfflineBreviaryLine(
+                role: isSemanticPrayerHeading(text) ? .heading : .body,
+                text: text
+            )
+        }
     }
 
     func parser(

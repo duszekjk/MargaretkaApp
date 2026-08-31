@@ -7,7 +7,9 @@
 
 import Foundation
 import Testing
+#if canImport(UIKit)
 import UIKit
+#endif
 @testable import MargaretkaApp
 
 private struct TestSchedulable: Schedulable {
@@ -36,6 +38,7 @@ struct MargaretkaAppTests {
         #expect(try LocalDatabase.unpackedPayload(from: raw) == raw)
     }
 
+    #if canImport(UIKit)
     @Test func persistedPhotoHonorsByteAndDimensionLimits() throws {
         let source = UIGraphicsImageRenderer(size: CGSize(width: 1_200, height: 900)).image { context in
             UIColor.systemIndigo.setFill()
@@ -52,6 +55,7 @@ struct MargaretkaAppTests {
         #expect(data.count <= UIImage.storagePhotoByteLimit)
         #expect(max(storedImage.size.width, storedImage.size.height) <= 552)
     }
+    #endif
 
     @Test func displayPhotoCacheKeysSeparateDifferentTargetsAndAssets() {
         let updatedAt = Date(timeIntervalSince1970: 1_700_000_000)

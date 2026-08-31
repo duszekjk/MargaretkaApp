@@ -1,8 +1,12 @@
 import Foundation
+import CoreGraphics
 import Testing
+#if canImport(UIKit)
 import UIKit
+#endif
 @testable import MargaretkaApp
 
+@Suite(.serialized)
 struct BrewiarzEPUBImporterTests {
     @Test func restoresOnlyContentOfExistingBuiltInPrayers() {
         let originalPrayer = try! #require(prayersTemplate["Ojcze Nasz"])
@@ -58,7 +62,7 @@ struct BrewiarzEPUBImporterTests {
             notificationMessage: ""
         )
 
-        let result = PriestStore.restoringDefaultRosary(
+        let result = PriestStore.restoringDefaultPrayerTargets(
             in: [outdatedRosary, customTarget],
             using: Array(prayersTemplate.values),
             modificationDate: Date(timeIntervalSince1970: 1)
@@ -76,12 +80,19 @@ struct BrewiarzEPUBImporterTests {
         var days: [OfflineBreviaryDay] = []
         for name in fixtureNames {
             let url = try #require(Bundle(for: BrewiarzEPUBImporterTestBundle.self).url(forResource: name, withExtension: "epub"))
-            days += try await BrewiarzEPUBImporter.importEPUB(from: url).days
+            days += try await BrewiarzEPUBImporter.importEPUB(
+                from: url,
+                preferredVariantOrder: ["primary"]
+            ).days
         }
         let augustDays = Dictionary(grouping: days.filter { $0.date.year == 2026 && $0.date.month == 8 }, by: \.date)
         #expect(augustDays.count == 31)
         for (date, variants) in augustDays {
-            let lines = try #require(variants.first?.offices.first(where: { $0.key == .jutrznia }))
+            // The importer retains optional observances too. Validate the
+            // primary text rather than whichever variant Dictionary grouping
+            // happens to yield first.
+            let day = try #require(variants.first { $0.variantIdentifier == "p" })
+            let lines = try #require(day.offices.first(where: { $0.key == .jutrznia }))
                 .cards.flatMap(\.lines)
             guard let start = lines.firstIndex(where: { $0.text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current).hasPrefix("czytanie") }) else {
                 Issue.record("Brak nagłówka Czytanie: \(date)")
@@ -107,7 +118,10 @@ struct BrewiarzEPUBImporterTests {
                     withExtension: "epub"
                 )
             )
-            let imported = try await BrewiarzEPUBImporter.importEPUB(from: url)
+            let imported = try await BrewiarzEPUBImporter.importEPUB(
+                from: url,
+                preferredVariantOrder: ["primary"]
+            )
             #expect(!imported.days.isEmpty, "\(fixture.filename) should import at least one day")
             #expect(imported.days.contains { ($0.languageCode ?? "pl") == fixture.language })
             #expect(imported.days.contains { !$0.offices.isEmpty })
@@ -133,7 +147,10 @@ struct BrewiarzEPUBImporterTests {
                 withExtension: "epub"
             )
         )
-        let imported = try await BrewiarzEPUBImporter.importEPUB(from: url)
+        let imported = try await BrewiarzEPUBImporter.importEPUB(
+            from: url,
+            preferredVariantOrder: ["primary"]
+        )
         let variants = imported.days.filter {
             $0.date == BreviaryCivilDate(year: 2026, month: 7, day: 30)
         }
@@ -157,7 +174,83 @@ struct BrewiarzEPUBImporterTests {
         #expect(lines.contains { $0.role == .heading && $0.text == "Canticle" })
         #expect(lines.contains { $0.role == .heading && $0.text == "Short Responsory" })
         #expect(lines.contains { $0.role == .heading && $0.text == "Prayers and intercessions" })
-        #expect(lines.contains { $0.role == .prayerReference && $0.canonicalPrayerName == "Ojcze nasz" })
+        #expect(lines.contains { $0.role == .prayerReference && $0.canonicalPrayerName == "Our Father" })
+    }
+
+    @Test func preservesReadingHeadingsAndClosingRubricsInRealPolishOfficeOfReadings() async throws {
+        let url = try #require(
+            Bundle(for: BrewiarzEPUBImporterTestBundle.self).url(
+                forResource: "AugustWeek02Polish",
+                withExtension: "epub"
+            )
+        )
+        let imported = try await BrewiarzEPUBImporter.importEPUB(
+            from: url,
+            preferredVariantOrder: ["primary"]
+        )
+        let day = try #require(imported.days.first {
+            $0.date == BreviaryCivilDate(year: 2026, month: 8, day: 3)
+                && $0.variantIdentifier == "p"
+        })
+        let office = try #require(day.offices.first(where: { $0.key == .godzinaCzytan }))
+        let lines = office.cards.flatMap(\.lines)
+
+        #expect(lines.contains { $0.text == "I CZYTANIE" })
+        #expect(lines.contains { $0.text == "II CZYTANIE" })
+        #expect(lines.contains { $0.text.hasPrefix("RESPONSORIUM") })
+        #expect(lines.contains { $0.text == "MODLITWA" })
+        #expect(lines.contains { $0.text.hasPrefix("Następnie, przynajmniej w oficjum") })
+        #expect(lines.contains { $0.role == .leader && $0.text == "K. Błogosławmy Panu." })
+        #expect(lines.contains { $0.role == .response && $0.text == "W. Bogu niech będą dzięki." })
+    }
+
+    @Test func preservesTextAfterHTMLOnlyNamedEntityInsideReading() throws {
+        let xhtml = """
+        <html xmlns="http://www.w3.org/1999/xhtml"><body>
+        <div>Poniedziałek, 3 sierpnia 2026</div>
+        <a id="d0308p_gc"></a><div><b>Godzina Czytań</b></div>
+        <div><b>I CZYTANIE</b></div>
+        <div>Święty mówił: c&ocirc;te à côte.</div>
+        <div><b>RESPONSORIUM</b></div><div>Treść po encji.</div>
+        <div><b>MODLITWA</b></div><div>Końcowa modlitwa.</div>
+        <a id="d0308p_jt"></a>
+        </body></html>
+        """
+        let day = try #require(BrewiarzEPUBImporter.parseDailyDocument(
+            xhtml,
+            entryName: "OEBPS/Text/0308p.xhtml",
+            importID: UUID(),
+            sourceIdentifier: "fixture.epub",
+            sourceTitle: "fixture"
+        ))
+        let lines = try #require(day.offices.first(where: { $0.key == .godzinaCzytan }))
+            .cards.flatMap(\.lines)
+
+        #expect(lines.contains { $0.text == "Święty mówił: côte à côte." })
+        #expect(lines.contains { $0.text == "Treść po encji." })
+        #expect(lines.contains { $0.text == "Końcowa modlitwa." })
+    }
+
+    @Test func preservesOfficeTextWhenFutureEPUBContainsUnknownHTMLEntity() throws {
+        let xhtml = """
+        <div>Poniedziałek, 3 sierpnia 2026</div>
+        <a id="d0308p_gc"></a><div>Godzina Czytań</div>
+        <div>CZYTANIE</div><div>Tekst przed &futureentity; i po encji.</div>
+        <div>RESPONSORIUM</div><div>Tekst responsorium.</div>
+        <a id="d0308p_jt"></a>
+        """
+        let day = try #require(BrewiarzEPUBImporter.parseDailyDocument(
+            xhtml,
+            entryName: "OEBPS/Text/0308p.xhtml",
+            importID: UUID(),
+            sourceIdentifier: "fixture.epub",
+            sourceTitle: "fixture"
+        ))
+        let lines = try #require(day.offices.first(where: { $0.key == .godzinaCzytan }))
+            .cards.flatMap(\.lines)
+
+        #expect(lines.contains { $0.text.contains("Tekst przed") })
+        #expect(lines.contains { $0.text == "Tekst responsorium." })
     }
 
     @Test func parsesDatedOfficeChoirsAndCanonicalPrayerReference() throws {
@@ -195,7 +288,7 @@ struct BrewiarzEPUBImporterTests {
         #expect(lines.contains { $0.role == .choirRight && $0.text == "Prawy chór" })
         #expect(lines.contains { $0.role == .leader })
         #expect(lines.contains { $0.role == .response })
-        #expect(lines.contains { $0.role == .prayerReference && $0.canonicalPrayerName == "Ojcze nasz" })
+        #expect(lines.contains { $0.role == .prayerReference && $0.canonicalPrayerName == "Ojcze Nasz" })
     }
 
     @Test func parsesNamespacedOfficeAnchorsAndModernDocumentNames() throws {
@@ -380,7 +473,7 @@ struct BrewiarzEPUBImporterTests {
         #expect(office.cards.contains { $0.title == "MODLITWA" })
         #expect(!office.cards.flatMap(\.lines).contains { $0.text == "Modlitwa przedpołudniowa" })
         #expect(office.cards.contains { card in
-            card.lines.count == 1 && card.lines[0].canonicalPrayerName == "Ojcze nasz"
+            card.lines.count == 1 && card.lines[0].canonicalPrayerName == "Ojcze Nasz"
         })
         #expect(!office.cards.flatMap(\.lines).contains { line in
             line.text.localizedCaseInsensitiveContains("kartka z kalendarza")
@@ -388,7 +481,7 @@ struct BrewiarzEPUBImporterTests {
         })
     }
 
-    @Test func dropsRubricsAndPsalmCommentaryWithoutDroppingPrayerResponses() throws {
+    @Test func preservesRubricsAndPsalmCommentaryWithoutDroppingPrayerResponses() throws {
         let xhtml = """
         <html xmlns="http://www.w3.org/1999/xhtml"><body>
         <div>Poniedziałek, 17 sierpnia 2026</div>
@@ -417,9 +510,9 @@ struct BrewiarzEPUBImporterTests {
         let lines = try #require(day.offices.first(where: { $0.key == .jutrznia }))
             .cards.flatMap(\.lines)
 
-        #expect(!lines.contains { $0.text.contains("Powyższe teksty") })
-        #expect(!lines.contains { $0.text.contains("Jeden dzień u Pana") })
-        #expect(!lines.contains { $0.text == "Bóg nadzieją człowieka" })
+        #expect(lines.contains { $0.text.contains("Powyższe teksty") })
+        #expect(lines.contains { $0.text.contains("Jeden dzień u Pana") })
+        #expect(lines.contains { $0.text == "Bóg nadzieją człowieka" })
         #expect(lines.contains { $0.role == .leader && $0.text == "K. Panie, wysłuchaj." })
         #expect(lines.contains { $0.text == "Kto mieszka pod osłoną Najwyższego, *" })
         #expect(lines.contains { $0.italic && $0.text == "Wysłuchaj nas, Panie." })
@@ -658,7 +751,10 @@ struct BrewiarzEPUBImporterTests {
                 withExtension: "epub"
             )
         )
-        let imported = try await BrewiarzEPUBImporter.importEPUB(from: url)
+        let imported = try await BrewiarzEPUBImporter.importEPUB(
+            from: url,
+            preferredVariantOrder: ["primary"]
+        )
         let day = try #require(imported.days.first {
             $0.date == BreviaryCivilDate(year: 2026, month: 8, day: 11)
                 && $0.variantIdentifier == "p"
@@ -700,7 +796,10 @@ struct BrewiarzEPUBImporterTests {
                     withExtension: "epub"
                 )
             )
-            importedDays += try await BrewiarzEPUBImporter.importEPUB(from: url).days
+            importedDays += try await BrewiarzEPUBImporter.importEPUB(
+                from: url,
+                preferredVariantOrder: ["primary"]
+            ).days
         }
 
         let dates = [1, 8, 10, 11, 14, 15, 17, 20, 24, 26]
@@ -1191,6 +1290,7 @@ struct BrewiarzEPUBImporterTests {
         #expect(breviaryMasses.first?.id == UUID(uuidString: "927a98de-7ae4-4f93-b173-b040318de111"))
     }
 
+    #if canImport(UIKit)
     @Test @MainActor func preservesImagePlaygroundDimensionsForPrayerBackground() throws {
         let source = UIGraphicsImageRenderer(size: CGSize(width: 300, height: 500)).image { context in
             UIColor.systemBlue.setFill()
@@ -1207,6 +1307,7 @@ struct BrewiarzEPUBImporterTests {
         #expect(storedPixels.width == sourcePixels.width)
         #expect(storedPixels.height == sourcePixels.height)
     }
+    #endif
 
     @Test func imagePlaygroundRequiresAnEdgeToEdgeSceneWithoutFrames() {
         let instruction = BreviaryImageGenerator.fullCanvasConcept.lowercased()
