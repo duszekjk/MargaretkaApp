@@ -84,13 +84,16 @@ struct PriestEditorView: View {
         if let fullResolutionData {
             do {
                 try SyncedPhotoStorage.shared.saveOriginal(fullResolutionData, assetID: assetID)
+                try DevicePhotoStorage.shared.save(photoData, for: assetID)
                 priest.photoAssetID = assetID
             } catch {
-                print("Failed to preserve original photo: \(error.localizedDescription)")
+                print("Failed to preserve local photo: \(error.localizedDescription)")
             }
         }
         photo = storedImage
-        priest.photoData = photoData
+        // The display variant is stored in a device-only file. Keeping this
+        // field empty prevents it from inflating local data or cloud snapshots.
+        priest.photoData = nil
         priest.photoUpdatedAt = .now
         photoScale = 1.0
         photoOffset = .zero

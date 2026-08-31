@@ -581,7 +581,7 @@ final class SyncService: ObservableObject {
         let family = DeviceDescription.current.family.rawValue.lowercased()
         let downloads = targetStore.priests.indices.compactMap { index -> (Int, UUID)? in
             guard let assetID = targetStore.priests[index].photoAssetID,
-                  replacingExisting || targetStore.priests[index].photoData == nil else {
+                  replacingExisting || !DevicePhotoStorage.shared.contains(assetID) else {
                 return nil
             }
             return (index, assetID)
@@ -622,13 +622,16 @@ final class SyncService: ObservableObject {
                    let image = UIImage(data: data),
                    image.cgImage != nil,
                    targetStore.priests.indices.contains(index) {
-                    if targetStore.priests[index].photoData != data {
-                        targetStore.priests[index].photoData = data
+                    do {
+                        try DevicePhotoStorage.shared.save(data, for: assetID)
                         // A photo asset keeps the same ID when a device downloads its
                         // own size variant. Bump the version used by displayPhoto's
                         // cache key, otherwise SwiftUI keeps showing the old image.
                         targetStore.priests[index].photoUpdatedAt = .now
+                    } catch {
+                        continue
                     }
+                    targetStore.priests[index].photoData = nil
                     targetStore.priests[index].prepareDisplayPhoto()
                     SyncedPhotoStorage.shared.removeOriginal(for: assetID)
                 }
@@ -642,6 +645,9 @@ final class SyncService: ObservableObject {
             }
         }
         SyncedPhotoStorage.shared.removeOrphanedOriginals(
+            referencedBy: Set(targetStore.priests.compactMap(\.photoAssetID))
+        )
+        DevicePhotoStorage.shared.removeOrphanedVariants(
             referencedBy: Set(targetStore.priests.compactMap(\.photoAssetID))
         )
     }

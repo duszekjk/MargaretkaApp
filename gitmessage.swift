@@ -1,4 +1,4 @@
-adding current generated Core ML environment files
+persist device photo variants outside synchronized target data
 
-Preserve the existing locally generated Core ML environment outputs without
-modifying or removing their contents before investigating local photo storage.
+Store each downloaded display variant in a device-only file keyed by its asset
+ID, so photos survive restart and open without network access. Build 83.

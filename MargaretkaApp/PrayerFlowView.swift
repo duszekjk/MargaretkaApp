@@ -876,7 +876,7 @@ struct PrayerFlowView: View {
                             if let livePriest = priestStore.priests.first(where: { $0.id == selectedPriest!.id })
                             {
                                 if(
-                                    livePriest.photoData == nil && backgroundOfflineOffice?.imageFilename == nil && selectedPriest?.photoData == nil
+                                    livePriest.displayPhoto == nil && backgroundOfflineOffice?.imageFilename == nil && selectedPriest?.displayPhoto == nil
                                 )
                                 {
                                     if supportsImagePlayground,

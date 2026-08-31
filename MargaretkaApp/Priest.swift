@@ -519,7 +519,7 @@ extension Priest {
         if let cached = displayPhotoCache.object(forKey: key) {
             return cached
         }
-        if let data = photoData,
+        if let data = localPhotoData,
            let image = UIImage(data: data) {
             let preparedImage = image.preparedForImmediateDisplay
             displayPhotoCache.setObject(preparedImage, forKey: key)
@@ -536,11 +536,15 @@ extension Priest {
         return "\(id.uuidString.lowercased()):\(version):\(assetID)" as NSString
     }
 
+    private var localPhotoData: Data? {
+        photoData ?? photoAssetID.flatMap { DevicePhotoStorage.shared.data(for: $0) }
+    }
+
     /// Decodes a downloaded JPEG while synchronization is still in progress.
     /// Opening the prayer screen can then use an already-renderable image rather
     /// than showing a black background during the first decode.
     func prepareDisplayPhoto() {
-        guard let data = photoData,
+        guard let data = localPhotoData,
               let image = UIImage(data: data) else { return }
         displayPhotoCache.setObject(
             image.preparedForImmediateDisplay,
