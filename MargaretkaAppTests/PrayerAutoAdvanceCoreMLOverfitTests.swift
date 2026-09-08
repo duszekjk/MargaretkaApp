@@ -33,8 +33,9 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
 
         let finalLoss = try #require(losses.last)
         let finalPredictions = try predictions(model: current, samples: samples)
-        let positive = zip(samples, finalPredictions).filter { $0.0.label == 1 }.map(\.1)
-        let negative = zip(samples, finalPredictions).filter { $0.0.label == 0 }.map(\.1)
+        let paired = Array(zip(samples, finalPredictions))
+        let positive = paired.filter { $0.0.label == 1 }.map { $0.1 }
+        let negative = paired.filter { $0.0.label == 0 }.map { $0.1 }
 
         #expect(finalLoss < initialLoss * 0.35)
         #expect(finalLoss < 0.20)
@@ -85,8 +86,8 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
         model: PrayerAutoAdvanceCoreMLModel,
         samples: [PrayerAutoAdvanceLabeledSample]
     ) throws -> [Double] {
-        try samples.map {
-            Double(try model.prediction(for: $0.features, longAudioFeatures: $0.longAudioFeatures))
+        try samples.map { sample in
+            Double(try model.prediction(for: sample.features, longAudioFeatures: sample.longAudioFeatures))
         }
     }
 
@@ -94,7 +95,10 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
         model: PrayerAutoAdvanceCoreMLModel,
         samples: [PrayerAutoAdvanceLabeledSample]
     ) throws -> Double {
-        let values = try zip(samples, predictions(model: model, samples: samples)).map { sample, raw in
+        let probabilities = try predictions(model: model, samples: samples)
+        let values = zip(samples, probabilities).map { pair -> Double in
+            let sample = pair.0
+            let raw = pair.1
             let p = min(max(raw, 1e-6), 1 - 1e-6)
             return sample.label == 1 ? -log(p) : -log(1 - p)
         }
