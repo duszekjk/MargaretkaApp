@@ -6,6 +6,39 @@ struct PrayerAutoAdvanceEpochMetric: Codable, Sendable, Identifiable {
     let id: Int
     let trainingMargin: Double
     let validationMargin: Double?
+    let trainingLoss: Double?
+    let validationLoss: Double?
+    let meanPredictionDelta: Double?
+}
+
+struct PrayerAutoAdvanceTrainingUpdateMetric: Codable, Sendable, Identifiable {
+    let id: Int
+    let date: Date
+    let epoch: Int
+    let positionInEpoch: Int
+    let sampleCount: Int
+    let positiveCount: Int
+    let negativeCount: Int
+    let lossBefore: Double
+    let lossAfter: Double
+    let lossDelta: Double
+    let trainingMargin: Double?
+    let validationMargin: Double?
+    let validationLoss: Double?
+    let positiveAverage: Double?
+    let negativeAverage: Double?
+    let meanPredictionDelta: Double
+    let maxPredictionDelta: Double
+}
+
+struct PrayerAutoAdvanceBatchEvaluation: Sendable {
+    let loss: Double
+    let positiveAverage: Double?
+    let negativeAverage: Double?
+    let margin: Double?
+    let predictions: [Double]
+    let positiveCount: Int
+    let negativeCount: Int
 }
 
 @MainActor
@@ -17,7 +50,9 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     )
 
     static let epochSize = 100
-    private static let epochStorageKey = "PrayerAutoAdvanceTrainingEpochHistoryV3"
+    private static let epochStorageKey = "PrayerAutoAdvanceTrainingEpochHistoryV4"
+    private static let legacyEpochStorageKey = "PrayerAutoAdvanceTrainingEpochHistoryV3"
+    private static let maximumStoredUpdates = 1_200
 
     @Published var speechState = "idle"
     @Published var pipelineState = "idle"
@@ -36,11 +71,16 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     @Published var predictionMargin: Float?
     @Published var logLoss: Double?
     @Published var lastTrainingLossChange: Double?
+    @Published var lastMeanPredictionDelta: Double?
+    @Published var lastMaxPredictionDelta: Double?
 
     @Published private(set) var completedEpochs: [PrayerAutoAdvanceEpochMetric] = []
+    @Published private(set) var updateHistory: [PrayerAutoAdvanceTrainingUpdateMetric] = []
     @Published private(set) var currentEpochSampleCount = 0
     @Published private(set) var currentEpochTrainingMarginAverage: Double?
+    @Published private(set) var currentEpochTrainingLossAverage: Double?
     @Published private(set) var currentValidationMargin: Double?
+    @Published private(set) var currentValidationLoss: Double?
 
     @Published var timingMAE: TimeInterval?
     @Published var timingBias: TimeInterval?
@@ -52,6 +92,10 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
 
     private var timingErrors: [TimeInterval] = []
     private var currentEpochTrainingMarginSum: Double = 0
+    private var currentEpochTrainingMarginCount = 0
+    private var currentEpochTrainingLossSum: Double = 0
+    private var currentEpochTrainingLossCount = 0
+    private var currentEpochPredictionDeltaSum: Double = 0
 
     private init() {
         loadEpochState()
@@ -60,19 +104,143 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     var currentEpochNumber: Int { completedEpochs.count + 1 }
     var previousEpoch: PrayerAutoAdvanceEpochMetric? { completedEpochs.last }
 
+    var currentEpochUpdates: [PrayerAutoAdvanceTrainingUpdateMetric] {
+        updateHistory.filter { $0.epoch == currentEpochNumber }
+    }
+
     func prediction(_ value: Float, snapshotCount: Int, features: [Float]) {
         self.snapshotCount = snapshotCount
         predictionHistory.append(value)
         if predictionHistory.count > 48 {
             predictionHistory.removeFirst(predictionHistory.count - 48)
         }
-        if features.count >= PrayerAutoAdvanceFeatureExtractor.progressFeatureCount {
+        if features.count >= 3 {
             lastFeatureSummary = String(
-                format: "cur %.2f next %.2f end %.2f ratio %.2f emb512 aud5=600 aud40=1280→conv",
-                features[0], features[1], features[4], features[6]
+                format: "elapsed %.2f spokenN %.2f pageN %.2f speechEmb=512 pageEmb=512 aud10=1200 aud60=1920",
+                features[0], features[1], features[2]
             )
         }
         Self.logger.debug("prediction=\(value, privacy: .public) snapshots=\(snapshotCount, privacy: .public) features=\(self.lastFeatureSummary, privacy: .public)")
+    }
+
+    func evaluateBatch(
+        model: PrayerAutoAdvanceCoreMLModel,
+        samples: [PrayerAutoAdvanceLabeledSample],
+        phase: String
+    ) -> PrayerAutoAdvanceBatchEvaluation? {
+        var positive: [Double] = []
+        var negative: [Double] = []
+        var losses: [Double] = []
+        var predictions: [Double] = []
+
+        for sample in samples {
+            guard let raw = try? model.prediction(
+                for: sample.features,
+                longAudioFeatures: sample.longAudioFeatures
+            ) else { continue }
+            let p = min(max(Double(raw), 1e-6), 1 - 1e-6)
+            predictions.append(p)
+            if sample.label == 1 {
+                positive.append(p)
+                losses.append(-log(p))
+            } else {
+                negative.append(p)
+                losses.append(-log(1 - p))
+            }
+        }
+
+        guard !losses.isEmpty else { return nil }
+        let pos = average(positive)
+        let neg = average(negative)
+        let margin = pos.flatMap { p in neg.map { p - $0 } }
+        let result = PrayerAutoAdvanceBatchEvaluation(
+            loss: losses.reduce(0, +) / Double(losses.count),
+            positiveAverage: pos,
+            negativeAverage: neg,
+            margin: margin,
+            predictions: predictions,
+            positiveCount: positive.count,
+            negativeCount: negative.count
+        )
+        Self.logger.info("batch \(phase, privacy: .public) loss=\(result.loss, privacy: .public) margin=\(result.margin ?? 0, privacy: .public)")
+        return result
+    }
+
+    func recordTrainingUpdate(
+        before: PrayerAutoAdvanceBatchEvaluation,
+        after: PrayerAutoAdvanceBatchEvaluation,
+        validation: PrayerAutoAdvanceValidationMetrics
+    ) {
+        positiveSamples = after.positiveCount
+        negativeSamples = after.negativeCount
+        positivePredictionAverage = after.positiveAverage.map(Float.init)
+        negativePredictionAverage = after.negativeAverage.map(Float.init)
+        predictionMargin = after.margin.map(Float.init)
+        logLoss = after.loss
+        lastTrainingLossChange = before.loss - after.loss
+
+        let deltas = zip(before.predictions, after.predictions).map { abs($1 - $0) }
+        let meanDelta = deltas.isEmpty ? 0 : deltas.reduce(0, +) / Double(deltas.count)
+        let maxDelta = deltas.max() ?? 0
+        lastMeanPredictionDelta = meanDelta
+        lastMaxPredictionDelta = maxDelta
+        currentValidationMargin = validation.margin
+        currentValidationLoss = validation.loss
+
+        let metric = PrayerAutoAdvanceTrainingUpdateMetric(
+            id: (updateHistory.last?.id ?? 0) + 1,
+            date: Date(),
+            epoch: currentEpochNumber,
+            positionInEpoch: currentEpochSampleCount + 1,
+            sampleCount: after.positiveCount + after.negativeCount,
+            positiveCount: after.positiveCount,
+            negativeCount: after.negativeCount,
+            lossBefore: before.loss,
+            lossAfter: after.loss,
+            lossDelta: before.loss - after.loss,
+            trainingMargin: after.margin,
+            validationMargin: validation.margin,
+            validationLoss: validation.loss,
+            positiveAverage: after.positiveAverage,
+            negativeAverage: after.negativeAverage,
+            meanPredictionDelta: meanDelta,
+            maxPredictionDelta: maxDelta
+        )
+        updateHistory.append(metric)
+        if updateHistory.count > Self.maximumStoredUpdates {
+            updateHistory.removeFirst(updateHistory.count - Self.maximumStoredUpdates)
+        }
+
+        if let margin = after.margin {
+            currentEpochTrainingMarginSum += margin
+            currentEpochTrainingMarginCount += 1
+            currentEpochTrainingMarginAverage = currentEpochTrainingMarginSum / Double(currentEpochTrainingMarginCount)
+        }
+        currentEpochTrainingLossSum += after.loss
+        currentEpochTrainingLossCount += 1
+        currentEpochTrainingLossAverage = currentEpochTrainingLossSum / Double(currentEpochTrainingLossCount)
+        currentEpochPredictionDeltaSum += meanDelta
+        currentEpochSampleCount += 1
+
+        if currentEpochSampleCount >= Self.epochSize {
+            let epoch = PrayerAutoAdvanceEpochMetric(
+                id: completedEpochs.count + 1,
+                trainingMargin: currentEpochTrainingMarginAverage ?? 0,
+                validationMargin: validation.margin,
+                trainingLoss: currentEpochTrainingLossAverage,
+                validationLoss: validation.loss,
+                meanPredictionDelta: currentEpochPredictionDeltaSum / Double(currentEpochSampleCount)
+            )
+            completedEpochs.append(epoch)
+            if completedEpochs.count > 24 {
+                completedEpochs.removeFirst(completedEpochs.count - 24)
+            }
+            event(String(format: "epoch %d trainLoss=%.6f valLoss=%@ margin=%+.4f", epoch.id, epoch.trainingLoss ?? 0, epoch.validationLoss.map { String(format: "%.6f", $0) } ?? "—", epoch.trainingMargin))
+            resetCurrentEpochAccumulators()
+        }
+
+        Self.logger.info("heartbeat loss \(before.loss, privacy: .public) -> \(after.loss, privacy: .public), dLoss=\(before.loss - after.loss, privacy: .public), meanDPred=\(meanDelta, privacy: .public), maxDPred=\(maxDelta, privacy: .public)")
+        saveEpochState()
     }
 
     func evaluateTiming(
@@ -81,172 +249,107 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         manualAdvanceAt: Date
     ) {
         let scored = snapshots.compactMap { snapshot -> (PrayerAutoAdvanceTrainingSnapshot, Float)? in
-            guard let score = try? model.prediction(
-                for: snapshot.features,
-                longAudioFeatures: snapshot.longAudioFeatures
-            ) else { return nil }
+            guard let score = try? model.prediction(for: snapshot.features, longAudioFeatures: snapshot.longAudioFeatures) else { return nil }
             return (snapshot, score)
         }
         guard let peak = scored.max(by: { $0.1 < $1.1 }) else { return }
-
         let error = peak.0.date.timeIntervalSince(manualAdvanceAt)
         lastPeakTimingError = error
         lastPeakPrediction = peak.1
         timingErrors.append(error)
         if timingErrors.count > 100 { timingErrors.removeFirst(timingErrors.count - 100) }
-
         let absolute = timingErrors.map(abs)
         timingMAE = absolute.reduce(0, +) / Double(absolute.count)
         timingBias = timingErrors.reduce(0, +) / Double(timingErrors.count)
         timingHitHalfSecond = hitRate(within: 0.5)
         timingHitOneSecond = hitRate(within: 1.0)
         timingHitTwoSeconds = hitRate(within: 2.0)
-
-        Self.logger.info("timing peak=\(peak.1, privacy: .public) error=\(error, privacy: .public)s mae=\(self.timingMAE ?? 0, privacy: .public)s")
-    }
-
-    func evaluateBatch(
-        model: PrayerAutoAdvanceCoreMLModel,
-        samples: [PrayerAutoAdvanceLabeledSample],
-        phase: String
-    ) -> Double? {
-        var positive: [Float] = []
-        var negative: [Float] = []
-        var losses: [Double] = []
-
-        for sample in samples {
-            guard let prediction = try? model.prediction(
-                for: sample.features,
-                longAudioFeatures: sample.longAudioFeatures
-            ) else { continue }
-            let p = min(max(Double(prediction), 1e-6), 1 - 1e-6)
-            if sample.label == 1 {
-                positive.append(prediction)
-                losses.append(-log(p))
-            } else {
-                negative.append(prediction)
-                losses.append(-log(1 - p))
-            }
-        }
-
-        positiveSamples = samples.filter { $0.label == 1 }.count
-        negativeSamples = samples.filter { $0.label == 0 }.count
-        positivePredictionAverage = average(positive)
-        negativePredictionAverage = average(negative)
-        if let pos = positivePredictionAverage, let neg = negativePredictionAverage {
-            predictionMargin = pos - neg
-        } else {
-            predictionMargin = nil
-        }
-        let loss = losses.isEmpty ? nil : losses.reduce(0, +) / Double(losses.count)
-        logLoss = loss
-
-        Self.logger.info(
-            "batch \(phase, privacy: .public) P=\(self.positiveSamples, privacy: .public) N=\(self.negativeSamples, privacy: .public) posAvg=\(self.positivePredictionAverage ?? -1, privacy: .public) negAvg=\(self.negativePredictionAverage ?? -1, privacy: .public) margin=\(self.predictionMargin ?? 0, privacy: .public) loss=\(loss ?? -1, privacy: .public)"
-        )
-        return loss
-    }
-
-    func recordSuccessfulTrainingEpochSample(trainingMargin: Float?, validationMargin: Double?) {
-        guard let trainingMargin else { return }
-
-        currentValidationMargin = validationMargin
-        currentEpochTrainingMarginSum += Double(trainingMargin)
-        currentEpochSampleCount += 1
-        currentEpochTrainingMarginAverage = currentEpochTrainingMarginSum / Double(currentEpochSampleCount)
-
-        if currentEpochSampleCount >= Self.epochSize {
-            let trainingAverage = currentEpochTrainingMarginAverage ?? 0
-            let epoch = PrayerAutoAdvanceEpochMetric(
-                id: completedEpochs.count + 1,
-                trainingMargin: trainingAverage,
-                validationMargin: validationMargin
-            )
-            completedEpochs.append(epoch)
-            if completedEpochs.count > 24 {
-                completedEpochs.removeFirst(completedEpochs.count - 24)
-            }
-            Self.logger.info(
-                "epoch complete number=\(epoch.id, privacy: .public) trainMargin=\(trainingAverage, privacy: .public) validationMargin=\(validationMargin ?? -1, privacy: .public)"
-            )
-            event(
-                String(
-                    format: "epoch %d complete train=%+.3f val=%@",
-                    epoch.id,
-                    trainingAverage,
-                    validationMargin.map { String(format: "%+.3f", $0) } ?? "—"
-                )
-            )
-            currentEpochSampleCount = 0
-            currentEpochTrainingMarginSum = 0
-            currentEpochTrainingMarginAverage = nil
-        }
-
-        saveEpochState()
     }
 
     func resetEpochHistory() {
         completedEpochs = []
-        currentEpochSampleCount = 0
-        currentEpochTrainingMarginSum = 0
-        currentEpochTrainingMarginAverage = nil
+        updateHistory = []
         currentValidationMargin = nil
+        currentValidationLoss = nil
+        lastTrainingLossChange = nil
+        lastMeanPredictionDelta = nil
+        lastMaxPredictionDelta = nil
+        resetCurrentEpochAccumulators()
         UserDefaults.standard.removeObject(forKey: Self.epochStorageKey)
+        UserDefaults.standard.removeObject(forKey: Self.legacyEpochStorageKey)
     }
 
     func recordLossChange(before: Double?, after: Double?) {
-        guard let before, let after else {
-            lastTrainingLossChange = nil
-            return
-        }
+        guard let before, let after else { lastTrainingLossChange = nil; return }
         lastTrainingLossChange = before - after
     }
 
     func event(_ message: String) {
         recentMessages.append(message)
-        if recentMessages.count > 6 {
-            recentMessages.removeFirst(recentMessages.count - 6)
-        }
+        if recentMessages.count > 6 { recentMessages.removeFirst(recentMessages.count - 6) }
         Self.logger.info("\(message, privacy: .public)")
     }
 
     func error(_ message: String) {
         recentMessages.append("ERR: \(message)")
-        if recentMessages.count > 6 {
-            recentMessages.removeFirst(recentMessages.count - 6)
-        }
+        if recentMessages.count > 6 { recentMessages.removeFirst(recentMessages.count - 6) }
         Self.logger.error("\(message, privacy: .public)")
     }
 
-    private func average(_ values: [Float]) -> Float? {
+    private func average(_ values: [Double]) -> Double? {
         guard !values.isEmpty else { return nil }
-        return values.reduce(0, +) / Float(values.count)
+        return values.reduce(0, +) / Double(values.count)
     }
 
     private func hitRate(within tolerance: TimeInterval) -> Double? {
         guard !timingErrors.isEmpty else { return nil }
-        let hits = timingErrors.filter { abs($0) <= tolerance }.count
-        return Double(hits) / Double(timingErrors.count)
+        return Double(timingErrors.filter { abs($0) <= tolerance }.count) / Double(timingErrors.count)
+    }
+
+    private func resetCurrentEpochAccumulators() {
+        currentEpochSampleCount = 0
+        currentEpochTrainingMarginSum = 0
+        currentEpochTrainingMarginCount = 0
+        currentEpochTrainingMarginAverage = nil
+        currentEpochTrainingLossSum = 0
+        currentEpochTrainingLossCount = 0
+        currentEpochTrainingLossAverage = nil
+        currentEpochPredictionDeltaSum = 0
     }
 
     private func loadEpochState() {
         guard let data = UserDefaults.standard.data(forKey: Self.epochStorageKey),
               let value = try? JSONDecoder().decode(EpochState.self, from: data) else { return }
         completedEpochs = value.completedEpochs
+        updateHistory = value.updateHistory
         currentEpochSampleCount = value.currentCount
         currentEpochTrainingMarginSum = value.currentTrainingMarginSum
+        currentEpochTrainingMarginCount = value.currentTrainingMarginCount
+        currentEpochTrainingLossSum = value.currentTrainingLossSum
+        currentEpochTrainingLossCount = value.currentTrainingLossCount
+        currentEpochPredictionDeltaSum = value.currentPredictionDeltaSum
         currentValidationMargin = value.currentValidationMargin
-        if currentEpochSampleCount > 0 {
-            currentEpochTrainingMarginAverage = currentEpochTrainingMarginSum / Double(currentEpochSampleCount)
+        currentValidationLoss = value.currentValidationLoss
+        if currentEpochTrainingMarginCount > 0 {
+            currentEpochTrainingMarginAverage = currentEpochTrainingMarginSum / Double(currentEpochTrainingMarginCount)
+        }
+        if currentEpochTrainingLossCount > 0 {
+            currentEpochTrainingLossAverage = currentEpochTrainingLossSum / Double(currentEpochTrainingLossCount)
         }
     }
 
     private func saveEpochState() {
         let value = EpochState(
             completedEpochs: completedEpochs,
+            updateHistory: updateHistory,
             currentCount: currentEpochSampleCount,
             currentTrainingMarginSum: currentEpochTrainingMarginSum,
-            currentValidationMargin: currentValidationMargin
+            currentTrainingMarginCount: currentEpochTrainingMarginCount,
+            currentTrainingLossSum: currentEpochTrainingLossSum,
+            currentTrainingLossCount: currentEpochTrainingLossCount,
+            currentPredictionDeltaSum: currentEpochPredictionDeltaSum,
+            currentValidationMargin: currentValidationMargin,
+            currentValidationLoss: currentValidationLoss
         )
         if let data = try? JSONEncoder().encode(value) {
             UserDefaults.standard.set(data, forKey: Self.epochStorageKey)
@@ -255,8 +358,14 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
 
     private struct EpochState: Codable {
         let completedEpochs: [PrayerAutoAdvanceEpochMetric]
+        let updateHistory: [PrayerAutoAdvanceTrainingUpdateMetric]
         let currentCount: Int
         let currentTrainingMarginSum: Double
+        let currentTrainingMarginCount: Int
+        let currentTrainingLossSum: Double
+        let currentTrainingLossCount: Int
+        let currentPredictionDeltaSum: Double
         let currentValidationMargin: Double?
+        let currentValidationLoss: Double?
     }
 }
