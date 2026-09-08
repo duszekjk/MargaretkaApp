@@ -11,7 +11,9 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 24) {
                     summary
+                    PrayerAutoAdvanceTrainingInputSamplesView()
                     currentEpochLossChart
+                    currentEpochValidationLossChart
                     epochLossChart
                     lossDeltaChart
                     predictionMovementChart
@@ -42,13 +44,14 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
             metricRow("Δloss", signed(diagnostics.lastTrainingLossChange, digits: 8))
             metricRow("Mean |Δpred|", formatted(diagnostics.lastMeanPredictionDelta, digits: 8))
             metricRow("Max |Δpred|", formatted(diagnostics.lastMaxPredictionDelta, digits: 8))
+            metricRow("Train margin", diagnostics.predictionMargin.map { String(format: "%+.6f", $0) } ?? "—")
             metricRow("Validation loss", formatted(diagnostics.currentValidationLoss, digits: 8))
-            metricRow("Validation margin", signed(diagnostics.currentValidationMargin, digits: 5))
+            metricRow("Validation margin", signed(diagnostics.currentValidationMargin, digits: 6))
         }
     }
 
     private var currentEpochLossChart: some View {
-        chartCard("Loss — bieżąca epoka", subtitle: "Cross-entropy przed i po każdej lokalnej aktualizacji modelu.") {
+        chartCard("Loss — bieżąca epoka", subtitle: "Cross-entropy przed i po każdej lokalnej aktualizacji. Obie serie powinny się rozchodzić, jeśli update zmienia model.") {
             Chart(diagnostics.currentEpochUpdates) { point in
                 LineMark(
                     x: .value("Krok", point.positionInEpoch),
@@ -56,11 +59,8 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
                     series: .value("Seria", "przed")
                 )
                 .foregroundStyle(by: .value("Seria", "przed"))
-                PointMark(
-                    x: .value("Krok", point.positionInEpoch),
-                    y: .value("Loss", point.lossBefore)
-                )
-                .foregroundStyle(by: .value("Seria", "przed"))
+                PointMark(x: .value("Krok", point.positionInEpoch), y: .value("Loss", point.lossBefore))
+                    .foregroundStyle(by: .value("Seria", "przed"))
 
                 LineMark(
                     x: .value("Krok", point.positionInEpoch),
@@ -68,18 +68,27 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
                     series: .value("Seria", "po")
                 )
                 .foregroundStyle(by: .value("Seria", "po"))
-                PointMark(
-                    x: .value("Krok", point.positionInEpoch),
-                    y: .value("Loss", point.lossAfter)
-                )
-                .foregroundStyle(by: .value("Seria", "po"))
+                PointMark(x: .value("Krok", point.positionInEpoch), y: .value("Loss", point.lossAfter))
+                    .foregroundStyle(by: .value("Seria", "po"))
             }
-            .frame(height: 260)
+            .frame(height: 280)
+        }
+    }
+
+    private var currentEpochValidationLossChart: some View {
+        chartCard("Validation loss — bieżąca epoka", subtitle: "Loss na lokalnym holdoucie po każdej aktualizacji; nie jest używany do backpropagation.") {
+            Chart(diagnostics.currentEpochUpdates) { point in
+                if let loss = point.validationLoss {
+                    LineMark(x: .value("Krok", point.positionInEpoch), y: .value("Validation loss", loss))
+                    PointMark(x: .value("Krok", point.positionInEpoch), y: .value("Validation loss", loss))
+                }
+            }
+            .frame(height: 240)
         }
     }
 
     private var epochLossChart: some View {
-        chartCard("Loss — epoka do epoki", subtitle: "Średni training loss z 100 aktualizacji oraz validation loss na końcu epoki.") {
+        chartCard("Loss — epoka do epoki", subtitle: "Średni training loss ze 100 aktualizacji i validation loss na końcu każdej epoki diagnostycznej.") {
             Chart(diagnostics.completedEpochs) { epoch in
                 if let loss = epoch.trainingLoss {
                     LineMark(
@@ -102,26 +111,26 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
                         .foregroundStyle(by: .value("Seria", "validation"))
                 }
             }
-            .frame(height: 260)
+            .frame(height: 280)
         }
     }
 
     private var lossDeltaChart: some View {
-        chartCard("Δloss po aktualizacji", subtitle: "Wartość dodatnia oznacza spadek loss na batchu użytym do treningu.") {
-            Chart(diagnostics.updateHistory.suffix(300)) { point in
-                LineMark(
-                    x: .value("Aktualizacja", point.id),
-                    y: .value("Δloss", point.lossDelta)
-                )
+        chartCard("Δloss po aktualizacji", subtitle: "Dodatnia wartość oznacza spadek loss na batchu treningowym po MLUpdateTask.") {
+            Chart {
+                ForEach(diagnostics.updateHistory.suffix(300)) { point in
+                    LineMark(x: .value("Aktualizacja", point.id), y: .value("Δloss", point.lossDelta))
+                    PointMark(x: .value("Aktualizacja", point.id), y: .value("Δloss", point.lossDelta))
+                }
                 RuleMark(y: .value("Zero", 0.0))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
             }
-            .frame(height: 220)
+            .frame(height: 240)
         }
     }
 
     private var predictionMovementChart: some View {
-        chartCard("Ruch predykcji po backprop", subtitle: "Jeśli obie linie pozostają praktycznie na zerze, aktualizacja wag jest podejrzana.") {
+        chartCard("Ruch predykcji po backprop", subtitle: "Średnia i maksymalna bezwzględna zmiana P(advance) na tym samym batchu przed/po update.") {
             Chart(diagnostics.updateHistory.suffix(300)) { point in
                 LineMark(
                     x: .value("Aktualizacja", point.id),
@@ -136,26 +145,36 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
                 )
                 .foregroundStyle(by: .value("Seria", "maksimum"))
             }
-            .frame(height: 220)
+            .frame(height: 240)
         }
     }
 
     private var currentEpochMarginChart: some View {
-        chartCard("Margin — bieżąca epoka", subtitle: "Średnie P(advance) dla pozytywów minus średnie P(advance) dla negatywów.") {
+        chartCard("Margin — bieżąca epoka", subtitle: "Train i validation margin po kolejnych update'ach w tej samej epoce diagnostycznej.") {
             Chart(diagnostics.currentEpochUpdates) { point in
                 if let margin = point.trainingMargin {
-                    LineMark(x: .value("Krok", point.positionInEpoch), y: .value("Margin", margin))
-                    PointMark(x: .value("Krok", point.positionInEpoch), y: .value("Margin", margin))
+                    LineMark(
+                        x: .value("Krok", point.positionInEpoch),
+                        y: .value("Margin", margin),
+                        series: .value("Seria", "train")
+                    )
+                    .foregroundStyle(by: .value("Seria", "train"))
                 }
-                RuleMark(y: .value("Zero", 0.0))
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
+                if let margin = point.validationMargin {
+                    LineMark(
+                        x: .value("Krok", point.positionInEpoch),
+                        y: .value("Margin", margin),
+                        series: .value("Seria", "validation")
+                    )
+                    .foregroundStyle(by: .value("Seria", "validation"))
+                }
             }
-            .frame(height: 220)
+            .frame(height: 240)
         }
     }
 
     private var epochMarginChart: some View {
-        chartCard("Margin — epoka do epoki", subtitle: "Training i validation powinny rosnąć razem; rozjazd sugeruje overfitting.") {
+        chartCard("Margin — epoka do epoki", subtitle: "Wzrost train bez validation jest klasycznym sygnałem overfittingu.") {
             Chart(diagnostics.completedEpochs) { epoch in
                 LineMark(
                     x: .value("Epoka", epoch.id),
@@ -176,12 +195,12 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
                         .foregroundStyle(by: .value("Seria", "validation"))
                 }
             }
-            .frame(height: 240)
+            .frame(height: 260)
         }
     }
 
     private var classProbabilityChart: some View {
-        chartCard("Separacja klas", subtitle: "Średnie P(advance) dla pozytywnych i negatywnych próbek ostatnich aktualizacji.") {
+        chartCard("Separacja klas", subtitle: "Średnie P(advance) dla pozytywnych i negatywnych próbek. Docelowo positive → 1, negative → 0.") {
             Chart(diagnostics.updateHistory.suffix(300)) { point in
                 if let value = point.positiveAverage {
                     LineMark(
@@ -201,25 +220,19 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
                 }
             }
             .chartYScale(domain: 0...1)
-            .frame(height: 240)
+            .frame(height: 260)
         }
     }
 
     private var batchCompositionChart: some View {
-        chartCard("Skład batcha", subtitle: "Liczba pozytywów i negatywów w kolejnych aktualizacjach.") {
+        chartCard("Skład batcha", subtitle: "Pozytywne próbki nad osią, negatywne pod osią.") {
             Chart(diagnostics.updateHistory.suffix(200)) { point in
-                BarMark(
-                    x: .value("Aktualizacja", point.id),
-                    y: .value("Próbki", point.positiveCount)
-                )
-                .foregroundStyle(by: .value("Klasa", "positive"))
-                BarMark(
-                    x: .value("Aktualizacja", point.id),
-                    y: .value("Próbki", -point.negativeCount)
-                )
-                .foregroundStyle(by: .value("Klasa", "negative"))
+                BarMark(x: .value("Aktualizacja", point.id), y: .value("Próbki", point.positiveCount))
+                    .foregroundStyle(by: .value("Klasa", "positive"))
+                BarMark(x: .value("Aktualizacja", point.id), y: .value("Próbki", -point.negativeCount))
+                    .foregroundStyle(by: .value("Klasa", "negative"))
             }
-            .frame(height: 220)
+            .frame(height: 240)
         }
     }
 
