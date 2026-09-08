@@ -48,6 +48,14 @@ extension PrayerAutoAdvanceCoreMLRuntime {
                 snapshotCount: snapshots.count,
                 features: features
             )
+            PrayerAutoAdvanceInputDiagnostics.shared.record(
+                pageID: context.pageID,
+                prediction: value,
+                features: features,
+                longAudioFeatures: longAudioFeatures,
+                audioWindow: audioWindow,
+                at: now
+            )
             evaluatePrediction(value, elapsed: elapsed)
         } catch {
             statusMessage = error.localizedDescription
