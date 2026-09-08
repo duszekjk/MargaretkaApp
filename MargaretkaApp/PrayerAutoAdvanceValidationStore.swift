@@ -13,6 +13,16 @@ struct PrayerAutoAdvanceValidationRecord: Codable, Sendable, Identifiable {
     let samples: [PrayerAutoAdvanceValidationSample]
 }
 
+struct PrayerAutoAdvanceValidationMetrics: Sendable {
+    let sampleCount: Int
+    let positiveCount: Int
+    let negativeCount: Int
+    let positiveAverage: Double?
+    let negativeAverage: Double?
+    let margin: Double?
+    let loss: Double?
+}
+
 struct PrayerAutoAdvanceValidationStore: Codable, Sendable {
     static let selectionInterval = 10
     static let maximumRecordsPerPrayer = 5
@@ -57,9 +67,11 @@ struct PrayerAutoAdvanceValidationStore: Codable, Sendable {
         records.removeAll()
     }
 
-    func margin(using model: PrayerAutoAdvanceCoreMLModel) -> Double? {
+    func metrics(using model: PrayerAutoAdvanceCoreMLModel) -> PrayerAutoAdvanceValidationMetrics {
         var positive: [Double] = []
         var negative: [Double] = []
+        var losses: [Double] = []
+        var evaluated = 0
 
         for record in records {
             for sample in record.samples {
@@ -67,17 +79,44 @@ struct PrayerAutoAdvanceValidationStore: Codable, Sendable {
                     for: sample.features,
                     longAudioFeatures: sample.longAudioFeatures
                 ) else { continue }
+                evaluated += 1
+                let p = min(max(Double(prediction), 1e-6), 1 - 1e-6)
                 if sample.label == 1 {
-                    positive.append(Double(prediction))
+                    positive.append(p)
+                    losses.append(-log(p))
                 } else {
-                    negative.append(Double(prediction))
+                    negative.append(p)
+                    losses.append(-log(1 - p))
                 }
             }
         }
 
-        guard !positive.isEmpty, !negative.isEmpty else { return nil }
-        let positiveAverage = positive.reduce(0, +) / Double(positive.count)
-        let negativeAverage = negative.reduce(0, +) / Double(negative.count)
-        return positiveAverage - negativeAverage
+        let positiveAverage = average(positive)
+        let negativeAverage = average(negative)
+        let margin: Double?
+        if let positiveAverage, let negativeAverage {
+            margin = positiveAverage - negativeAverage
+        } else {
+            margin = nil
+        }
+
+        return PrayerAutoAdvanceValidationMetrics(
+            sampleCount: evaluated,
+            positiveCount: positive.count,
+            negativeCount: negative.count,
+            positiveAverage: positiveAverage,
+            negativeAverage: negativeAverage,
+            margin: margin,
+            loss: average(losses)
+        )
+    }
+
+    func margin(using model: PrayerAutoAdvanceCoreMLModel) -> Double? {
+        metrics(using: model).margin
+    }
+
+    private func average(_ values: [Double]) -> Double? {
+        guard !values.isEmpty else { return nil }
+        return values.reduce(0, +) / Double(values.count)
     }
 }
