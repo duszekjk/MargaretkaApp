@@ -6,7 +6,8 @@ extension PrayerAutoAdvanceCoreMLState {
         let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
         isTraining = true
         diagnostics.pipelineState = "training"
-        let lossBefore = diagnostics.evaluateBatch(
+
+        let before = diagnostics.evaluateBatch(
             model: current,
             samples: batch.samples,
             phase: "before"
@@ -26,24 +27,42 @@ extension PrayerAutoAdvanceCoreMLState {
             _ = try fileManager.replaceItemAt(modelURL, withItemAt: updatedURL)
             model = try PrayerAutoAdvanceCoreMLModel(compiledURL: modelURL)
 
-            let lossAfter: Double?
-            let validationMargin: Double?
-            if let updatedModel = model {
-                lossAfter = diagnostics.evaluateBatch(
+            if let updatedModel = model,
+               let before,
+               let after = diagnostics.evaluateBatch(
                     model: updatedModel,
                     samples: batch.samples,
                     phase: "after"
+               ) {
+                let validation = validationStore.metrics(using: updatedModel)
+                diagnostics.recordTrainingUpdate(
+                    before: before,
+                    after: after,
+                    validation: validation
                 )
-                validationMargin = validationStore.margin(using: updatedModel)
+                diagnostics.event(
+                    String(
+                        format: "heartbeat loss %.8f→%.8f Δ=%+.8f predΔ mean=%.8f max=%.8f",
+                        before.loss,
+                        after.loss,
+                        before.loss - after.loss,
+                        diagnostics.lastMeanPredictionDelta ?? 0,
+                        diagnostics.lastMaxPredictionDelta ?? 0
+                    )
+                )
+                if let validationLoss = validation.loss {
+                    diagnostics.event(
+                        String(
+                            format: "validation loss=%.8f margin=%+.5f samples=%d",
+                            validationLoss,
+                            validation.margin ?? 0,
+                            validation.sampleCount
+                        )
+                    )
+                }
             } else {
-                lossAfter = nil
-                validationMargin = nil
+                diagnostics.event("heartbeat unavailable: batch evaluation failed")
             }
-            diagnostics.recordLossChange(before: lossBefore, after: lossAfter)
-            diagnostics.recordSuccessfulTrainingEpochSample(
-                trainingMargin: diagnostics.predictionMargin,
-                validationMargin: validationMargin
-            )
 
             if let observedDelay = batch.observedDelay {
                 timingHistory.append(observedDelay)
@@ -59,9 +78,6 @@ extension PrayerAutoAdvanceCoreMLState {
             lastTrainingEvent = "Model zaktualizowany na podstawie \(batch.samples.count) próbek."
             diagnostics.acceptedTrainingCount += 1
             diagnostics.pipelineState = "trained"
-            if let validationMargin {
-                diagnostics.event(String(format: "validation margin=%+.3f samples=%d", validationMargin, validationStore.sampleCount))
-            }
             diagnostics.event("MLUpdateTask complete")
         } catch {
             try? fileManager.removeItem(at: updatedURL)
