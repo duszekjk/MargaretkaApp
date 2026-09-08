@@ -13,5 +13,6 @@ enum PrayerAutoAdvanceLocalReset {
         state.validationStore = PrayerAutoAdvanceValidationStore()
         state.lastError = nil
         PrayerAutoAdvanceTrainingDiagnostics.shared.resetEpochHistory()
+        PrayerAutoAdvanceInputDiagnostics.shared.clear()
     }
 }
