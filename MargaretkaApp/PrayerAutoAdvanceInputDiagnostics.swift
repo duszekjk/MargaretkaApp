@@ -78,11 +78,6 @@ final class PrayerAutoAdvanceDiagnosticAudioPlayer: ObservableObject {
         engine.attach(player)
     }
 
-    deinit {
-        player.stop()
-        engine.stop()
-    }
-
     func play(samples: [Float], sampleRate: Double) throws {
         stop()
         guard !samples.isEmpty, sampleRate > 0 else { return }
@@ -105,7 +100,8 @@ final class PrayerAutoAdvanceDiagnosticAudioPlayer: ObservableObject {
 
         buffer.frameLength = AVAudioFrameCount(samples.count)
         samples.withUnsafeBufferPointer { source in
-            channel.update(from: source.baseAddress!, count: samples.count)
+            guard let baseAddress = source.baseAddress else { return }
+            channel.update(from: baseAddress, count: samples.count)
         }
 
         engine.connect(player, to: engine.mainMixerNode, format: format)
