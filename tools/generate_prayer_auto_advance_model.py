@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Generate the updatable audio-primary Core ML model used by prayer auto-advance.
 
-Schema v7 deliberately uses ONE Core ML input so every trainable layer sits on a
-plain backpropagation path to the loss. Core ML's legacy updatable neural-network
+Feature schema v7 deliberately uses ONE Core ML input so every trainable layer sits on
+a plain backpropagation path to the loss. Core ML's legacy updatable neural-network
 validator rejects CONCAT between an updatable layer and the loss.
 
 The app concatenates locally, before Core ML:
@@ -12,12 +12,14 @@ The app concatenates locally, before Core ML:
 - 1200 short-audio features (10 s)
 - 1920 long-audio features (60 s; 120 x 16)
 Total: 4147 float values, of which 3120 (~75%) are audio.
+
+Model v8 increases dense capacity without changing feature schema so training behavior
+can be compared independently from feature-extraction changes.
 """
 
 from pathlib import Path
 import argparse
 import shutil
-import tempfile
 import numpy as np
 import coremltools as ct
 from coremltools.models import datatypes
@@ -28,8 +30,8 @@ TEXT_EMBEDDING_SIZE = 512
 SHORT_AUDIO_SIZE = 1200
 LONG_AUDIO_SIZE = 120 * 16
 INPUT_SIZE = SCALAR_SIZE + 2 * TEXT_EMBEDDING_SIZE + SHORT_AUDIO_SIZE + LONG_AUDIO_SIZE
-HIDDEN_SIZES = [1024, 512, 256, 128, 32]
-MODEL_VERSION = 7
+HIDDEN_SIZES = [1536, 1024, 512, 256, 64]
+MODEL_VERSION = 8
 SCHEMA_VERSION = 7
 
 
@@ -68,11 +70,11 @@ def build_model(model_version: int):
     input_size = INPUT_SIZE
     trainables = []
     configs = [
-        ("hidden1", 1024, 0.018, 11),
-        ("hidden2", 512, 0.025, 1009),
-        ("hidden3", 256, 0.035, 2017),
-        ("hidden4", 128, 0.045, 3001),
-        ("hidden5", 32, 0.060, 3503),
+        ("hidden1", 1536, 0.015, 11),
+        ("hidden2", 1024, 0.020, 1009),
+        ("hidden3", 512, 0.028, 2017),
+        ("hidden4", 256, 0.038, 3001),
+        ("hidden5", 64, 0.055, 3503),
     ]
     for name, output_size, scale, seed in configs:
         blob = add_dense_relu(
@@ -115,7 +117,7 @@ def build_model(model_version: int):
         "1200 short-audio + 1920 long-audio values."
     )
     spec.description.output[0].shortDescription = "[stay, advance] probabilities."
-    spec.description.trainingInput[0].shortDescription = "Audio-primary multimodal schema v7 features."
+    spec.description.trainingInput[0].shortDescription = "Audio-primary multimodal feature schema v7."
     spec.description.trainingInput[1].shortDescription = "0 = stay, 1 = advance."
 
     model = ct.models.MLModel(spec)
@@ -147,13 +149,12 @@ def self_test(output: Path, model_version: int):
         raise RuntimeError(f"Unexpected inputs: {inputs}")
     if len(updatable) != 6:
         raise RuntimeError(f"Expected 6 updatable layers, found {len(updatable)}: {updatable}")
-    if size_bytes < 10_000_000:
+    if size_bytes < 25_000_000:
         raise RuntimeError(
-            f"Generated model is only {size_bytes} bytes; expected a many-megabyte model. "
+            f"Generated model is only {size_bytes} bytes; expected a model larger than 25 MB. "
             "Do not add this file to Xcode."
         )
 
-    # This invokes Apple's Core ML compiler and catches validator/backprop errors.
     compiled_dir = None
     try:
         compiled_dir = ct.models.utils.compile_model(str(output))
@@ -167,6 +168,7 @@ def self_test(output: Path, model_version: int):
     print(f"Float32 parameter payload: {params * 4 / 1024 / 1024:.2f} MiB")
     print(f"saved .mlmodel size: {size_bytes / 1024 / 1024:.2f} MiB")
     print(f"inputs: features[{INPUT_SIZE}]")
+    print(f"hidden sizes: {HIDDEN_SIZES}")
     print(f"updatable layers: {', '.join(updatable)}")
     print("SELF-TEST: OK")
 
