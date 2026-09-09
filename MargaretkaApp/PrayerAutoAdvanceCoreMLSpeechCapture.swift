@@ -11,7 +11,9 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
     private var isStarting = false
     private(set) var transcript = ""
     nonisolated private let audioRing = PrayerAutoAdvanceAudioRingBuffer(
-        duration: PrayerAutoAdvanceLongAudioFeatureExtractor.duration,
+        // Keep a small margin beyond the 60 s model window so retrospective
+        // T-0.2 s feature extraction still has a complete 60 s audio history.
+        duration: PrayerAutoAdvanceLongAudioFeatureExtractor.duration + 0.5,
         targetSampleRate: 8_000
     )
 
