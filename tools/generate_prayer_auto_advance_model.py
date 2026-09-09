@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 """Generate the updatable audio-primary Core ML model used by prayer auto-advance.
 
-Feature schema v7 deliberately uses ONE Core ML input so every trainable layer sits on
-a plain backpropagation path to the loss. Core ML's legacy updatable neural-network
-validator rejects CONCAT between an updatable layer and the loss.
+Feature schema v8 uses ONE Core ML input so every trainable layer sits on a plain
+backpropagation path to the loss. Core ML's legacy updatable neural-network validator
+rejects CONCAT between an updatable layer and the loss.
 
 The app concatenates locally, before Core ML:
 - 3 auxiliary scalars
 - 512 spoken-text embedding
 - 512 page-text embedding
-- 1200 short-audio features (10 s)
-- 1920 long-audio features (60 s; 120 x 16)
-Total: 4147 float values, of which 3120 (~75%) are audio.
+- 2400 short-audio features (10 s, 50 x 48, 16 kHz analysis)
+- 3840 long-audio features (60 s, 120 x 32, 16 kHz analysis)
+Total: 7267 float values, of which 6240 (~86%) are audio.
 
-Model v9 keeps the v8 capacity but freezes the large feature backbone for on-device
-personalization. Only hidden4, hidden5 and logits are updatable. This avoids the
-near-0.5 classifier collapse observed when Adam updated all ~8.6M parameters from
-tiny balanced batches. Feature schema remains v7.
+Model v10 doubles the audio sampling rate from 8 kHz to 16 kHz and doubles the
+spectral-band representation so the network can use the additional 4-8 kHz content.
+The stable v9 personalization strategy is retained: only hidden4, hidden5 and logits
+are updatable on device.
 """
 
 from pathlib import Path
@@ -29,12 +29,12 @@ from coremltools.models.neural_network import AdamParams, NeuralNetworkBuilder
 
 SCALAR_SIZE = 3
 TEXT_EMBEDDING_SIZE = 512
-SHORT_AUDIO_SIZE = 1200
-LONG_AUDIO_SIZE = 120 * 16
+SHORT_AUDIO_SIZE = 50 * 48
+LONG_AUDIO_SIZE = 120 * 32
 INPUT_SIZE = SCALAR_SIZE + 2 * TEXT_EMBEDDING_SIZE + SHORT_AUDIO_SIZE + LONG_AUDIO_SIZE
 HIDDEN_SIZES = [1536, 1024, 512, 256, 64]
-MODEL_VERSION = 9
-SCHEMA_VERSION = 7
+MODEL_VERSION = 10
+SCHEMA_VERSION = 8
 UPDATABLE_LAYERS = ["hidden4", "hidden5", "logits"]
 
 
@@ -113,16 +113,16 @@ def build_model(model_version: int):
 
     spec = builder.spec
     spec.description.input[0].shortDescription = (
-        "4147 local features: 3 scalars + 512 spoken embedding + 512 page embedding + "
-        "1200 short-audio + 1920 long-audio values."
+        "7267 local features: 3 scalars + 512 spoken embedding + 512 page embedding + "
+        "2400 short-audio + 3840 long-audio values."
     )
     spec.description.output[0].shortDescription = "[stay, advance] probabilities."
-    spec.description.trainingInput[0].shortDescription = "Audio-primary multimodal feature schema v7."
+    spec.description.trainingInput[0].shortDescription = "16 kHz audio-primary multimodal feature schema v8."
     spec.description.trainingInput[1].shortDescription = "0 = stay, 1 = advance."
 
     model = ct.models.MLModel(spec)
     model.author = "Margaretka"
-    model.short_description = "Updatable on-device audio-primary prayer auto-advance classifier"
+    model.short_description = "Updatable on-device 16 kHz audio-primary prayer auto-advance classifier"
     model.user_defined_metadata["modelVersion"] = str(model_version)
     model.user_defined_metadata["featureSchemaVersion"] = str(SCHEMA_VERSION)
     return model
@@ -156,9 +156,9 @@ def self_test(output: Path, model_version: int):
         raise RuntimeError(f"Unexpected inputs: {inputs}")
     if updatable != UPDATABLE_LAYERS:
         raise RuntimeError(f"Expected updatable layers {UPDATABLE_LAYERS}, found {updatable}")
-    if size_bytes < 25_000_000:
+    if size_bytes < 40_000_000:
         raise RuntimeError(
-            f"Generated model is only {size_bytes} bytes; expected a model larger than 25 MB. "
+            f"Generated model is only {size_bytes} bytes; expected a v10 model larger than 40 MB. "
             "Do not add this file to Xcode."
         )
 
