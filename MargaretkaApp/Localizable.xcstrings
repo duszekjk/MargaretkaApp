@@ -4,6 +4,9 @@
     "" : {
 
     },
+    "[%lld]" : {
+
+    },
     "%@" : {
 
     },
@@ -13,6 +16,16 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ — %2$@"
+          }
+        }
+      }
+    },
+    "%@ · tokeny [%lld]" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · tokeny [%2$lld]"
           }
         }
       }
@@ -44,6 +57,9 @@
 
     },
     "%lld priests, people, or complex prayers" : {
+
+    },
+    "%lld s" : {
 
     },
     "%lld tyg" : {
@@ -198,6 +214,9 @@
 
     },
     "Brak próbek. Zostaną dodane podczas działania treningu, maksymalnie jedna co 5 sekund." : {
+
+    },
+    "Brak tokenów" : {
 
     },
     "Brewiarz offline" : {
@@ -718,7 +737,7 @@
     "Ostatnia synchronizacja" : {
 
     },
-    "Ostatnie rzeczywiste wejścia. Audio istnieje tylko w RAM i znika po restarcie aplikacji." : {
+    "Ostatnie rzeczywiste wejścia. Audio i tekst diagnostyczny istnieją tylko w RAM i znikają po restarcie aplikacji." : {
 
     },
     "Otwórz brewiarz w przeglądarce" : {
@@ -746,9 +765,6 @@
     "Pamięć" : {
 
     },
-    "PCM %@ s · input 4147 = 3 + 512 + 512 + 1200 + 1920" : {
-
-    },
     "Pełna kopia zapasowa" : {
 
     },
@@ -756,12 +772,6 @@
 
     },
     "pipe %@" : {
-
-    },
-    "Play 10 s" : {
-
-    },
-    "Play 60 s" : {
 
     },
     "Po co?" : {
