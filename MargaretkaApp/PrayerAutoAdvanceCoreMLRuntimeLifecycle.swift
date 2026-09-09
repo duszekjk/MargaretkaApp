@@ -41,7 +41,10 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         evaluationTask = Task { @MainActor [weak self] in
             while let self, !Task.isCancelled {
                 await self.evaluateCurrentCapture()
-                try? await Task.sleep(for: .milliseconds(200))
+                // Runtime inference and training candidates share the agreed 4 Hz
+                // cadence. Running faster only adds CPU pressure for V10 without
+                // producing additional training snapshots.
+                try? await Task.sleep(for: .milliseconds(250))
             }
         }
     }
