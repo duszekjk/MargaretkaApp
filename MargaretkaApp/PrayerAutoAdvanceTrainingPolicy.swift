@@ -59,8 +59,7 @@ enum PrayerAutoAdvanceTrainingPolicy {
         history _: PrayerAutoAdvanceTimingHistory
     ) -> PrayerAutoAdvanceLabeledBatch? {
         let negativeCutoff = manualAdvanceAt.addingTimeInterval(-(positiveWindow + deadZone))
-        let negativeCandidates = snapshots
-            .filter { $0.date <= negativeCutoff }
+        let negativeCandidates = snapshots.filter { $0.date <= negativeCutoff }
 
         guard !negativeCandidates.isEmpty, !positiveSnapshots.isEmpty else { return nil }
 
@@ -121,9 +120,7 @@ enum PrayerAutoAdvanceTrainingPolicy {
     ) -> [PrayerAutoAdvanceTrainingSnapshot] {
         let ordered = snapshots.sorted { $0.date < $1.date }
         guard count < ordered.count else { return Array(ordered.prefix(count)) }
-        guard count > 1 else {
-            return [ordered.min { abs($0.date.timeIntervalSince1970) < abs($1.date.timeIntervalSince1970) } ?? ordered[0]]
-        }
+        guard count > 1 else { return [ordered[ordered.count / 2]] }
 
         return (0..<count).map { index in
             let fraction = Double(index) / Double(count - 1)
