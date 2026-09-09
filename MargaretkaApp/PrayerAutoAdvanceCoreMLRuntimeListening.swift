@@ -32,9 +32,24 @@ extension PrayerAutoAdvanceCoreMLRuntime {
     func evaluateCurrentCapture() async {
 #if os(iOS)
         let plan = evaluationPlan(at: Date())
-        guard plan.needsHeavyWork else { return }
+        guard plan.reservoirSlot != nil || plan.shouldPredict else { return }
 
         let transcript = capture.transcriptSnapshot()
+
+        if let slot = plan.reservoirSlot, let context {
+            let candidate = PrayerAutoAdvanceTrainingCandidate(
+                pageID: context.pageID,
+                date: plan.date,
+                transcript: transcript,
+                audioEndSampleIndex: capture.pageAudioSampleIndex()
+            )
+            storeTrainingCandidate(candidate, at: slot)
+        }
+
+        // Training-only candidate collection stops here: no PCM snapshot, no short/
+        // long spectral extraction and no model inference on this tick.
+        guard plan.shouldPredict else { return }
+
         let audioWindow = await capture.audioWindowOffMain()
         await observe(
             transcript: transcript,
