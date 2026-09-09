@@ -7,6 +7,9 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         contextStartedAt = Date()
         snapshots.removeAll(keepingCapacity: true)
         lastTrainingSnapshotAt = Date.distantPast
+        lastInferenceAt = Date.distantPast
+        lastDiagnosticsPublishAt = Date.distantPast
+        trainingCandidateSeenCount = 0
         consecutiveAdvancePredictions = 0
         lastPrediction = 0
 
@@ -40,10 +43,10 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         guard evaluationTask == nil else { return }
         evaluationTask = Task { @MainActor [weak self] in
             while let self, !Task.isCancelled {
+                // 4 Hz here is only a scheduling cadence. In training-only mode
+                // most ticks now do O(1) reservoir bookkeeping and no PCM copy,
+                // feature extraction or model inference.
                 await self.evaluateCurrentCapture()
-                // Runtime inference and training candidates share the agreed 4 Hz
-                // cadence. Running faster only adds CPU pressure for V10 without
-                // producing additional training snapshots.
                 try? await Task.sleep(for: .milliseconds(250))
             }
         }
