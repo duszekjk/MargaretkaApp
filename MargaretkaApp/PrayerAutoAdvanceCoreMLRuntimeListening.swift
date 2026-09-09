@@ -31,9 +31,11 @@ extension PrayerAutoAdvanceCoreMLRuntime {
 
     func evaluateCurrentCapture() async {
 #if os(iOS)
+        let transcript = capture.transcript
+        let audioWindow = await capture.audioWindowOffMain()
         await observe(
-            transcript: capture.transcript,
-            audioWindow: capture.audioWindow()
+            transcript: transcript,
+            audioWindow: audioWindow
         )
 #endif
     }
