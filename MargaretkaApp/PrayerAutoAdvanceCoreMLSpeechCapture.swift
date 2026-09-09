@@ -134,22 +134,13 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
 
     nonisolated func transcriptSnapshot() -> String { transcriptBox.snapshot() }
     nonisolated func pageAudioSampleIndex() -> Int { pageAudio.sampleCount() }
+    nonisolated func freezePageAudio() -> PrayerAutoAdvanceAudioWindow { pageAudio.freeze() }
 
     func audioWindow() -> PrayerAutoAdvanceAudioWindow { audioRing.snapshot() }
 
     nonisolated func audioWindowOffMain() async -> PrayerAutoAdvanceAudioWindow {
         let ring = audioRing
         return await Task.detached(priority: .background) { ring.snapshot() }.value
-    }
-
-    nonisolated func pageAudioWindowOffMain(endingAt sampleIndex: Int) async -> PrayerAutoAdvanceAudioWindow {
-        let pageAudio = pageAudio
-        return await Task.detached(priority: .background) {
-            pageAudio.window(
-                endingAt: sampleIndex,
-                duration: PrayerAutoAdvanceLongAudioFeatureExtractor.duration + 0.5
-            )
-        }.value
     }
 
     func stop() {
@@ -340,18 +331,19 @@ private final class PrayerAutoAdvancePageAudioBuffer: @unchecked Sendable {
         lock.lock(); let count = storage.count; lock.unlock(); return count
     }
 
-    func window(endingAt sampleIndex: Int, duration: TimeInterval) -> PrayerAutoAdvanceAudioWindow {
+    /// Detaches the old page in O(1) via Array copy-on-write semantics. The returned
+    /// samples remain RAM-only while the live recorder immediately starts a fresh page.
+    func freeze() -> PrayerAutoAdvanceAudioWindow {
         lock.lock()
-        let end = min(max(sampleIndex, 0), storage.count)
-        let wanted = max(1, Int((duration * targetSampleRate).rounded()))
-        let start = max(0, end - wanted)
-        let samples = Array(storage[start..<end])
+        let frozen = storage
+        storage = []
+        sourcePhase = 0
         lock.unlock()
-        return PrayerAutoAdvanceAudioWindow(samples: samples, sampleRate: targetSampleRate)
+        return PrayerAutoAdvanceAudioWindow(samples: frozen, sampleRate: targetSampleRate)
     }
 
     func reset() {
-        lock.lock(); storage.removeAll(keepingCapacity: true); sourcePhase = 0; lock.unlock()
+        lock.lock(); storage = []; sourcePhase = 0; lock.unlock()
     }
 }
 #endif
