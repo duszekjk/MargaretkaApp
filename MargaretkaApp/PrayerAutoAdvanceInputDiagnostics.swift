@@ -11,6 +11,10 @@ struct PrayerAutoAdvanceDiagnosticInputSample: Identifiable, Sendable {
     let longAudioFeatures: [Float]
     let pcmSamples: [Float]
     let sampleRate: Double
+    let spokenEmbeddingText: String
+    let pageEmbeddingText: String
+    let spokenTokens: [String]
+    let pageTokens: [String]
 
     var scalars: ArraySlice<Float> { features.prefix(3) }
     var spokenEmbedding: ArraySlice<Float> { features[3..<min(515, features.count)] }
@@ -38,11 +42,18 @@ final class PrayerAutoAdvanceInputDiagnostics: ObservableObject {
         features: [Float],
         longAudioFeatures: [Float],
         audioWindow: PrayerAutoAdvanceAudioWindow,
+        transcript: String,
+        pageText: String,
         at date: Date
     ) {
         guard UserDefaults.standard.bool(forKey: PrayerAutoAdvancePreferences.trainingEnabledKey),
               date.timeIntervalSince(lastCaptureAt) >= Self.captureInterval else { return }
         lastCaptureAt = date
+
+        let allSpokenTokens = Self.tokens(transcript)
+        let spokenTokens = Array(allSpokenTokens.suffix(PrayerAutoAdvanceFeatureExtractor.spokenWindowWordCount))
+        let spokenEmbeddingText = spokenTokens.joined(separator: " ")
+        let pageTokens = Self.tokens(pageText)
 
         samples.append(
             PrayerAutoAdvanceDiagnosticInputSample(
@@ -53,7 +64,11 @@ final class PrayerAutoAdvanceInputDiagnostics: ObservableObject {
                 features: features,
                 longAudioFeatures: longAudioFeatures,
                 pcmSamples: audioWindow.samples,
-                sampleRate: audioWindow.sampleRate
+                sampleRate: audioWindow.sampleRate,
+                spokenEmbeddingText: spokenEmbeddingText,
+                pageEmbeddingText: pageText,
+                spokenTokens: spokenTokens,
+                pageTokens: pageTokens
             )
         )
         if samples.count > Self.maximumSamples {
@@ -65,20 +80,33 @@ final class PrayerAutoAdvanceInputDiagnostics: ObservableObject {
         samples.removeAll(keepingCapacity: false)
         lastCaptureAt = .distantPast
     }
+
+    private static func tokens(_ text: String) -> [String] {
+        text
+            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
+            .map(String.init)
+    }
 }
 
 @MainActor
 final class PrayerAutoAdvanceDiagnosticAudioPlayer: ObservableObject {
     @Published private(set) var isPlaying = false
+    @Published private(set) var playingSampleID: UUID?
+    @Published private(set) var playingDuration: TimeInterval?
 
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
+    private var playbackToken: UUID?
 
     init() {
         engine.attach(player)
     }
 
-    func play(samples: [Float], sampleRate: Double) throws {
+    func isPlaying(sampleID: UUID, duration: TimeInterval) -> Bool {
+        isPlaying && playingSampleID == sampleID && playingDuration == duration
+    }
+
+    func play(sampleID: UUID, duration: TimeInterval, samples: [Float], sampleRate: Double) throws {
         stop()
         guard !samples.isEmpty, sampleRate > 0 else { return }
 
@@ -107,18 +135,31 @@ final class PrayerAutoAdvanceDiagnosticAudioPlayer: ObservableObject {
         engine.connect(player, to: engine.mainMixerNode, format: format)
         engine.prepare()
         try engine.start()
+
+        let token = UUID()
+        playbackToken = token
+        playingSampleID = sampleID
+        playingDuration = duration
         isPlaying = true
+
         player.scheduleBuffer(buffer) { [weak self] in
             Task { @MainActor in
-                self?.isPlaying = false
+                guard let self, self.playbackToken == token else { return }
+                self.playbackToken = nil
+                self.playingSampleID = nil
+                self.playingDuration = nil
+                self.isPlaying = false
             }
         }
         player.play()
     }
 
     func stop() {
+        playbackToken = nil
         player.stop()
         if engine.isRunning { engine.stop() }
+        playingSampleID = nil
+        playingDuration = nil
         isPlaying = false
     }
 }
