@@ -5,7 +5,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         guard context != newContext else { return }
         context = newContext
         contextStartedAt = Date()
-        snapshots.removeAll(keepingCapacity: true)
+        trainingCandidates.removeAll(keepingCapacity: true)
         lastTrainingSnapshotAt = Date.distantPast
         lastTrainingCandidateAt = Date.distantPast
         lastInferenceAt = Date.distantPast
@@ -44,10 +44,8 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         guard evaluationTask == nil else { return }
         evaluationTask = Task { @MainActor [weak self] in
             while let self, !Task.isCancelled {
-                // Keep the 4 Hz scheduler for automatic switching responsiveness.
-                // Training candidates are independently throttled to 2 Hz in
-                // evaluationPlan(at:), so training capture does only half as much
-                // heavy feature work on iPhone 15-class hardware.
+                // 4 Hz remains for automatic prediction responsiveness. Training
+                // markers are separately throttled to 2 Hz and are metadata-only.
                 await self.evaluateCurrentCapture()
                 try? await Task.sleep(for: .milliseconds(250))
             }
