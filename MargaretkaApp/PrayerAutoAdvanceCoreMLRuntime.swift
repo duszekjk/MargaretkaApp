@@ -105,7 +105,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         // Freeze the old-page side before setContext starts the next page capture.
         // The ring snapshot itself is copy-on-write; all expensive feature work is
         // delayed and executed off MainActor below.
-        let swipeTranscript = capture.transcript
+        let swipeTranscript = capture.transcriptSnapshot()
         let swipeAudio = capture.audioWindow()
 #else
         let swipeTranscript = ""
