@@ -7,6 +7,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         contextStartedAt = Date()
         snapshots.removeAll(keepingCapacity: true)
         lastTrainingSnapshotAt = Date.distantPast
+        lastTrainingCandidateAt = Date.distantPast
         lastInferenceAt = Date.distantPast
         lastDiagnosticsPublishAt = Date.distantPast
         trainingCandidateSeenCount = 0
@@ -43,11 +44,12 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         guard evaluationTask == nil else { return }
         evaluationTask = Task { @MainActor [weak self] in
             while let self, !Task.isCancelled {
-                // 2 Hz is the compatibility cadence for iPhone 15 and newer.
-                // Training-only ticks usually do O(1) reservoir bookkeeping, but
-                // accepted/replacement candidates still require full feature extraction.
+                // Keep the 4 Hz scheduler for automatic switching responsiveness.
+                // Training candidates are independently throttled to 2 Hz in
+                // evaluationPlan(at:), so training capture does only half as much
+                // heavy feature work on iPhone 15-class hardware.
                 await self.evaluateCurrentCapture()
-                try? await Task.sleep(for: .milliseconds(500))
+                try? await Task.sleep(for: .milliseconds(250))
             }
         }
     }
