@@ -53,6 +53,10 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     private static let epochStorageKey = "PrayerAutoAdvanceTrainingEpochHistoryV4"
     private static let legacyEpochStorageKey = "PrayerAutoAdvanceTrainingEpochHistoryV3"
     private static let maximumStoredUpdates = 1_200
+    private static let persistenceQueue = DispatchQueue(
+        label: "PrayerAutoAdvanceTrainingDiagnostics.persistence",
+        qos: .utility
+    )
 
     @Published var speechState = "idle"
     @Published var pipelineState = "idle"
@@ -116,54 +120,15 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         }
         if features.count >= 3 {
             lastFeatureSummary = String(
-                format: "elapsed %.2f spokenN %.2f pageN %.2f speechEmb=512 pageEmb=512 aud10=1200 aud60=1920",
-                features[0], features[1], features[2]
+                format: "elapsed %.2f spokenN %.2f pageN %.2f speechEmb=512 pageEmb=512 aud10=%d aud60=%d",
+                features[0],
+                features[1],
+                features[2],
+                PrayerAutoAdvanceAudioFeatureExtractor.featureCount,
+                PrayerAutoAdvanceLongAudioFeatureExtractor.featureCount
             )
         }
         Self.logger.debug("prediction=\(value, privacy: .public) snapshots=\(snapshotCount, privacy: .public) features=\(self.lastFeatureSummary, privacy: .public)")
-    }
-
-    func evaluateBatch(
-        model: PrayerAutoAdvanceCoreMLModel,
-        samples: [PrayerAutoAdvanceLabeledSample],
-        phase: String
-    ) -> PrayerAutoAdvanceBatchEvaluation? {
-        var positive: [Double] = []
-        var negative: [Double] = []
-        var losses: [Double] = []
-        var predictions: [Double] = []
-
-        for sample in samples {
-            guard let raw = try? model.prediction(
-                for: sample.features,
-                longAudioFeatures: sample.longAudioFeatures
-            ) else { continue }
-            let p = min(max(Double(raw), 1e-6), 1 - 1e-6)
-            predictions.append(p)
-            if sample.label == 1 {
-                positive.append(p)
-                losses.append(-log(p))
-            } else {
-                negative.append(p)
-                losses.append(-log(1 - p))
-            }
-        }
-
-        guard !losses.isEmpty else { return nil }
-        let pos = average(positive)
-        let neg = average(negative)
-        let margin = pos.flatMap { p in neg.map { p - $0 } }
-        let result = PrayerAutoAdvanceBatchEvaluation(
-            loss: losses.reduce(0, +) / Double(losses.count),
-            positiveAverage: pos,
-            negativeAverage: neg,
-            margin: margin,
-            predictions: predictions,
-            positiveCount: positive.count,
-            negativeCount: negative.count
-        )
-        Self.logger.info("batch \(phase, privacy: .public) loss=\(result.loss, privacy: .public) margin=\(result.margin ?? 0, privacy: .public)")
-        return result
     }
 
     func recordTrainingUpdate(
@@ -240,30 +205,7 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         }
 
         Self.logger.info("heartbeat loss \(before.loss, privacy: .public) -> \(after.loss, privacy: .public), dLoss=\(before.loss - after.loss, privacy: .public), meanDPred=\(meanDelta, privacy: .public), maxDPred=\(maxDelta, privacy: .public)")
-        saveEpochState()
-    }
-
-    func evaluateTiming(
-        model: PrayerAutoAdvanceCoreMLModel,
-        snapshots: [PrayerAutoAdvanceTrainingSnapshot],
-        manualAdvanceAt: Date
-    ) {
-        let scored = snapshots.compactMap { snapshot -> (PrayerAutoAdvanceTrainingSnapshot, Float)? in
-            guard let score = try? model.prediction(for: snapshot.features, longAudioFeatures: snapshot.longAudioFeatures) else { return nil }
-            return (snapshot, score)
-        }
-        guard let peak = scored.max(by: { $0.1 < $1.1 }) else { return }
-        let error = peak.0.date.timeIntervalSince(manualAdvanceAt)
-        lastPeakTimingError = error
-        lastPeakPrediction = peak.1
-        timingErrors.append(error)
-        if timingErrors.count > 100 { timingErrors.removeFirst(timingErrors.count - 100) }
-        let absolute = timingErrors.map(abs)
-        timingMAE = absolute.reduce(0, +) / Double(absolute.count)
-        timingBias = timingErrors.reduce(0, +) / Double(timingErrors.count)
-        timingHitHalfSecond = hitRate(within: 0.5)
-        timingHitOneSecond = hitRate(within: 1.0)
-        timingHitTwoSeconds = hitRate(within: 2.0)
+        saveEpochStateInBackground()
     }
 
     func resetEpochHistory() {
@@ -294,16 +236,6 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         recentMessages.append("ERR: \(message)")
         if recentMessages.count > 6 { recentMessages.removeFirst(recentMessages.count - 6) }
         Self.logger.error("\(message, privacy: .public)")
-    }
-
-    private func average(_ values: [Double]) -> Double? {
-        guard !values.isEmpty else { return nil }
-        return values.reduce(0, +) / Double(values.count)
-    }
-
-    private func hitRate(within tolerance: TimeInterval) -> Double? {
-        guard !timingErrors.isEmpty else { return nil }
-        return Double(timingErrors.filter { abs($0) <= tolerance }.count) / Double(timingErrors.count)
     }
 
     private func resetCurrentEpochAccumulators() {
@@ -338,7 +270,7 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         }
     }
 
-    private func saveEpochState() {
+    private func saveEpochStateInBackground() {
         let value = EpochState(
             completedEpochs: completedEpochs,
             updateHistory: updateHistory,
@@ -351,12 +283,14 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
             currentValidationMargin: currentValidationMargin,
             currentValidationLoss: currentValidationLoss
         )
-        if let data = try? JSONEncoder().encode(value) {
-            UserDefaults.standard.set(data, forKey: Self.epochStorageKey)
+        let key = Self.epochStorageKey
+        Self.persistenceQueue.async {
+            guard let data = try? JSONEncoder().encode(value) else { return }
+            UserDefaults.standard.set(data, forKey: key)
         }
     }
 
-    private struct EpochState: Codable {
+    private struct EpochState: Codable, Sendable {
         let completedEpochs: [PrayerAutoAdvanceEpochMetric]
         let updateHistory: [PrayerAutoAdvanceTrainingUpdateMetric]
         let currentCount: Int
