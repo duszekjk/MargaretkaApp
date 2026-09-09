@@ -17,6 +17,16 @@
         }
       }
     },
+    "%@ [%lld]" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ [%2$lld]"
+          }
+        }
+      }
+    },
     "%@ %@" : {
       "localizations" : {
         "pl" : {
@@ -42,6 +52,16 @@
     "%lld wariantów dziennych" : {
 
     },
+    "%lld…%lld" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld…%2$lld"
+          }
+        }
+      }
+    },
     "%lld/%lld" : {
       "localizations" : {
         "pl" : {
@@ -61,6 +81,9 @@
     "© 2025 DUSZEKJK Jacek Kałużny" : {
 
     },
+    "|Δpred|" : {
+
+    },
     "▶️ Odtwórz audio" : {
 
     },
@@ -77,6 +100,9 @@
 
     },
     "2. Na kolejnej stronie wybierz okres dostępu i opłać zakup." : {
+
+    },
+    "2× stuknij, aby otworzyć pełną diagnostykę" : {
 
     },
     "3. Po opłaceniu wybierz format EPUB i pobierz plik na urządzenie." : {
@@ -109,6 +135,9 @@
           }
         }
       }
+    },
+    "Aktualizacja" : {
+
     },
     "Aktualizowanie modelu lokalnego…" : {
 
@@ -166,6 +195,9 @@
 
     },
     "Brak dodatkowych modlitw w tym okresie." : {
+
+    },
+    "Brak próbek. Zostaną dodane podczas działania treningu, maksymalnie jedna co 5 sekund." : {
 
     },
     "Brewiarz offline" : {
@@ -273,6 +305,12 @@
     "Developer" : {
 
     },
+    "Diagnostyka treningu" : {
+
+    },
+    "Diagnostyka treningu. Stuknij dwa razy, aby otworzyć szczegóły." : {
+
+    },
     "Diagram Margaretki: siedem płatków – dni tygodnia – wokół kapłana." : {
 
     },
@@ -373,7 +411,7 @@
         }
       }
     },
-    "epochs: T dim / V bright" : {
+    "Epoka" : {
 
     },
     "ERR: %@" : {
@@ -468,6 +506,9 @@
     "Kapłan" : {
 
     },
+    "Klasa" : {
+
+    },
     "Kolejność wariantów oficjum" : {
 
     },
@@ -490,6 +531,9 @@
 
     },
     "Kopiuj" : {
+
+    },
+    "Krok" : {
 
     },
     "Kroki startowe" : {
@@ -524,6 +568,24 @@
       }
     },
     "Logs a completed prayer without opening the app. Duration is optional." : {
+
+    },
+    "Loss" : {
+
+    },
+    "loss —" : {
+
+    },
+    "Margin" : {
+
+    },
+    "max %@" : {
+
+    },
+    "mean %@" : {
+
+    },
+    "min %@" : {
 
     },
     "Model" : {
@@ -623,6 +685,9 @@
     "Odczytywanie archiwum…" : {
 
     },
+    "Odsłuch: mono Float32, %lld Hz, dokładnie z bufora używanego do ekstrakcji cech. Model nie dostaje PCM bezpośrednio — dostaje poniższe cechy widmowe." : {
+
+    },
     "Odśwież" : {
 
     },
@@ -653,6 +718,9 @@
     "Ostatnia synchronizacja" : {
 
     },
+    "Ostatnie rzeczywiste wejścia. Audio istnieje tylko w RAM i znika po restarcie aplikacji." : {
+
+    },
     "Otwórz brewiarz w przeglądarce" : {
 
     },
@@ -660,6 +728,9 @@
 
     },
     "Otwórz tę stronę i wybierz link „Liturgia horarum”. Przeglądarka pobierze bezpłatny EPUB; potem wskaż go podczas importu w aplikacji." : {
+
+    },
+    "P(advance)" : {
 
     },
     "P/N %lld/%lld" : {
@@ -675,6 +746,9 @@
     "Pamięć" : {
 
     },
+    "PCM %@ s · input 4147 = 3 + 512 + 512 + 1200 + 1920" : {
+
+    },
     "Pełna kopia zapasowa" : {
 
     },
@@ -682,6 +756,12 @@
 
     },
     "pipe %@" : {
+
+    },
+    "Play 10 s" : {
+
+    },
+    "Play 60 s" : {
 
     },
     "Po co?" : {
@@ -748,9 +828,6 @@
     "Prayer streak" : {
 
     },
-    "prev E%lld" : {
-
-    },
     "priest, person, or complex prayer" : {
 
     },
@@ -758,6 +835,9 @@
 
     },
     "Próbki" : {
+
+    },
+    "Próbki danych modelu" : {
 
     },
     "Przeciągnij zdjęcie, żeby zmienić pozycję" : {
@@ -824,6 +904,9 @@
     "Reports the number of consecutive weeks with a completed prayer for a saved target." : {
 
     },
+    "rms %@" : {
+
+    },
     "Rozpocznij nagrywanie" : {
 
     },
@@ -847,6 +930,9 @@
         }
       }
     },
+    "scalars" : {
+
+    },
     "Schedule" : {
       "localizations" : {
         "pl" : {
@@ -858,6 +944,9 @@
       }
     },
     "Schema cech" : {
+
+    },
+    "Seria" : {
 
     },
     "Sesje treningowe" : {
@@ -873,9 +962,6 @@
 
     },
     "Siri, Skróty i NFC" : {
-
-    },
-    "skip %lld" : {
 
     },
     "Skopiowano" : {
@@ -906,6 +992,9 @@
     "Statystyki" : {
 
     },
+    "Stop" : {
+
+    },
     "Święty dnia" : {
 
     },
@@ -925,9 +1014,6 @@
 
     },
     "Synchronizuję…" : {
-
-    },
-    "T —" : {
 
     },
     "Tekst EPUB jest upraszczany, zapisywany bez ozdobników i kompresowany. Plik EPUB nie pozostaje w aplikacji po imporcie." : {
@@ -1388,16 +1474,6 @@
         }
       }
     },
-    "timing %lld/%lld" : {
-      "localizations" : {
-        "pl" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "timing %1$lld/%2$lld"
-          }
-        }
-      }
-    },
     "To modlitwa siedmiu osób za **jednego konkretnego kapłana** – każda osoba obejmuje go modlitwą w wybrany dzień tygodnia. Razem tworzą „stokrotkę” (7 płatków) z kapłanem w środku. Zobowiązanie ma charakter **stały** (długoterminowy)." : {
 
     },
@@ -1528,9 +1604,6 @@
     "Użytkownik" : {
 
     },
-    "V —" : {
-
-    },
     "val %lldr/%llds" : {
       "localizations" : {
         "pl" : {
@@ -1540,6 +1613,9 @@
           }
         }
       }
+    },
+    "Validation loss" : {
+
     },
     "Value" : {
       "localizations" : {
@@ -1627,6 +1703,9 @@
     "Wycentruj zdjęcie" : {
 
     },
+    "Wyczyść" : {
+
+    },
     "Wyczyść cache internetowy" : {
 
     },
@@ -1702,6 +1781,9 @@
     "Zdjęcie" : {
 
     },
+    "Zero" : {
+
+    },
     "Zmienione zostaną teksty modlitw wbudowanych oraz układ wbudowanych modlitw złożonych." : {
 
     },
@@ -1715,6 +1797,9 @@
 
     },
     "Źródło: %@" : {
+
+    },
+    "Δloss" : {
 
     }
   },
