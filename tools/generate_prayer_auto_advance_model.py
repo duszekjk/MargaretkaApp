@@ -109,7 +109,7 @@ def build_model(model_version: int):
 
     builder.make_updatable(UPDATABLE_LAYERS)
     builder.set_categorical_cross_entropy_loss(name="classification_loss", input="probabilities")
-    builder.set_adam_optimizer(AdamParams(lr=0.0005, batch=1))
+    builder.set_adam_optimizer(AdamParams(lr=0.00001, batch=1))
     builder.set_epochs(3)
 
     spec = builder.spec
@@ -128,6 +128,7 @@ def build_model(model_version: int):
     model.user_defined_metadata["featureSchemaVersion"] = str(SCHEMA_VERSION)
     model.user_defined_metadata["updatableLayers"] = ",".join(UPDATABLE_LAYERS)
     model.user_defined_metadata["allParameterizedLayersUpdatable"] = "true"
+    model.user_defined_metadata["adamLearningRate"] = "0.00001"
     return model
 
 
@@ -161,6 +162,8 @@ def self_test(output: Path, model_version: int):
         raise RuntimeError(f"featureSchemaVersion mismatch: {metadata.get('featureSchemaVersion')!r}")
     if metadata.get("allParameterizedLayersUpdatable") != "true":
         raise RuntimeError("Model metadata does not declare full parameter training")
+    if metadata.get("adamLearningRate") != "0.00001":
+        raise RuntimeError(f"Unexpected Adam learning rate metadata: {metadata.get('adamLearningRate')!r}")
     if inputs != [("features", [INPUT_SIZE])]:
         raise RuntimeError(f"Unexpected inputs: {inputs}")
     if parameter_layers != PARAMETER_LAYERS:
@@ -195,6 +198,7 @@ def self_test(output: Path, model_version: int):
     print(f"hidden sizes: {HIDDEN_SIZES}")
     print(f"parameterized layers: {', '.join(parameter_layers)}")
     print(f"updatable layers: {', '.join(updatable)}")
+    print("adam learning rate: 0.00001")
     print("SELF-TEST: OK")
 
 
