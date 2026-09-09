@@ -34,10 +34,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         let plan = evaluationPlan(at: Date())
         guard plan.needsHeavyWork else { return }
 
-        // Transcript access is cheap and actor-isolated; the potentially large
-        // 60.5 s PCM snapshot is copied on a utility worker only when a reservoir
-        // candidate or a prediction heartbeat is actually needed.
-        let transcript = capture.transcript
+        let transcript = capture.transcriptSnapshot()
         let audioWindow = await capture.audioWindowOffMain()
         await observe(
             transcript: transcript,
