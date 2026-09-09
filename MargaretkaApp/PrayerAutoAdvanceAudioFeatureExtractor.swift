@@ -10,8 +10,8 @@ enum PrayerAutoAdvanceAudioFeatureExtractor {
     static let temporalBins = 50
     static let frequencyBands = 48
     static let featureCount = temporalBins * frequencyBands
+    static let analysisSampleRate = 16_000.0
 
-    private static let analysisSampleRate = 16_000.0
     private static let analysisWindowSamples = 640
     private static let minimumFrequency = 80.0
     private static let maximumFrequency = 8_000.0
