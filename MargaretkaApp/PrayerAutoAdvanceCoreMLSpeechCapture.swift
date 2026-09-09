@@ -19,6 +19,9 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         duration: PrayerAutoAdvanceLongAudioFeatureExtractor.duration + 0.5,
         targetSampleRate: 16_000
     )
+    // Raw PCM remains RAM-only and page-scoped. This lets training candidates keep
+    // only an audio endpoint while exact V11 features are materialized after swipe.
+    nonisolated private let pageAudio = PrayerAutoAdvancePageAudioBuffer(targetSampleRate: 16_000)
 
     func start(language: PrayerLanguage, context: [String]) async throws {
         guard !isStarting else { return }
@@ -62,13 +65,17 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
         audioRing.configure(sourceSampleRate: format.sampleRate)
+        pageAudio.configure(sourceSampleRate: format.sampleRate)
 
         let requestBox = self.requestBox
         let audioRing = self.audioRing
+        let pageAudio = self.pageAudio
         input.installTap(onBus: 0, bufferSize: 2048, format: format) { buffer, _ in
             requestBox.append(buffer)
             guard let channel = buffer.floatChannelData?[0] else { return }
-            audioRing.append(channel, count: Int(buffer.frameLength))
+            let count = Int(buffer.frameLength)
+            audioRing.append(channel, count: count)
+            pageAudio.append(channel, count: count)
         }
         hasInputTap = true
 
@@ -97,16 +104,12 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         requestBox.set(speechRequest)
         transcriptBox.reset(generation: generation)
         audioRing.reset()
+        pageAudio.reset()
 
         let transcriptBox = self.transcriptBox
         task = recognizer.recognitionTask(with: speechRequest) { [weak self] result, error in
-            // Partial results are model input, not UI state. Formatting and storing
-            // them on every callback must not enqueue MainActor work.
             if let result {
-                transcriptBox.set(
-                    result.bestTranscription.formattedString,
-                    generation: generation
-                )
+                transcriptBox.set(result.bestTranscription.formattedString, generation: generation)
             }
 
             if error != nil {
@@ -129,18 +132,23 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         request = nil
     }
 
-    nonisolated func transcriptSnapshot() -> String {
-        transcriptBox.snapshot()
-    }
+    nonisolated func transcriptSnapshot() -> String { transcriptBox.snapshot() }
+    nonisolated func pageAudioSampleIndex() -> Int { pageAudio.sampleCount() }
 
-    func audioWindow() -> PrayerAutoAdvanceAudioWindow {
-        audioRing.snapshot()
-    }
+    func audioWindow() -> PrayerAutoAdvanceAudioWindow { audioRing.snapshot() }
 
     nonisolated func audioWindowOffMain() async -> PrayerAutoAdvanceAudioWindow {
         let ring = audioRing
+        return await Task.detached(priority: .background) { ring.snapshot() }.value
+    }
+
+    nonisolated func pageAudioWindowOffMain(endingAt sampleIndex: Int) async -> PrayerAutoAdvanceAudioWindow {
+        let pageAudio = pageAudio
         return await Task.detached(priority: .background) {
-            ring.snapshot()
+            pageAudio.window(
+                endingAt: sampleIndex,
+                duration: PrayerAutoAdvanceLongAudioFeatureExtractor.duration + 0.5
+            )
         }.value
     }
 
@@ -148,6 +156,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         stopRecognition()
         stopAudioOnly(deactivateSession: true)
         audioRing.reset()
+        pageAudio.reset()
         recognizer = nil
         currentLanguage = nil
     }
@@ -159,9 +168,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
             hasInputTap = false
         }
         if deactivateSession {
-            Task {
-                try? await Self.setAudioSessionActive(false)
-            }
+            Task { try? await Self.setAudioSessionActive(false) }
         }
     }
 
@@ -173,9 +180,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
                     try session.setCategory(.record, mode: .measurement, options: [.duckOthers])
                     try session.setActive(true)
                     continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
-                }
+                } catch { continuation.resume(throwing: error) }
             }
         }
     }
@@ -189,9 +194,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
                         options: active ? [] : [.notifyOthersOnDeactivation]
                     )
                     continuation.resume()
-                } catch {
-                    continuation.resume(throwing: error)
-                }
+                } catch { continuation.resume(throwing: error) }
             }
         }
     }
@@ -214,15 +217,11 @@ private final class PrayerAutoAdvanceSpeechRequestBox: @unchecked Sendable {
     private var request: SFSpeechAudioBufferRecognitionRequest?
 
     func set(_ value: SFSpeechAudioBufferRecognitionRequest?) {
-        lock.lock()
-        request = value
-        lock.unlock()
+        lock.lock(); request = value; lock.unlock()
     }
 
     func append(_ buffer: AVAudioPCMBuffer) {
-        lock.lock()
-        let current = request
-        lock.unlock()
+        lock.lock(); let current = request; lock.unlock()
         current?.append(buffer)
     }
 }
@@ -233,31 +232,20 @@ private final class PrayerAutoAdvanceTranscriptBox: @unchecked Sendable {
     private var text = ""
 
     func reset(generation: Int) {
-        lock.lock()
-        self.generation = generation
-        text = ""
-        lock.unlock()
+        lock.lock(); self.generation = generation; text = ""; lock.unlock()
     }
 
     func set(_ value: String, generation: Int) {
         lock.lock()
-        if self.generation == generation {
-            text = value
-        }
+        if self.generation == generation { text = value }
         lock.unlock()
     }
 
     func snapshot() -> String {
-        lock.lock()
-        let value = text
-        lock.unlock()
-        return value
+        lock.lock(); let value = text; lock.unlock(); return value
     }
 }
 
-/// Fixed-capacity circular PCM buffer. The previous implementation used
-/// Array.removeFirst after reaching 60.5 s, which shifted almost one million
-/// Float values on every microphone callback at 16 kHz.
 private final class PrayerAutoAdvanceAudioRingBuffer: @unchecked Sendable {
     private let lock = NSLock()
     private let targetSampleRate: Double
@@ -275,10 +263,7 @@ private final class PrayerAutoAdvanceAudioRingBuffer: @unchecked Sendable {
     }
 
     func configure(sourceSampleRate: Double) {
-        lock.lock()
-        self.sourceSampleRate = max(sourceSampleRate, 1)
-        sourcePhase = 0
-        lock.unlock()
+        lock.lock(); self.sourceSampleRate = max(sourceSampleRate, 1); sourcePhase = 0; lock.unlock()
     }
 
     func append(_ pointer: UnsafePointer<Float>, count: Int) {
@@ -302,30 +287,71 @@ private final class PrayerAutoAdvanceAudioRingBuffer: @unchecked Sendable {
         lock.lock()
         let count = storedCount
         let start = count == capacity ? writeIndex : 0
-
         var samples: [Float] = []
         samples.reserveCapacity(count)
         if count == capacity {
-            if start < capacity {
-                samples.append(contentsOf: storage[start..<capacity])
-            }
-            if start > 0 {
-                samples.append(contentsOf: storage[0..<start])
-            }
+            if start < capacity { samples.append(contentsOf: storage[start..<capacity]) }
+            if start > 0 { samples.append(contentsOf: storage[0..<start]) }
         } else if count > 0 {
             samples.append(contentsOf: storage[0..<count])
         }
         lock.unlock()
-
         return PrayerAutoAdvanceAudioWindow(samples: samples, sampleRate: targetSampleRate)
     }
 
     func reset() {
+        lock.lock(); writeIndex = 0; storedCount = 0; sourcePhase = 0; lock.unlock()
+    }
+}
+
+/// Page-scoped Float32 PCM history. It is never persisted or uploaded. Keeping one
+/// shared stream is far cheaper than storing sixteen overlapping 60 s snapshots.
+private final class PrayerAutoAdvancePageAudioBuffer: @unchecked Sendable {
+    private let lock = NSLock()
+    private let targetSampleRate: Double
+    private var sourceSampleRate: Double = 48_000
+    private var sourcePhase: Double = 0
+    private var storage: [Float] = []
+
+    init(targetSampleRate: Double) {
+        self.targetSampleRate = targetSampleRate
+        storage.reserveCapacity(Int(targetSampleRate * 300))
+    }
+
+    func configure(sourceSampleRate: Double) {
+        lock.lock(); self.sourceSampleRate = max(sourceSampleRate, 1); sourcePhase = 0; lock.unlock()
+    }
+
+    func append(_ pointer: UnsafePointer<Float>, count: Int) {
+        guard count > 0 else { return }
         lock.lock()
-        writeIndex = 0
-        storedCount = 0
-        sourcePhase = 0
+        let step = sourceSampleRate / targetSampleRate
+        var position = sourcePhase
+        while position < Double(count) {
+            let index = min(max(Int(position.rounded(.down)), 0), count - 1)
+            storage.append(pointer[index])
+            position += step
+        }
+        sourcePhase = position - Double(count)
         lock.unlock()
+    }
+
+    func sampleCount() -> Int {
+        lock.lock(); let count = storage.count; lock.unlock(); return count
+    }
+
+    func window(endingAt sampleIndex: Int, duration: TimeInterval) -> PrayerAutoAdvanceAudioWindow {
+        lock.lock()
+        let end = min(max(sampleIndex, 0), storage.count)
+        let wanted = max(1, Int((duration * targetSampleRate).rounded()))
+        let start = max(0, end - wanted)
+        let samples = Array(storage[start..<end])
+        lock.unlock()
+        return PrayerAutoAdvanceAudioWindow(samples: samples, sampleRate: targetSampleRate)
+    }
+
+    func reset() {
+        lock.lock(); storage.removeAll(keepingCapacity: true); sourcePhase = 0; lock.unlock()
     }
 }
 #endif
