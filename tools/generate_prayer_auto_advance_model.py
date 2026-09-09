@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Generate the updatable audio-primary Core ML model used by prayer auto-advance.
+"""Generate the fully updatable audio-primary Core ML model used by prayer auto-advance.
 
-Feature schema v8 uses ONE Core ML input so every trainable layer sits on a plain
+Feature schema v8 uses ONE Core ML input so every parameterized layer sits on a plain
 backpropagation path to the loss. Core ML's legacy updatable neural-network validator
 rejects CONCAT between an updatable layer and the loss.
 
@@ -13,10 +13,10 @@ The app concatenates locally, before Core ML:
 - 3840 long-audio features (60 s, 120 x 32, 16 kHz analysis)
 Total: 7267 float values, of which 6240 (~86%) are audio.
 
-Model v10 doubles the audio sampling rate from 8 kHz to 16 kHz and doubles the
-spectral-band representation so the network can use the additional 4-8 kHz content.
-The stable v9 personalization strategy is retained: only hidden4, hidden5 and logits
-are updatable on device.
+Model v11 keeps the v10 architecture and feature schema unchanged, but fixes the
+training contract: every layer that owns trainable weights is updatable on device.
+The ReLU activations, softmax, loss and optimizer have no learned weight tensors of
+their own, so there is nothing to mark updatable on those operations.
 """
 
 from pathlib import Path
@@ -33,9 +33,10 @@ SHORT_AUDIO_SIZE = 50 * 48
 LONG_AUDIO_SIZE = 120 * 32
 INPUT_SIZE = SCALAR_SIZE + 2 * TEXT_EMBEDDING_SIZE + SHORT_AUDIO_SIZE + LONG_AUDIO_SIZE
 HIDDEN_SIZES = [1536, 1024, 512, 256, 64]
-MODEL_VERSION = 10
+MODEL_VERSION = 11
 SCHEMA_VERSION = 8
-UPDATABLE_LAYERS = ["hidden4", "hidden5", "logits"]
+PARAMETER_LAYERS = ["hidden1", "hidden2", "hidden3", "hidden4", "hidden5", "logits"]
+UPDATABLE_LAYERS = PARAMETER_LAYERS.copy()
 
 
 def seeded(shape, scale, seed):
@@ -122,9 +123,11 @@ def build_model(model_version: int):
 
     model = ct.models.MLModel(spec)
     model.author = "Margaretka"
-    model.short_description = "Updatable on-device 16 kHz audio-primary prayer auto-advance classifier"
+    model.short_description = "Fully updatable on-device 16 kHz audio-primary prayer auto-advance classifier"
     model.user_defined_metadata["modelVersion"] = str(model_version)
     model.user_defined_metadata["featureSchemaVersion"] = str(SCHEMA_VERSION)
+    model.user_defined_metadata["updatableLayers"] = ",".join(UPDATABLE_LAYERS)
+    model.user_defined_metadata["allParameterizedLayersUpdatable"] = "true"
     return model
 
 
@@ -134,9 +137,8 @@ def parameter_count():
 
 
 def updatable_parameter_count():
-    # hidden4: 512 -> 256, hidden5: 256 -> 64, logits: 64 -> 2
-    sizes = [(512, 256), (256, 64), (64, 2)]
-    return sum(a * b + b for a, b in sizes)
+    # V11 intentionally trains every parameterized layer from hidden1 through logits.
+    return parameter_count()
 
 
 def self_test(output: Path, model_version: int):
@@ -144,6 +146,11 @@ def self_test(output: Path, model_version: int):
     metadata = spec.description.metadata.userDefined
     inputs = [(x.name, list(x.type.multiArrayType.shape)) for x in spec.description.input]
     updatable = [layer.name for layer in spec.neuralNetwork.layers if layer.isUpdatable]
+    parameter_layers = [
+        layer.name
+        for layer in spec.neuralNetwork.layers
+        if layer.WhichOneof("layer") == "innerProduct"
+    ]
     params = parameter_count()
     update_params = updatable_parameter_count()
     size_bytes = output.stat().st_size
@@ -152,13 +159,22 @@ def self_test(output: Path, model_version: int):
         raise RuntimeError(f"modelVersion mismatch: {metadata.get('modelVersion')!r}")
     if metadata.get("featureSchemaVersion") != str(SCHEMA_VERSION):
         raise RuntimeError(f"featureSchemaVersion mismatch: {metadata.get('featureSchemaVersion')!r}")
+    if metadata.get("allParameterizedLayersUpdatable") != "true":
+        raise RuntimeError("Model metadata does not declare full parameter training")
     if inputs != [("features", [INPUT_SIZE])]:
         raise RuntimeError(f"Unexpected inputs: {inputs}")
-    if updatable != UPDATABLE_LAYERS:
-        raise RuntimeError(f"Expected updatable layers {UPDATABLE_LAYERS}, found {updatable}")
+    if parameter_layers != PARAMETER_LAYERS:
+        raise RuntimeError(f"Unexpected parameterized layers: {parameter_layers}")
+    if updatable != PARAMETER_LAYERS:
+        raise RuntimeError(
+            "Every parameterized layer must be updatable; "
+            f"parameter layers={parameter_layers}, updatable={updatable}"
+        )
+    if update_params != params:
+        raise RuntimeError(f"Only {update_params:,} of {params:,} parameters are trainable")
     if size_bytes < 40_000_000:
         raise RuntimeError(
-            f"Generated model is only {size_bytes} bytes; expected a v10 model larger than 40 MB. "
+            f"Generated model is only {size_bytes} bytes; expected a v11 model larger than 40 MB. "
             "Do not add this file to Xcode."
         )
 
@@ -177,6 +193,7 @@ def self_test(output: Path, model_version: int):
     print(f"saved .mlmodel size: {size_bytes / 1024 / 1024:.2f} MiB")
     print(f"inputs: features[{INPUT_SIZE}]")
     print(f"hidden sizes: {HIDDEN_SIZES}")
+    print(f"parameterized layers: {', '.join(parameter_layers)}")
     print(f"updatable layers: {', '.join(updatable)}")
     print("SELF-TEST: OK")
 
