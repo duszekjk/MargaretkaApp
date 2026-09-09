@@ -3,8 +3,7 @@ import Foundation
 extension PrayerAutoAdvanceCoreMLRuntime {
     func observe(transcript: String, audioWindow: PrayerAutoAdvanceAudioWindow) async {
         guard let context,
-              let model = state.model,
-              !transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+              let model = state.model else { return }
 
         let now = Date()
         let elapsed = now.timeIntervalSince(contextStartedAt)
@@ -24,7 +23,10 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         guard features.count == PrayerAutoAdvanceCoreMLModel.inputSize,
               longAudioFeatures.count == PrayerAutoAdvanceCoreMLModel.longAudioInputSize else { return }
 
-        if now.timeIntervalSince(lastTrainingSnapshotAt) >= 0.5 {
+        // Keep training candidates at 4 Hz. Silent/title pages are intentionally
+        // included: their empty spoken embedding plus audio/page/timing features
+        // are valid model inputs and must be learnable.
+        if now.timeIntervalSince(lastTrainingSnapshotAt) >= 0.25 {
             snapshots.append(
                 PrayerAutoAdvanceTrainingSnapshot(
                     pageID: context.pageID,
@@ -34,7 +36,8 @@ extension PrayerAutoAdvanceCoreMLRuntime {
                 )
             )
             lastTrainingSnapshotAt = now
-            if snapshots.count > 80 { snapshots.removeFirst(snapshots.count - 80) }
+            // Keep enough history for long pages; the policy samples at most 12.
+            if snapshots.count > 1_000 { snapshots.removeFirst(snapshots.count - 1_000) }
         }
 
         do {
