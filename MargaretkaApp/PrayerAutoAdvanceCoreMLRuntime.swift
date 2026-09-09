@@ -26,11 +26,13 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
     // last one/two 4 Hz candidates without usually shrinking a long-page batch.
     static let trainingReservoirCapacity = 16
     static let trainingOnlyInferenceInterval: TimeInterval = 2.0
+    static let activeTrainingInferenceInterval: TimeInterval = 5.0
     static let diagnosticsPublishInterval: TimeInterval = 2.0
 
-    init() {
-        PrayerAutoAdvanceCoreMLDiskState.load(state)
-    }
+    // PrayerAutoAdvanceCoreMLState.shared already restores local disk state once.
+    // Reloading the model/validation JSON here duplicated expensive synchronous I/O
+    // each time a runtime object was created.
+    init() {}
 
     deinit {
         evaluationTask?.cancel()
@@ -56,7 +58,10 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         if isAutomaticEnabled {
             shouldPredict = true
         } else if isTrainingEnabled {
-            shouldPredict = date.timeIntervalSince(lastInferenceAt) >= Self.trainingOnlyInferenceInterval
+            let interval = state.isTraining
+                ? Self.activeTrainingInferenceInterval
+                : Self.trainingOnlyInferenceInterval
+            shouldPredict = date.timeIntervalSince(lastInferenceAt) >= interval
         } else {
             shouldPredict = false
         }
@@ -124,7 +129,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 #endif
 
             let targetDates = PrayerAutoAdvanceTrainingPolicy.positiveTargetDates(manualAdvanceAt: date)
-            let positiveSnapshots = await Task.detached(priority: .utility) {
+            let positiveSnapshots = await Task.detached(priority: .background) {
                 targetDates.compactMap { targetDate -> PrayerAutoAdvanceTrainingSnapshot? in
                     let targetWindow = Self.audioWindow(
                         at: targetDate,
