@@ -43,11 +43,11 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         guard evaluationTask == nil else { return }
         evaluationTask = Task { @MainActor [weak self] in
             while let self, !Task.isCancelled {
-                // 4 Hz here is only a scheduling cadence. In training-only mode
-                // most ticks now do O(1) reservoir bookkeeping and no PCM copy,
-                // feature extraction or model inference.
+                // 2 Hz is the compatibility cadence for iPhone 15 and newer.
+                // Training-only ticks usually do O(1) reservoir bookkeeping, but
+                // accepted/replacement candidates still require full feature extraction.
                 await self.evaluateCurrentCapture()
-                try? await Task.sleep(for: .milliseconds(250))
+                try? await Task.sleep(for: .milliseconds(500))
             }
         }
     }
