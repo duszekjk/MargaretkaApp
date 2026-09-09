@@ -19,6 +19,14 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
     var cooldownUntil = Date.distantPast
     var lastTrainingSnapshotAt = Date.distantPast
     var lastDiagnosticsPublishAt = Date.distantPast
+    var lastInferenceAt = Date.distantPast
+    var trainingCandidateSeenCount = 0
+
+    // Keep a little more than the final 12 so the T-0.4 s cutoff can discard the
+    // last one/two 4 Hz candidates without usually shrinking a long-page batch.
+    static let trainingReservoirCapacity = 16
+    static let trainingOnlyInferenceInterval: TimeInterval = 2.0
+    static let diagnosticsPublishInterval: TimeInterval = 2.0
 
     init() {
         PrayerAutoAdvanceCoreMLDiskState.load(state)
@@ -28,13 +36,58 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         evaluationTask?.cancel()
     }
 
-    var isFeatureEnabled: Bool {
+    var isTrainingEnabled: Bool {
         UserDefaults.standard.bool(forKey: PrayerAutoAdvancePreferences.trainingEnabledKey)
-            || UserDefaults.standard.bool(forKey: PrayerAutoAdvancePreferences.automaticEnabledKey)
+    }
+
+    var isAutomaticEnabled: Bool {
+        UserDefaults.standard.bool(forKey: PrayerAutoAdvancePreferences.automaticEnabledKey)
+    }
+
+    var isFeatureEnabled: Bool {
+        isTrainingEnabled || isAutomaticEnabled
+    }
+
+    /// Called at 4 Hz, but deliberately performs only O(1) bookkeeping. The
+    /// expensive v10 feature extraction happens only when this returns a slot or
+    /// when an inference heartbeat/automatic prediction is due.
+    func evaluationPlan(at date: Date) -> PrayerAutoAdvanceEvaluationPlan {
+        let shouldPredict: Bool
+        if isAutomaticEnabled {
+            shouldPredict = true
+        } else if isTrainingEnabled {
+            shouldPredict = date.timeIntervalSince(lastInferenceAt) >= Self.trainingOnlyInferenceInterval
+        } else {
+            shouldPredict = false
+        }
+
+        var reservoirSlot: Int?
+        if isTrainingEnabled {
+            trainingCandidateSeenCount += 1
+            if snapshots.count < Self.trainingReservoirCapacity {
+                reservoirSlot = snapshots.count
+            } else {
+                // Standard reservoir sampling: after the reservoir fills, each
+                // 4 Hz timestamp has equal probability of surviving until swipe.
+                let candidate = Int.random(in: 0..<trainingCandidateSeenCount)
+                if candidate < Self.trainingReservoirCapacity {
+                    reservoirSlot = candidate
+                }
+            }
+        }
+
+        if shouldPredict {
+            lastInferenceAt = date
+        }
+        return PrayerAutoAdvanceEvaluationPlan(
+            date: date,
+            reservoirSlot: reservoirSlot,
+            shouldPredict: shouldPredict
+        )
     }
 
     func recordManualAdvance(at date: Date = Date()) {
-        guard UserDefaults.standard.bool(forKey: PrayerAutoAdvancePreferences.trainingEnabledKey),
+        guard isTrainingEnabled,
               let currentContext = context,
               state.model != nil,
               !state.isTraining else { return }
@@ -45,6 +98,8 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
 #if os(iOS)
         // Freeze the old-page side before setContext starts the next page capture.
+        // The ring snapshot itself is copy-on-write; all expensive feature work is
+        // delayed and executed off MainActor below.
         let swipeTranscript = capture.transcript
         let swipeAudio = capture.audioWindow()
 #else
@@ -121,7 +176,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
             if self.state.validationStore.shouldHoldOut(pageID: pageID) {
                 self.state.validationStore.append(pageID: pageID, batch: batch, at: date)
                 do {
-                    try PrayerAutoAdvanceCoreMLDiskState.save(self.state)
+                    try await PrayerAutoAdvanceCoreMLDiskState.saveInBackground(self.state)
                     diagnostics.pipelineState = "validation"
                     diagnostics.event(
                         "validation holdout page=\(pageID) records=\(self.state.validationStore.records.count) samples=\(self.state.validationStore.sampleCount)"
@@ -171,4 +226,12 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
             sampleRate: sampleRate
         )
     }
+}
+
+struct PrayerAutoAdvanceEvaluationPlan: Sendable {
+    let date: Date
+    let reservoirSlot: Int?
+    let shouldPredict: Bool
+
+    var needsHeavyWork: Bool { reservoirSlot != nil || shouldPredict }
 }
