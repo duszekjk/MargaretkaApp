@@ -1,18 +1,21 @@
 import Foundation
 
 extension PrayerAutoAdvanceCoreMLRuntime {
-    func observe(transcript: String, audioWindow: PrayerAutoAdvanceAudioWindow) async {
+    func observe(
+        transcript: String,
+        audioWindow: PrayerAutoAdvanceAudioWindow,
+        plan: PrayerAutoAdvanceEvaluationPlan
+    ) async {
         guard let context,
               let model = state.model else { return }
 
-        let now = Date()
-        let elapsed = now.timeIntervalSince(contextStartedAt)
+        let elapsed = plan.date.timeIntervalSince(contextStartedAt)
 
         do {
-            // V10 feature extraction + Core ML inference are CPU-heavy. Keep the
-            // complete inference path off MainActor; only publish the finished
-            // result and mutate UI-facing state below.
-            let inference = try await Task.detached(priority: .utility) {
+            // V10 feature extraction and every Core ML prediction stay entirely off
+            // MainActor. During training-only mode most 4 Hz ticks never reach this
+            // method at all; they only perform reservoir bookkeeping.
+            let result = try await Task.detached(priority: .utility) {
                 let shortAudio = PrayerAutoAdvanceAudioFeatureExtractor.features(window: audioWindow)
                 let longAudio = PrayerAutoAdvanceLongAudioFeatureExtractor.features(window: audioWindow)
                 let features = PrayerAutoAdvanceFeatureExtractor.features(
@@ -25,45 +28,49 @@ extension PrayerAutoAdvanceCoreMLRuntime {
                       longAudio.count == PrayerAutoAdvanceCoreMLModel.longAudioInputSize else {
                     throw PrayerAutoAdvanceCoreMLModel.ModelError.invalidFeatureCount
                 }
-                let prediction = try model.prediction(
-                    for: features,
-                    longAudioFeatures: longAudio
-                )
+
+                let prediction: Float?
+                if plan.shouldPredict {
+                    prediction = try model.prediction(
+                        for: features,
+                        longAudioFeatures: longAudio
+                    )
+                } else {
+                    prediction = nil
+                }
                 return (features, longAudio, prediction)
             }.value
 
-            let features = inference.0
-            let longAudioFeatures = inference.1
-            let value = inference.2
+            let features = result.0
+            let longAudioFeatures = result.1
 
-            // Keep training candidates at 4 Hz. Silent/title pages are intentionally
-            // included: their empty spoken embedding plus audio/page/timing features
-            // are valid model inputs and must be learnable.
-            if now.timeIntervalSince(lastTrainingSnapshotAt) >= 0.25 {
-                snapshots.append(
-                    PrayerAutoAdvanceTrainingSnapshot(
-                        pageID: context.pageID,
-                        date: now,
-                        features: features,
-                        longAudioFeatures: longAudioFeatures
-                    )
+            if let slot = plan.reservoirSlot {
+                let snapshot = PrayerAutoAdvanceTrainingSnapshot(
+                    pageID: context.pageID,
+                    date: plan.date,
+                    features: features,
+                    longAudioFeatures: longAudioFeatures
                 )
-                lastTrainingSnapshotAt = now
-                // Keep enough history for long pages; the policy samples at most 12.
-                if snapshots.count > 1_000 { snapshots.removeFirst(snapshots.count - 1_000) }
+                if snapshots.indices.contains(slot) {
+                    snapshots[slot] = snapshot
+                } else if slot == snapshots.count {
+                    snapshots.append(snapshot)
+                }
+                lastTrainingSnapshotAt = plan.date
             }
 
+            guard let value = result.2 else { return }
             lastPrediction = value
 
-            // The HUD is diagnostic only. Publishing it at inference cadence would
-            // invalidate SwiftUI four times per second for no runtime benefit.
-            if now.timeIntervalSince(lastDiagnosticsPublishAt) >= 1.0 {
+            // HUD is only a coarse liveness indicator. 0.5 Hz is sufficient even
+            // when automatic mode evaluates the model at 4 Hz.
+            if plan.date.timeIntervalSince(lastDiagnosticsPublishAt) >= Self.diagnosticsPublishInterval {
                 PrayerAutoAdvanceTrainingDiagnostics.shared.prediction(
                     value,
                     snapshotCount: snapshots.count,
                     features: features
                 )
-                lastDiagnosticsPublishAt = now
+                lastDiagnosticsPublishAt = plan.date
             }
 
             PrayerAutoAdvanceInputDiagnostics.shared.record(
@@ -74,7 +81,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
                 audioWindow: audioWindow,
                 transcript: transcript,
                 pageText: context.currentText,
-                at: now
+                at: plan.date
             )
             evaluatePrediction(value, elapsed: elapsed)
         } catch {
