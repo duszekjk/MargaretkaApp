@@ -23,6 +23,16 @@ final class PrayerAutoAdvanceCoreMLModel: @unchecked Sendable {
         creatorDefinedMetadata["featureSchemaVersion"].flatMap(Int.init)
     }
 
+    var declaredAllParameterizedLayersUpdatable: Bool {
+        creatorDefinedMetadata["allParameterizedLayersUpdatable"] == "true"
+    }
+
+    var declaredUpdatableLayers: [String] {
+        creatorDefinedMetadata["updatableLayers"]?
+            .split(separator: ",")
+            .map(String.init) ?? []
+    }
+
     private var creatorDefinedMetadata: [String: String] {
         model.modelDescription.metadata[.creatorDefinedKey] as? [String: String] ?? [:]
     }
