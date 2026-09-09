@@ -16,8 +16,6 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
 
     nonisolated private let requestBox = PrayerAutoAdvanceSpeechRequestBox()
     nonisolated private let audioRing = PrayerAutoAdvanceAudioRingBuffer(
-        // Keep a small margin beyond the 60 s model window so retrospective
-        // T-0.2 s feature extraction still has a complete 60 s audio history.
         duration: PrayerAutoAdvanceLongAudioFeatureExtractor.duration + 0.5,
         targetSampleRate: 16_000
     )
@@ -27,10 +25,6 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         isStarting = true
         defer { isStarting = false }
 
-        // Page changes are common. If language and microphone pipeline are already
-        // valid, keep AVAudioSession + AVAudioEngine + tap alive and rotate only the
-        // on-device Speech request. This removes a large amount of page-transition
-        // work from MainActor.
         if engine.isRunning,
            currentLanguage == language,
            let recognizer,
@@ -63,8 +57,6 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         recognizer = newRecognizer
         currentLanguage = language
 
-        // AVAudioSession operations can occasionally block. They do not require
-        // MainActor, so configure/activate the session on a utility worker.
         try await Self.configureAudioSessionForCapture()
 
         let input = engine.inputNode
@@ -135,7 +127,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
 
     nonisolated func audioWindowOffMain() async -> PrayerAutoAdvanceAudioWindow {
         let ring = audioRing
-        return await Task.detached(priority: .utility) {
+        return await Task.detached(priority: .background) {
             ring.snapshot()
         }.value
     }
@@ -224,24 +216,29 @@ private final class PrayerAutoAdvanceSpeechRequestBox: @unchecked Sendable {
     }
 }
 
+/// Fixed-capacity circular PCM buffer. The previous implementation used
+/// Array.removeFirst after reaching 60.5 s, which shifted almost one million
+/// Float values on every microphone callback at 16 kHz.
 private final class PrayerAutoAdvanceAudioRingBuffer: @unchecked Sendable {
     private let lock = NSLock()
-    private let duration: TimeInterval
     private let targetSampleRate: Double
+    private let capacity: Int
     private var sourceSampleRate: Double = 48_000
-    private var storage: [Float] = []
+    private var storage: [Float]
+    private var writeIndex = 0
+    private var storedCount = 0
     private var sourcePhase: Double = 0
 
     init(duration: TimeInterval, targetSampleRate: Double) {
-        self.duration = duration
         self.targetSampleRate = targetSampleRate
+        self.capacity = max(1, Int((duration * targetSampleRate).rounded()))
+        self.storage = Array(repeating: 0, count: capacity)
     }
 
     func configure(sourceSampleRate: Double) {
         lock.lock()
         self.sourceSampleRate = max(sourceSampleRate, 1)
         sourcePhase = 0
-        trimLocked()
         lock.unlock()
     }
 
@@ -252,33 +249,44 @@ private final class PrayerAutoAdvanceAudioRingBuffer: @unchecked Sendable {
         var position = sourcePhase
         while position < Double(count) {
             let index = min(max(Int(position.rounded(.down)), 0), count - 1)
-            storage.append(pointer[index])
+            storage[writeIndex] = pointer[index]
+            writeIndex += 1
+            if writeIndex == capacity { writeIndex = 0 }
+            if storedCount < capacity { storedCount += 1 }
             position += step
         }
         sourcePhase = position - Double(count)
-        trimLocked()
         lock.unlock()
     }
 
     func snapshot() -> PrayerAutoAdvanceAudioWindow {
         lock.lock()
-        let value = PrayerAutoAdvanceAudioWindow(samples: storage, sampleRate: targetSampleRate)
+        let count = storedCount
+        let start = count == capacity ? writeIndex : 0
+
+        var samples: [Float] = []
+        samples.reserveCapacity(count)
+        if count == capacity {
+            if start < capacity {
+                samples.append(contentsOf: storage[start..<capacity])
+            }
+            if start > 0 {
+                samples.append(contentsOf: storage[0..<start])
+            }
+        } else if count > 0 {
+            samples.append(contentsOf: storage[0..<count])
+        }
         lock.unlock()
-        return value
+
+        return PrayerAutoAdvanceAudioWindow(samples: samples, sampleRate: targetSampleRate)
     }
 
     func reset() {
         lock.lock()
-        storage.removeAll(keepingCapacity: true)
+        writeIndex = 0
+        storedCount = 0
         sourcePhase = 0
         lock.unlock()
-    }
-
-    private func trimLocked() {
-        let maximumCount = max(1, Int((duration * targetSampleRate).rounded()))
-        if storage.count > maximumCount {
-            storage.removeFirst(storage.count - maximumCount)
-        }
     }
 }
 #endif
