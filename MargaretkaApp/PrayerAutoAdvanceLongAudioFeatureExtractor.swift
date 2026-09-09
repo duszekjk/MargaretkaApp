@@ -3,13 +3,13 @@ import Foundation
 enum PrayerAutoAdvanceLongAudioFeatureExtractor {
     static let duration: TimeInterval = 60.0
     static let temporalBins = 120
-    static let frequencyBands = 16
+    static let frequencyBands = 32
     static let featureCount = temporalBins * frequencyBands
 
-    private static let analysisSampleRate = 8_000.0
-    private static let analysisWindowSamples = 320
+    private static let analysisSampleRate = 16_000.0
+    private static let analysisWindowSamples = 640
     private static let minimumFrequency = 80.0
-    private static let maximumFrequency = 4_000.0
+    private static let maximumFrequency = 8_000.0
     private static let basis = makeBasis()
 
     static func features(window: PrayerAutoAdvanceAudioWindow) -> [Float] {
