@@ -5,7 +5,7 @@ final class PrayerAutoAdvanceCoreMLModel {
     static let inputSize = PrayerAutoAdvanceFeatureExtractor.featureCount
     static let longAudioInputSize = PrayerAutoAdvanceLongAudioFeatureExtractor.featureCount
     static let combinedInputSize = inputSize + longAudioInputSize
-    static let currentFeatureSchemaVersion = 7
+    static let currentFeatureSchemaVersion = 8
 
     let compiledURL: URL
     private(set) var model: MLModel
