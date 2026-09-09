@@ -14,7 +14,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         // Keep a small margin beyond the 60 s model window so retrospective
         // T-0.2 s feature extraction still has a complete 60 s audio history.
         duration: PrayerAutoAdvanceLongAudioFeatureExtractor.duration + 0.5,
-        targetSampleRate: 8_000
+        targetSampleRate: 16_000
     )
 
     func start(language: PrayerLanguage, context: [String]) async throws {
