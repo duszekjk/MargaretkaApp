@@ -19,8 +19,13 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
 
         var current = initialModel
         var losses: [Double] = [initialLoss]
+        var checkpoints: [Int: [Double]] = [0: try predictions(model: current, samples: samples)]
 
-        for round in 1...8 {
+        // Each MLUpdateTask already performs the model's configured internal epochs.
+        // The purpose of this test is not to model production frequency but to prove
+        // end-to-end that repeated Core ML updates can strongly overfit a tiny,
+        // deterministic and trivially separable set.
+        for round in 1...16 {
             let destination = root.appendingPathComponent("round-\(round).mlmodelc", isDirectory: true)
             try await PrayerAutoAdvanceCoreMLModel.update(
                 modelAt: current.compiledURL,
@@ -29,6 +34,9 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
             )
             current = try PrayerAutoAdvanceCoreMLModel(compiledURL: destination)
             losses.append(try crossEntropy(model: current, samples: samples))
+            if [4, 8, 12, 16].contains(round) {
+                checkpoints[round] = try predictions(model: current, samples: samples)
+            }
         }
 
         let finalLoss = try #require(losses.last)
@@ -37,11 +45,26 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
         let positive = paired.filter { $0.0.label == 1 }.map { $0.1 }
         let negative = paired.filter { $0.0.label == 0 }.map { $0.1 }
 
-        #expect(finalLoss < initialLoss * 0.35)
-        #expect(finalLoss < 0.20)
-        #expect(average(positive) > 0.90)
+        // Backprop heartbeat: learning must be clearly visible well before the
+        // final overfit checkpoint, rather than appearing only after many updates.
+        #expect(losses[4] < initialLoss * 0.80)
+        #expect(losses[8] < initialLoss * 0.60)
+
+        // Strong end-state requirements. Do not relax these merely to make the
+        // test pass: the five patterns are intentionally easy and repeated.
+        #expect(finalLoss < initialLoss * 0.20)
+        #expect(finalLoss < 0.12)
+        #expect(average(positive) > 0.92)
         #expect(average(negative) < 0.10)
-        #expect(losses.dropFirst().contains { $0 < initialLoss * 0.60 })
+
+        // Emit useful values in Xcode's test log when a future model change alters
+        // convergence. This makes failures actionable without another debug build.
+        print("PrayerAutoAdvance overfit initialLoss=\(initialLoss) losses=\(losses)")
+        for round in [0, 4, 8, 12, 16] {
+            if let values = checkpoints[round] {
+                print("PrayerAutoAdvance overfit round \(round): \(values)")
+            }
+        }
     }
 
     private func syntheticSamples() -> [PrayerAutoAdvanceLabeledSample] {
