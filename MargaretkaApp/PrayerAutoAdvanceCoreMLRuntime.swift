@@ -48,7 +48,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         let swipeAudio = capture.audioWindow()
 #else
         let swipeTranscript = ""
-        let swipeAudio = PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: 8_000)
+        let swipeAudio = PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: 16_000)
 #endif
 
         state.lastTrainingEvent = "Domykanie okna ręcznego przejścia…"
@@ -149,7 +149,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
     ) -> PrayerAutoAdvanceAudioWindow {
         let sampleRate = preSwipe.sampleRate > 0 ? preSwipe.sampleRate : postSwipe.sampleRate
         guard sampleRate > 0 else {
-            return PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: 8_000)
+            return PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: 16_000)
         }
 
         let offset = targetDate.timeIntervalSince(manualAdvanceAt)
