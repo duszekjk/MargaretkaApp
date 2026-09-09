@@ -54,11 +54,18 @@ extension PrayerAutoAdvanceCoreMLRuntime {
             }
 
             lastPrediction = value
-            PrayerAutoAdvanceTrainingDiagnostics.shared.prediction(
-                value,
-                snapshotCount: snapshots.count,
-                features: features
-            )
+
+            // The HUD is diagnostic only. Publishing it at inference cadence would
+            // invalidate SwiftUI four times per second for no runtime benefit.
+            if now.timeIntervalSince(lastDiagnosticsPublishAt) >= 1.0 {
+                PrayerAutoAdvanceTrainingDiagnostics.shared.prediction(
+                    value,
+                    snapshotCount: snapshots.count,
+                    features: features
+                )
+                lastDiagnosticsPublishAt = now
+            }
+
             PrayerAutoAdvanceInputDiagnostics.shared.record(
                 pageID: context.pageID,
                 prediction: value,
