@@ -13,8 +13,10 @@ The app concatenates locally, before Core ML:
 - 1920 long-audio features (60 s; 120 x 16)
 Total: 4147 float values, of which 3120 (~75%) are audio.
 
-Model v8 increases dense capacity without changing feature schema so training behavior
-can be compared independently from feature-extraction changes.
+Model v9 keeps the v8 capacity but freezes the large feature backbone for on-device
+personalization. Only hidden4, hidden5 and logits are updatable. This avoids the
+near-0.5 classifier collapse observed when Adam updated all ~8.6M parameters from
+tiny balanced batches. Feature schema remains v7.
 """
 
 from pathlib import Path
@@ -31,8 +33,9 @@ SHORT_AUDIO_SIZE = 1200
 LONG_AUDIO_SIZE = 120 * 16
 INPUT_SIZE = SCALAR_SIZE + 2 * TEXT_EMBEDDING_SIZE + SHORT_AUDIO_SIZE + LONG_AUDIO_SIZE
 HIDDEN_SIZES = [1536, 1024, 512, 256, 64]
-MODEL_VERSION = 8
+MODEL_VERSION = 9
 SCHEMA_VERSION = 7
+UPDATABLE_LAYERS = ["hidden4", "hidden5", "logits"]
 
 
 def seeded(shape, scale, seed):
@@ -68,7 +71,6 @@ def build_model(model_version: int):
 
     blob = "features"
     input_size = INPUT_SIZE
-    trainables = []
     configs = [
         ("hidden1", 1536, 0.015, 11),
         ("hidden2", 1024, 0.020, 1009),
@@ -86,7 +88,6 @@ def build_model(model_version: int):
             scale=scale,
             seed=seed,
         )
-        trainables.append(name)
         input_size = output_size
 
     builder.add_inner_product(
@@ -104,11 +105,10 @@ def build_model(model_version: int):
         input_name="logits_output",
         output_name="probabilities",
     )
-    trainables.append("logits")
 
-    builder.make_updatable(trainables)
+    builder.make_updatable(UPDATABLE_LAYERS)
     builder.set_categorical_cross_entropy_loss(name="classification_loss", input="probabilities")
-    builder.set_adam_optimizer(AdamParams(lr=0.002, batch=1))
+    builder.set_adam_optimizer(AdamParams(lr=0.0005, batch=1))
     builder.set_epochs(3)
 
     spec = builder.spec
@@ -133,12 +133,19 @@ def parameter_count():
     return sum(a * b + b for a, b in zip(sizes, sizes[1:]))
 
 
+def updatable_parameter_count():
+    # hidden4: 512 -> 256, hidden5: 256 -> 64, logits: 64 -> 2
+    sizes = [(512, 256), (256, 64), (64, 2)]
+    return sum(a * b + b for a, b in sizes)
+
+
 def self_test(output: Path, model_version: int):
     spec = ct.models.utils.load_spec(str(output))
     metadata = spec.description.metadata.userDefined
     inputs = [(x.name, list(x.type.multiArrayType.shape)) for x in spec.description.input]
     updatable = [layer.name for layer in spec.neuralNetwork.layers if layer.isUpdatable]
     params = parameter_count()
+    update_params = updatable_parameter_count()
     size_bytes = output.stat().st_size
 
     if metadata.get("modelVersion") != str(model_version):
@@ -147,8 +154,8 @@ def self_test(output: Path, model_version: int):
         raise RuntimeError(f"featureSchemaVersion mismatch: {metadata.get('featureSchemaVersion')!r}")
     if inputs != [("features", [INPUT_SIZE])]:
         raise RuntimeError(f"Unexpected inputs: {inputs}")
-    if len(updatable) != 6:
-        raise RuntimeError(f"Expected 6 updatable layers, found {len(updatable)}: {updatable}")
+    if updatable != UPDATABLE_LAYERS:
+        raise RuntimeError(f"Expected updatable layers {UPDATABLE_LAYERS}, found {updatable}")
     if size_bytes < 25_000_000:
         raise RuntimeError(
             f"Generated model is only {size_bytes} bytes; expected a model larger than 25 MB. "
@@ -164,7 +171,8 @@ def self_test(output: Path, model_version: int):
 
     print(f"modelVersion: {model_version}")
     print(f"featureSchemaVersion: {SCHEMA_VERSION}")
-    print(f"trainable parameters: {params:,}")
+    print(f"total parameters: {params:,}")
+    print(f"updatable parameters: {update_params:,}")
     print(f"Float32 parameter payload: {params * 4 / 1024 / 1024:.2f} MiB")
     print(f"saved .mlmodel size: {size_bytes / 1024 / 1024:.2f} MiB")
     print(f"inputs: features[{INPUT_SIZE}]")
