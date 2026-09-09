@@ -63,7 +63,10 @@ final class PrayerAutoAdvanceCoreMLModel: @unchecked Sendable {
         let providers = try samples.map(trainingProvider)
         let retention = UpdateRetention(providers: providers)
         let configuration = MLModelConfiguration()
-        configuration.computeUnits = .cpuOnly
+        // Do not pin personalization to CPU. Core ML may execute update work on the
+        // GPU when supported and falls back to CPU otherwise, leaving more CPU
+        // headroom for SwiftUI/audio while the user continues through the prayer.
+        configuration.computeUnits = .cpuAndGPU
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             do {
