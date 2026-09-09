@@ -57,6 +57,8 @@ extension PrayerAutoAdvanceCoreMLRuntime {
                 features: features,
                 longAudioFeatures: longAudioFeatures,
                 audioWindow: audioWindow,
+                transcript: transcript,
+                pageText: context.currentText,
                 at: now
             )
             evaluatePrediction(value, elapsed: elapsed)
