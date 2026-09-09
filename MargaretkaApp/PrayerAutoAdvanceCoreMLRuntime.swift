@@ -13,7 +13,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 #endif
     var context: PrayerAutoAdvanceContext?
     var contextStartedAt = Date()
-    var snapshots: [PrayerAutoAdvanceTrainingSnapshot] = []
+    var trainingCandidates: [PrayerAutoAdvanceTrainingCandidate] = []
     var evaluationTask: Task<Void, Never>?
     var consecutiveAdvancePredictions = 0
     var cooldownUntil = Date.distantPast
@@ -23,18 +23,12 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
     var lastInferenceAt = Date.distantPast
     var trainingCandidateSeenCount = 0
 
-    // Keep a little more than the final 12 so the T-0.4 s cutoff can discard the
-    // last candidate without usually shrinking a long-page batch at the 2 Hz
-    // training-candidate cadence.
     static let trainingReservoirCapacity = 16
     static let trainingCandidateInterval: TimeInterval = 0.5
     static let trainingOnlyInferenceInterval: TimeInterval = 2.0
     static let activeTrainingInferenceInterval: TimeInterval = 5.0
     static let diagnosticsPublishInterval: TimeInterval = 2.0
 
-    // PrayerAutoAdvanceCoreMLState.shared already restores local disk state once.
-    // Reloading the model/validation JSON here duplicated expensive synchronous I/O
-    // each time a runtime object was created.
     init() {}
 
     deinit {
@@ -53,9 +47,9 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         isTrainingEnabled || isAutomaticEnabled
     }
 
-    /// Called by the 4 Hz scheduler. Automatic inference may still run at 4 Hz,
-    /// while training candidates are admitted at most at 2 Hz. Expensive feature
-    /// extraction happens only when this returns a reservoir slot or inference is due.
+    /// The scheduler still runs at 4 Hz for automatic switching. Training markers
+    /// are admitted at 2 Hz, but they are only timestamp/transcript/audio-index
+    /// records. No audio feature extraction is performed for a training-only tick.
     func evaluationPlan(at date: Date) -> PrayerAutoAdvanceEvaluationPlan {
         let shouldPredict: Bool
         if isAutomaticEnabled {
@@ -76,11 +70,9 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         if shouldConsiderTrainingCandidate {
             lastTrainingCandidateAt = date
             trainingCandidateSeenCount += 1
-            if snapshots.count < Self.trainingReservoirCapacity {
-                reservoirSlot = snapshots.count
+            if trainingCandidates.count < Self.trainingReservoirCapacity {
+                reservoirSlot = trainingCandidates.count
             } else {
-                // Standard reservoir sampling: after the reservoir fills, each
-                // 2 Hz training timestamp has equal probability of surviving until swipe.
                 let candidate = Int.random(in: 0..<trainingCandidateSeenCount)
                 if candidate < Self.trainingReservoirCapacity {
                     reservoirSlot = candidate
@@ -98,6 +90,15 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         )
     }
 
+    func storeTrainingCandidate(_ candidate: PrayerAutoAdvanceTrainingCandidate, at slot: Int) {
+        if trainingCandidates.indices.contains(slot) {
+            trainingCandidates[slot] = candidate
+        } else if slot == trainingCandidates.count {
+            trainingCandidates.append(candidate)
+        }
+        lastTrainingSnapshotAt = candidate.date
+    }
+
     func recordManualAdvance(at date: Date = Date()) {
         guard isTrainingEnabled,
               let currentContext = context,
@@ -106,17 +107,17 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
         let pageID = currentContext.pageID
         let startedAt = contextStartedAt
-        let candidates = snapshots.filter { $0.pageID == pageID }
+        let candidates = trainingCandidates.filter { $0.pageID == pageID }
 
 #if os(iOS)
-        // Freeze the old-page side before setContext starts the next page capture.
-        // The ring snapshot itself is copy-on-write; all expensive feature work is
-        // delayed and executed off MainActor below.
         let swipeTranscript = capture.transcriptSnapshot()
         let swipeAudio = capture.audioWindow()
+        // Freeze the page history exactly once before the next context can reset it.
+        let frozenPageAudio = capture.freezePageAudio()
 #else
         let swipeTranscript = ""
         let swipeAudio = PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: 16_000)
+        let frozenPageAudio = swipeAudio
 #endif
 
         state.lastTrainingEvent = "Domykanie okna ręcznego przejścia…"
@@ -125,8 +126,6 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
             guard let self else { return }
             let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
 
-            // Positive supervision is T±0.2 s. Let the UI transition immediately,
-            // but finish collecting the short post-swipe audio tail before training.
             try? await Task.sleep(for: .milliseconds(200))
 
 #if os(iOS)
@@ -163,11 +162,38 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
                 }
             }.value
 
-            // Keep training work out of the critical tail of the transition animation.
+            // Materialize only the small reservoir after swipe. Each candidate uses
+            // the exact same existing short/long extractors and therefore the same
+            // V11 feature schema as before; only the time at which work happens moved.
+            let negativeSnapshots = await Task.detached(priority: .background) {
+                candidates.compactMap { candidate -> PrayerAutoAdvanceTrainingSnapshot? in
+                    let targetWindow = Self.audioWindow(
+                        fromFrozenPage: frozenPageAudio,
+                        endingAt: candidate.audioEndSampleIndex
+                    )
+                    let shortAudio = PrayerAutoAdvanceAudioFeatureExtractor.features(window: targetWindow)
+                    let longAudio = PrayerAutoAdvanceLongAudioFeatureExtractor.features(window: targetWindow)
+                    let features = PrayerAutoAdvanceFeatureExtractor.features(
+                        transcript: candidate.transcript,
+                        context: currentContext,
+                        elapsed: max(0, candidate.date.timeIntervalSince(startedAt)),
+                        audioFeatures: shortAudio
+                    )
+                    guard features.count == PrayerAutoAdvanceCoreMLModel.inputSize,
+                          longAudio.count == PrayerAutoAdvanceCoreMLModel.longAudioInputSize else { return nil }
+                    return PrayerAutoAdvanceTrainingSnapshot(
+                        pageID: candidate.pageID,
+                        date: candidate.date,
+                        features: features,
+                        longAudioFeatures: longAudio
+                    )
+                }
+            }.value
+
             try? await Task.sleep(for: .milliseconds(100))
 
             guard let batch = PrayerAutoAdvanceTrainingPolicy.makeBatch(
-                snapshots: candidates,
+                snapshots: negativeSnapshots,
                 positiveSnapshots: positiveSnapshots,
                 manualAdvanceAt: date,
                 history: self.state.timingHistory
@@ -175,7 +201,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
                 diagnostics.skippedTrainingCount += 1
                 diagnostics.pipelineState = "skipped"
                 diagnostics.event(
-                    "training skipped: negatives=\(candidates.count) positives=\(positiveSnapshots.count)"
+                    "training skipped: negatives=\(negativeSnapshots.count) positives=\(positiveSnapshots.count)"
                 )
                 self.state.lastTrainingEvent = "Pominięto: nie udało się zbudować zbalansowanego batcha treningowego."
                 return
@@ -207,6 +233,22 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
             await self.state.train(batch)
             self.statusMessage = self.state.lastError
         }
+    }
+
+    nonisolated private static func audioWindow(
+        fromFrozenPage page: PrayerAutoAdvanceAudioWindow,
+        endingAt sampleIndex: Int
+    ) -> PrayerAutoAdvanceAudioWindow {
+        guard page.sampleRate > 0 else {
+            return PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: 16_000)
+        }
+        let end = min(max(sampleIndex, 0), page.samples.count)
+        let wanted = Int(((PrayerAutoAdvanceLongAudioFeatureExtractor.duration + 0.5) * page.sampleRate).rounded())
+        let start = max(0, end - wanted)
+        return PrayerAutoAdvanceAudioWindow(
+            samples: Array(page.samples[start..<end]),
+            sampleRate: page.sampleRate
+        )
     }
 
     nonisolated private static func audioWindow(
@@ -244,6 +286,4 @@ struct PrayerAutoAdvanceEvaluationPlan: Sendable {
     let date: Date
     let reservoirSlot: Int?
     let shouldPredict: Bool
-
-    var needsHeavyWork: Bool { reservoirSlot != nil || shouldPredict }
 }
