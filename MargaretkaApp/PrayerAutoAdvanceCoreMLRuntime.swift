@@ -164,8 +164,9 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
         let requestedPostCount = Int((offset * sampleRate).rounded())
         let postCount = min(max(requestedPostCount, 0), postSwipe.samples.count)
+        let postPrefix = Array(postSwipe.samples.prefix(postCount))
         return PrayerAutoAdvanceAudioWindow(
-            samples: preSwipe.samples + postSwipe.samples.prefix(postCount),
+            samples: preSwipe.samples + postPrefix,
             sampleRate: sampleRate
         )
     }
