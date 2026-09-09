@@ -6,7 +6,7 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
     @Test func bundledModelRapidlyOverfitsFiveSyntheticAudioPatterns() async throws {
         let sourceURL = try #require(findBundledModel())
         let initialModel = try PrayerAutoAdvanceCoreMLModel(compiledURL: sourceURL)
-        #expect(initialModel.declaredModelVersion == 8)
+        #expect(initialModel.declaredModelVersion == 9)
         #expect(initialModel.declaredFeatureSchemaVersion == PrayerAutoAdvanceCoreMLModel.currentFeatureSchemaVersion)
 
         let evaluationSamples = syntheticSamples()
@@ -27,7 +27,7 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
         let checkpointRounds: Set<Int> = [5, 10, 20, 30, 40, 50]
 
         // Fifty real MLUpdateTask rounds intentionally stress the production model's
-        // ability to memorize a tiny, deterministic and class-balanced data set.
+        // personalization head on a tiny, deterministic and class-balanced data set.
         for round in 1...50 {
             let destination = root.appendingPathComponent("round-\(round).mlmodelc", isDirectory: true)
             try await PrayerAutoAdvanceCoreMLModel.update(
@@ -48,8 +48,6 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
         let positive = paired.filter { $0.0.label == 1 }.map { $0.1 }
         let negative = paired.filter { $0.0.label == 0 }.map { $0.1 }
 
-        // Backprop heartbeat: progress must already be visible early, even though
-        // the final assertion is evaluated after the full 50-round stress run.
         #expect(losses[5] < initialLoss * 0.80)
         #expect(losses[10] < initialLoss * 0.60)
 
