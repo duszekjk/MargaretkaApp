@@ -10,12 +10,13 @@ extension PrayerAutoAdvanceCoreMLRuntime {
               let model = state.model else { return }
 
         let elapsed = plan.date.timeIntervalSince(contextStartedAt)
+        let taskPriority: TaskPriority = isAutomaticEnabled ? .userInitiated : .background
 
         do {
             // V10 feature extraction and every Core ML prediction stay entirely off
-            // MainActor. During training-only mode most 4 Hz ticks never reach this
-            // method at all; they only perform reservoir bookkeeping.
-            let result = try await Task.detached(priority: .utility) {
+            // MainActor. Training-only work deliberately uses background QoS so UI
+            // rendering wins CPU contention; automatic switching raises priority.
+            let result = try await Task.detached(priority: taskPriority) {
                 let shortAudio = PrayerAutoAdvanceAudioFeatureExtractor.features(window: audioWindow)
                 let longAudio = PrayerAutoAdvanceLongAudioFeatureExtractor.features(window: audioWindow)
                 let features = PrayerAutoAdvanceFeatureExtractor.features(
