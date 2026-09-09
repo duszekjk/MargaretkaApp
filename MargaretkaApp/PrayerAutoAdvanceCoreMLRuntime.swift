@@ -18,6 +18,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
     var consecutiveAdvancePredictions = 0
     var cooldownUntil = Date.distantPast
     var lastTrainingSnapshotAt = Date.distantPast
+    var lastDiagnosticsPublishAt = Date.distantPast
 
     init() {
         PrayerAutoAdvanceCoreMLDiskState.load(state)
