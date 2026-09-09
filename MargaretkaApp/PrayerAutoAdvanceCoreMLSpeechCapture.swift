@@ -86,6 +86,13 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         audioRing.snapshot()
     }
 
+    nonisolated func audioWindowOffMain() async -> PrayerAutoAdvanceAudioWindow {
+        let ring = audioRing
+        return await Task.detached(priority: .utility) {
+            ring.snapshot()
+        }.value
+    }
+
     func stop() {
         task?.cancel()
         task = nil
