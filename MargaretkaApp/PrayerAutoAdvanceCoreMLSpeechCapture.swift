@@ -5,11 +5,16 @@ import Speech
 @MainActor
 final class PrayerAutoAdvanceCoreMLSpeechCapture {
     private let engine = AVAudioEngine()
+    private var recognizer: SFSpeechRecognizer?
+    private var currentLanguage: PrayerLanguage?
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
     private var hasInputTap = false
     private var isStarting = false
+    private var recognitionGeneration = 0
     private(set) var transcript = ""
+
+    nonisolated private let requestBox = PrayerAutoAdvanceSpeechRequestBox()
     nonisolated private let audioRing = PrayerAutoAdvanceAudioRingBuffer(
         // Keep a small margin beyond the 60 s model window so retrospective
         // T-0.2 s feature extraction still has a complete 60 s audio history.
@@ -21,7 +26,19 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         guard !isStarting else { return }
         isStarting = true
         defer { isStarting = false }
-        stop()
+
+        // Page changes are common. If language and microphone pipeline are already
+        // valid, keep AVAudioSession + AVAudioEngine + tap alive and rotate only the
+        // on-device Speech request. This removes a large amount of page-transition
+        // work from MainActor.
+        if engine.isRunning,
+           currentLanguage == language,
+           let recognizer,
+           recognizer.supportsOnDeviceRecognition {
+            beginRecognition(using: recognizer, context: context)
+            return
+        }
+
         let speech = await withCheckedContinuation { continuation in
             SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0) }
         }
@@ -36,33 +53,30 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
             : language == .latin
                 ? Locale(identifier: "la")
                 : Locale(identifier: "pl_PL")
-        guard let recognizer = SFSpeechRecognizer(locale: locale), recognizer.supportsOnDeviceRecognition else {
+        guard let newRecognizer = SFSpeechRecognizer(locale: locale),
+              newRecognizer.supportsOnDeviceRecognition else {
             throw CaptureError.offlineUnavailable
         }
 
-        let speechRequest = SFSpeechAudioBufferRecognitionRequest()
-        speechRequest.shouldReportPartialResults = true
-        speechRequest.requiresOnDeviceRecognition = true
-        speechRequest.contextualStrings = context.map { String($0.prefix(500)) }
-        request = speechRequest
-        transcript = ""
-        audioRing.reset()
+        stopRecognition()
+        stopAudioOnly(deactivateSession: false)
+        recognizer = newRecognizer
+        currentLanguage = language
 
-        let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.record, mode: .measurement, options: [.duckOthers])
-        try await Self.setAudioSessionActive(true)
+        // AVAudioSession operations can occasionally block. They do not require
+        // MainActor, so configure/activate the session on a utility worker.
+        try await Self.configureAudioSessionForCapture()
 
         let input = engine.inputNode
-        if hasInputTap {
-            input.removeTap(onBus: 0)
-            hasInputTap = false
-        }
         let format = input.outputFormat(forBus: 0)
         audioRing.configure(sourceSampleRate: format.sampleRate)
-        input.installTap(onBus: 0, bufferSize: 2048, format: format) { [weak self] buffer, _ in
-            speechRequest.append(buffer)
+
+        let requestBox = self.requestBox
+        let audioRing = self.audioRing
+        input.installTap(onBus: 0, bufferSize: 2048, format: format) { buffer, _ in
+            requestBox.append(buffer)
             guard let channel = buffer.floatChannelData?[0] else { return }
-            self?.audioRing.append(channel, count: Int(buffer.frameLength))
+            audioRing.append(channel, count: Int(buffer.frameLength))
         }
         hasInputTap = true
 
@@ -70,16 +84,49 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
             engine.prepare()
             try engine.start()
         } catch {
-            stopAudioOnly()
+            stopAudioOnly(deactivateSession: true)
             throw error
         }
 
+        beginRecognition(using: newRecognizer, context: context)
+    }
+
+    private func beginRecognition(using recognizer: SFSpeechRecognizer, context: [String]) {
+        stopRecognition()
+        recognitionGeneration += 1
+        let generation = recognitionGeneration
+
+        let speechRequest = SFSpeechAudioBufferRecognitionRequest()
+        speechRequest.shouldReportPartialResults = true
+        speechRequest.requiresOnDeviceRecognition = true
+        speechRequest.contextualStrings = context.map { String($0.prefix(500)) }
+
+        request = speechRequest
+        requestBox.set(speechRequest)
+        transcript = ""
+        audioRing.reset()
+
         task = recognizer.recognitionTask(with: speechRequest) { [weak self] result, error in
             Task { @MainActor [weak self] in
-                if let result { self?.transcript = result.bestTranscription.formattedString }
-                if error != nil { self?.stopAudioOnly() }
+                guard let self, self.recognitionGeneration == generation else { return }
+                if let result {
+                    self.transcript = result.bestTranscription.formattedString
+                }
+                if error != nil {
+                    self.stopRecognition()
+                    self.stopAudioOnly(deactivateSession: true)
+                }
             }
         }
+    }
+
+    private func stopRecognition() {
+        recognitionGeneration += 1
+        requestBox.set(nil)
+        task?.cancel()
+        task = nil
+        request?.endAudio()
+        request = nil
     }
 
     func audioWindow() -> PrayerAutoAdvanceAudioWindow {
@@ -94,29 +141,45 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
     }
 
     func stop() {
-        task?.cancel()
-        task = nil
-        request?.endAudio()
-        request = nil
-        stopAudioOnly()
+        stopRecognition()
+        stopAudioOnly(deactivateSession: true)
         transcript = ""
         audioRing.reset()
+        recognizer = nil
+        currentLanguage = nil
     }
 
-    private func stopAudioOnly() {
+    private func stopAudioOnly(deactivateSession: Bool) {
         if engine.isRunning { engine.stop() }
         if hasInputTap {
             engine.inputNode.removeTap(onBus: 0)
             hasInputTap = false
         }
-        Task {
-            try? await Self.setAudioSessionActive(false)
+        if deactivateSession {
+            Task {
+                try? await Self.setAudioSessionActive(false)
+            }
+        }
+    }
+
+    nonisolated private static func configureAudioSessionForCapture() async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: .utility).async {
+                do {
+                    let session = AVAudioSession.sharedInstance()
+                    try session.setCategory(.record, mode: .measurement, options: [.duckOthers])
+                    try session.setActive(true)
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
         }
     }
 
     nonisolated private static func setAudioSessionActive(_ active: Bool) async throws {
         try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
+            DispatchQueue.global(qos: .utility).async {
                 do {
                     try AVAudioSession.sharedInstance().setActive(
                         active,
@@ -140,6 +203,24 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
             case .offlineUnavailable: "Rozpoznawanie mowy offline nie jest dostępne dla języka tej modlitwy na tym urządzeniu."
             }
         }
+    }
+}
+
+private final class PrayerAutoAdvanceSpeechRequestBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var request: SFSpeechAudioBufferRecognitionRequest?
+
+    func set(_ value: SFSpeechAudioBufferRecognitionRequest?) {
+        lock.lock()
+        request = value
+        lock.unlock()
+    }
+
+    func append(_ buffer: AVAudioPCMBuffer) {
+        lock.lock()
+        let current = request
+        lock.unlock()
+        current?.append(buffer)
     }
 }
 
