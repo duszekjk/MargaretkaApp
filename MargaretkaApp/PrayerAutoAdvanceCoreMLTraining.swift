@@ -92,7 +92,11 @@ extension PrayerAutoAdvanceCoreMLState {
                 value.trainingSessions += 1
                 metadata = value
             }
-            try PrayerAutoAdvanceCoreMLDiskState.save(self)
+
+            // Validation JSON can be large with v10's 7,267-value samples. Encode
+            // and atomically write it on a utility worker, never on MainActor.
+            try await PrayerAutoAdvanceCoreMLDiskState.saveInBackground(self)
+
             lastError = nil
             lastTrainingEvent = "Model zaktualizowany na podstawie \(batch.samples.count) próbek."
             diagnostics.acceptedTrainingCount += 1
