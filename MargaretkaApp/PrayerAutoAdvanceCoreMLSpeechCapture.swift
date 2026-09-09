@@ -12,9 +12,9 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
     private var hasInputTap = false
     private var isStarting = false
     private var recognitionGeneration = 0
-    private(set) var transcript = ""
 
     nonisolated private let requestBox = PrayerAutoAdvanceSpeechRequestBox()
+    nonisolated private let transcriptBox = PrayerAutoAdvanceTranscriptBox()
     nonisolated private let audioRing = PrayerAutoAdvanceAudioRingBuffer(
         duration: PrayerAutoAdvanceLongAudioFeatureExtractor.duration + 0.5,
         targetSampleRate: 16_000
@@ -95,16 +95,23 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
 
         request = speechRequest
         requestBox.set(speechRequest)
-        transcript = ""
+        transcriptBox.reset(generation: generation)
         audioRing.reset()
 
+        let transcriptBox = self.transcriptBox
         task = recognizer.recognitionTask(with: speechRequest) { [weak self] result, error in
-            Task { @MainActor [weak self] in
-                guard let self, self.recognitionGeneration == generation else { return }
-                if let result {
-                    self.transcript = result.bestTranscription.formattedString
-                }
-                if error != nil {
+            // Partial results are model input, not UI state. Formatting and storing
+            // them on every callback must not enqueue MainActor work.
+            if let result {
+                transcriptBox.set(
+                    result.bestTranscription.formattedString,
+                    generation: generation
+                )
+            }
+
+            if error != nil {
+                Task { @MainActor [weak self] in
+                    guard let self, self.recognitionGeneration == generation else { return }
                     self.stopRecognition()
                     self.stopAudioOnly(deactivateSession: true)
                 }
@@ -115,10 +122,15 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
     private func stopRecognition() {
         recognitionGeneration += 1
         requestBox.set(nil)
+        transcriptBox.reset(generation: recognitionGeneration)
         task?.cancel()
         task = nil
         request?.endAudio()
         request = nil
+    }
+
+    nonisolated func transcriptSnapshot() -> String {
+        transcriptBox.snapshot()
     }
 
     func audioWindow() -> PrayerAutoAdvanceAudioWindow {
@@ -135,7 +147,6 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
     func stop() {
         stopRecognition()
         stopAudioOnly(deactivateSession: true)
-        transcript = ""
         audioRing.reset()
         recognizer = nil
         currentLanguage = nil
@@ -213,6 +224,34 @@ private final class PrayerAutoAdvanceSpeechRequestBox: @unchecked Sendable {
         let current = request
         lock.unlock()
         current?.append(buffer)
+    }
+}
+
+private final class PrayerAutoAdvanceTranscriptBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var generation = 0
+    private var text = ""
+
+    func reset(generation: Int) {
+        lock.lock()
+        self.generation = generation
+        text = ""
+        lock.unlock()
+    }
+
+    func set(_ value: String, generation: Int) {
+        lock.lock()
+        if self.generation == generation {
+            text = value
+        }
+        lock.unlock()
+    }
+
+    func snapshot() -> String {
+        lock.lock()
+        let value = text
+        lock.unlock()
+        return value
     }
 }
 
