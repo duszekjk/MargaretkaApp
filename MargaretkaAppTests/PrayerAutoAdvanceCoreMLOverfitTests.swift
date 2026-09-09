@@ -9,8 +9,12 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
         #expect(initialModel.declaredModelVersion == 8)
         #expect(initialModel.declaredFeatureSchemaVersion == PrayerAutoAdvanceCoreMLModel.currentFeatureSchemaVersion)
 
-        let samples = syntheticSamples()
-        let initialLoss = try crossEntropy(model: initialModel, samples: samples)
+        let evaluationSamples = syntheticSamples()
+        let trainingSamples = balancedTrainingSamples(from: evaluationSamples)
+        #expect(trainingSamples.filter { $0.label == 0 }.count == 6)
+        #expect(trainingSamples.filter { $0.label == 1 }.count == 6)
+
+        let initialLoss = try crossEntropy(model: initialModel, samples: evaluationSamples)
 
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("PrayerAutoAdvanceOverfit-\(UUID().uuidString)", isDirectory: true)
@@ -19,29 +23,28 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
 
         var current = initialModel
         var losses: [Double] = [initialLoss]
-        var checkpoints: [Int: [Double]] = [0: try predictions(model: current, samples: samples)]
+        var checkpoints: [Int: [Double]] = [0: try predictions(model: current, samples: evaluationSamples)]
 
-        // Each MLUpdateTask already performs the model's configured internal epochs.
-        // The purpose of this test is not to model production frequency but to prove
-        // end-to-end that repeated Core ML updates can strongly overfit a tiny,
-        // deterministic and trivially separable set.
+        // Keep evaluation fixed to five unique patterns, but balance the training
+        // presentations so this test measures learnability/backprop rather than
+        // class-prior bias. Each update gets 6 stay + 6 advance presentations.
         for round in 1...16 {
             let destination = root.appendingPathComponent("round-\(round).mlmodelc", isDirectory: true)
             try await PrayerAutoAdvanceCoreMLModel.update(
                 modelAt: current.compiledURL,
-                samples: samples,
+                samples: trainingSamples,
                 savingTo: destination
             )
             current = try PrayerAutoAdvanceCoreMLModel(compiledURL: destination)
-            losses.append(try crossEntropy(model: current, samples: samples))
+            losses.append(try crossEntropy(model: current, samples: evaluationSamples))
             if [4, 8, 12, 16].contains(round) {
-                checkpoints[round] = try predictions(model: current, samples: samples)
+                checkpoints[round] = try predictions(model: current, samples: evaluationSamples)
             }
         }
 
         let finalLoss = try #require(losses.last)
-        let finalPredictions = try predictions(model: current, samples: samples)
-        let paired = Array(zip(samples, finalPredictions))
+        let finalPredictions = try predictions(model: current, samples: evaluationSamples)
+        let paired = Array(zip(evaluationSamples, finalPredictions))
         let positive = paired.filter { $0.0.label == 1 }.map { $0.1 }
         let negative = paired.filter { $0.0.label == 0 }.map { $0.1 }
 
@@ -57,8 +60,6 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
         #expect(average(positive) > 0.92)
         #expect(average(negative) < 0.10)
 
-        // Emit useful values in Xcode's test log when a future model change alters
-        // convergence. This makes failures actionable without another debug build.
         print("PrayerAutoAdvance overfit initialLoss=\(initialLoss) losses=\(losses)")
         for round in [0, 4, 8, 12, 16] {
             if let values = checkpoints[round] {
@@ -75,6 +76,17 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
             sample(id: 3, label: 1, audioLevel: 0.90, pulseOffset: 240),
             sample(id: 4, label: 1, audioLevel: 0.96, pulseOffset: 320),
         ]
+    }
+
+    private func balancedTrainingSamples(
+        from uniqueSamples: [PrayerAutoAdvanceLabeledSample]
+    ) -> [PrayerAutoAdvanceLabeledSample] {
+        let negatives = uniqueSamples.filter { $0.label == 0 }
+        let positives = uniqueSamples.filter { $0.label == 1 }
+
+        // 2 negative patterns x3 and 3 positive patterns x2 = 6 per class.
+        return negatives.flatMap { sample in Array(repeating: sample, count: 3) }
+            + positives.flatMap { sample in Array(repeating: sample, count: 2) }
     }
 
     private func sample(id: Int, label: Int64, audioLevel: Float, pulseOffset: Int) -> PrayerAutoAdvanceLabeledSample {
