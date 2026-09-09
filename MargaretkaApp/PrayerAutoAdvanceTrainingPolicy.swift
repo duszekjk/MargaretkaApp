@@ -48,83 +48,87 @@ struct PrayerAutoAdvanceLabeledBatch: Sendable {
 }
 
 enum PrayerAutoAdvanceTrainingPolicy {
+    static let maximumSamplesPerClass = 12
+    static let positiveWindow: TimeInterval = 0.2
+    static let deadZone: TimeInterval = 0.2
+
     static func makeBatch(
         snapshots: [PrayerAutoAdvanceTrainingSnapshot],
+        positiveSnapshots: [PrayerAutoAdvanceTrainingSnapshot],
         manualAdvanceAt: Date,
         history _: PrayerAutoAdvanceTimingHistory
     ) -> PrayerAutoAdvanceLabeledBatch? {
-        let ordered = snapshots.sorted { $0.date < $1.date }
-        guard ordered.count >= 4 else { return nil }
+        let negativeCutoff = manualAdvanceAt.addingTimeInterval(-(positiveWindow + deadZone))
+        let negativeCandidates = snapshots
+            .filter { $0.date <= negativeCutoff }
 
-        // Schema v4 deliberately removes hand-authored text comparison from
-        // completion detection. Until a model-derived completion signal is
-        // mature enough to calibrate reaction delay, the manual swipe remains
-        // the noisy supervision anchor and no timing value is invented.
-        let anchor = manualAdvanceAt
-        let observedDelay: TimeInterval? = nil
+        guard !negativeCandidates.isEmpty, !positiveSnapshots.isEmpty else { return nil }
+
+        let count = min(
+            maximumSamplesPerClass,
+            negativeCandidates.count,
+            positiveSnapshots.count
+        )
+        guard count > 0 else { return nil }
+
+        // Long pages may yield hundreds of 4 Hz candidates. Random sampling keeps
+        // the training set representative without letting page duration dominate.
+        let negatives = Array(negativeCandidates.shuffled().prefix(count))
+        let positives = evenlyDistributedSelection(from: positiveSnapshots, count: count)
 
         var result: [PrayerAutoAdvanceLabeledSample] = []
+        result.reserveCapacity(count * 2)
 
-        let positiveCandidates = ordered
-            .map { ($0, abs($0.date.timeIntervalSince(anchor))) }
-            .filter { $0.1 <= 1.6 }
-            .sorted { $0.1 < $1.1 }
-            .prefix(2)
-
-        for (snapshot, distance) in positiveCandidates {
-            let copies: Int
-            if distance <= 0.55 {
-                copies = 3
-            } else if distance <= 1.10 {
-                copies = 2
-            } else {
-                copies = 1
-            }
-            for _ in 0..<copies {
-                result.append(
-                    PrayerAutoAdvanceLabeledSample(
-                        features: snapshot.features,
-                        longAudioFeatures: snapshot.longAudioFeatures,
-                        label: 1
-                    )
+        for snapshot in negatives {
+            result.append(
+                PrayerAutoAdvanceLabeledSample(
+                    features: snapshot.features,
+                    longAudioFeatures: snapshot.longAudioFeatures,
+                    label: 0
                 )
-            }
+            )
         }
 
-        for offset in [-8.0, -4.0, -2.0] {
-            if let negative = nearest(
-                to: anchor.addingTimeInterval(offset),
-                maxDistance: 1.2,
-                in: ordered
-            ), negative.date < anchor.addingTimeInterval(-1.25) {
-                result.append(
-                    PrayerAutoAdvanceLabeledSample(
-                        features: negative.features,
-                        longAudioFeatures: negative.longAudioFeatures,
-                        label: 0
-                    )
+        for snapshot in positives {
+            result.append(
+                PrayerAutoAdvanceLabeledSample(
+                    features: snapshot.features,
+                    longAudioFeatures: snapshot.longAudioFeatures,
+                    label: 1
                 )
-            }
+            )
         }
-
-        guard result.contains(where: { $0.label == 1 }),
-              result.contains(where: { $0.label == 0 }) else { return nil }
 
         return PrayerAutoAdvanceLabeledBatch(
             samples: result,
-            observedDelay: observedDelay
+            observedDelay: nil
         )
     }
 
-    private static func nearest(
-        to date: Date,
-        maxDistance: TimeInterval,
-        in snapshots: [PrayerAutoAdvanceTrainingSnapshot]
-    ) -> PrayerAutoAdvanceTrainingSnapshot? {
-        snapshots
-            .map { ($0, abs($0.date.timeIntervalSince(date))) }
-            .filter { $0.1 <= maxDistance }
-            .min { $0.1 < $1.1 }?
-            .0
+    static func positiveTargetDates(manualAdvanceAt: Date, count: Int = maximumSamplesPerClass) -> [Date] {
+        guard count > 0 else { return [] }
+        if count == 1 { return [manualAdvanceAt] }
+        return (0..<count).map { index in
+            let fraction = Double(index) / Double(count - 1)
+            let offset = -positiveWindow + (2 * positiveWindow * fraction)
+            return manualAdvanceAt.addingTimeInterval(offset)
+        }
+    }
+
+    private static func evenlyDistributedSelection(
+        from snapshots: [PrayerAutoAdvanceTrainingSnapshot],
+        count: Int
+    ) -> [PrayerAutoAdvanceTrainingSnapshot] {
+        let ordered = snapshots.sorted { $0.date < $1.date }
+        guard count < ordered.count else { return Array(ordered.prefix(count)) }
+        guard count > 1 else {
+            return [ordered.min { abs($0.date.timeIntervalSince1970) < abs($1.date.timeIntervalSince1970) } ?? ordered[0]]
+        }
+
+        return (0..<count).map { index in
+            let fraction = Double(index) / Double(count - 1)
+            let rawIndex = fraction * Double(ordered.count - 1)
+            return ordered[Int(rawIndex.rounded())]
+        }
     }
 }
