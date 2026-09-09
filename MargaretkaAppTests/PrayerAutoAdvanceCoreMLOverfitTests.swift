@@ -6,7 +6,7 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
     @Test func bundledModelRapidlyOverfitsFiveSyntheticAudioPatterns() async throws {
         let sourceURL = try #require(findBundledModel())
         let initialModel = try PrayerAutoAdvanceCoreMLModel(compiledURL: sourceURL)
-        #expect(initialModel.declaredModelVersion == 9)
+        #expect(initialModel.declaredModelVersion == 10)
         #expect(initialModel.declaredFeatureSchemaVersion == PrayerAutoAdvanceCoreMLModel.currentFeatureSchemaVersion)
 
         let evaluationSamples = syntheticSamples()
