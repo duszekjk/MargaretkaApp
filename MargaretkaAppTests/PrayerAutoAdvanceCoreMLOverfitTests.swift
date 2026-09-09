@@ -6,8 +6,14 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
     @Test func bundledModelRapidlyOverfitsFiveSyntheticAudioPatterns() async throws {
         let sourceURL = try #require(findBundledModel())
         let initialModel = try PrayerAutoAdvanceCoreMLModel(compiledURL: sourceURL)
-        #expect(initialModel.declaredModelVersion == 10)
+        #expect(initialModel.declaredModelVersion == 11)
         #expect(initialModel.declaredFeatureSchemaVersion == PrayerAutoAdvanceCoreMLModel.currentFeatureSchemaVersion)
+        #expect(initialModel.declaredAllParameterizedLayersUpdatable)
+        #expect(
+            initialModel.declaredUpdatableLayers == [
+                "hidden1", "hidden2", "hidden3", "hidden4", "hidden5", "logits",
+            ]
+        )
 
         let evaluationSamples = syntheticSamples()
         let trainingSamples = balancedTrainingSamples(from: evaluationSamples)
@@ -26,8 +32,9 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
         var checkpoints: [Int: [Double]] = [0: try predictions(model: current, samples: evaluationSamples)]
         let checkpointRounds: Set<Int> = [5, 10, 20, 30, 40, 50]
 
-        // Fifty real MLUpdateTask rounds intentionally stress the production model's
-        // personalization head on a tiny, deterministic and class-balanced data set.
+        // Fifty real MLUpdateTask rounds intentionally stress the complete production
+        // network on a tiny, deterministic and class-balanced data set. V11 trains
+        // every parameterized layer, not only a personalization head.
         for round in 1...50 {
             let destination = root.appendingPathComponent("round-\(round).mlmodelc", isDirectory: true)
             try await PrayerAutoAdvanceCoreMLModel.update(
