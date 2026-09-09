@@ -1,7 +1,7 @@
 import CoreML
 import Foundation
 
-final class PrayerAutoAdvanceCoreMLModel {
+final class PrayerAutoAdvanceCoreMLModel: @unchecked Sendable {
     static let inputSize = PrayerAutoAdvanceFeatureExtractor.featureCount
     static let longAudioInputSize = PrayerAutoAdvanceLongAudioFeatureExtractor.featureCount
     static let combinedInputSize = inputSize + longAudioInputSize
