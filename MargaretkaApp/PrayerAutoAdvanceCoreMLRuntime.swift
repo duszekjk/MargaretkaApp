@@ -4,7 +4,7 @@ internal import Combine
 @MainActor
 final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
     @Published var advanceRequestSerial = 0
-    @Published var lastPrediction: Float = 0
+    var lastPrediction: Float = 0
     @Published var statusMessage: String?
 
     let state = PrayerAutoAdvanceCoreMLState.shared
@@ -62,7 +62,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
             try? await Task.sleep(for: .milliseconds(200))
 
 #if os(iOS)
-            let postSwipeAudio = self.capture.audioWindow()
+            let postSwipeAudio = await self.capture.audioWindowOffMain()
 #else
             let postSwipeAudio = PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: swipeAudio.sampleRate)
 #endif
