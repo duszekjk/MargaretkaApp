@@ -18,13 +18,16 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
     var consecutiveAdvancePredictions = 0
     var cooldownUntil = Date.distantPast
     var lastTrainingSnapshotAt = Date.distantPast
+    var lastTrainingCandidateAt = Date.distantPast
     var lastDiagnosticsPublishAt = Date.distantPast
     var lastInferenceAt = Date.distantPast
     var trainingCandidateSeenCount = 0
 
     // Keep a little more than the final 12 so the T-0.4 s cutoff can discard the
-    // last one/two 4 Hz candidates without usually shrinking a long-page batch.
+    // last candidate without usually shrinking a long-page batch at the 2 Hz
+    // training-candidate cadence.
     static let trainingReservoirCapacity = 16
+    static let trainingCandidateInterval: TimeInterval = 0.5
     static let trainingOnlyInferenceInterval: TimeInterval = 2.0
     static let activeTrainingInferenceInterval: TimeInterval = 5.0
     static let diagnosticsPublishInterval: TimeInterval = 2.0
@@ -50,9 +53,9 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         isTrainingEnabled || isAutomaticEnabled
     }
 
-    /// Called at 4 Hz, but deliberately performs only O(1) bookkeeping. The
-    /// expensive v10 feature extraction happens only when this returns a slot or
-    /// when an inference heartbeat/automatic prediction is due.
+    /// Called by the 4 Hz scheduler. Automatic inference may still run at 4 Hz,
+    /// while training candidates are admitted at most at 2 Hz. Expensive feature
+    /// extraction happens only when this returns a reservoir slot or inference is due.
     func evaluationPlan(at date: Date) -> PrayerAutoAdvanceEvaluationPlan {
         let shouldPredict: Bool
         if isAutomaticEnabled {
@@ -67,13 +70,17 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         }
 
         var reservoirSlot: Int?
-        if isTrainingEnabled {
+        let shouldConsiderTrainingCandidate = isTrainingEnabled
+            && date.timeIntervalSince(lastTrainingCandidateAt) >= Self.trainingCandidateInterval
+
+        if shouldConsiderTrainingCandidate {
+            lastTrainingCandidateAt = date
             trainingCandidateSeenCount += 1
             if snapshots.count < Self.trainingReservoirCapacity {
                 reservoirSlot = snapshots.count
             } else {
                 // Standard reservoir sampling: after the reservoir fills, each
-                // 4 Hz timestamp has equal probability of surviving until swipe.
+                // 2 Hz training timestamp has equal probability of surviving until swipe.
                 let candidate = Int.random(in: 0..<trainingCandidateSeenCount)
                 if candidate < Self.trainingReservoirCapacity {
                     reservoirSlot = candidate
