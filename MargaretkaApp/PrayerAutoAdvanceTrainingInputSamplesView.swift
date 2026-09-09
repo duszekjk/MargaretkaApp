@@ -11,7 +11,7 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Próbki danych modelu")
                         .font(.headline)
-                    Text("Ostatnie rzeczywiste wejścia. Audio istnieje tylko w RAM i znika po restarcie aplikacji.")
+                    Text("Ostatnie rzeczywiste wejścia. Audio i tekst diagnostyczny istnieją tylko w RAM i znikają po restarcie aplikacji.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -48,19 +48,8 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
         DisclosureGroup {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 10) {
-                    Button {
-                        play(sample.pcm(duration: 10), sampleRate: sample.sampleRate)
-                    } label: {
-                        Label("Play 10 s", systemImage: "play.fill")
-                    }
-                    .buttonStyle(.bordered)
-
-                    Button {
-                        play(sample.pcm(duration: 60), sampleRate: sample.sampleRate)
-                    } label: {
-                        Label("Play 60 s", systemImage: "play.fill")
-                    }
-                    .buttonStyle(.bordered)
+                    playbackButton(sample: sample, duration: 10)
+                    playbackButton(sample: sample, duration: 60)
 
                     if audioPlayer.isPlaying {
                         Button("Stop") { audioPlayer.stop() }
@@ -73,10 +62,24 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
                     .foregroundStyle(.secondary)
 
                 scalarTable(sample)
+                embeddingSource(
+                    title: "spoken_embedding — tekst wejściowy",
+                    sourceText: sample.spokenEmbeddingText,
+                    tokens: sample.spokenTokens
+                )
                 FeatureVectorInspector(title: "spoken_embedding", values: Array(sample.spokenEmbedding), globalOffset: 3)
+                embeddingSource(
+                    title: "page_embedding — tekst wejściowy",
+                    sourceText: sample.pageEmbeddingText,
+                    tokens: sample.pageTokens
+                )
                 FeatureVectorInspector(title: "page_embedding", values: Array(sample.pageEmbedding), globalOffset: 515)
                 FeatureVectorInspector(title: "audio10", values: Array(sample.shortAudioFeatures), globalOffset: 1027)
-                FeatureVectorInspector(title: "audio60", values: sample.longAudioFeatures, globalOffset: PrayerAutoAdvanceCoreMLModel.inputSize)
+                FeatureVectorInspector(
+                    title: "audio60",
+                    values: sample.longAudioFeatures,
+                    globalOffset: PrayerAutoAdvanceCoreMLModel.inputSize
+                )
             }
             .padding(.top, 8)
         } label: {
@@ -92,14 +95,73 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
                     .font(.caption.monospaced())
                     .lineLimit(1)
                     .foregroundStyle(.secondary)
-                Text("PCM \(String(format: "%.1f", Double(sample.pcmSamples.count) / sample.sampleRate)) s · input 4147 = 3 + 512 + 512 + 1200 + 1920")
-                    .font(.caption2.monospaced())
-                    .foregroundStyle(.secondary)
+                Text(
+                    "PCM \(String(format: "%.1f", Double(sample.pcmSamples.count) / sample.sampleRate)) s · "
+                    + "input \(PrayerAutoAdvanceCoreMLModel.combinedInputSize) = 3 + 512 + 512 + "
+                    + "\(PrayerAutoAdvanceAudioFeatureExtractor.featureCount) + \(PrayerAutoAdvanceLongAudioFeatureExtractor.featureCount)"
+                )
+                .font(.caption2.monospaced())
+                .foregroundStyle(.secondary)
             }
         }
         .padding(10)
         .background(.background.opacity(0.45))
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    @ViewBuilder
+    private func playbackButton(sample: PrayerAutoAdvanceDiagnosticInputSample, duration: TimeInterval) -> some View {
+        let active = audioPlayer.isPlaying(sampleID: sample.id, duration: duration)
+        Button {
+            play(sample: sample, duration: duration)
+        } label: {
+            HStack(spacing: 6) {
+                if active {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Image(systemName: "play.fill")
+                }
+                Text("\(Int(duration)) s")
+            }
+        }
+        .buttonStyle(.bordered)
+        .tint(active ? .orange : nil)
+    }
+
+    private func embeddingSource(title: String, sourceText: String, tokens: [String]) -> some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(sourceText.isEmpty ? "(pusty tekst)" : sourceText)
+                    .font(.caption)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Divider()
+
+                if tokens.isEmpty {
+                    Text("Brak tokenów")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(Array(tokens.enumerated()), id: \.offset) { index, token in
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text("[\(index)]")
+                                .font(.caption2.monospaced())
+                                .foregroundStyle(.secondary)
+                                .frame(width: 42, alignment: .trailing)
+                            Text(token)
+                                .font(.caption.monospaced())
+                                .textSelection(.enabled)
+                        }
+                    }
+                }
+            }
+            .padding(.top, 5)
+        } label: {
+            Text("\(title) · tokeny [\(tokens.count)]")
+                .font(.subheadline.bold())
+        }
     }
 
     private func scalarTable(_ sample: PrayerAutoAdvanceDiagnosticInputSample) -> some View {
@@ -124,9 +186,14 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
         .font(.caption)
     }
 
-    private func play(_ samples: [Float], sampleRate: Double) {
+    private func play(sample: PrayerAutoAdvanceDiagnosticInputSample, duration: TimeInterval) {
         do {
-            try audioPlayer.play(samples: samples, sampleRate: sampleRate)
+            try audioPlayer.play(
+                sampleID: sample.id,
+                duration: duration,
+                samples: sample.pcm(duration: duration),
+                sampleRate: sample.sampleRate
+            )
             playbackError = nil
         } catch {
             playbackError = error.localizedDescription
