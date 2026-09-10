@@ -169,6 +169,9 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
                 do {
                     let session = AVAudioSession.sharedInstance()
                     try session.setCategory(.record, mode: .measurement, options: [.duckOthers])
+                    // Recording sessions suppress system haptics by default. Prayer
+                    // navigation feedback must remain identical while training listens.
+                    try session.setAllowHapticsAndSystemSoundsDuringRecording(true)
                     try session.setActive(true)
                     continuation.resume()
                 } catch { continuation.resume(throwing: error) }
