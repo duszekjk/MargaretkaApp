@@ -58,5 +58,6 @@ extension PrayerAutoAdvanceCoreMLRuntime {
 #if os(iOS)
         capture.stop()
 #endif
+        PrayerAutoAdvanceTrainingDiagnostics.shared.speechState = "idle"
     }
 }
