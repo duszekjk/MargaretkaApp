@@ -1,11 +1,48 @@
 import SwiftUI
 
+@MainActor
+final class PrayerAutoAdvanceTrainingHUDControl: ObservableObject {
+    static let shared = PrayerAutoAdvanceTrainingHUDControl()
+
+    @Published var isExpanded = false
+    @Published var showingDiagnostics = false
+
+    private var pendingToolbarTap: Task<Void, Never>?
+
+    private init() {}
+
+    /// A real toolbar Button fires once for each physical tap. Delay the single-tap
+    /// action briefly so a second tap can promote the gesture to full diagnostics.
+    func registerToolbarTap() {
+        if let pendingToolbarTap {
+            pendingToolbarTap.cancel()
+            self.pendingToolbarTap = nil
+            showingDiagnostics = true
+            return
+        }
+
+        pendingToolbarTap = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(260))
+            guard !Task.isCancelled, let self else { return }
+            self.pendingToolbarTap = nil
+            self.isExpanded.toggle()
+        }
+    }
+
+    func collapseHUD() {
+        isExpanded = false
+    }
+
+    func showFullDiagnostics() {
+        showingDiagnostics = true
+    }
+}
+
 struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
     @AppStorage(PrayerAutoAdvancePreferences.trainingEnabledKey) private var trainingEnabled = false
     @ObservedObject private var diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
     @ObservedObject private var state = PrayerAutoAdvanceCoreMLState.shared
-    @State private var showingDiagnostics = false
-    @State private var isExpanded = false
+    @ObservedObject private var control = PrayerAutoAdvanceTrainingHUDControl.shared
 
     private var isListening: Bool {
         diagnostics.speechState == "listening"
@@ -13,46 +50,65 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .overlay(alignment: .topLeading) {
+            .toolbar {
+#if os(iOS)
                 if trainingEnabled {
-                    Group {
-                        if isExpanded {
-                            hud
-                        } else {
-                            collapsedButton
-                        }
+                    ToolbarItem(placement: .topBarLeading) {
+                        trainingToolbarButton
                     }
-                    .padding(.leading, 12)
-                    .safeAreaPadding(.top, 8)
+                }
+#endif
+            }
+            .overlay(alignment: .topLeading) {
+                if trainingEnabled, control.isExpanded {
+                    hud
+                        .padding(.leading, 12)
+                        .safeAreaPadding(.top, 8)
                 }
             }
-            .fullScreenCover(isPresented: $showingDiagnostics) {
+            .fullScreenCover(isPresented: $control.showingDiagnostics) {
                 PrayerAutoAdvanceTrainingDiagnosticsView()
+            }
+            .onChange(of: trainingEnabled) { _, enabled in
+                if !enabled {
+                    control.collapseHUD()
+                }
             }
     }
 
-    private var collapsedButton: some View {
-        Image(systemName: isListening ? "waveform.badge.mic" : "waveform")
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundStyle(isListening ? .orange : .primary)
-            .frame(width: 36, height: 36)
-            .background(.ultraThinMaterial, in: Circle())
-            .overlay {
-                Circle()
-                    .fill(isListening ? Color.orange.opacity(0.16) : Color.clear)
+#if os(iOS)
+    @ViewBuilder
+    private var trainingToolbarButton: some View {
+        if #available(iOS 26.0, *) {
+            Button {
+                control.registerToolbarTap()
+            } label: {
+                Image(systemName: isListening ? "waveform.badge.mic" : "waveform")
             }
-            .overlay {
-                Circle()
-                    .strokeBorder(isListening ? Color.orange.opacity(0.55) : Color.white.opacity(0.18), lineWidth: 0.75)
-            }
-            .contentShape(Circle())
-            .gesture(trainingHUDGesture)
+            .buttonStyle(.glass)
+            .tint(isListening ? .orange : .primary)
             .accessibilityLabel(
                 isListening
                     ? "Trening aktywny. Stuknij, aby rozwinąć diagnostykę."
                     : "Diagnostyka treningu. Stuknij, aby rozwinąć."
             )
+            .accessibilityHint("Stuknij dwa razy, aby otworzyć pełną diagnostykę.")
+        } else {
+            Button {
+                control.registerToolbarTap()
+            } label: {
+                Image(systemName: isListening ? "waveform.badge.mic" : "waveform")
+                    .foregroundStyle(isListening ? .orange : .primary)
+            }
+            .accessibilityLabel(
+                isListening
+                    ? "Trening aktywny. Stuknij, aby rozwinąć diagnostykę."
+                    : "Diagnostyka treningu. Stuknij, aby rozwinąć."
+            )
+            .accessibilityHint("Stuknij dwa razy, aby otworzyć pełną diagnostykę.")
+        }
     }
+#endif
 
     private var hud: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -110,11 +166,11 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
         .background(.black.opacity(0.76))
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-        .gesture(trainingHUDGesture)
+        .gesture(hudGesture)
         .accessibilityLabel("Diagnostyka treningu. Stuknij, aby zwinąć; stuknij dwa razy, aby otworzyć szczegóły.")
     }
 
-    private var trainingHUDGesture: some Gesture {
+    private var hudGesture: some Gesture {
         ExclusiveGesture(
             TapGesture(count: 2),
             TapGesture(count: 1)
@@ -122,9 +178,9 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
         .onEnded { value in
             switch value {
             case .first:
-                showingDiagnostics = true
+                control.showFullDiagnostics()
             case .second:
-                isExpanded.toggle()
+                control.collapseHUD()
             }
         }
     }
