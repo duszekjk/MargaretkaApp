@@ -78,36 +78,19 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
     }
 
 #if os(iOS)
-    @ViewBuilder
     private var trainingToolbarButton: some View {
-        if #available(iOS 26.0, *) {
-            Button {
-                control.registerToolbarTap()
-            } label: {
-                Image(systemName: isListening ? "waveform.badge.mic" : "waveform")
-            }
-            .buttonStyle(.glass)
-            .tint(isListening ? .orange : .primary)
-            .accessibilityLabel(
-                isListening
-                    ? "Trening aktywny. Stuknij, aby rozwinąć diagnostykę."
-                    : "Diagnostyka treningu. Stuknij, aby rozwinąć."
-            )
-            .accessibilityHint("Stuknij dwa razy, aby otworzyć pełną diagnostykę.")
-        } else {
-            Button {
-                control.registerToolbarTap()
-            } label: {
-                Image(systemName: isListening ? "waveform.badge.mic" : "waveform")
-                    .foregroundStyle(isListening ? .orange : .primary)
-            }
-            .accessibilityLabel(
-                isListening
-                    ? "Trening aktywny. Stuknij, aby rozwinąć diagnostykę."
-                    : "Diagnostyka treningu. Stuknij, aby rozwinąć."
-            )
-            .accessibilityHint("Stuknij dwa razy, aby otworzyć pełną diagnostykę.")
+        Button {
+            control.registerToolbarTap()
+        } label: {
+            Image(systemName: isListening ? "waveform.badge.mic" : "waveform")
         }
+        .tint(isListening ? .orange : .primary)
+        .accessibilityLabel(
+            isListening
+                ? "Trening aktywny. Stuknij, aby rozwinąć diagnostykę."
+                : "Diagnostyka treningu. Stuknij, aby rozwinąć."
+        )
+        .accessibilityHint("Stuknij dwa razy, aby otworzyć pełną diagnostykę.")
     }
 #endif
 
