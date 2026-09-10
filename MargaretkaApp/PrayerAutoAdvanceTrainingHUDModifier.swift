@@ -5,19 +5,53 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
     @ObservedObject private var diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
     @ObservedObject private var state = PrayerAutoAdvanceCoreMLState.shared
     @State private var showingDiagnostics = false
+    @State private var isExpanded = false
+
+    private var isListening: Bool {
+        diagnostics.speechState == "listening"
+    }
 
     func body(content: Content) -> some View {
         content
-            .overlay(alignment: .top) {
+            .overlay(alignment: .topLeading) {
                 if trainingEnabled {
-                    hud
-                        .padding(.horizontal, 12)
-                        .safeAreaPadding(.top, 8)
+                    Group {
+                        if isExpanded {
+                            hud
+                        } else {
+                            collapsedButton
+                        }
+                    }
+                    .padding(.leading, 12)
+                    .safeAreaPadding(.top, 8)
                 }
             }
             .fullScreenCover(isPresented: $showingDiagnostics) {
                 PrayerAutoAdvanceTrainingDiagnosticsView()
             }
+    }
+
+    private var collapsedButton: some View {
+        Image(systemName: isListening ? "waveform.badge.mic" : "waveform")
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(isListening ? .orange : .primary)
+            .frame(width: 36, height: 36)
+            .background(.ultraThinMaterial, in: Circle())
+            .overlay {
+                Circle()
+                    .fill(isListening ? Color.orange.opacity(0.16) : Color.clear)
+            }
+            .overlay {
+                Circle()
+                    .strokeBorder(isListening ? Color.orange.opacity(0.55) : Color.white.opacity(0.18), lineWidth: 0.75)
+            }
+            .contentShape(Circle())
+            .gesture(trainingHUDGesture)
+            .accessibilityLabel(
+                isListening
+                    ? "Trening aktywny. Stuknij, aby rozwinąć diagnostykę."
+                    : "Diagnostyka treningu. Stuknij, aby rozwinąć."
+            )
     }
 
     private var hud: some View {
@@ -67,20 +101,32 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
                     Text(String(format: "Vmargin %+.4f", margin))
                 }
             }
-            Text("2× stuknij, aby otworzyć pełną diagnostykę")
+            Text("1× zwiń · 2× pełna diagnostyka")
                 .opacity(0.8)
         }
         .font(.system(size: 8, design: .monospaced))
         .foregroundStyle(.white)
         .padding(6)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .background(.black.opacity(0.76))
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-        .onTapGesture(count: 2) {
-            showingDiagnostics = true
+        .gesture(trainingHUDGesture)
+        .accessibilityLabel("Diagnostyka treningu. Stuknij, aby zwinąć; stuknij dwa razy, aby otworzyć szczegóły.")
+    }
+
+    private var trainingHUDGesture: some Gesture {
+        ExclusiveGesture(
+            TapGesture(count: 2),
+            TapGesture(count: 1)
+        )
+        .onEnded { value in
+            switch value {
+            case .first:
+                showingDiagnostics = true
+            case .second:
+                isExpanded.toggle()
+            }
         }
-        .accessibilityLabel("Diagnostyka treningu. Stuknij dwa razy, aby otworzyć szczegóły.")
     }
 }
 
