@@ -24,7 +24,6 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 7) {
                 Text("TRAIN")
-                Text(String(format: "pred %.3f", diagnostics.predictionHistory.last ?? 0))
                 Text("E\(diagnostics.currentEpochNumber) \(diagnostics.currentEpochSampleCount)/\(PrayerAutoAdvanceTrainingDiagnostics.epochSize)")
                 Text("ok \(state.metadata?.trainingSessions ?? 0)")
             }
