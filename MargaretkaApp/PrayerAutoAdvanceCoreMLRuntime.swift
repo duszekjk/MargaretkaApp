@@ -26,7 +26,6 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
     static let trainingReservoirCapacity = 16
     static let trainingCandidateInterval: TimeInterval = 0.5
     static let trainingOnlyInferenceInterval: TimeInterval = 2.0
-    static let activeTrainingInferenceInterval: TimeInterval = 5.0
     static let diagnosticsPublishInterval: TimeInterval = 2.0
 
     init() {}
@@ -50,15 +49,13 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
     /// The scheduler still runs at 4 Hz for automatic switching. Training markers
     /// are admitted at 2 Hz, but they are only timestamp/transcript/audio-index
     /// records. No audio feature extraction is performed for a training-only tick.
+    /// While MLUpdateTask is active, diagnostic inference is disabled entirely.
     func evaluationPlan(at date: Date) -> PrayerAutoAdvanceEvaluationPlan {
         let shouldPredict: Bool
         if isAutomaticEnabled {
             shouldPredict = true
-        } else if isTrainingEnabled {
-            let interval = state.isTraining
-                ? Self.activeTrainingInferenceInterval
-                : Self.trainingOnlyInferenceInterval
-            shouldPredict = date.timeIntervalSince(lastInferenceAt) >= interval
+        } else if isTrainingEnabled, !state.isTraining {
+            shouldPredict = date.timeIntervalSince(lastInferenceAt) >= Self.trainingOnlyInferenceInterval
         } else {
             shouldPredict = false
         }
@@ -112,7 +109,6 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 #if os(iOS)
         let swipeTranscript = capture.transcriptSnapshot()
         let swipeAudio = capture.audioWindow()
-        // Freeze the page history exactly once before the next context can reset it.
         let frozenPageAudio = capture.freezePageAudio()
 #else
         let swipeTranscript = ""
@@ -162,9 +158,6 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
                 }
             }.value
 
-            // Materialize only the small reservoir after swipe. Each candidate uses
-            // the exact same existing short/long extractors and therefore the same
-            // V11 feature schema as before; only the time at which work happens moved.
             let negativeSnapshots = await Task.detached(priority: .background) {
                 candidates.compactMap { candidate -> PrayerAutoAdvanceTrainingSnapshot? in
                     let targetWindow = Self.audioWindow(
