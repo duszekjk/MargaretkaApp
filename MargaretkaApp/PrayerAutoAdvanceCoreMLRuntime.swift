@@ -25,7 +25,6 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
     static let trainingReservoirCapacity = 16
     static let trainingCandidateInterval: TimeInterval = 0.5
-    static let trainingOnlyInferenceInterval: TimeInterval = 2.0
     static let diagnosticsPublishInterval: TimeInterval = 2.0
 
     init() {}
@@ -48,17 +47,10 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
     /// The scheduler still runs at 4 Hz for automatic switching. Training markers
     /// are admitted at 2 Hz, but they are only timestamp/transcript/audio-index
-    /// records. No audio feature extraction is performed for a training-only tick.
-    /// While MLUpdateTask is active, diagnostic inference is disabled entirely.
+    /// records. Training-only mode never performs live model inference; prediction
+    /// metrics come from the actual update/validation cycle.
     func evaluationPlan(at date: Date) -> PrayerAutoAdvanceEvaluationPlan {
-        let shouldPredict: Bool
-        if isAutomaticEnabled {
-            shouldPredict = true
-        } else if isTrainingEnabled, !state.isTraining {
-            shouldPredict = date.timeIntervalSince(lastInferenceAt) >= Self.trainingOnlyInferenceInterval
-        } else {
-            shouldPredict = false
-        }
+        let shouldPredict = isAutomaticEnabled
 
         var reservoirSlot: Int?
         let shouldConsiderTrainingCandidate = isTrainingEnabled
