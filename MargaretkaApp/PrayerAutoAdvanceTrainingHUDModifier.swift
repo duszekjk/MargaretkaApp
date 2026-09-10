@@ -45,8 +45,10 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
     @ObservedObject private var state = PrayerAutoAdvanceCoreMLState.shared
     @ObservedObject private var control = PrayerAutoAdvanceTrainingHUDControl.shared
 
-    private var isListening: Bool {
-        diagnostics.speechState == "listening"
+    /// The toolbar indicator reflects the live capture state, not whether training
+    /// merely happens to be enabled in preferences.
+    private var isCaptureActive: Bool {
+        trainingEnabled && diagnostics.speechState == "listening"
     }
 
     func body(content: Content) -> some View {
@@ -82,12 +84,13 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
         Button {
             control.registerToolbarTap()
         } label: {
-            Image(systemName: isListening ? "waveform.badge.mic" : "waveform")
+            Image(systemName: isCaptureActive ? "waveform.badge.mic" : "waveform")
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(isCaptureActive ? Color.orange : Color.primary)
         }
-        .tint(isListening ? .orange : .primary)
         .accessibilityLabel(
-            isListening
-                ? "Trening aktywny. Stuknij, aby rozwinąć diagnostykę."
+            isCaptureActive
+                ? "Nasłuch treningowy aktywny. Stuknij, aby rozwinąć diagnostykę."
                 : "Diagnostyka treningu. Stuknij, aby rozwinąć."
         )
         .accessibilityHint("Stuknij dwa razy, aby otworzyć pełną diagnostykę.")
