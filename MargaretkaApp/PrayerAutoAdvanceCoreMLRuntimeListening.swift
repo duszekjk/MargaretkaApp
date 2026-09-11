@@ -48,24 +48,20 @@ extension PrayerAutoAdvanceCoreMLRuntime {
             storeTrainingCandidate(candidate, at: slot)
         }
 
-        // Training-only collection ends here. It records only metadata and never
-        // touches the V12 spectral front end until the page is swiped.
         guard plan.shouldPredict else { return }
 
         let slice = capture.pageAudioSlice(from: lastSpectralSampleIndex)
         lastSpectralSampleIndex = slice.endSampleIndex
         let cache = spectralCache
-        let history = await Task.detached(priority: .userInitiated) {
+        let audio = await Task.detached(priority: .userInitiated) {
             cache.ingest(samples: slice.samples, startingAt: slice.startSampleIndex)
-            return cache.history()
+            return cache.features(endingAt: currentSampleIndex)
         }.value
-        let shortAudio = history.shortFeatures(endingAt: currentSampleIndex)
-        let longAudio = history.longFeatures(endingAt: currentSampleIndex)
 
         await observe(
             speech: speech,
-            shortAudio: shortAudio,
-            longAudio: longAudio,
+            shortAudio: audio.short,
+            longAudio: audio.long,
             plan: plan
         )
 #endif
