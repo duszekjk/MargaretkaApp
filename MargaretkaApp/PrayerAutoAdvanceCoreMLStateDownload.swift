@@ -13,6 +13,17 @@ extension PrayerAutoAdvanceCoreMLState {
 
         isDownloading = true
         defer { isDownloading = false }
+
+#if DEBUG
+        do {
+            try installBundledDeveloperSeed()
+            lastError = nil
+            return model != nil
+        } catch {
+            lastError = error.localizedDescription
+            return false
+        }
+#else
         do {
             let downloaded = try await PrayerAutoAdvanceCoreMLDownloader.fetch()
             try PrayerAutoAdvanceCoreMLInstall.run(downloaded, state: self)
@@ -23,5 +34,6 @@ extension PrayerAutoAdvanceCoreMLState {
             lastError = error.localizedDescription
             return false
         }
+#endif
     }
 }
