@@ -6,7 +6,7 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
     @Test func bundledModelRapidlyOverfitsFiveSyntheticAudioPatterns() async throws {
         let sourceURL = try #require(findBundledModel())
         let initialModel = try PrayerAutoAdvanceCoreMLModel(compiledURL: sourceURL)
-        #expect(initialModel.declaredModelVersion == 11)
+        #expect(initialModel.declaredModelVersion == 12)
         #expect(initialModel.declaredFeatureSchemaVersion == PrayerAutoAdvanceCoreMLModel.currentFeatureSchemaVersion)
         #expect(initialModel.declaredAllParameterizedLayersUpdatable)
         #expect(
@@ -32,10 +32,6 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
         var checkpoints: [Int: [Double]] = [0: try predictions(model: current, samples: evaluationSamples)]
         let checkpointRounds: Set<Int> = [10, 20, 50, 100]
 
-        // One hundred real MLUpdateTask rounds intentionally stress the complete
-        // production network on a tiny, deterministic and class-balanced data set.
-        // V11 trains every parameterized layer, so the longer run shows both how
-        // quickly the full network can overfit and whether later updates destabilize it.
         for round in 1...100 {
             let destination = root.appendingPathComponent("round-\(round).mlmodelc", isDirectory: true)
             try await PrayerAutoAdvanceCoreMLModel.update(
@@ -56,8 +52,6 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
         let positive = paired.filter { $0.0.label == 1 }.map { $0.1 }
         let negative = paired.filter { $0.0.label == 0 }.map { $0.1 }
 
-        // Intermediate checks require clear progress without assuming that the
-        // fully-unfrozen V11 must converge at the same speed as V10's tiny head.
         #expect(losses[10] < initialLoss)
         #expect(losses[20] < initialLoss * 0.80)
         #expect(losses[50] < initialLoss * 0.50)
@@ -90,8 +84,6 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
     ) -> [PrayerAutoAdvanceLabeledSample] {
         let negatives = uniqueSamples.filter { $0.label == 0 }
         let positives = uniqueSamples.filter { $0.label == 1 }
-
-        // 2 negative patterns x3 and 3 positive patterns x2 = 6 per class.
         return negatives.flatMap { sample in Array(repeating: sample, count: 3) }
             + positives.flatMap { sample in Array(repeating: sample, count: 2) }
     }
@@ -101,6 +93,7 @@ struct PrayerAutoAdvanceCoreMLOverfitTests {
         features[0] = Float(id) / 10
         features[1] = label == 1 ? 0.85 : 0.15
         features[2] = 0.5
+        features[3] = label == 1 ? 0.8 : 0.2
 
         let shortAudioStart = PrayerAutoAdvanceFeatureExtractor.progressFeatureCount
             + 2 * PrayerAutoAdvanceFeatureExtractor.textEmbeddingSize
