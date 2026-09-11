@@ -1,22 +1,19 @@
 #!/usr/bin/env python3
-"""Generate the fully updatable audio-primary Core ML model used by prayer auto-advance.
+"""Generate the fully updatable V12 prayer auto-advance Core ML model.
 
-Feature schema v8 uses ONE Core ML input so every parameterized layer sits on a plain
-backpropagation path to the loss. Core ML's legacy updatable neural-network validator
-rejects CONCAT between an updatable layer and the loss.
-
-The app concatenates locally, before Core ML:
-- 3 auxiliary scalars
+Feature schema v9 keeps ONE flattened Core ML input so every parameterized layer
+remains on a plain backpropagation path to the loss. The app concatenates locally:
+- 4 scalar features: elapsed, spoken-word count, page-word count, last speech-segment end time
 - 512 spoken-text embedding
-- 512 page-text embedding
-- 2400 short-audio features (10 s, 50 x 48, 16 kHz analysis)
-- 3840 long-audio features (60 s, 120 x 32, 16 kHz analysis)
-Total: 7267 float values, of which 6240 (~86%) are audio.
+- 512 full-page embedding
+- 2400 short-audio features (10 s, 50 x 48)
+- 3840 long-audio features (60 s, 120 x 32)
+Total: 7268 float values.
 
-Model v11 keeps the v10 architecture and feature schema unchanged, but fixes the
-training contract: every layer that owns trainable weights is updatable on device.
-The ReLU activations, softmax, loss and optimizer have no learned weight tensors of
-their own, so there is nothing to mark updatable on those operations.
+V12 changes the audio semantics, not the dense architecture. Audio is produced by a
+shared fixed-grid 16 kHz streaming spectral front end: 40 ms Hann windows on a 20 ms
+hop. The 48-band representation is computed once with Accelerate/vDSP and reused by
+both the 10 s and 60 s views; the long branch resamples those same 48 bands to 32.
 """
 
 from pathlib import Path
@@ -27,14 +24,14 @@ import coremltools as ct
 from coremltools.models import datatypes
 from coremltools.models.neural_network import AdamParams, NeuralNetworkBuilder
 
-SCALAR_SIZE = 3
+SCALAR_SIZE = 4
 TEXT_EMBEDDING_SIZE = 512
 SHORT_AUDIO_SIZE = 50 * 48
 LONG_AUDIO_SIZE = 120 * 32
 INPUT_SIZE = SCALAR_SIZE + 2 * TEXT_EMBEDDING_SIZE + SHORT_AUDIO_SIZE + LONG_AUDIO_SIZE
 HIDDEN_SIZES = [1536, 1024, 512, 256, 64]
-MODEL_VERSION = 11
-SCHEMA_VERSION = 8
+MODEL_VERSION = 12
+SCHEMA_VERSION = 9
 PARAMETER_LAYERS = ["hidden1", "hidden2", "hidden3", "hidden4", "hidden5", "logits"]
 UPDATABLE_LAYERS = PARAMETER_LAYERS.copy()
 
@@ -114,18 +111,21 @@ def build_model(model_version: int):
 
     spec = builder.spec
     spec.description.input[0].shortDescription = (
-        "7267 local features: 3 scalars + 512 spoken embedding + 512 page embedding + "
+        "7268 local features: 4 scalars + 512 spoken embedding + 512 page embedding + "
         "2400 short-audio + 3840 long-audio values."
     )
     spec.description.output[0].shortDescription = "[stay, advance] probabilities."
-    spec.description.trainingInput[0].shortDescription = "16 kHz audio-primary multimodal feature schema v8."
+    spec.description.trainingInput[0].shortDescription = (
+        "16 kHz fixed-grid streaming spectral multimodal feature schema v9."
+    )
     spec.description.trainingInput[1].shortDescription = "0 = stay, 1 = advance."
 
     model = ct.models.MLModel(spec)
     model.author = "Margaretka"
-    model.short_description = "Fully updatable on-device 16 kHz audio-primary prayer auto-advance classifier"
+    model.short_description = "Fully updatable V12 on-device streaming-spectral prayer auto-advance classifier"
     model.user_defined_metadata["modelVersion"] = str(model_version)
     model.user_defined_metadata["featureSchemaVersion"] = str(SCHEMA_VERSION)
+    model.user_defined_metadata["audioFrontEnd"] = "fixed-grid-16khz-40ms-window-20ms-hop-vdsp"
     model.user_defined_metadata["updatableLayers"] = ",".join(UPDATABLE_LAYERS)
     model.user_defined_metadata["allParameterizedLayersUpdatable"] = "true"
     model.user_defined_metadata["adamLearningRate"] = "0.00001"
@@ -138,7 +138,6 @@ def parameter_count():
 
 
 def updatable_parameter_count():
-    # V11 intentionally trains every parameterized layer from hidden1 through logits.
     return parameter_count()
 
 
@@ -160,6 +159,8 @@ def self_test(output: Path, model_version: int):
         raise RuntimeError(f"modelVersion mismatch: {metadata.get('modelVersion')!r}")
     if metadata.get("featureSchemaVersion") != str(SCHEMA_VERSION):
         raise RuntimeError(f"featureSchemaVersion mismatch: {metadata.get('featureSchemaVersion')!r}")
+    if metadata.get("audioFrontEnd") != "fixed-grid-16khz-40ms-window-20ms-hop-vdsp":
+        raise RuntimeError(f"Unexpected audio front end metadata: {metadata.get('audioFrontEnd')!r}")
     if metadata.get("allParameterizedLayersUpdatable") != "true":
         raise RuntimeError("Model metadata does not declare full parameter training")
     if metadata.get("adamLearningRate") != "0.00001":
@@ -177,7 +178,7 @@ def self_test(output: Path, model_version: int):
         raise RuntimeError(f"Only {update_params:,} of {params:,} parameters are trainable")
     if size_bytes < 40_000_000:
         raise RuntimeError(
-            f"Generated model is only {size_bytes} bytes; expected a v11 model larger than 40 MB. "
+            f"Generated model is only {size_bytes} bytes; expected a V12 model larger than 40 MB. "
             "Do not add this file to Xcode."
         )
 
@@ -198,6 +199,7 @@ def self_test(output: Path, model_version: int):
     print(f"hidden sizes: {HIDDEN_SIZES}")
     print(f"parameterized layers: {', '.join(parameter_layers)}")
     print(f"updatable layers: {', '.join(updatable)}")
+    print("audio front end: fixed-grid 16 kHz / 40 ms window / 20 ms hop / vDSP")
     print("adam learning rate: 0.00001")
     print("SELF-TEST: OK")
 
