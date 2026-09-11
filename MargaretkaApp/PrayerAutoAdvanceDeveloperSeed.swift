@@ -12,6 +12,12 @@ extension PrayerAutoAdvanceCoreMLState {
         guard let modelVersion = bundled.declaredModelVersion else {
             throw PrayerAutoAdvanceDeveloperSeedError.missingModelVersion
         }
+        guard modelVersion == PrayerAutoAdvanceCoreMLModel.currentModelVersion else {
+            throw PrayerAutoAdvanceDeveloperSeedError.incompatibleModelVersion(
+                found: modelVersion,
+                expected: PrayerAutoAdvanceCoreMLModel.currentModelVersion
+            )
+        }
         guard let schemaVersion = bundled.declaredFeatureSchemaVersion else {
             throw PrayerAutoAdvanceDeveloperSeedError.missingFeatureSchemaVersion
         }
@@ -23,6 +29,9 @@ extension PrayerAutoAdvanceCoreMLState {
         }
 
         try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+        if fileManager.fileExists(atPath: modelURL.path) {
+            try fileManager.removeItem(at: modelURL)
+        }
         try fileManager.copyItem(at: source, to: modelURL)
         model = try PrayerAutoAdvanceCoreMLModel(compiledURL: modelURL)
 
@@ -46,6 +55,7 @@ enum PrayerAutoAdvanceDeveloperSeedError: LocalizedError {
     case missingBundledModel
     case missingModelVersion
     case missingFeatureSchemaVersion
+    case incompatibleModelVersion(found: Int, expected: Int)
     case incompatibleFeatureSchema(found: Int, expected: Int)
 
     var errorDescription: String? {
@@ -56,6 +66,8 @@ enum PrayerAutoAdvanceDeveloperSeedError: LocalizedError {
             "Model w bundle nie zawiera metadanej modelVersion. Wygeneruj go ponownie aktualnym skryptem."
         case .missingFeatureSchemaVersion:
             "Model w bundle nie zawiera metadanej featureSchemaVersion. Wygeneruj go ponownie aktualnym skryptem."
+        case let .incompatibleModelVersion(found, expected):
+            "Model w bundle ma wersję v\(found), ale aplikacja oczekuje v\(expected). Wygeneruj ponownie model startowy aktualnym skryptem."
         case let .incompatibleFeatureSchema(found, expected):
             "Model w bundle ma schema v\(found), ale aplikacja oczekuje schema v\(expected). Usuń starą kopię modelu z targetu i dodaj aktualnie wygenerowany plik."
         }

@@ -209,6 +209,8 @@ def main():
     parser.add_argument("--output", default="PrayerAutoAdvance.mlmodel")
     parser.add_argument("--model-version", type=int, default=MODEL_VERSION)
     args = parser.parse_args()
+    if args.model_version != MODEL_VERSION:
+        parser.error(f"V12 generator requires --model-version {MODEL_VERSION}")
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)

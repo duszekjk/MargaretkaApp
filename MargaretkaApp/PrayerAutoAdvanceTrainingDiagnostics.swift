@@ -118,12 +118,13 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         if predictionHistory.count > 48 {
             predictionHistory.removeFirst(predictionHistory.count - 48)
         }
-        if features.count >= 3 {
+        if features.count >= PrayerAutoAdvanceFeatureExtractor.progressFeatureCount {
             lastFeatureSummary = String(
-                format: "elapsed %.2f spokenN %.2f pageN %.2f speechEmb=512 pageEmb=512 aud10=%d aud60=%d",
+                format: "elapsed %.2f spokenN %.2f pageN %.2f lastSpeechEnd %.2f speechEmb=512 pageEmb=512 aud10=%d aud60=%d",
                 features[0],
                 features[1],
                 features[2],
+                features[3],
                 PrayerAutoAdvanceAudioFeatureExtractor.featureCount,
                 PrayerAutoAdvanceLongAudioFeatureExtractor.featureCount
             )

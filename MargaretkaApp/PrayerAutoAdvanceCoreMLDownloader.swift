@@ -16,6 +16,9 @@ enum PrayerAutoAdvanceCoreMLDownloader {
         let (manifestData, manifestResponse) = try await URLSession.shared.data(from: manifestURL)
         try validate(manifestResponse)
         let manifest = try decoder.decode(PrayerAutoAdvanceManifest.self, from: manifestData)
+        guard manifest.modelVersion == PrayerAutoAdvanceCoreMLModel.currentModelVersion else {
+            throw DownloadError.incompatibleModelVersion
+        }
         guard manifest.featureSchemaVersion == PrayerAutoAdvanceCoreMLModel.currentFeatureSchemaVersion else {
             throw DownloadError.incompatibleFeatureSchema
         }
@@ -45,6 +48,7 @@ enum PrayerAutoAdvanceCoreMLDownloader {
     enum DownloadError: LocalizedError {
         case invalidResponse
         case incompatibleFeatureSchema
+        case incompatibleModelVersion
         case invalidModelURL
         case sizeMismatch
         case checksumMismatch
@@ -53,6 +57,7 @@ enum PrayerAutoAdvanceCoreMLDownloader {
             switch self {
             case .invalidResponse: "Serwer modelu zwrócił nieprawidłową odpowiedź."
             case .incompatibleFeatureSchema: "Model ma niezgodny schemat cech."
+            case .incompatibleModelVersion: "Serwer udostępnia niezgodną wersję modelu."
             case .invalidModelURL: "Serwer wskazał niedozwolony adres modelu."
             case .sizeMismatch: "Pobrany model ma nieprawidłowy rozmiar."
             case .checksumMismatch: "Pobrany model ma nieprawidłową sumę kontrolną."

@@ -78,6 +78,7 @@ struct PrayerFlowView: View {
     @State private var userSelectedCategory: Bool = false
     @State private var isAdvancing: Bool = true
     @ObservedObject private var notificationRouter = PrayerNotificationRouter.shared
+    @ObservedObject private var autoAdvanceState = PrayerAutoAdvanceCoreMLState.shared
     @StateObject private var sessionStore = PrayerSessionStore()
     @State private var sessionStart: Date?
     @State private var sessionPauseStart: Date?
@@ -680,7 +681,26 @@ struct PrayerFlowView: View {
                 Text(prayer.text)
             }
         } else {
-            Text("Koniec 🙏")
+            VStack(spacing: 14) {
+                Text("Koniec 🙏")
+
+                if autoAdvanceState.isTrainingPipelineBusy
+                    || autoAdvanceState.queuedTrainingPageCount > 0 {
+                    ProgressView(
+                        value: Double(autoAdvanceState.trainingQueueProgressCompleted),
+                        total: Double(max(autoAdvanceState.trainingQueueProgressTotal, 1))
+                    )
+                    .frame(maxWidth: 280)
+
+                    Text("Trwa jeszcze przetwarzanie treningu.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    Text("Pozostałe strony: \(autoAdvanceState.queuedTrainingPageCount)")
+                        .font(.footnote.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
     }
 

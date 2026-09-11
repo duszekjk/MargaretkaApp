@@ -67,14 +67,28 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
                     sourceText: sample.spokenEmbeddingText,
                     tokens: sample.spokenTokens
                 )
-                FeatureVectorInspector(title: "spoken_embedding", values: Array(sample.spokenEmbedding), globalOffset: 3)
+                FeatureVectorInspector(
+                    title: "spoken_embedding",
+                    values: Array(sample.spokenEmbedding),
+                    globalOffset: PrayerAutoAdvanceFeatureExtractor.progressFeatureCount
+                )
                 embeddingSource(
                     title: "page_embedding — tekst wejściowy",
                     sourceText: sample.pageEmbeddingText,
                     tokens: sample.pageTokens
                 )
-                FeatureVectorInspector(title: "page_embedding", values: Array(sample.pageEmbedding), globalOffset: 515)
-                FeatureVectorInspector(title: "audio10", values: Array(sample.shortAudioFeatures), globalOffset: 1027)
+                FeatureVectorInspector(
+                    title: "page_embedding",
+                    values: Array(sample.pageEmbedding),
+                    globalOffset: PrayerAutoAdvanceFeatureExtractor.progressFeatureCount
+                        + PrayerAutoAdvanceFeatureExtractor.textEmbeddingSize
+                )
+                FeatureVectorInspector(
+                    title: "audio10",
+                    values: Array(sample.shortAudioFeatures),
+                    globalOffset: PrayerAutoAdvanceFeatureExtractor.progressFeatureCount
+                        + 2 * PrayerAutoAdvanceFeatureExtractor.textEmbeddingSize
+                )
                 FeatureVectorInspector(
                     title: "audio60",
                     values: sample.longAudioFeatures,
@@ -97,7 +111,8 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
                     .foregroundStyle(.secondary)
                 Text(
                     "PCM \(String(format: "%.1f", Double(sample.pcmSamples.count) / sample.sampleRate)) s · "
-                    + "input \(PrayerAutoAdvanceCoreMLModel.combinedInputSize) = 3 + 512 + 512 + "
+                    + "input \(PrayerAutoAdvanceCoreMLModel.combinedInputSize) = "
+                    + "\(PrayerAutoAdvanceFeatureExtractor.progressFeatureCount) + 512 + 512 + "
                     + "\(PrayerAutoAdvanceAudioFeatureExtractor.featureCount) + \(PrayerAutoAdvanceLongAudioFeatureExtractor.featureCount)"
                 )
                 .font(.caption2.monospaced())
@@ -172,6 +187,7 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
             scalarRow("[0] elapsed / 120", value: values.indices.contains(0) ? values[0] : 0)
             scalarRow("[1] spoken words / 120", value: values.indices.contains(1) ? values[1] : 0)
             scalarRow("[2] page words / 300", value: values.indices.contains(2) ? values[2] : 0)
+            scalarRow("[3] last speech end / 300", value: values.indices.contains(3) ? values[3] : 0)
         }
     }
 
