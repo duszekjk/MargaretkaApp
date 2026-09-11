@@ -1,13 +1,10 @@
 import Accelerate
 import Foundation
 
-struct PrayerAutoAdvanceSpectralFrame: Sendable {
-    let startSampleIndex: Int
-    let bands: [Float]
-}
-
 struct PrayerAutoAdvanceSpectralHistory: Sendable {
-    let frames: [PrayerAutoAdvanceSpectralFrame]
+    let firstFrameStartSampleIndex: Int
+    let frameCount: Int
+    let bands: [Float]
     let sampleRate: Double
 
     func shortFeatures(endingAt endSampleIndex: Int) -> [Float] {
@@ -31,6 +28,11 @@ struct PrayerAutoAdvanceSpectralHistory: Sendable {
     }
 }
 
+struct PrayerAutoAdvanceAudioFeaturePair: Sendable {
+    let short: [Float]
+    let long: [Float]
+}
+
 enum PrayerAutoAdvanceSpectralFrontEnd {
     static let sampleRate = 16_000.0
     static let analysisWindowSamples = 640       // 40 ms
@@ -44,41 +46,49 @@ enum PrayerAutoAdvanceSpectralFrontEnd {
 
     static func analyze(samples: [Float]) -> PrayerAutoAdvanceSpectralHistory {
         guard samples.count >= analysisWindowSamples else {
-            return PrayerAutoAdvanceSpectralHistory(frames: [], sampleRate: sampleRate)
+            return PrayerAutoAdvanceSpectralHistory(
+                firstFrameStartSampleIndex: 0,
+                frameCount: 0,
+                bands: [],
+                sampleRate: sampleRate
+            )
         }
 
-        var frames: [PrayerAutoAdvanceSpectralFrame] = []
-        frames.reserveCapacity(max(0, (samples.count - analysisWindowSamples) / hopSamples + 1))
+        let frameCount = (samples.count - analysisWindowSamples) / hopSamples + 1
+        var allBands: [Float] = []
+        allBands.reserveCapacity(frameCount * sharedFrequencyBands)
 
         var start = 0
-        while start + analysisWindowSamples <= samples.count {
-            let frame = Array(samples[start..<(start + analysisWindowSamples)])
-            frames.append(
-                PrayerAutoAdvanceSpectralFrame(
-                    startSampleIndex: start,
-                    bands: spectralBands(frame)
-                )
-            )
+        for _ in 0..<frameCount {
+            allBands.append(contentsOf: spectralBands(samples: samples, start: start))
             start += hopSamples
         }
 
-        return PrayerAutoAdvanceSpectralHistory(frames: frames, sampleRate: sampleRate)
+        return PrayerAutoAdvanceSpectralHistory(
+            firstFrameStartSampleIndex: 0,
+            frameCount: frameCount,
+            bands: allBands,
+            sampleRate: sampleRate
+        )
     }
 
-    static func spectralBands(_ frame: [Float]) -> [Float] {
-        guard frame.count == analysisWindowSamples else {
+    static func spectralBands(samples: [Float], start: Int) -> [Float] {
+        guard start >= 0,
+              start + analysisWindowSamples <= samples.count else {
             return Array(repeating: 0, count: sharedFrequencyBands)
         }
 
         var windowed = Array(repeating: Float(0), count: analysisWindowSamples)
-        frame.withUnsafeBufferPointer { input in
+        samples.withUnsafeBufferPointer { input in
             basis.window.withUnsafeBufferPointer { window in
-                vDSP_vmul(
-                    input.baseAddress!, 1,
-                    window.baseAddress!, 1,
-                    &windowed, 1,
-                    vDSP_Length(analysisWindowSamples)
-                )
+                windowed.withUnsafeMutableBufferPointer { output in
+                    vDSP_vmul(
+                        input.baseAddress!.advanced(by: start), 1,
+                        window.baseAddress!, 1,
+                        output.baseAddress!, 1,
+                        vDSP_Length(analysisWindowSamples)
+                    )
+                }
             }
         }
 
@@ -122,7 +132,8 @@ enum PrayerAutoAdvanceSpectralFrontEnd {
         guard temporalBins > 0, frequencyBands > 0 else { return [] }
         let outputCount = temporalBins * frequencyBands
         guard history.sampleRate == sampleRate,
-              let firstFrame = history.frames.first else {
+              history.frameCount > 0,
+              history.bands.count >= history.frameCount * sharedFrequencyBands else {
             return Array(repeating: 0, count: outputCount)
         }
 
@@ -139,48 +150,65 @@ enum PrayerAutoAdvanceSpectralFrontEnd {
             let desiredStart = windowStart + Int((fraction * Double(maxFrameStartOffset)).rounded())
 
             guard desiredStart >= 0 else {
-                output.append(contentsOf: repeatElement(Float(0), count: frequencyBands))
+                appendZeros(count: frequencyBands, to: &output)
                 continue
             }
 
-            let relative = Double(desiredStart - firstFrame.startSampleIndex) / Double(hopSamples)
+            let relative = Double(desiredStart - history.firstFrameStartSampleIndex) / Double(hopSamples)
             let frameIndex = Int(relative.rounded())
-            guard history.frames.indices.contains(frameIndex) else {
-                output.append(contentsOf: repeatElement(Float(0), count: frequencyBands))
+            guard frameIndex >= 0, frameIndex < history.frameCount else {
+                appendZeros(count: frequencyBands, to: &output)
                 continue
             }
 
-            let frame = history.frames[frameIndex]
-            if abs(frame.startSampleIndex - desiredStart) > hopSamples {
-                output.append(contentsOf: repeatElement(Float(0), count: frequencyBands))
+            let actualStart = history.firstFrameStartSampleIndex + frameIndex * hopSamples
+            guard abs(actualStart - desiredStart) <= hopSamples else {
+                appendZeros(count: frequencyBands, to: &output)
                 continue
             }
 
-            if frequencyBands == sharedFrequencyBands {
-                output.append(contentsOf: frame.bands)
-            } else {
-                output.append(contentsOf: resampleBands(frame.bands, count: frequencyBands))
-            }
+            appendFrame(
+                history: history,
+                frameIndex: frameIndex,
+                frequencyBands: frequencyBands,
+                to: &output
+            )
         }
         return output
     }
 
-    private static func resampleBands(_ source: [Float], count: Int) -> [Float] {
-        guard count > 0 else { return [] }
-        guard !source.isEmpty else { return Array(repeating: 0, count: count) }
-        if count == source.count { return source }
-        if count == 1 { return [source[source.count / 2]] }
+    private static func appendFrame(
+        history: PrayerAutoAdvanceSpectralHistory,
+        frameIndex: Int,
+        frequencyBands: Int,
+        to output: inout [Float]
+    ) {
+        let base = frameIndex * sharedFrequencyBands
+        if frequencyBands == sharedFrequencyBands {
+            output.append(contentsOf: history.bands[base..<(base + sharedFrequencyBands)])
+            return
+        }
 
-        var result = Array(repeating: Float(0), count: count)
-        let scale = Double(source.count - 1) / Double(count - 1)
-        for index in 0..<count {
+        guard frequencyBands > 0 else { return }
+        if frequencyBands == 1 {
+            output.append(history.bands[base + sharedFrequencyBands / 2])
+            return
+        }
+
+        let scale = Double(sharedFrequencyBands - 1) / Double(frequencyBands - 1)
+        for index in 0..<frequencyBands {
             let position = Double(index) * scale
             let lower = Int(position.rounded(.down))
-            let upper = min(lower + 1, source.count - 1)
+            let upper = min(lower + 1, sharedFrequencyBands - 1)
             let mix = Float(position - Double(lower))
-            result[index] = source[lower] * (1 - mix) + source[upper] * mix
+            let low = history.bands[base + lower]
+            let high = history.bands[base + upper]
+            output.append(low * (1 - mix) + high * mix)
         }
-        return result
+    }
+
+    private static func appendZeros(count: Int, to output: inout [Float]) {
+        output.append(contentsOf: repeatElement(Float(0), count: count))
     }
 
     private static func makeBasis() -> Basis {
@@ -222,15 +250,17 @@ enum PrayerAutoAdvanceSpectralFrontEnd {
 }
 
 /// Incremental V12 cache for automatic prediction. New PCM is ingested in 0.5 s
-/// bursts; only previously unseen 20 ms grid frames are transformed. The cache
-/// retains just over 60 s of spectral history, not overlapping raw audio windows.
+/// bursts; only unseen fixed-grid frames are transformed. The cache returns only
+/// the final 6240 audio features, never a copied 60 s spectral history.
 final class PrayerAutoAdvanceStreamingSpectralCache: @unchecked Sendable {
     private let lock = NSLock()
     private var pcm: [Float] = []
     private var pcmStartSampleIndex = 0
     private var nextFrameStartSampleIndex = 0
     private var nextExpectedSampleIndex = 0
-    private var frames: [PrayerAutoAdvanceSpectralFrame] = []
+    private var firstFrameStartSampleIndex = 0
+    private var frameCount = 0
+    private var bands: [Float] = []
 
     private let maximumFrameCount = Int(
         ceil((PrayerAutoAdvanceLongAudioFeatureExtractor.duration + 1.0)
@@ -244,7 +274,9 @@ final class PrayerAutoAdvanceStreamingSpectralCache: @unchecked Sendable {
         pcmStartSampleIndex = 0
         nextFrameStartSampleIndex = 0
         nextExpectedSampleIndex = 0
-        frames.removeAll(keepingCapacity: true)
+        firstFrameStartSampleIndex = 0
+        frameCount = 0
+        bands.removeAll(keepingCapacity: true)
         lock.unlock()
     }
 
@@ -253,9 +285,11 @@ final class PrayerAutoAdvanceStreamingSpectralCache: @unchecked Sendable {
         lock.lock()
         if startSampleIndex != nextExpectedSampleIndex {
             pcm.removeAll(keepingCapacity: true)
-            frames.removeAll(keepingCapacity: true)
+            bands.removeAll(keepingCapacity: true)
+            frameCount = 0
             pcmStartSampleIndex = startSampleIndex
             nextFrameStartSampleIndex = startSampleIndex
+            firstFrameStartSampleIndex = startSampleIndex
         }
         pcm.append(contentsOf: samples)
         nextExpectedSampleIndex = startSampleIndex + samples.count
@@ -263,23 +297,30 @@ final class PrayerAutoAdvanceStreamingSpectralCache: @unchecked Sendable {
         let availableEnd = pcmStartSampleIndex + pcm.count
         while nextFrameStartSampleIndex + PrayerAutoAdvanceSpectralFrontEnd.analysisWindowSamples <= availableEnd {
             let localStart = nextFrameStartSampleIndex - pcmStartSampleIndex
-            let localEnd = localStart + PrayerAutoAdvanceSpectralFrontEnd.analysisWindowSamples
-            let frame = Array(pcm[localStart..<localEnd])
-            frames.append(
-                PrayerAutoAdvanceSpectralFrame(
-                    startSampleIndex: nextFrameStartSampleIndex,
-                    bands: PrayerAutoAdvanceSpectralFrontEnd.spectralBands(frame)
+            if frameCount == 0 {
+                firstFrameStartSampleIndex = nextFrameStartSampleIndex
+            }
+            bands.append(
+                contentsOf: PrayerAutoAdvanceSpectralFrontEnd.spectralBands(
+                    samples: pcm,
+                    start: localStart
                 )
             )
+            frameCount += 1
             nextFrameStartSampleIndex += PrayerAutoAdvanceSpectralFrontEnd.hopSamples
         }
 
-        if frames.count > maximumFrameCount {
-            frames.removeFirst(frames.count - maximumFrameCount)
+        if frameCount > maximumFrameCount {
+            let dropFrames = frameCount - maximumFrameCount
+            bands.removeFirst(dropFrames * PrayerAutoAdvanceSpectralFrontEnd.sharedFrequencyBands)
+            firstFrameStartSampleIndex += dropFrames * PrayerAutoAdvanceSpectralFrontEnd.hopSamples
+            frameCount = maximumFrameCount
         }
 
-        let discardBefore = max(pcmStartSampleIndex, nextFrameStartSampleIndex)
-        let discardCount = min(max(0, discardBefore - pcmStartSampleIndex), pcm.count)
+        let discardCount = min(
+            max(0, nextFrameStartSampleIndex - pcmStartSampleIndex),
+            pcm.count
+        )
         if discardCount > 0 {
             pcm.removeFirst(discardCount)
             pcmStartSampleIndex += discardCount
@@ -287,13 +328,17 @@ final class PrayerAutoAdvanceStreamingSpectralCache: @unchecked Sendable {
         lock.unlock()
     }
 
-    func history() -> PrayerAutoAdvanceSpectralHistory {
+    func features(endingAt endSampleIndex: Int) -> PrayerAutoAdvanceAudioFeaturePair {
         lock.lock()
-        let snapshot = frames
-        lock.unlock()
-        return PrayerAutoAdvanceSpectralHistory(
-            frames: snapshot,
+        let history = PrayerAutoAdvanceSpectralHistory(
+            firstFrameStartSampleIndex: firstFrameStartSampleIndex,
+            frameCount: frameCount,
+            bands: bands,
             sampleRate: PrayerAutoAdvanceSpectralFrontEnd.sampleRate
         )
+        let short = history.shortFeatures(endingAt: endSampleIndex)
+        let long = history.longFeatures(endingAt: endSampleIndex)
+        lock.unlock()
+        return PrayerAutoAdvanceAudioFeaturePair(short: short, long: long)
     }
 }
