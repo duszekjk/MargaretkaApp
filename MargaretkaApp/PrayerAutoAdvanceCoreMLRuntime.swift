@@ -48,8 +48,6 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         isTrainingEnabled || isAutomaticEnabled
     }
 
-    /// Scheduler wakeups remain cheap, but production inference is capped at 2 Hz.
-    /// Training candidates are also admitted at 2 Hz and remain metadata-only.
     func evaluationPlan(at date: Date) -> PrayerAutoAdvanceEvaluationPlan {
         let shouldPredict = isAutomaticEnabled
             && date.timeIntervalSince(lastInferenceAt) >= Self.automaticInferenceInterval
@@ -105,13 +103,23 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         )
 
 #if os(iOS)
+        let freezeCapturedAt = Date()
         let swipeSpeech = capture.speechSnapshot()
         let frozenPageAudio = capture.freezePageAudio()
 #else
+        let freezeCapturedAt = Date()
         let swipeSpeech = PrayerAutoAdvanceSpeechSnapshot(transcript: "", lastSegmentEndTime: nil)
         let frozenPageAudio = PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: 16_000)
 #endif
-        let swipeSampleIndex = frozenPageAudio.samples.count
+        let sampleRate = frozenPageAudio.sampleRate > 0
+            ? frozenPageAudio.sampleRate
+            : PrayerAutoAdvanceSpectralFrontEnd.sampleRate
+        let freezeDelay = max(0, freezeCapturedAt.timeIntervalSince(date))
+        let samplesAfterGesture = Int((freezeDelay * sampleRate).rounded())
+        let swipeSampleIndex = min(
+            max(frozenPageAudio.samples.count - samplesAfterGesture, 0),
+            frozenPageAudio.samples.count
+        )
 
         state.lastTrainingEvent = "Domykanie okna ręcznego przejścia…"
 
@@ -145,9 +153,6 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
             )
 
             let materialized = await Task.detached(priority: .background) {
-                let sampleRate = frozenPageAudio.sampleRate > 0
-                    ? frozenPageAudio.sampleRate
-                    : PrayerAutoAdvanceSpectralFrontEnd.sampleRate
                 let bridgeCount = min(
                     postSwipeAudio.samples.count,
                     max(0, Int((PrayerAutoAdvanceTrainingPolicy.positiveWindow * sampleRate).rounded()))
