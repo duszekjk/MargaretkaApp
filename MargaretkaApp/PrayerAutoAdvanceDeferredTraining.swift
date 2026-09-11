@@ -19,15 +19,21 @@ extension PrayerAutoAdvanceCoreMLState {
             return
         }
 
+        resetTrainingProgressIfIdle()
+        trainingWorkEnqueued += 1
         isTrainingPipelineBusy = true
+        refreshTrainingQueueMetrics(activePage: true)
         defer {
+            trainingWorkCompleted += 1
             isTrainingPipelineBusy = false
+            refreshTrainingQueueMetrics(activePage: false)
             startTrainingQueueIfNeeded()
         }
         await processTrainingPage(page)
     }
 
     func enqueueTrainingPage(_ page: PrayerAutoAdvanceDeferredTrainingPage) {
+        resetTrainingProgressIfIdle()
         pendingTrainingPages.append(page)
         trainingWorkEnqueued += 1
         refreshTrainingQueueMetrics()
@@ -126,6 +132,15 @@ extension PrayerAutoAdvanceCoreMLState {
         queuedTrainingPageCount = pendingTrainingPages.count + (active ? 1 : 0)
         trainingQueueProgressTotal = max(trainingWorkEnqueued, 0)
         trainingQueueProgressCompleted = min(trainingWorkCompleted, trainingWorkEnqueued)
+    }
+
+    private func resetTrainingProgressIfIdle() {
+        guard !isTrainingPipelineBusy,
+              trainingQueueTask == nil,
+              pendingTrainingPages.isEmpty,
+              trainingWorkCompleted == trainingWorkEnqueued else { return }
+        trainingWorkEnqueued = 0
+        trainingWorkCompleted = 0
     }
 }
 

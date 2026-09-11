@@ -5,6 +5,7 @@ final class PrayerAutoAdvanceCoreMLModel: @unchecked Sendable {
     static let inputSize = PrayerAutoAdvanceFeatureExtractor.featureCount
     static let longAudioInputSize = PrayerAutoAdvanceLongAudioFeatureExtractor.featureCount
     static let combinedInputSize = inputSize + longAudioInputSize
+    static let currentModelVersion = 12
     static let currentFeatureSchemaVersion = 9
 
     let compiledURL: URL

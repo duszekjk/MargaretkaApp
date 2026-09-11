@@ -3,20 +3,34 @@ import Foundation
 extension PrayerAutoAdvanceCoreMLRuntime {
     func prepareListening() async {
         let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
-        guard let context, isFeatureEnabled else { return }
-        guard state.model != nil else {
-            statusMessage = "Brak lokalnego modelu. Włącz funkcję ponownie w Ustawieniach, aby pobrać model bazowy."
-            diagnostics.speechState = "no-model"
-            diagnostics.error(statusMessage ?? "missing local model")
-            return
+        guard let requestedContext = context, isFeatureEnabled else { return }
+
+        if state.model == nil {
+            statusMessage = "Przygotowywanie lokalnego modelu…"
+            diagnostics.speechState = "preparing-model"
+            diagnostics.event("recovering local model")
+
+            guard await state.ensureModelAvailable() else {
+                statusMessage = state.lastError
+                    ?? "Nie udało się przygotować lokalnego modelu."
+                diagnostics.speechState = "no-model"
+                diagnostics.error(statusMessage ?? "missing local model")
+                return
+            }
+            diagnostics.event("local model ready")
         }
+
+        guard let activeContext = context,
+              activeContext == requestedContext,
+              isFeatureEnabled else { return }
+
 #if os(iOS)
         diagnostics.speechState = "starting"
         diagnostics.event("starting on-device speech")
         do {
             try await capture.start(
-                language: context.language,
-                context: [context.currentText, context.nextText].compactMap { $0 }
+                language: activeContext.language,
+                context: [activeContext.currentText, activeContext.nextText].compactMap { $0 }
             )
             diagnostics.speechState = "listening"
             diagnostics.event("on-device speech active")

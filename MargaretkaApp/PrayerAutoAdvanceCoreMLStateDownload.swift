@@ -3,9 +3,27 @@ import Foundation
 extension PrayerAutoAdvanceCoreMLState {
     func ensureModelAvailable() async -> Bool {
         if model != nil { return true }
-        if isDownloading { return false }
+
+        if isDownloading {
+            while isDownloading, !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            return model != nil
+        }
+
         isDownloading = true
         defer { isDownloading = false }
+
+#if DEBUG
+        do {
+            try installBundledDeveloperSeed()
+            lastError = nil
+            return model != nil
+        } catch {
+            lastError = error.localizedDescription
+            return false
+        }
+#else
         do {
             let downloaded = try await PrayerAutoAdvanceCoreMLDownloader.fetch()
             try PrayerAutoAdvanceCoreMLInstall.run(downloaded, state: self)
@@ -16,5 +34,6 @@ extension PrayerAutoAdvanceCoreMLState {
             lastError = error.localizedDescription
             return false
         }
+#endif
     }
 }
