@@ -2,8 +2,9 @@ import Foundation
 
 extension PrayerAutoAdvanceCoreMLRuntime {
     func observe(
-        transcript: String,
-        audioWindow: PrayerAutoAdvanceAudioWindow,
+        speech: PrayerAutoAdvanceSpeechSnapshot,
+        shortAudio: [Float],
+        longAudio: [Float],
         plan: PrayerAutoAdvanceEvaluationPlan
     ) async {
         guard let context,
@@ -11,18 +12,14 @@ extension PrayerAutoAdvanceCoreMLRuntime {
               plan.shouldPredict else { return }
 
         let elapsed = plan.date.timeIntervalSince(contextStartedAt)
-        let taskPriority: TaskPriority = isAutomaticEnabled ? .userInitiated : .background
 
         do {
-            // Heavy feature extraction is now required here only for inference.
-            // Training-only 2 Hz markers never enter this path.
-            let result = try await Task.detached(priority: taskPriority) {
-                let shortAudio = PrayerAutoAdvanceAudioFeatureExtractor.features(window: audioWindow)
-                let longAudio = PrayerAutoAdvanceLongAudioFeatureExtractor.features(window: audioWindow)
+            let result = try await Task.detached(priority: .userInitiated) {
                 let features = PrayerAutoAdvanceFeatureExtractor.features(
-                    transcript: transcript,
+                    transcript: speech.transcript,
                     context: context,
                     elapsed: elapsed,
+                    lastSegmentEndTime: speech.lastSegmentEndTime,
                     audioFeatures: shortAudio
                 )
                 guard features.count == PrayerAutoAdvanceCoreMLModel.inputSize,
@@ -34,12 +31,11 @@ extension PrayerAutoAdvanceCoreMLRuntime {
                     for: features,
                     longAudioFeatures: longAudio
                 )
-                return (features, longAudio, prediction)
+                return (features, prediction)
             }.value
 
             let features = result.0
-            let longAudioFeatures = result.1
-            let value = result.2
+            let value = result.1
             lastPrediction = value
 
             if plan.date.timeIntervalSince(lastDiagnosticsPublishAt) >= Self.diagnosticsPublishInterval {
@@ -55,9 +51,9 @@ extension PrayerAutoAdvanceCoreMLRuntime {
                 pageID: context.pageID,
                 prediction: value,
                 features: features,
-                longAudioFeatures: longAudioFeatures,
-                audioWindow: audioWindow,
-                transcript: transcript,
+                longAudioFeatures: longAudio,
+                audioWindow: nil,
+                transcript: speech.transcript,
                 pageText: context.currentText,
                 at: plan.date
             )
