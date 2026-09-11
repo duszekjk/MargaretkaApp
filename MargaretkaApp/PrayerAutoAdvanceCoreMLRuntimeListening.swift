@@ -34,26 +34,38 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         let plan = evaluationPlan(at: Date())
         guard plan.reservoirSlot != nil || plan.shouldPredict else { return }
 
-        let transcript = capture.transcriptSnapshot()
+        let speech = capture.speechSnapshot()
+        let currentSampleIndex = capture.pageAudioSampleIndex()
 
         if let slot = plan.reservoirSlot, let context {
             let candidate = PrayerAutoAdvanceTrainingCandidate(
                 pageID: context.pageID,
                 date: plan.date,
-                transcript: transcript,
-                audioEndSampleIndex: capture.pageAudioSampleIndex()
+                transcript: speech.transcript,
+                lastSegmentEndTime: speech.lastSegmentEndTime,
+                audioEndSampleIndex: currentSampleIndex
             )
             storeTrainingCandidate(candidate, at: slot)
         }
 
-        // Training-only candidate collection stops here: no PCM snapshot, no short/
-        // long spectral extraction and no model inference on this tick.
+        // Training-only collection ends here. It records only metadata and never
+        // touches the V12 spectral front end until the page is swiped.
         guard plan.shouldPredict else { return }
 
-        let audioWindow = await capture.audioWindowOffMain()
+        let slice = capture.pageAudioSlice(from: lastSpectralSampleIndex)
+        lastSpectralSampleIndex = slice.endSampleIndex
+        let cache = spectralCache
+        let history = await Task.detached(priority: .userInitiated) {
+            cache.ingest(samples: slice.samples, startingAt: slice.startSampleIndex)
+            return cache.history()
+        }.value
+        let shortAudio = history.shortFeatures(endingAt: currentSampleIndex)
+        let longAudio = history.longFeatures(endingAt: currentSampleIndex)
+
         await observe(
-            transcript: transcript,
-            audioWindow: audioWindow,
+            speech: speech,
+            shortAudio: shortAudio,
+            longAudio: longAudio,
             plan: plan
         )
 #endif
