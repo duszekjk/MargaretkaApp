@@ -5,7 +5,7 @@ final class PrayerAutoAdvanceCoreMLModel: @unchecked Sendable {
     static let inputSize = PrayerAutoAdvanceFeatureExtractor.featureCount
     static let longAudioInputSize = PrayerAutoAdvanceLongAudioFeatureExtractor.featureCount
     static let combinedInputSize = inputSize + longAudioInputSize
-    static let currentFeatureSchemaVersion = 8
+    static let currentFeatureSchemaVersion = 9
 
     let compiledURL: URL
     private(set) var model: MLModel
@@ -73,9 +73,6 @@ final class PrayerAutoAdvanceCoreMLModel: @unchecked Sendable {
         let providers = try samples.map(trainingProvider)
         let retention = UpdateRetention(providers: providers)
         let configuration = MLModelConfiguration()
-        // Do not pin personalization to CPU. Core ML may execute update work on the
-        // GPU when supported and falls back to CPU otherwise, leaving more CPU
-        // headroom for SwiftUI/audio while the user continues through the prayer.
         configuration.computeUnits = .cpuAndGPU
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
