@@ -140,7 +140,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
                 postSwipeAudio: postSwipeAudio
             )
 
-            if self.state.isTraining || self.state.hasQueuedTrainingWork {
+            if self.state.isTrainingPipelineBusy || self.state.hasQueuedTrainingWork {
                 self.state.enqueueTrainingPage(page)
                 self.state.lastTrainingEvent = "Strona dodana do kolejki treningowej."
             } else {
