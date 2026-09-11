@@ -52,6 +52,16 @@ enum PrayerAutoAdvanceTrainingPolicy {
     static let positiveWindow: TimeInterval = 0.2
     static let deadZone: TimeInterval = 0.2
 
+    static func selectNegativeCandidates(
+        _ candidates: [PrayerAutoAdvanceTrainingCandidate],
+        manualAdvanceAt: Date
+    ) -> [PrayerAutoAdvanceTrainingCandidate] {
+        let negativeCutoff = manualAdvanceAt.addingTimeInterval(-(positiveWindow + deadZone))
+        let eligible = candidates.filter { $0.date <= negativeCutoff }
+        guard !eligible.isEmpty else { return [] }
+        return Array(eligible.shuffled().prefix(maximumSamplesPerClass))
+    }
+
     static func makeBatch(
         snapshots: [PrayerAutoAdvanceTrainingSnapshot],
         positiveSnapshots: [PrayerAutoAdvanceTrainingSnapshot],
@@ -70,8 +80,6 @@ enum PrayerAutoAdvanceTrainingPolicy {
         )
         guard count > 0 else { return nil }
 
-        // Long pages may yield hundreds of 4 Hz candidates. Random sampling keeps
-        // the training set representative without letting page duration dominate.
         let negatives = Array(negativeCandidates.shuffled().prefix(count))
         let positives = evenlyDistributedSelection(from: positiveSnapshots, count: count)
 
