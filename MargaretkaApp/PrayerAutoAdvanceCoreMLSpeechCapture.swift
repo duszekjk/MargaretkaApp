@@ -1,6 +1,17 @@
 import AVFoundation
 import Speech
 
+struct PrayerAutoAdvanceSpeechSnapshot: Sendable {
+    let transcript: String
+    let lastSegmentEndTime: TimeInterval?
+}
+
+struct PrayerAutoAdvanceAudioSlice: Sendable {
+    let startSampleIndex: Int
+    let samples: [Float]
+    let endSampleIndex: Int
+}
+
 #if os(iOS)
 @MainActor
 final class PrayerAutoAdvanceCoreMLSpeechCapture {
@@ -19,8 +30,8 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         duration: PrayerAutoAdvanceLongAudioFeatureExtractor.duration + 0.5,
         targetSampleRate: 16_000
     )
-    // Raw PCM remains RAM-only and page-scoped. This lets training candidates keep
-    // only an audio endpoint while exact V11 features are materialized after swipe.
+    // Raw PCM remains RAM-only and page-scoped. V12 analyzes this stream once on
+    // the fixed spectral grid instead of materializing overlapping 10/60 s windows.
     nonisolated private let pageAudio = PrayerAutoAdvancePageAudioBuffer(targetSampleRate: 16_000)
 
     func start(language: PrayerLanguage, context: [String]) async throws {
@@ -109,7 +120,15 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         let transcriptBox = self.transcriptBox
         task = recognizer.recognitionTask(with: speechRequest) { [weak self] result, error in
             if let result {
-                transcriptBox.set(result.bestTranscription.formattedString, generation: generation)
+                let transcription = result.bestTranscription
+                let lastSegmentEndTime = transcription.segments.last.map {
+                    $0.timestamp + $0.duration
+                }
+                transcriptBox.set(
+                    transcription.formattedString,
+                    lastSegmentEndTime: lastSegmentEndTime,
+                    generation: generation
+                )
             }
 
             if error != nil {
@@ -132,8 +151,20 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         request = nil
     }
 
-    nonisolated func transcriptSnapshot() -> String { transcriptBox.snapshot() }
+    nonisolated func speechSnapshot() -> PrayerAutoAdvanceSpeechSnapshot {
+        transcriptBox.snapshot()
+    }
+
+    nonisolated func transcriptSnapshot() -> String {
+        transcriptBox.snapshot().transcript
+    }
+
     nonisolated func pageAudioSampleIndex() -> Int { pageAudio.sampleCount() }
+
+    nonisolated func pageAudioSlice(from sampleIndex: Int) -> PrayerAutoAdvanceAudioSlice {
+        pageAudio.slice(from: sampleIndex)
+    }
+
     nonisolated func freezePageAudio() -> PrayerAutoAdvanceAudioWindow { pageAudio.freeze() }
 
     func audioWindow() -> PrayerAutoAdvanceAudioWindow { audioRing.snapshot() }
@@ -169,8 +200,6 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
                 do {
                     let session = AVAudioSession.sharedInstance()
                     try session.setCategory(.record, mode: .measurement, options: [.duckOthers])
-                    // Recording sessions suppress system haptics by default. Prayer
-                    // navigation feedback must remain identical while training listens.
                     try session.setAllowHapticsAndSystemSoundsDuringRecording(true)
                     try session.setActive(true)
                     continuation.resume()
@@ -224,19 +253,33 @@ private final class PrayerAutoAdvanceTranscriptBox: @unchecked Sendable {
     private let lock = NSLock()
     private var generation = 0
     private var text = ""
+    private var lastSegmentEndTime: TimeInterval?
 
     func reset(generation: Int) {
-        lock.lock(); self.generation = generation; text = ""; lock.unlock()
-    }
-
-    func set(_ value: String, generation: Int) {
         lock.lock()
-        if self.generation == generation { text = value }
+        self.generation = generation
+        text = ""
+        lastSegmentEndTime = nil
         lock.unlock()
     }
 
-    func snapshot() -> String {
-        lock.lock(); let value = text; lock.unlock(); return value
+    func set(_ value: String, lastSegmentEndTime: TimeInterval?, generation: Int) {
+        lock.lock()
+        if self.generation == generation {
+            text = value
+            self.lastSegmentEndTime = lastSegmentEndTime
+        }
+        lock.unlock()
+    }
+
+    func snapshot() -> PrayerAutoAdvanceSpeechSnapshot {
+        lock.lock()
+        let value = PrayerAutoAdvanceSpeechSnapshot(
+            transcript: text,
+            lastSegmentEndTime: lastSegmentEndTime
+        )
+        lock.unlock()
+        return value
     }
 }
 
@@ -298,8 +341,6 @@ private final class PrayerAutoAdvanceAudioRingBuffer: @unchecked Sendable {
     }
 }
 
-/// Page-scoped Float32 PCM history. It is never persisted or uploaded. Keeping one
-/// shared stream is far cheaper than storing sixteen overlapping 60 s snapshots.
 private final class PrayerAutoAdvancePageAudioBuffer: @unchecked Sendable {
     private let lock = NSLock()
     private let targetSampleRate: Double
@@ -334,8 +375,19 @@ private final class PrayerAutoAdvancePageAudioBuffer: @unchecked Sendable {
         lock.lock(); let count = storage.count; lock.unlock(); return count
     }
 
-    /// Detaches the old page in O(1) via Array copy-on-write semantics. The returned
-    /// samples remain RAM-only while the live recorder immediately starts a fresh page.
+    func slice(from sampleIndex: Int) -> PrayerAutoAdvanceAudioSlice {
+        lock.lock()
+        let start = min(max(sampleIndex, 0), storage.count)
+        let end = storage.count
+        let samples = start < end ? Array(storage[start..<end]) : []
+        lock.unlock()
+        return PrayerAutoAdvanceAudioSlice(
+            startSampleIndex: start,
+            samples: samples,
+            endSampleIndex: end
+        )
+    }
+
     func freeze() -> PrayerAutoAdvanceAudioWindow {
         lock.lock()
         let frozen = storage
