@@ -3,7 +3,7 @@ import Testing
 
 struct PrayerAutoAdvanceModelSchemaTests {
     @Test func featureSchemaHasExpectedAudioPrimaryLayout() {
-        #expect(PrayerAutoAdvanceFeatureExtractor.progressFeatureCount == 3)
+        #expect(PrayerAutoAdvanceFeatureExtractor.progressFeatureCount == 4)
         #expect(PrayerAutoAdvanceFeatureExtractor.textEmbeddingSize == 512)
         #expect(PrayerAutoAdvanceAudioFeatureExtractor.duration == 10)
         #expect(PrayerAutoAdvanceAudioFeatureExtractor.temporalBins == 50)
@@ -15,10 +15,12 @@ struct PrayerAutoAdvanceModelSchemaTests {
         #expect(PrayerAutoAdvanceLongAudioFeatureExtractor.frequencyBands == 32)
         #expect(PrayerAutoAdvanceLongAudioFeatureExtractor.featureCount == 3_840)
         #expect(PrayerAutoAdvanceLongAudioFeatureExtractor.analysisSampleRate == 16_000)
-        #expect(PrayerAutoAdvanceCoreMLModel.inputSize == 3_427)
+        #expect(PrayerAutoAdvanceSpectralFrontEnd.analysisWindowSamples == 640)
+        #expect(PrayerAutoAdvanceSpectralFrontEnd.hopSamples == 320)
+        #expect(PrayerAutoAdvanceCoreMLModel.inputSize == 3_428)
         #expect(PrayerAutoAdvanceCoreMLModel.longAudioInputSize == 3_840)
-        #expect(PrayerAutoAdvanceCoreMLModel.combinedInputSize == 7_267)
-        #expect(PrayerAutoAdvanceCoreMLModel.currentFeatureSchemaVersion == 8)
+        #expect(PrayerAutoAdvanceCoreMLModel.combinedInputSize == 7_268)
+        #expect(PrayerAutoAdvanceCoreMLModel.currentFeatureSchemaVersion == 9)
     }
 
     @Test func audioDominatesCombinedInput() {
