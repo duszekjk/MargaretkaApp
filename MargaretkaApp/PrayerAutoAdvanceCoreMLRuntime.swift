@@ -11,6 +11,8 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 #if os(iOS)
     let capture = PrayerAutoAdvanceCoreMLSpeechCapture()
 #endif
+    let spectralCache = PrayerAutoAdvanceStreamingSpectralCache()
+    var lastSpectralSampleIndex = 0
     var context: PrayerAutoAdvanceContext?
     var contextStartedAt = Date()
     var trainingCandidates: [PrayerAutoAdvanceTrainingCandidate] = []
@@ -25,6 +27,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
     static let trainingReservoirCapacity = 16
     static let trainingCandidateInterval: TimeInterval = 0.5
+    static let automaticInferenceInterval: TimeInterval = 0.5
     static let diagnosticsPublishInterval: TimeInterval = 2.0
 
     init() {}
@@ -45,12 +48,11 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         isTrainingEnabled || isAutomaticEnabled
     }
 
-    /// The scheduler still runs at 4 Hz for automatic switching. Training markers
-    /// are admitted at 2 Hz, but they are only timestamp/transcript/audio-index
-    /// records. Training-only mode never performs live model inference; prediction
-    /// metrics come from the actual update/validation cycle.
+    /// Scheduler wakeups remain cheap, but production inference is capped at 2 Hz.
+    /// Training candidates are also admitted at 2 Hz and remain metadata-only.
     func evaluationPlan(at date: Date) -> PrayerAutoAdvanceEvaluationPlan {
         let shouldPredict = isAutomaticEnabled
+            && date.timeIntervalSince(lastInferenceAt) >= Self.automaticInferenceInterval
 
         var reservoirSlot: Int?
         let shouldConsiderTrainingCandidate = isTrainingEnabled
@@ -97,16 +99,19 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         let pageID = currentContext.pageID
         let startedAt = contextStartedAt
         let candidates = trainingCandidates.filter { $0.pageID == pageID }
+        let selectedCandidates = PrayerAutoAdvanceTrainingPolicy.selectNegativeCandidates(
+            candidates,
+            manualAdvanceAt: date
+        )
 
 #if os(iOS)
-        let swipeTranscript = capture.transcriptSnapshot()
-        let swipeAudio = capture.audioWindow()
+        let swipeSpeech = capture.speechSnapshot()
         let frozenPageAudio = capture.freezePageAudio()
 #else
-        let swipeTranscript = ""
-        let swipeAudio = PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: 16_000)
-        let frozenPageAudio = swipeAudio
+        let swipeSpeech = PrayerAutoAdvanceSpeechSnapshot(transcript: "", lastSegmentEndTime: nil)
+        let frozenPageAudio = PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: 16_000)
 #endif
+        let swipeSampleIndex = frozenPageAudio.samples.count
 
         state.lastTrainingEvent = "Domykanie okna ręcznego przejścia…"
 
@@ -119,53 +124,54 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 #if os(iOS)
             let postSwipeAudio = await self.capture.audioWindowOffMain()
 #else
-            let postSwipeAudio = PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: swipeAudio.sampleRate)
+            let postSwipeAudio = PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: frozenPageAudio.sampleRate)
 #endif
 
-            let targetDates = PrayerAutoAdvanceTrainingPolicy.positiveTargetDates(manualAdvanceAt: date)
-            let positiveSnapshots = await Task.detached(priority: .background) {
-                targetDates.compactMap { targetDate -> PrayerAutoAdvanceTrainingSnapshot? in
-                    let targetWindow = Self.audioWindow(
-                        at: targetDate,
-                        manualAdvanceAt: date,
-                        preSwipe: swipeAudio,
-                        postSwipe: postSwipeAudio
-                    )
-                    let shortAudio = PrayerAutoAdvanceAudioFeatureExtractor.features(window: targetWindow)
-                    let longAudio = PrayerAutoAdvanceLongAudioFeatureExtractor.features(window: targetWindow)
-                    let features = PrayerAutoAdvanceFeatureExtractor.features(
-                        transcript: swipeTranscript,
-                        context: currentContext,
-                        elapsed: max(0, targetDate.timeIntervalSince(startedAt)),
-                        audioFeatures: shortAudio
-                    )
-                    guard features.count == PrayerAutoAdvanceCoreMLModel.inputSize,
-                          longAudio.count == PrayerAutoAdvanceCoreMLModel.longAudioInputSize else { return nil }
-                    return PrayerAutoAdvanceTrainingSnapshot(
-                        pageID: pageID,
-                        date: targetDate,
-                        features: features,
-                        longAudioFeatures: longAudio
-                    )
-                }
-            }.value
+            let sampleCount = min(
+                PrayerAutoAdvanceTrainingPolicy.maximumSamplesPerClass,
+                selectedCandidates.count
+            )
+            guard sampleCount > 0 else {
+                diagnostics.skippedTrainingCount += 1
+                diagnostics.pipelineState = "skipped"
+                diagnostics.event("training skipped: no eligible T-0.4 negative candidates")
+                self.state.lastTrainingEvent = "Pominięto: brak próbki negatywnej przed strefą końcową."
+                return
+            }
 
-            let negativeSnapshots = await Task.detached(priority: .background) {
-                candidates.compactMap { candidate -> PrayerAutoAdvanceTrainingSnapshot? in
-                    let targetWindow = Self.audioWindow(
-                        fromFrozenPage: frozenPageAudio,
-                        endingAt: candidate.audioEndSampleIndex
-                    )
-                    let shortAudio = PrayerAutoAdvanceAudioFeatureExtractor.features(window: targetWindow)
-                    let longAudio = PrayerAutoAdvanceLongAudioFeatureExtractor.features(window: targetWindow)
+            let targetDates = PrayerAutoAdvanceTrainingPolicy.positiveTargetDates(
+                manualAdvanceAt: date,
+                count: sampleCount
+            )
+
+            let materialized = await Task.detached(priority: .background) {
+                let sampleRate = frozenPageAudio.sampleRate > 0
+                    ? frozenPageAudio.sampleRate
+                    : PrayerAutoAdvanceSpectralFrontEnd.sampleRate
+                let bridgeCount = min(
+                    postSwipeAudio.samples.count,
+                    max(0, Int((PrayerAutoAdvanceTrainingPolicy.positiveWindow * sampleRate).rounded()))
+                )
+                let combinedSamples = frozenPageAudio.samples
+                    + Array(postSwipeAudio.samples.prefix(bridgeCount))
+                let history = PrayerAutoAdvanceSpectralFrontEnd.analyze(samples: combinedSamples)
+
+                let negatives = selectedCandidates.prefix(sampleCount).compactMap {
+                    candidate -> PrayerAutoAdvanceTrainingSnapshot? in
+                    let endSampleIndex = min(max(candidate.audioEndSampleIndex, 0), combinedSamples.count)
+                    let shortAudio = history.shortFeatures(endingAt: endSampleIndex)
+                    let longAudio = history.longFeatures(endingAt: endSampleIndex)
                     let features = PrayerAutoAdvanceFeatureExtractor.features(
                         transcript: candidate.transcript,
                         context: currentContext,
                         elapsed: max(0, candidate.date.timeIntervalSince(startedAt)),
+                        lastSegmentEndTime: candidate.lastSegmentEndTime,
                         audioFeatures: shortAudio
                     )
                     guard features.count == PrayerAutoAdvanceCoreMLModel.inputSize,
-                          longAudio.count == PrayerAutoAdvanceCoreMLModel.longAudioInputSize else { return nil }
+                          longAudio.count == PrayerAutoAdvanceCoreMLModel.longAudioInputSize else {
+                        return nil
+                    }
                     return PrayerAutoAdvanceTrainingSnapshot(
                         pageID: candidate.pageID,
                         date: candidate.date,
@@ -173,20 +179,49 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
                         longAudioFeatures: longAudio
                     )
                 }
+
+                let positives = targetDates.compactMap {
+                    targetDate -> PrayerAutoAdvanceTrainingSnapshot? in
+                    let offset = targetDate.timeIntervalSince(date)
+                    let endSampleIndex = min(
+                        max(swipeSampleIndex + Int((offset * sampleRate).rounded()), 0),
+                        combinedSamples.count
+                    )
+                    let shortAudio = history.shortFeatures(endingAt: endSampleIndex)
+                    let longAudio = history.longFeatures(endingAt: endSampleIndex)
+                    let features = PrayerAutoAdvanceFeatureExtractor.features(
+                        transcript: swipeSpeech.transcript,
+                        context: currentContext,
+                        elapsed: max(0, targetDate.timeIntervalSince(startedAt)),
+                        lastSegmentEndTime: swipeSpeech.lastSegmentEndTime,
+                        audioFeatures: shortAudio
+                    )
+                    guard features.count == PrayerAutoAdvanceCoreMLModel.inputSize,
+                          longAudio.count == PrayerAutoAdvanceCoreMLModel.longAudioInputSize else {
+                        return nil
+                    }
+                    return PrayerAutoAdvanceTrainingSnapshot(
+                        pageID: pageID,
+                        date: targetDate,
+                        features: features,
+                        longAudioFeatures: longAudio
+                    )
+                }
+                return (negatives, positives)
             }.value
 
             try? await Task.sleep(for: .milliseconds(100))
 
             guard let batch = PrayerAutoAdvanceTrainingPolicy.makeBatch(
-                snapshots: negativeSnapshots,
-                positiveSnapshots: positiveSnapshots,
+                snapshots: materialized.0,
+                positiveSnapshots: materialized.1,
                 manualAdvanceAt: date,
                 history: self.state.timingHistory
             ) else {
                 diagnostics.skippedTrainingCount += 1
                 diagnostics.pipelineState = "skipped"
                 diagnostics.event(
-                    "training skipped: negatives=\(negativeSnapshots.count) positives=\(positiveSnapshots.count)"
+                    "training skipped: negatives=\(materialized.0.count) positives=\(materialized.1.count)"
                 )
                 self.state.lastTrainingEvent = "Pominięto: nie udało się zbudować zbalansowanego batcha treningowego."
                 return
@@ -218,52 +253,6 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
             await self.state.train(batch)
             self.statusMessage = self.state.lastError
         }
-    }
-
-    nonisolated private static func audioWindow(
-        fromFrozenPage page: PrayerAutoAdvanceAudioWindow,
-        endingAt sampleIndex: Int
-    ) -> PrayerAutoAdvanceAudioWindow {
-        guard page.sampleRate > 0 else {
-            return PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: 16_000)
-        }
-        let end = min(max(sampleIndex, 0), page.samples.count)
-        let wanted = Int(((PrayerAutoAdvanceLongAudioFeatureExtractor.duration + 0.5) * page.sampleRate).rounded())
-        let start = max(0, end - wanted)
-        return PrayerAutoAdvanceAudioWindow(
-            samples: Array(page.samples[start..<end]),
-            sampleRate: page.sampleRate
-        )
-    }
-
-    nonisolated private static func audioWindow(
-        at targetDate: Date,
-        manualAdvanceAt: Date,
-        preSwipe: PrayerAutoAdvanceAudioWindow,
-        postSwipe: PrayerAutoAdvanceAudioWindow
-    ) -> PrayerAutoAdvanceAudioWindow {
-        let sampleRate = preSwipe.sampleRate > 0 ? preSwipe.sampleRate : postSwipe.sampleRate
-        guard sampleRate > 0 else {
-            return PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: 16_000)
-        }
-
-        let offset = targetDate.timeIntervalSince(manualAdvanceAt)
-        if offset <= 0 {
-            let removeCount = Int((-offset * sampleRate).rounded())
-            let keepCount = max(0, preSwipe.samples.count - removeCount)
-            return PrayerAutoAdvanceAudioWindow(
-                samples: Array(preSwipe.samples.prefix(keepCount)),
-                sampleRate: sampleRate
-            )
-        }
-
-        let requestedPostCount = Int((offset * sampleRate).rounded())
-        let postCount = min(max(requestedPostCount, 0), postSwipe.samples.count)
-        let postPrefix = Array(postSwipe.samples.prefix(postCount))
-        return PrayerAutoAdvanceAudioWindow(
-            samples: preSwipe.samples + postPrefix,
-            sampleRate: sampleRate
-        )
     }
 }
 
