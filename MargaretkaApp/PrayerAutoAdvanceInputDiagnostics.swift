@@ -16,10 +16,16 @@ struct PrayerAutoAdvanceDiagnosticInputSample: Identifiable, Sendable {
     let spokenTokens: [String]
     let pageTokens: [String]
 
-    var scalars: ArraySlice<Float> { features.prefix(3) }
-    var spokenEmbedding: ArraySlice<Float> { features[3..<min(515, features.count)] }
-    var pageEmbedding: ArraySlice<Float> { features[min(515, features.count)..<min(1027, features.count)] }
-    var shortAudioFeatures: ArraySlice<Float> { features[min(1027, features.count)..<features.count] }
+    private var scalarCount: Int { PrayerAutoAdvanceFeatureExtractor.progressFeatureCount }
+    private var spokenStart: Int { scalarCount }
+    private var spokenEnd: Int { min(spokenStart + PrayerAutoAdvanceFeatureExtractor.textEmbeddingSize, features.count) }
+    private var pageStart: Int { spokenEnd }
+    private var pageEnd: Int { min(pageStart + PrayerAutoAdvanceFeatureExtractor.textEmbeddingSize, features.count) }
+
+    var scalars: ArraySlice<Float> { features.prefix(scalarCount) }
+    var spokenEmbedding: ArraySlice<Float> { features[spokenStart..<spokenEnd] }
+    var pageEmbedding: ArraySlice<Float> { features[pageStart..<pageEnd] }
+    var shortAudioFeatures: ArraySlice<Float> { features[pageEnd..<features.count] }
 
     func pcm(duration: TimeInterval) -> [Float] {
         let count = min(pcmSamples.count, max(0, Int((duration * sampleRate).rounded())))
@@ -41,7 +47,7 @@ final class PrayerAutoAdvanceInputDiagnostics: ObservableObject {
         prediction: Float,
         features: [Float],
         longAudioFeatures: [Float],
-        audioWindow: PrayerAutoAdvanceAudioWindow,
+        audioWindow: PrayerAutoAdvanceAudioWindow?,
         transcript: String,
         pageText: String,
         at date: Date
@@ -63,8 +69,8 @@ final class PrayerAutoAdvanceInputDiagnostics: ObservableObject {
                 prediction: prediction,
                 features: features,
                 longAudioFeatures: longAudioFeatures,
-                pcmSamples: audioWindow.samples,
-                sampleRate: audioWindow.sampleRate,
+                pcmSamples: audioWindow?.samples ?? [],
+                sampleRate: audioWindow?.sampleRate ?? PrayerAutoAdvanceSpectralFrontEnd.sampleRate,
                 spokenEmbeddingText: spokenEmbeddingText,
                 pageEmbeddingText: pageText,
                 spokenTokens: spokenTokens,
