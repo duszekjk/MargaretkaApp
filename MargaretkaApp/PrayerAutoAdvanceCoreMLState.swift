@@ -13,6 +13,14 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
     @Published var isTraining = false
     @Published var lastError: String?
     @Published var lastTrainingEvent: String?
+    @Published var queuedTrainingPageCount = 0
+    @Published var trainingQueueProgressCompleted = 0
+    @Published var trainingQueueProgressTotal = 0
+
+    var pendingTrainingPages: [PrayerAutoAdvanceDeferredTrainingPage] = []
+    var trainingQueueTask: Task<Void, Never>?
+    var trainingWorkEnqueued = 0
+    var trainingWorkCompleted = 0
 
     let fileManager = FileManager.default
 
