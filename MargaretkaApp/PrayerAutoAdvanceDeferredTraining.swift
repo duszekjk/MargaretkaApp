@@ -13,6 +13,20 @@ struct PrayerAutoAdvanceDeferredTrainingPage: Sendable {
 }
 
 extension PrayerAutoAdvanceCoreMLState {
+    func processTrainingPageImmediately(_ page: PrayerAutoAdvanceDeferredTrainingPage) async {
+        guard !isTrainingPipelineBusy, pendingTrainingPages.isEmpty else {
+            enqueueTrainingPage(page)
+            return
+        }
+
+        isTrainingPipelineBusy = true
+        defer {
+            isTrainingPipelineBusy = false
+            startTrainingQueueIfNeeded()
+        }
+        await processTrainingPage(page)
+    }
+
     func enqueueTrainingPage(_ page: PrayerAutoAdvanceDeferredTrainingPage) {
         pendingTrainingPages.append(page)
         trainingWorkEnqueued += 1
@@ -21,17 +35,25 @@ extension PrayerAutoAdvanceCoreMLState {
     }
 
     func clearPendingTrainingPages() {
+        trainingQueueTask?.cancel()
+        trainingQueueTask = nil
         pendingTrainingPages.removeAll(keepingCapacity: false)
         trainingWorkEnqueued = 0
         trainingWorkCompleted = 0
+        isTrainingPipelineBusy = false
         refreshTrainingQueueMetrics()
     }
 
     private func startTrainingQueueIfNeeded() {
-        guard trainingQueueTask == nil else { return }
+        guard !isTrainingPipelineBusy,
+              trainingQueueTask == nil,
+              !pendingTrainingPages.isEmpty else { return }
+
         trainingQueueTask = Task { @MainActor [weak self] in
             guard let self else { return }
+            self.isTrainingPipelineBusy = true
             defer {
+                self.isTrainingPipelineBusy = false
                 self.trainingQueueTask = nil
                 self.refreshTrainingQueueMetrics()
                 if !self.pendingTrainingPages.isEmpty {
@@ -42,17 +64,17 @@ extension PrayerAutoAdvanceCoreMLState {
             while !Task.isCancelled, !self.pendingTrainingPages.isEmpty {
                 let page = self.pendingTrainingPages.removeFirst()
                 self.refreshTrainingQueueMetrics(activePage: true)
-                await self.processDeferredTrainingPage(page)
+                await self.processTrainingPage(page)
                 self.trainingWorkCompleted += 1
                 self.refreshTrainingQueueMetrics(activePage: false)
             }
         }
     }
 
-    private func processDeferredTrainingPage(_ page: PrayerAutoAdvanceDeferredTrainingPage) async {
+    private func processTrainingPage(_ page: PrayerAutoAdvanceDeferredTrainingPage) async {
         let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
         diagnostics.pipelineState = "materializing"
-        lastTrainingEvent = "Przetwarzanie danych strony \(trainingWorkCompleted + 1)/\(trainingWorkEnqueued)…"
+        lastTrainingEvent = "Przetwarzanie danych strony…"
 
         let materialized = await Task.detached(priority: .utility) {
             PrayerAutoAdvanceDeferredTrainingMaterializer.materialize(page)
@@ -62,12 +84,12 @@ extension PrayerAutoAdvanceCoreMLState {
             snapshots: materialized.negatives,
             positiveSnapshots: materialized.positives,
             manualAdvanceAt: page.manualAdvanceAt,
-            history: self.timingHistory
+            history: timingHistory
         ) else {
             diagnostics.skippedTrainingCount += 1
             diagnostics.pipelineState = "skipped"
             diagnostics.event(
-                "queued training skipped: negatives=\(materialized.negatives.count) positives=\(materialized.positives.count)"
+                "training skipped: negatives=\(materialized.negatives.count) positives=\(materialized.positives.count)"
             )
             lastTrainingEvent = "Pominięto stronę: nie udało się zbudować zbalansowanego batcha."
             return
@@ -75,7 +97,7 @@ extension PrayerAutoAdvanceCoreMLState {
 
         let positives = batch.samples.filter { $0.label == 1 }.count
         let negatives = batch.samples.count - positives
-        diagnostics.event("queued balanced training batch P/N \(positives)/\(negatives)")
+        diagnostics.event("balanced training batch P/N \(positives)/\(negatives)")
 
         if validationStore.shouldHoldOut(pageID: page.pageID) {
             validationStore.append(pageID: page.pageID, batch: batch, at: page.manualAdvanceAt)
@@ -100,7 +122,7 @@ extension PrayerAutoAdvanceCoreMLState {
     }
 
     private func refreshTrainingQueueMetrics(activePage: Bool? = nil) {
-        let active = activePage ?? isTraining
+        let active = activePage ?? isTrainingPipelineBusy
         queuedTrainingPageCount = pendingTrainingPages.count + (active ? 1 : 0)
         trainingQueueProgressTotal = max(trainingWorkEnqueued, 0)
         trainingQueueProgressCompleted = min(trainingWorkCompleted, trainingWorkEnqueued)
