@@ -90,8 +90,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
     func recordManualAdvance(at date: Date = Date()) {
         guard isTrainingEnabled,
-              let currentContext = context,
-              state.model != nil else { return }
+              let currentContext = context else { return }
 
         let pageID = currentContext.pageID
         let startedAt = contextStartedAt
@@ -139,6 +138,19 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
                 frozenPageAudio: frozenPageAudio,
                 postSwipeAudio: postSwipeAudio
             )
+
+            if self.state.model == nil {
+                self.state.lastTrainingEvent = "Przygotowywanie modelu przed treningiem…"
+                guard await self.state.ensureModelAvailable() else {
+                    let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
+                    diagnostics.skippedTrainingCount += 1
+                    diagnostics.pipelineState = "no-model"
+                    diagnostics.error(self.state.lastError ?? "missing local model")
+                    self.state.lastTrainingEvent = "Nie udało się przygotować modelu do treningu."
+                    self.statusMessage = self.state.lastError
+                    return
+                }
+            }
 
             if self.state.isTrainingPipelineBusy || self.state.hasQueuedTrainingWork {
                 self.state.enqueueTrainingPage(page)
