@@ -57,10 +57,16 @@ enum PrayerAutoAdvanceSpectralFrontEnd {
         let frameCount = (samples.count - analysisWindowSamples) / hopSamples + 1
         var allBands: [Float] = []
         allBands.reserveCapacity(frameCount * sharedFrequencyBands)
+        var windowedScratch = Array(repeating: Float(0), count: analysisWindowSamples)
 
         var start = 0
         for _ in 0..<frameCount {
-            allBands.append(contentsOf: spectralBands(samples: samples, start: start))
+            appendSpectralBands(
+                samples: samples,
+                start: start,
+                windowedScratch: &windowedScratch,
+                to: &allBands
+            )
             start += hopSamples
         }
 
@@ -72,28 +78,33 @@ enum PrayerAutoAdvanceSpectralFrontEnd {
         )
     }
 
-    static func spectralBands(samples: [Float], start: Int) -> [Float] {
+    fileprivate static func appendSpectralBands(
+        samples: [Float],
+        start: Int,
+        windowedScratch: inout [Float],
+        to output: inout [Float]
+    ) {
         guard start >= 0,
-              start + analysisWindowSamples <= samples.count else {
-            return Array(repeating: 0, count: sharedFrequencyBands)
+              start + analysisWindowSamples <= samples.count,
+              windowedScratch.count == analysisWindowSamples else {
+            output.append(contentsOf: repeatElement(Float(0), count: sharedFrequencyBands))
+            return
         }
 
-        var windowed = Array(repeating: Float(0), count: analysisWindowSamples)
         samples.withUnsafeBufferPointer { input in
             basis.window.withUnsafeBufferPointer { window in
-                windowed.withUnsafeMutableBufferPointer { output in
+                windowedScratch.withUnsafeMutableBufferPointer { windowed in
                     vDSP_vmul(
                         input.baseAddress!.advanced(by: start), 1,
                         window.baseAddress!, 1,
-                        output.baseAddress!, 1,
+                        windowed.baseAddress!, 1,
                         vDSP_Length(analysisWindowSamples)
                     )
                 }
             }
         }
 
-        var result = Array(repeating: Float(0), count: sharedFrequencyBands)
-        windowed.withUnsafeBufferPointer { values in
+        windowedScratch.withUnsafeBufferPointer { values in
             basis.cosines.withUnsafeBufferPointer { cosines in
                 basis.sines.withUnsafeBufferPointer { sines in
                     for band in 0..<sharedFrequencyBands {
@@ -112,14 +123,14 @@ enum PrayerAutoAdvanceSpectralFrontEnd {
                             &imaginary,
                             vDSP_Length(analysisWindowSamples)
                         )
-                        let magnitude = hypot(real, imaginary) / Float(analysisWindowSamples)
+                        let magnitude = sqrt(real * real + imaginary * imaginary)
+                            / Float(analysisWindowSamples)
                         let normalized = log1p(Double(magnitude) * 200.0) / normalizationDenominator
-                        result[band] = Float(min(max(normalized, 0), 1))
+                        output.append(Float(min(max(normalized, 0), 1)))
                     }
                 }
             }
         }
-        return result
     }
 
     static func temporalFeatures(
@@ -249,9 +260,6 @@ enum PrayerAutoAdvanceSpectralFrontEnd {
     }
 }
 
-/// Incremental V12 cache for automatic prediction. New PCM is ingested in 0.5 s
-/// bursts; only unseen fixed-grid frames are transformed. The cache returns only
-/// the final 6240 audio features, never a copied 60 s spectral history.
 final class PrayerAutoAdvanceStreamingSpectralCache: @unchecked Sendable {
     private let lock = NSLock()
     private var pcm: [Float] = []
@@ -261,6 +269,10 @@ final class PrayerAutoAdvanceStreamingSpectralCache: @unchecked Sendable {
     private var firstFrameStartSampleIndex = 0
     private var frameCount = 0
     private var bands: [Float] = []
+    private var windowedScratch = Array(
+        repeating: Float(0),
+        count: PrayerAutoAdvanceSpectralFrontEnd.analysisWindowSamples
+    )
 
     private let maximumFrameCount = Int(
         ceil((PrayerAutoAdvanceLongAudioFeatureExtractor.duration + 1.0)
@@ -300,11 +312,11 @@ final class PrayerAutoAdvanceStreamingSpectralCache: @unchecked Sendable {
             if frameCount == 0 {
                 firstFrameStartSampleIndex = nextFrameStartSampleIndex
             }
-            bands.append(
-                contentsOf: PrayerAutoAdvanceSpectralFrontEnd.spectralBands(
-                    samples: pcm,
-                    start: localStart
-                )
+            PrayerAutoAdvanceSpectralFrontEnd.appendSpectralBands(
+                samples: pcm,
+                start: localStart,
+                windowedScratch: &windowedScratch,
+                to: &bands
             )
             frameCount += 1
             nextFrameStartSampleIndex += PrayerAutoAdvanceSpectralFrontEnd.hopSamples
