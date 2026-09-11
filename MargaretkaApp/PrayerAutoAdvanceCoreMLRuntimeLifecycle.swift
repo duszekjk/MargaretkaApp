@@ -13,6 +13,8 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         trainingCandidateSeenCount = 0
         consecutiveAdvancePredictions = 0
         lastPrediction = 0
+        lastSpectralSampleIndex = 0
+        spectralCache.reset()
 
         if newContext == nil || !isFeatureEnabled {
             stopListening()
@@ -44,10 +46,8 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         guard evaluationTask == nil else { return }
         evaluationTask = Task { @MainActor [weak self] in
             while let self, !Task.isCancelled {
-                // 4 Hz remains for automatic prediction responsiveness. Training
-                // markers are separately throttled to 2 Hz and are metadata-only.
                 await self.evaluateCurrentCapture()
-                try? await Task.sleep(for: .milliseconds(250))
+                try? await Task.sleep(for: .milliseconds(500))
             }
         }
     }
@@ -55,6 +55,8 @@ extension PrayerAutoAdvanceCoreMLRuntime {
     func stopListening() {
         evaluationTask?.cancel()
         evaluationTask = nil
+        lastSpectralSampleIndex = 0
+        spectralCache.reset()
 #if os(iOS)
         capture.stop()
 #endif
