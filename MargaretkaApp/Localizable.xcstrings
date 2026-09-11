@@ -112,13 +112,13 @@
     "1. Otwórz aplikację Skróty na iPhonie." : {
 
     },
+    "1× zwiń · 2× pełna diagnostyka" : {
+
+    },
     "2. Dodaj skrót z akcją Heptadaisy i wybierz konkretną osobę albo modlitwę." : {
 
     },
     "2. Na kolejnej stronie wybierz okres dostępu i opłać zakup." : {
-
-    },
-    "2× stuknij, aby otworzyć pełną diagnostykę" : {
 
     },
     "3. Po opłaceniu wybierz format EPUB i pobierz plik na urządzenie." : {
@@ -327,7 +327,10 @@
     "Diagnostyka treningu" : {
 
     },
-    "Diagnostyka treningu. Stuknij dwa razy, aby otworzyć szczegóły." : {
+    "Diagnostyka treningu. Stuknij, aby rozwinąć." : {
+
+    },
+    "Diagnostyka treningu. Stuknij, aby zwinąć; stuknij dwa razy, aby otworzyć szczegóły." : {
 
     },
     "Diagram Margaretki: siedem płatków – dni tygodnia – wokół kapłana." : {
@@ -654,6 +657,9 @@
 
     },
     "Najmocniejszy miesiąc: %@" : {
+
+    },
+    "Nasłuch treningowy aktywny. Stuknij, aby rozwinąć diagnostykę." : {
 
     },
     "Nazwa" : {
@@ -1003,6 +1009,9 @@
 
     },
     "Stop" : {
+
+    },
+    "Stuknij dwa razy, aby otworzyć pełną diagnostykę." : {
 
     },
     "Święty dnia" : {
