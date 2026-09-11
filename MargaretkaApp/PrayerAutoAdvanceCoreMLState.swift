@@ -11,6 +11,7 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
     @Published var validationStore = PrayerAutoAdvanceValidationStore()
     @Published var isDownloading = false
     @Published var isTraining = false
+    @Published var isTrainingPipelineBusy = false
     @Published var lastError: String?
     @Published var lastTrainingEvent: String?
     @Published var queuedTrainingPageCount = 0
@@ -38,6 +39,7 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
     var validationURL: URL { directory.appendingPathComponent("validation.json") }
 
     var hasModel: Bool { model != nil }
+    var hasQueuedTrainingWork: Bool { !pendingTrainingPages.isEmpty || trainingQueueTask != nil }
 
     private init() {
         PrayerAutoAdvanceCoreMLDiskState.load(self)
