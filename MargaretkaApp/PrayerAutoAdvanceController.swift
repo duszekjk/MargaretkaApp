@@ -10,7 +10,7 @@ struct PrayerAutoAdvanceContext: Equatable, Sendable {
 }
 
 enum PrayerAutoAdvanceFeatureExtractor {
-    static let progressFeatureCount = 3
+    static let progressFeatureCount = 4
     static let textEmbeddingSize = 512
     static let spokenWindowWordCount = 80
     static let audioFeatureCount = PrayerAutoAdvanceAudioFeatureExtractor.featureCount
@@ -20,6 +20,7 @@ enum PrayerAutoAdvanceFeatureExtractor {
         transcript: String,
         context: PrayerAutoAdvanceContext,
         elapsed: TimeInterval,
+        lastSegmentEndTime: TimeInterval?,
         audioFeatures: [Float]
     ) -> [Float] {
         let spokenTokens = tokens(transcript)
@@ -27,17 +28,19 @@ enum PrayerAutoAdvanceFeatureExtractor {
         let elapsedNormalized = Float(min(max(elapsed / 120.0, 0), 1))
         let spokenWordCountNormalized = Float(min(Double(spokenTokens.count) / 120.0, 1))
         let pageWordCountNormalized = Float(min(Double(pageTokens.count) / 300.0, 1))
+        // Speech segment timestamps are relative to the page recognition stream.
+        // Five minutes keeps useful sub-second resolution while covering long pages.
+        let lastSegmentEndNormalized = Float(
+            min(max((lastSegmentEndTime ?? 0) / 300.0, 0), 1)
+        )
 
         let progress: [Float] = [
             elapsedNormalized,
             spokenWordCountNormalized,
             pageWordCountNormalized,
+            lastSegmentEndNormalized,
         ]
 
-        // Keep both texts independent. The model receives a representation of
-        // what Speech recognized and a separate representation of everything
-        // displayed on the current page. We deliberately do not pre-compute
-        // similarity, suffix coverage, edit distance, or other alignment scores.
         let spokenText = spokenTokens.suffix(spokenWindowWordCount).joined(separator: " ")
         let spokenEmbedding = textEmbedding(spokenText)
         let pageEmbedding = textEmbedding(context.currentText)
