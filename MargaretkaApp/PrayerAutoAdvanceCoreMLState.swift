@@ -18,6 +18,7 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
     @Published var trainingQueueProgressCompleted = 0
     @Published var trainingQueueProgressTotal = 0
     @Published var storedTrainingPageCount = 0
+    @Published var replayTrainingPageCount = 0
     @Published var groupedTrainingPageCount = 0
     @Published private(set) var trainingTrace: [String] = []
 
@@ -46,6 +47,9 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
     var pendingTrainingDirectory: URL {
         directory.appendingPathComponent("PendingTrainingPages", isDirectory: true)
     }
+    var replayTrainingDirectory: URL {
+        directory.appendingPathComponent("ReplayTrainingPages", isDirectory: true)
+    }
 
     var hasModel: Bool { model != nil }
     var hasQueuedTrainingWork: Bool {
@@ -59,6 +63,10 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
         PrayerAutoAdvanceCoreMLDiskState.load(self)
         storedTrainingPageCount = PrayerAutoAdvancePendingTrainingStore.pageCount(
             in: pendingTrainingDirectory,
+            fileManager: fileManager
+        )
+        replayTrainingPageCount = PrayerAutoAdvancePendingTrainingStore.pageCount(
+            in: replayTrainingDirectory,
             fileManager: fileManager
         )
     }
