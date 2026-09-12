@@ -39,8 +39,9 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     private var summary: some View {
         diagnosticsCard("Stan") {
             metricRow("Model", state.metadata.map { "v\($0.baseModelVersion) / schema v\($0.featureSchemaVersion)" } ?? "—")
-            metricRow("Epoka", "\(diagnostics.currentEpochNumber), krok \(diagnostics.currentEpochSampleCount)/\(PrayerAutoAdvanceTrainingDiagnostics.epochSize)")
-            metricRow("Aktualizacje", "\(diagnostics.updateHistory.count) zapisanych")
+            metricRow("Epoka", "\(diagnostics.currentEpochNumber), strony \(diagnostics.currentEpochSampleCount)/\(PrayerAutoAdvanceTrainingDiagnostics.epochSize)")
+            metricRow("Zbiorcze aktualizacje", "\(diagnostics.updateHistory.count) zapisanych")
+            metricRow("Strony oczekujące", "\(state.storedTrainingPageCount)/\(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate)")
             metricRow("Loss (cel → 0)", formatted(diagnostics.logLoss, digits: 8))
             metricRow("Δloss (dobrze > 0)", signed(diagnostics.lastTrainingLossChange, digits: 8))
             metricRow("Mean |Δpred|", formatted(diagnostics.lastMeanPredictionDelta, digits: 8))
@@ -55,25 +56,25 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     private var currentEpochLossChart: some View {
         chartCard(
             "Loss — bieżąca epoka",
-            subtitle: "Cross-entropy przed i po każdej lokalnej aktualizacji. Poprawnie: obie serie z czasem schodzą w stronę 0, a punkt „po” jest zwykle niżej niż „przed”. Powtarzający się wzrost po update oznacza problem z uczeniem."
+            subtitle: "Cross-entropy przed i po każdej zbiorczej aktualizacji. Oś X pokazuje łączną liczbę stron w epoce diagnostycznej. Poprawnie: punkt „po” jest zwykle niżej niż „przed”."
         ) {
             Chart(diagnostics.currentEpochUpdates) { point in
                 LineMark(
-                    x: .value("Krok", point.positionInEpoch),
+                    x: .value("Strony", point.positionInEpoch),
                     y: .value("Loss", point.lossBefore),
                     series: .value("Seria", "przed")
                 )
                 .foregroundStyle(by: .value("Seria", "przed"))
-                PointMark(x: .value("Krok", point.positionInEpoch), y: .value("Loss", point.lossBefore))
+                PointMark(x: .value("Strony", point.positionInEpoch), y: .value("Loss", point.lossBefore))
                     .foregroundStyle(by: .value("Seria", "przed"))
 
                 LineMark(
-                    x: .value("Krok", point.positionInEpoch),
+                    x: .value("Strony", point.positionInEpoch),
                     y: .value("Loss", point.lossAfter),
                     series: .value("Seria", "po")
                 )
                 .foregroundStyle(by: .value("Seria", "po"))
-                PointMark(x: .value("Krok", point.positionInEpoch), y: .value("Loss", point.lossAfter))
+                PointMark(x: .value("Strony", point.positionInEpoch), y: .value("Loss", point.lossAfter))
                     .foregroundStyle(by: .value("Seria", "po"))
             }
             .frame(height: 280)
@@ -87,8 +88,8 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
         ) {
             Chart(diagnostics.currentEpochUpdates) { point in
                 if let loss = point.validationLoss {
-                    LineMark(x: .value("Krok", point.positionInEpoch), y: .value("Validation loss", loss))
-                    PointMark(x: .value("Krok", point.positionInEpoch), y: .value("Validation loss", loss))
+                    LineMark(x: .value("Strony", point.positionInEpoch), y: .value("Validation loss", loss))
+                    PointMark(x: .value("Strony", point.positionInEpoch), y: .value("Validation loss", loss))
                 }
             }
             .frame(height: 240)
@@ -98,7 +99,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     private var epochLossChart: some View {
         chartCard(
             "Loss — epoka do epoki",
-            subtitle: "Średni training loss ze 100 aktualizacji i validation loss na końcu epoki. Poprawnie: oba trendy maleją razem. Training dąży do 0; validation powinien również maleć/stabilizować się. Rosnąca luka train↘ / validation↗ to overfitting."
+            subtitle: "Średni training loss ważony liczbą stron i validation loss po około 100 stronach. Zbiorczy update jest niepodzielny, więc epoka może zakończyć się powyżej 100."
         ) {
             Chart(diagnostics.completedEpochs) { epoch in
                 if let loss = epoch.trainingLoss {
@@ -183,7 +184,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
                 .foregroundStyle(.secondary)
             ForEach(Array(diagnostics.updateHistory.suffix(8).reversed())) { point in
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("#\(point.id)  loss \(formatted(point.lossBefore, digits: 8)) → \(formatted(point.lossAfter, digits: 8))")
+                    Text("#\(point.id)  strony \(point.trainedPageCount ?? 1)  loss \(formatted(point.lossBefore, digits: 8)) → \(formatted(point.lossAfter, digits: 8))")
                     Text("Δloss \(signed(point.lossDelta, digits: 8))   mean |ΔP| \(formatted(point.meanPredictionDelta, digits: 8))   max \(formatted(point.maxPredictionDelta, digits: 8))")
                         .foregroundStyle(.secondary)
                 }
@@ -200,7 +201,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
             Chart(diagnostics.currentEpochUpdates) { point in
                 if let margin = point.trainingMargin {
                     LineMark(
-                        x: .value("Krok", point.positionInEpoch),
+                        x: .value("Strony", point.positionInEpoch),
                         y: .value("Margin", margin),
                         series: .value("Seria", "train")
                     )
@@ -208,7 +209,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
                 }
                 if let margin = point.validationMargin {
                     LineMark(
-                        x: .value("Krok", point.positionInEpoch),
+                        x: .value("Strony", point.positionInEpoch),
                         y: .value("Margin", margin),
                         series: .value("Seria", "validation")
                     )
@@ -279,7 +280,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     private var batchCompositionChart: some View {
         chartCard(
             "Skład batcha",
-            subtitle: "Pozytywne próbki nad osią, negatywne pod osią. Poprawnie: każda aktualizacja jest zbalansowana 1:1 — słupki mają tę samą wysokość po obu stronach osi, maksymalnie 12 positive + 12 negative."
+            subtitle: "Pozytywne próbki nad osią, negatywne pod osią. Każda zbiorcza aktualizacja powinna pozostać zbalansowana 1:1; pojedyncza strona wnosi maksymalnie 12 + 12 próbek."
         ) {
             Chart(diagnostics.updateHistory.suffix(200)) { point in
                 BarMark(x: .value("Aktualizacja", point.id), y: .value("Próbki", point.positiveCount))

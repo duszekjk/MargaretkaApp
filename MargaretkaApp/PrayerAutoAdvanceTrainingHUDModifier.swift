@@ -101,7 +101,7 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 7) {
                 Text("TRAIN")
-                Text("E\(diagnostics.currentEpochNumber) \(diagnostics.currentEpochSampleCount)/\(PrayerAutoAdvanceTrainingDiagnostics.epochSize)")
+                Text("E\(diagnostics.currentEpochNumber) \(diagnostics.currentEpochSampleCount)/\(PrayerAutoAdvanceTrainingDiagnostics.epochSize)p")
                 Text("ok \(state.metadata?.trainingSessions ?? 0)")
             }
             HStack(spacing: 7) {
@@ -136,6 +136,7 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
                 Text("P/N \(diagnostics.positiveSamples)/\(diagnostics.negativeSamples)")
             }
             HStack(spacing: 7) {
+                Text("stored \(state.storedTrainingPageCount)/\(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate)p")
                 Text("val \(state.validationStore.records.count)r/\(state.validationStore.sampleCount)s")
                 if let loss = diagnostics.currentValidationLoss {
                     Text(String(format: "Vloss %.5f", loss))

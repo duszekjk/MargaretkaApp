@@ -685,20 +685,38 @@ struct PrayerFlowView: View {
             VStack(spacing: 14) {
                 Text("Koniec 🙏")
 
-                if autoAdvanceState.isTrainingPipelineBusy
-                    || autoAdvanceState.queuedTrainingPageCount > 0 {
+                if autoAdvanceState.groupedTrainingPageCount > 0 {
+                    ProgressView()
+                    Text("Trwa zbiorczy trening modelu.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    Text("Strony w aktualizacji: \(autoAdvanceState.groupedTrainingPageCount)")
+                        .font(.footnote.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                } else if autoAdvanceState.isTrainingPipelineBusy
+                            || autoAdvanceState.queuedTrainingPageCount > 0 {
                     ProgressView(
                         value: Double(autoAdvanceState.trainingQueueProgressCompleted),
                         total: Double(max(autoAdvanceState.trainingQueueProgressTotal, 1))
                     )
                     .frame(maxWidth: 280)
 
-                    Text("Trwa jeszcze przetwarzanie treningu.")
+                    Text("Trwa przygotowywanie i zapisywanie stron.")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
 
                     Text("Pozostałe strony: \(autoAdvanceState.queuedTrainingPageCount)")
                         .font(.footnote.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                } else if autoAdvanceState.storedTrainingPageCount > 0 {
+                    Text(
+                        "Zapisane strony treningowe: \(autoAdvanceState.storedTrainingPageCount)/\(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate)"
+                    )
+                    .font(.footnote.monospacedDigit())
+                    .foregroundStyle(.secondary)
+
+                    Text("Dane pozostają na dysku do następnej zakończonej modlitwy.")
+                        .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
             }

@@ -36,7 +36,7 @@ struct PrayerAutoAdvanceTimingHistory: Codable, Sendable {
     }
 }
 
-struct PrayerAutoAdvanceLabeledSample: Sendable {
+struct PrayerAutoAdvanceLabeledSample: Codable, Sendable {
     let features: [Float]
     let longAudioFeatures: [Float]
     let label: Int64
@@ -102,11 +102,9 @@ enum PrayerAutoAdvanceTrainingPolicy {
         let positives = evenlyDistributedSelection(from: positiveSnapshots, count: count)
 
         // The V12 model trains with miniBatchSize == 1. Keeping every negative
-        // before every positive makes each epoch finish with a long run of one
-        // class. With Adam state recreated for every MLUpdateTask this can make
-        // successive page updates return to almost the same endpoint. Alternate
-        // the classes so every local step sees the balanced page batch throughout
-        // the epoch, not only in its aggregate counts.
+        // before every positive makes the grouped update finish with a long run
+        // of one class. Alternate the classes so local optimizer steps see both
+        // classes throughout the update, not only in its aggregate counts.
         var result: [PrayerAutoAdvanceLabeledSample] = []
         result.reserveCapacity(count * 2)
         for (negative, positive) in zip(negatives, positives) {

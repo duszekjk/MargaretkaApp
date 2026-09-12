@@ -4,6 +4,7 @@ internal import Combine
 
 struct PrayerAutoAdvanceEpochMetric: Codable, Sendable, Identifiable {
     let id: Int
+    let pageCount: Int?
     let trainingMargin: Double
     let validationMargin: Double?
     let trainingLoss: Double?
@@ -17,6 +18,7 @@ struct PrayerAutoAdvanceTrainingUpdateMetric: Codable, Sendable, Identifiable {
     let epoch: Int
     let positionInEpoch: Int
     let sampleCount: Int
+    let trainedPageCount: Int?
     let positiveCount: Int
     let negativeCount: Int
     let lossBefore: Double
@@ -144,8 +146,10 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     func recordTrainingUpdate(
         before: PrayerAutoAdvanceBatchEvaluation,
         after: PrayerAutoAdvanceBatchEvaluation,
-        validation: PrayerAutoAdvanceValidationMetrics
+        validation: PrayerAutoAdvanceValidationMetrics,
+        trainedPageCount: Int
     ) {
+        let pageCount = max(1, trainedPageCount)
         positiveSamples = after.positiveCount
         negativeSamples = after.negativeCount
         positivePredictionAverage = after.positiveAverage.map(Float.init)
@@ -178,8 +182,9 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
             id: (updateHistory.last?.id ?? 0) + 1,
             date: Date(),
             epoch: currentEpochNumber,
-            positionInEpoch: currentEpochSampleCount + 1,
+            positionInEpoch: currentEpochSampleCount + pageCount,
             sampleCount: after.positiveCount + after.negativeCount,
+            trainedPageCount: pageCount,
             positiveCount: after.positiveCount,
             negativeCount: after.negativeCount,
             lossBefore: before.loss,
@@ -199,19 +204,20 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         }
 
         if let margin = after.margin {
-            currentEpochTrainingMarginSum += margin
-            currentEpochTrainingMarginCount += 1
+            currentEpochTrainingMarginSum += margin * Double(pageCount)
+            currentEpochTrainingMarginCount += pageCount
             currentEpochTrainingMarginAverage = currentEpochTrainingMarginSum / Double(currentEpochTrainingMarginCount)
         }
-        currentEpochTrainingLossSum += after.loss
-        currentEpochTrainingLossCount += 1
+        currentEpochTrainingLossSum += after.loss * Double(pageCount)
+        currentEpochTrainingLossCount += pageCount
         currentEpochTrainingLossAverage = currentEpochTrainingLossSum / Double(currentEpochTrainingLossCount)
-        currentEpochPredictionDeltaSum += meanDelta
-        currentEpochSampleCount += 1
+        currentEpochPredictionDeltaSum += meanDelta * Double(pageCount)
+        currentEpochSampleCount += pageCount
 
         if currentEpochSampleCount >= Self.epochSize {
             let epoch = PrayerAutoAdvanceEpochMetric(
                 id: completedEpochs.count + 1,
+                pageCount: currentEpochSampleCount,
                 trainingMargin: currentEpochTrainingMarginAverage ?? 0,
                 validationMargin: validation.margin,
                 trainingLoss: currentEpochTrainingLossAverage,
@@ -222,7 +228,7 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
             if completedEpochs.count > 24 {
                 completedEpochs.removeFirst(completedEpochs.count - 24)
             }
-            event(String(format: "epoch %d trainLoss=%.6f valLoss=%@ margin=%+.4f", epoch.id, epoch.trainingLoss ?? 0, epoch.validationLoss.map { String(format: "%.6f", $0) } ?? "—", epoch.trainingMargin))
+            event(String(format: "epoch %d pages=%d trainLoss=%.6f valLoss=%@ margin=%+.4f", epoch.id, epoch.pageCount ?? 0, epoch.trainingLoss ?? 0, epoch.validationLoss.map { String(format: "%.6f", $0) } ?? "—", epoch.trainingMargin))
             resetCurrentEpochAccumulators()
         }
 

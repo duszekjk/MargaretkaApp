@@ -1,21 +1,24 @@
 import Foundation
 
 extension PrayerAutoAdvanceCoreMLState {
-    func train(_ batch: PrayerAutoAdvanceLabeledBatch) async {
+    func train(
+        _ batch: PrayerAutoAdvanceLabeledBatch,
+        trainedPageCount: Int
+    ) async -> Bool {
         let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
         guard !isTraining else {
             diagnostics.pipelineState = "pipeline-overlap"
             diagnostics.error("training invariant violated: overlapping MLUpdateTask")
             lastError = "Wykryto nakładające się kroki treningowe."
             lastTrainingEvent = lastError
-            return
+            return false
         }
         guard let current = model else {
             diagnostics.pipelineState = "no-model"
             diagnostics.error("training invariant violated: missing model")
             lastError = "Brak lokalnego modelu podczas rozpoczynania treningu."
             lastTrainingEvent = lastError
-            return
+            return false
         }
         isTraining = true
         diagnostics.pipelineState = "training"
@@ -67,7 +70,8 @@ extension PrayerAutoAdvanceCoreMLState {
                     diagnostics.recordTrainingUpdate(
                         before: before,
                         after: after,
-                        validation: validation
+                        validation: validation,
+                        trainedPageCount: trainedPageCount
                     )
                     diagnostics.event(
                         String(
@@ -101,7 +105,7 @@ extension PrayerAutoAdvanceCoreMLState {
             }
             if var value = metadata {
                 value.lastUpdatedAt = Date()
-                value.trainedTransitions += 1
+                value.trainedTransitions += trainedPageCount
                 value.trainingSessions += 1
                 metadata = value
             }
@@ -111,10 +115,11 @@ extension PrayerAutoAdvanceCoreMLState {
             try await PrayerAutoAdvanceCoreMLDiskState.saveInBackground(self)
 
             lastError = nil
-            lastTrainingEvent = "Model zaktualizowany na podstawie \(batch.samples.count) próbek."
+            lastTrainingEvent = "Model zaktualizowany zbiorczo na podstawie \(trainedPageCount) stron i \(batch.samples.count) próbek."
             diagnostics.acceptedTrainingCount += 1
             diagnostics.pipelineState = "trained"
-            diagnostics.event("MLUpdateTask complete")
+            diagnostics.event("MLUpdateTask complete pages=\(trainedPageCount) epochs=1")
+            return true
         } catch {
             let staleURL = updatedURL
             Task.detached(priority: .utility) {
@@ -124,6 +129,7 @@ extension PrayerAutoAdvanceCoreMLState {
             lastTrainingEvent = "Błąd aktualizacji modelu: \(error.localizedDescription)"
             diagnostics.pipelineState = "error"
             diagnostics.error(error.localizedDescription)
+            return false
         }
     }
 }

@@ -115,8 +115,9 @@ struct PrayerAutoAdvanceCoreMLSettingsView: View {
                 Button("Usuń dane automatycznego przełączania", role: .destructive) {
                     showingResetConfirmation = true
                 }
+                .disabled(state.isTrainingPipelineBusy || state.isTraining)
             } footer: {
-                Text("Usuwa lokalny spersonalizowany model, metadane, historię kalibracji czasu, historię epok i zbiór walidacyjny. Po ponownym włączeniu funkcji zostanie pobrany aktualny model bazowy z serwera.")
+                Text("Usuwa lokalny spersonalizowany model, oczekujące strony treningowe, metadane, historię kalibracji czasu, historię epok i zbiór walidacyjny. Po ponownym włączeniu funkcji zostanie pobrany aktualny model bazowy z serwera.")
             }
         }
         .navigationTitle("Automatyczne przełączanie")

@@ -32,6 +32,11 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
                         suppressNextTrainingTransition = false
                     }
                 }
+                if newValue >= lastDisplayIndex, controller.isTrainingEnabled {
+                    // recordManualAdvance above registers the final page before
+                    // the end-of-prayer barrier is opened.
+                    controller.state.requestGroupedTrainingAtPrayerEnd()
+                }
                 synchronizeContext()
             }
             .onChange(of: steps) { _, _ in synchronizeContext() }
