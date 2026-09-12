@@ -20,7 +20,7 @@ struct PrayerAutoAdvancePendingTrainingSnapshot: Sendable {
 /// the threshold for the next grouped update.
 enum PrayerAutoAdvancePendingTrainingStore {
     static let minimumPageCountForUpdate = 100
-    static let maximumReplayPageCount = 50
+    static let maximumReplayPageCount = 200
 
     private static let fileExtension = "trainingpage"
 
