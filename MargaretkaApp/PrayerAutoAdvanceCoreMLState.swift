@@ -19,6 +19,7 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
     @Published var trainingQueueProgressTotal = 0
     @Published var storedTrainingPageCount = 0
     @Published var groupedTrainingPageCount = 0
+    @Published private(set) var trainingTrace: [String] = []
 
     var pendingTrainingPages: [PrayerAutoAdvanceDeferredTrainingPage] = []
     var trainingQueueTask: Task<Void, Never>?
@@ -60,5 +61,15 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
             in: pendingTrainingDirectory,
             fileManager: fileManager
         )
+    }
+
+    func recordTrainingTrace(_ message: String) {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "HH:mm:ss.SSS"
+        trainingTrace.append("[\(formatter.string(from: Date()))] \(message)")
+        if trainingTrace.count > 100 {
+            trainingTrace.removeFirst(trainingTrace.count - 100)
+        }
     }
 }
