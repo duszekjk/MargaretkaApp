@@ -101,24 +101,26 @@ enum PrayerAutoAdvanceTrainingPolicy {
         let negatives = Array(negativeCandidates.shuffled().prefix(count))
         let positives = evenlyDistributedSelection(from: positiveSnapshots, count: count)
 
+        // The V12 model trains with miniBatchSize == 1. Keeping every negative
+        // before every positive makes each epoch finish with a long run of one
+        // class. With Adam state recreated for every MLUpdateTask this can make
+        // successive page updates return to almost the same endpoint. Alternate
+        // the classes so every local step sees the balanced page batch throughout
+        // the epoch, not only in its aggregate counts.
         var result: [PrayerAutoAdvanceLabeledSample] = []
         result.reserveCapacity(count * 2)
-
-        for snapshot in negatives {
+        for (negative, positive) in zip(negatives, positives) {
             result.append(
                 PrayerAutoAdvanceLabeledSample(
-                    features: snapshot.features,
-                    longAudioFeatures: snapshot.longAudioFeatures,
+                    features: negative.features,
+                    longAudioFeatures: negative.longAudioFeatures,
                     label: 0
                 )
             )
-        }
-
-        for snapshot in positives {
             result.append(
                 PrayerAutoAdvanceLabeledSample(
-                    features: snapshot.features,
-                    longAudioFeatures: snapshot.longAudioFeatures,
+                    features: positive.features,
+                    longAudioFeatures: positive.longAudioFeatures,
                     label: 1
                 )
             )

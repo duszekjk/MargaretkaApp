@@ -17,6 +17,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
                     epochLossChart
                     lossDeltaChart
                     predictionMovementChart
+                    latestBackpropUpdates
                     currentEpochMarginChart
                     epochMarginChart
                     classProbabilityChart
@@ -44,6 +45,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
             metricRow("Δloss (dobrze > 0)", signed(diagnostics.lastTrainingLossChange, digits: 8))
             metricRow("Mean |Δpred|", formatted(diagnostics.lastMeanPredictionDelta, digits: 8))
             metricRow("Max |Δpred|", formatted(diagnostics.lastMaxPredictionDelta, digits: 8))
+            metricRow("Backprop", diagnostics.backpropStatus)
             metricRow("Train margin (cel > 0)", diagnostics.predictionMargin.map { String(format: "%+.6f", $0) } ?? "—")
             metricRow("Validation loss (cel ↓)", formatted(diagnostics.currentValidationLoss, digits: 8))
             metricRow("Validation margin (cel > 0)", signed(diagnostics.currentValidationMargin, digits: 6))
@@ -153,14 +155,40 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
                     series: .value("Seria", "średnia")
                 )
                 .foregroundStyle(by: .value("Seria", "średnia"))
+                PointMark(
+                    x: .value("Aktualizacja", point.id),
+                    y: .value("|Δpred|", point.meanPredictionDelta)
+                )
+                .foregroundStyle(by: .value("Seria", "średnia"))
                 LineMark(
                     x: .value("Aktualizacja", point.id),
                     y: .value("|Δpred|", point.maxPredictionDelta),
                     series: .value("Seria", "maksimum")
                 )
                 .foregroundStyle(by: .value("Seria", "maksimum"))
+                PointMark(
+                    x: .value("Aktualizacja", point.id),
+                    y: .value("|Δpred|", point.maxPredictionDelta)
+                )
+                .foregroundStyle(by: .value("Seria", "maksimum"))
             }
             .frame(height: 240)
+        }
+    }
+
+    private var latestBackpropUpdates: some View {
+        diagnosticsCard("Ostatnie kroki backprop") {
+            Text("Dokładne wartości przed i po update — niezależne od skali wykresu.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            ForEach(Array(diagnostics.updateHistory.suffix(8).reversed())) { point in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("#\(point.id)  loss \(formatted(point.lossBefore, digits: 8)) → \(formatted(point.lossAfter, digits: 8))")
+                    Text("Δloss \(signed(point.lossDelta, digits: 8))   mean |ΔP| \(formatted(point.meanPredictionDelta, digits: 8))   max \(formatted(point.maxPredictionDelta, digits: 8))")
+                        .foregroundStyle(.secondary)
+                }
+                .font(.caption.monospacedDigit())
+            }
         }
     }
 

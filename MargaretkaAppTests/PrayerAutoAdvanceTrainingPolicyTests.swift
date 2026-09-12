@@ -121,6 +121,27 @@ struct PrayerAutoAdvanceTrainingPolicyTests {
         #expect(batch.samples.count == 24)
     }
 
+    @Test func balancedBatchAlternatesClassesForBatchSizeOneTraining() throws {
+        let base = Date(timeIntervalSince1970: 1_700_000_000)
+        let swipe = base.addingTimeInterval(60)
+        let snapshots = stride(from: 0.0, through: 59.75, by: 0.25).map { snapshot(at: $0, base: base) }
+
+        let batch = try #require(
+            PrayerAutoAdvanceTrainingPolicy.makeBatch(
+                snapshots: snapshots,
+                positiveSnapshots: positiveSnapshots(swipe: swipe),
+                manualAdvanceAt: swipe,
+                history: PrayerAutoAdvanceTimingHistory()
+            )
+        )
+
+        #expect(batch.samples.count == 24)
+        for pairStart in stride(from: 0, to: batch.samples.count, by: 2) {
+            #expect(batch.samples[pairStart].label == 0)
+            #expect(batch.samples[pairStart + 1].label == 1)
+        }
+    }
+
     @Test func deadZoneExcludesLastTwoTenthsBeforePositiveWindow() throws {
         let base = Date(timeIntervalSince1970: 1_700_000_000)
         let swipe = base.addingTimeInterval(1.0)
