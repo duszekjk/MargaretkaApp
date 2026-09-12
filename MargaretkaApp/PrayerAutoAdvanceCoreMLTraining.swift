@@ -62,7 +62,7 @@ extension PrayerAutoAdvanceCoreMLState {
             diagnostics.pipelineState = stage
             diagnostics.event("MLUpdateTask start samples=\(batch.samples.count) delay=\(delayText)")
             lastTrainingEvent = "Core ML aktualizuje wagi modelu…"
-            recordTrainingTrace("coreml-update: MLUpdateTask resume")
+            recordTrainingTrace("coreml-update: MLUpdateTask resume epochs=\(PrayerAutoAdvanceCoreMLModel.trainingEpochCount)")
             try await PrayerAutoAdvanceCoreMLModel.update(
                 modelAt: current.compiledURL,
                 samples: batch.samples,
@@ -185,7 +185,7 @@ extension PrayerAutoAdvanceCoreMLState {
             lastTrainingEvent = "Model zaktualizowany zbiorczo na podstawie \(trainedPageCount) stron i \(batch.samples.count) próbek."
             diagnostics.acceptedTrainingCount += 1
             diagnostics.pipelineState = "trained"
-            diagnostics.event("MLUpdateTask complete pages=\(trainedPageCount) epochs=1")
+            diagnostics.event("MLUpdateTask complete pages=\(trainedPageCount) epochs=\(PrayerAutoAdvanceCoreMLModel.trainingEpochCount)")
             recordTrainingTrace("SUCCESS pages=\(trainedPageCount) samples=\(batch.samples.count)")
             return true
         } catch {
