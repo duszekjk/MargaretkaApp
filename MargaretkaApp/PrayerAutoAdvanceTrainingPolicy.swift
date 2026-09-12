@@ -40,6 +40,19 @@ struct PrayerAutoAdvanceLabeledSample: Codable, Sendable {
     let features: [Float]
     let longAudioFeatures: [Float]
     let label: Int64
+    let relativeTimeToAdvance: TimeInterval?
+
+    init(
+        features: [Float],
+        longAudioFeatures: [Float],
+        label: Int64,
+        relativeTimeToAdvance: TimeInterval? = nil
+    ) {
+        self.features = features
+        self.longAudioFeatures = longAudioFeatures
+        self.label = label
+        self.relativeTimeToAdvance = relativeTimeToAdvance
+    }
 }
 
 struct PrayerAutoAdvanceLabeledBatch: Sendable {
@@ -68,9 +81,14 @@ enum PrayerAutoAdvanceTrainingPolicy {
 
     static func makeBatchFromSelectedNegatives(
         _ negativeSnapshots: [PrayerAutoAdvanceTrainingSnapshot],
-        positiveSnapshots: [PrayerAutoAdvanceTrainingSnapshot]
+        positiveSnapshots: [PrayerAutoAdvanceTrainingSnapshot],
+        manualAdvanceAt: Date? = nil
     ) -> PrayerAutoAdvanceLabeledBatch? {
-        balancedBatch(negatives: negativeSnapshots, positives: positiveSnapshots)
+        balancedBatch(
+            negatives: negativeSnapshots,
+            positives: positiveSnapshots,
+            manualAdvanceAt: manualAdvanceAt
+        )
     }
 
     static func makeBatch(
@@ -82,12 +100,17 @@ enum PrayerAutoAdvanceTrainingPolicy {
         let negativeCutoff = manualAdvanceAt.addingTimeInterval(-(positiveWindow + deadZone))
         let negativeCandidates = snapshots.filter { $0.date <= negativeCutoff }
 
-        return balancedBatch(negatives: negativeCandidates, positives: positiveSnapshots)
+        return balancedBatch(
+            negatives: negativeCandidates,
+            positives: positiveSnapshots,
+            manualAdvanceAt: manualAdvanceAt
+        )
     }
 
     private static func balancedBatch(
         negatives negativeCandidates: [PrayerAutoAdvanceTrainingSnapshot],
-        positives positiveSnapshots: [PrayerAutoAdvanceTrainingSnapshot]
+        positives positiveSnapshots: [PrayerAutoAdvanceTrainingSnapshot],
+        manualAdvanceAt: Date?
     ) -> PrayerAutoAdvanceLabeledBatch? {
         guard !negativeCandidates.isEmpty, !positiveSnapshots.isEmpty else { return nil }
 
@@ -101,10 +124,6 @@ enum PrayerAutoAdvanceTrainingPolicy {
         let negatives = Array(negativeCandidates.shuffled().prefix(count))
         let positives = evenlyDistributedSelection(from: positiveSnapshots, count: count)
 
-        // The V12 model trains with miniBatchSize == 1. Keeping every negative
-        // before every positive makes the grouped update finish with a long run
-        // of one class. Alternate the classes so local optimizer steps see both
-        // classes throughout the update, not only in its aggregate counts.
         var result: [PrayerAutoAdvanceLabeledSample] = []
         result.reserveCapacity(count * 2)
         for (negative, positive) in zip(negatives, positives) {
@@ -112,14 +131,16 @@ enum PrayerAutoAdvanceTrainingPolicy {
                 PrayerAutoAdvanceLabeledSample(
                     features: negative.features,
                     longAudioFeatures: negative.longAudioFeatures,
-                    label: 0
+                    label: 0,
+                    relativeTimeToAdvance: manualAdvanceAt.map { negative.date.timeIntervalSince($0) }
                 )
             )
             result.append(
                 PrayerAutoAdvanceLabeledSample(
                     features: positive.features,
                     longAudioFeatures: positive.longAudioFeatures,
-                    label: 1
+                    label: 1,
+                    relativeTimeToAdvance: manualAdvanceAt.map { positive.date.timeIntervalSince($0) }
                 )
             )
         }
