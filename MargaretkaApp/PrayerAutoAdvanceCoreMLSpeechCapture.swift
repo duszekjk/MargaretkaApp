@@ -426,11 +426,13 @@ private final class PrayerAutoAdvancePageAudioBuffer: @unchecked Sendable {
         nextPostBoundaryCaptureID &+= 1
         let captureID = nextPostBoundaryCaptureID
         let sampleLimit = max(0, Int((postBoundaryDuration * targetSampleRate).rounded()))
+        var postBoundarySamples: [Float] = []
+        postBoundarySamples.reserveCapacity(sampleLimit)
         pendingPostBoundaryCaptures.append(
             PendingPostBoundaryCapture(
                 id: captureID,
                 sampleLimit: sampleLimit,
-                samples: []
+                samples: postBoundarySamples
             )
         )
         lock.unlock()
