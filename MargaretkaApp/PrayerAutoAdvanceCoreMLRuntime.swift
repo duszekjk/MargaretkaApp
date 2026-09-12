@@ -87,6 +87,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
             trainingCandidates.append(candidate)
         }
         lastTrainingSnapshotAt = candidate.date
+        PrayerAutoAdvanceTrainingDiagnostics.shared.snapshotCount = trainingCandidates.count
     }
 
     func recordManualAdvance(at date: Date = Date()) {
@@ -95,7 +96,21 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
         let pageID = currentContext.pageID
         let startedAt = contextStartedAt
-        let candidates = trainingCandidates.filter { $0.pageID == pageID }
+        var candidates = trainingCandidates.filter { $0.pageID == pageID }
+        if candidates.isEmpty {
+            // The context may have been activated before training was enabled.
+            // Preserve a deterministic page-start negative instead of silently
+            // dropping the entire transition.
+            candidates.append(
+                PrayerAutoAdvanceTrainingCandidate(
+                    pageID: pageID,
+                    date: startedAt,
+                    transcript: "",
+                    lastSegmentEndTime: nil,
+                    audioEndSampleIndex: 0
+                )
+            )
+        }
 
 #if os(iOS)
         // This is an O(1) copy-on-write hand-off of the page PCM buffer. It keeps
@@ -120,6 +135,12 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         let swipeSampleIndex = min(
             max(frozenPageAudio.samples.count - samplesAfterGesture, 0),
             frozenPageAudio.samples.count
+        )
+
+        let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
+        diagnostics.snapshotCount = candidates.count
+        diagnostics.event(
+            "captured page candidates=\(candidates.count) pcm=\(frozenPageAudio.samples.count) swipeSample=\(swipeSampleIndex)"
         )
 
         state.lastTrainingEvent = "Domykanie okna ręcznego przejścia…"
