@@ -54,6 +54,7 @@ final class PrayerAutoAdvanceTrainingQualityDiagnostics: ObservableObject {
             PrayerAutoAdvanceTrainingQualityEvaluator.evaluate(pages: pages, model: model)
         }.value
         guard let evaluation else { return }
+        let absoluteTimingErrors = evaluation.timingErrors.map { abs($0) }
 
         let metric = PrayerAutoAdvanceTrainingQualityMetric(
             id: (history.last?.id ?? 0) + 1,
@@ -70,8 +71,8 @@ final class PrayerAutoAdvanceTrainingQualityDiagnostics: ObservableObject {
             brierScore: evaluation.brierScore,
             logLoss: evaluation.logLoss,
             timingPageCount: evaluation.timingErrors.count,
-            timingMAE: average(evaluation.timingErrors.map(abs)),
-            timingMedianAbsoluteError: median(evaluation.timingErrors.map(abs)),
+            timingMAE: average(absoluteTimingErrors),
+            timingMedianAbsoluteError: median(absoluteTimingErrors),
             timingBias: average(evaluation.timingErrors),
             timingHitQuarterSecond: hitRate(evaluation.timingErrors, tolerance: 0.25),
             timingHitHalfSecond: hitRate(evaluation.timingErrors, tolerance: 0.5),
@@ -160,7 +161,6 @@ private enum PrayerAutoAdvanceTrainingQualityEvaluator {
             }
 
             if let crossing = thresholdCrossing(in: timedPredictions) {
-                // Ground truth swipe is t=0, so the crossing itself is the signed error.
                 timingErrors.append(crossing)
             }
         }
