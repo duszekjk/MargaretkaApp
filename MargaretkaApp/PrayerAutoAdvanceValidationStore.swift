@@ -4,6 +4,7 @@ struct PrayerAutoAdvanceValidationSample: Codable, Sendable {
     let features: [Float]
     let longAudioFeatures: [Float]
     let label: Int64
+    let relativeTimeToAdvance: TimeInterval?
 }
 
 struct PrayerAutoAdvanceValidationRecord: Codable, Sendable, Identifiable {
@@ -55,7 +56,8 @@ struct PrayerAutoAdvanceValidationStore: Codable, Sendable {
                     PrayerAutoAdvanceValidationSample(
                         features: $0.features,
                         longAudioFeatures: $0.longAudioFeatures,
-                        label: $0.label
+                        label: $0.label,
+                        relativeTimeToAdvance: $0.relativeTimeToAdvance
                     )
                 }
             )
