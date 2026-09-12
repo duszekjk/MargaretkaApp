@@ -272,7 +272,7 @@ extension PrayerAutoAdvanceCoreMLState {
             self.refreshTrainingQueueMetrics()
             let samples = snapshot.samples
             diagnostics.event(
-                "grouped MLUpdateTask pages=\(snapshot.pageCount) samples=\(samples.count) epochs=1"
+                "grouped MLUpdateTask pages=\(snapshot.pageCount) samples=\(samples.count) epochs=\(PrayerAutoAdvanceCoreMLModel.trainingEpochCount)"
             )
             let batch = PrayerAutoAdvanceLabeledBatch(
                 samples: samples,
