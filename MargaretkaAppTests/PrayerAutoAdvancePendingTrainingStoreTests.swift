@@ -55,8 +55,35 @@ struct PrayerAutoAdvancePendingTrainingStoreTests {
         #expect(remaining.pages.map(\.pageID) == ["newer"])
     }
 
-    @Test func temporaryGroupedTrainingThresholdIsTwentyPages() {
-        #expect(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate == 20)
+    @Test func replayPoolCanBeReplacedWithoutTouchingFreshStore() throws {
+        let freshDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let replayDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer {
+            try? FileManager.default.removeItem(at: freshDirectory)
+            try? FileManager.default.removeItem(at: replayDirectory)
+        }
+
+        try PrayerAutoAdvancePendingTrainingStore.append(
+            pageID: "fresh",
+            batch: batch(marker: 1),
+            createdAt: Date(timeIntervalSince1970: 1),
+            to: freshDirectory
+        )
+        let fresh = try PrayerAutoAdvancePendingTrainingStore.loadSnapshot(from: freshDirectory)
+        try PrayerAutoAdvancePendingTrainingStore.replaceAll(
+            with: fresh.pages,
+            in: replayDirectory
+        )
+
+        #expect(PrayerAutoAdvancePendingTrainingStore.pageCount(in: freshDirectory) == 1)
+        #expect(PrayerAutoAdvancePendingTrainingStore.pageCount(in: replayDirectory) == 1)
+    }
+
+    @Test func productionGroupedTrainingThresholdIsOneHundredPages() {
+        #expect(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate == 100)
+        #expect(PrayerAutoAdvancePendingTrainingStore.maximumReplayPageCount == 50)
     }
 
     private func batch(marker: Float) -> PrayerAutoAdvanceLabeledBatch {
