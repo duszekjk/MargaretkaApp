@@ -51,7 +51,7 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         category: "PrayerAutoAdvanceTraining"
     )
 
-    static let epochSize = 100
+    static let epochSize = 1_000
     private static let epochStorageKey = "PrayerAutoAdvanceTrainingEpochHistoryV4"
     private static let legacyEpochStorageKey = "PrayerAutoAdvanceTrainingEpochHistoryV3"
     private static let maximumStoredUpdates = 1_200
