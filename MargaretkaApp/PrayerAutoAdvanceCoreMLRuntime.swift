@@ -24,6 +24,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
     var lastDiagnosticsPublishAt = Date.distantPast
     var lastInferenceAt = Date.distantPast
     var trainingCandidateSeenCount = 0
+    var capturedManualAdvancePageID: String?
 
     static let trainingReservoirCapacity = 16
     static let trainingCandidateInterval: TimeInterval = 0.5
@@ -95,22 +96,16 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
               let currentContext = context else { return }
 
         let pageID = currentContext.pageID
+        guard capturedManualAdvancePageID != pageID else { return }
+        capturedManualAdvancePageID = pageID
+
+        let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
+        diagnostics.manualSwipeCount += 1
+        diagnostics.pipelineState = "selecting"
+        diagnostics.event("manual swipe #\(diagnostics.manualSwipeCount)")
+
         let startedAt = contextStartedAt
-        var candidates = trainingCandidates.filter { $0.pageID == pageID }
-        if candidates.isEmpty {
-            // The context may have been activated before training was enabled.
-            // Preserve a deterministic page-start negative instead of silently
-            // dropping the entire transition.
-            candidates.append(
-                PrayerAutoAdvanceTrainingCandidate(
-                    pageID: pageID,
-                    date: startedAt,
-                    transcript: "",
-                    lastSegmentEndTime: nil,
-                    audioEndSampleIndex: 0
-                )
-            )
-        }
+        let candidates = trainingCandidates.filter { $0.pageID == pageID }
 
 #if os(iOS)
         // This is an O(1) copy-on-write hand-off of the page PCM buffer. It keeps
@@ -137,7 +132,6 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
             frozenPageAudio.samples.count
         )
 
-        let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
         diagnostics.snapshotCount = candidates.count
         diagnostics.event(
             "captured page candidates=\(candidates.count) pcm=\(frozenPageAudio.samples.count) swipeSample=\(swipeSampleIndex)"

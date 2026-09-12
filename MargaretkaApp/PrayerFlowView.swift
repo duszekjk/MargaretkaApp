@@ -79,6 +79,7 @@ struct PrayerFlowView: View {
     @State private var isAdvancing: Bool = true
     @ObservedObject private var notificationRouter = PrayerNotificationRouter.shared
     @ObservedObject private var autoAdvanceState = PrayerAutoAdvanceCoreMLState.shared
+    @StateObject private var autoAdvanceController = PrayerAutoAdvanceCoreMLRuntime()
     @StateObject private var sessionStore = PrayerSessionStore()
     @State private var sessionStart: Date?
     @State private var sessionPauseStart: Date?
@@ -763,6 +764,11 @@ struct PrayerFlowView: View {
             .onEnded { value in
                 guard let targetIndex = prayerSwipeTarget(for: value.translation),
                       targetIndex != activeIndex else { return }
+                if targetIndex > activeIndex, activeIndex > 0 {
+                    // Capture T, the old-page speech state, candidates and PCM
+                    // before changing activeIndex can replace the page context.
+                    autoAdvanceController.recordManualAdvance(at: value.time)
+                }
                 let fromName = currentPrayer?.name
                 let toName = targetIndex > 0 && targetIndex <= flattenedPrayerSymbols.count ? allPrayers[flattenedPrayerIds[targetIndex - 1]]?.name : nil
                 hapticForPrayerSwitch(from: fromName, to: toName, delta: targetIndex - activeIndex)
@@ -1518,6 +1524,7 @@ struct PrayerFlowView: View {
                 lastDisplayIndex
             ),
             lastDisplayIndex: lastDisplayIndex,
+            controller: autoAdvanceController,
             moveToIndex: { index in
                 moveToIndex(index, animated: true)
             }

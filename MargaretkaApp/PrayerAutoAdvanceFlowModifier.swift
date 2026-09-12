@@ -1,10 +1,5 @@
 import SwiftUI
 
-private struct PrayerAutoAdvanceManualGestureAnchor {
-    let date: Date
-    let fromIndex: Int
-}
-
 struct PrayerAutoAdvanceFlowModifier: ViewModifier {
     @Binding var activeIndex: Int
     let steps: [PrayerFlowStep]
@@ -15,42 +10,24 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
     let lastDisplayIndex: Int
     let moveToIndex: (Int) -> Void
 
-    @StateObject private var controller = PrayerAutoAdvanceCoreMLRuntime()
+    @ObservedObject var controller: PrayerAutoAdvanceCoreMLRuntime
     @Environment(\.scenePhase) private var scenePhase
     @State private var suppressNextTrainingTransition = false
-    @State private var pendingManualGestureAnchor: PrayerAutoAdvanceManualGestureAnchor?
 
     func body(content: Content) -> some View {
         content
-            // Capture the input-event timestamp before page navigation can trigger
-            // expensive work or thermal stalls. Forward prayer swipes are left/up.
-            .simultaneousGesture(manualAdvanceTimestampGesture)
             .onAppear { synchronizeContext() }
             .onDisappear { controller.stop() }
             .onChange(of: activeIndex) { oldValue, newValue in
                 if newValue > oldValue, oldValue > 0 {
                     if suppressNextTrainingTransition {
                         suppressNextTrainingTransition = false
-                        pendingManualGestureAnchor = nil
                     } else {
-                        if UserDefaults.standard.bool(forKey: PrayerAutoAdvancePreferences.trainingEnabledKey) {
-                            let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
-                            diagnostics.manualSwipeCount += 1
-                            diagnostics.pipelineState = "selecting"
-                            diagnostics.event("manual swipe #\(diagnostics.manualSwipeCount)")
-                        }
-                        let eventDate: Date
-                        if let anchor = pendingManualGestureAnchor,
-                           anchor.fromIndex == oldValue {
-                            eventDate = anchor.date
-                        } else {
-                            eventDate = Date()
-                        }
-                        pendingManualGestureAnchor = nil
-                        controller.recordManualAdvance(at: eventDate)
+                        // Custom swipes are already captured before activeIndex is
+                        // changed. This remains a fallback for buttons and keys.
+                        controller.recordManualAdvance(at: Date())
                     }
                 } else {
-                    pendingManualGestureAnchor = nil
                     if suppressNextTrainingTransition {
                         suppressNextTrainingTransition = false
                     }
@@ -67,7 +44,6 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
                 let target = min(max(automaticTargetIndex, activeIndex + 1), lastDisplayIndex)
                 guard target > activeIndex else { return }
                 suppressNextTrainingTransition = true
-                pendingManualGestureAnchor = nil
                 moveToIndex(target)
             }
             .onReceive(NotificationCenter.default.publisher(for: .prayerAutoAdvancePreferencesChanged)) { _ in
@@ -80,38 +56,9 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
                     synchronizeContext()
                     controller.preferencesDidChange()
                 case .inactive, .background:
-                    pendingManualGestureAnchor = nil
                     controller.stop()
                 @unknown default:
-                    pendingManualGestureAnchor = nil
                     controller.stop()
-                }
-            }
-    }
-
-    private var manualAdvanceTimestampGesture: some Gesture {
-        DragGesture(minimumDistance: 18)
-            .onChanged { value in
-                let isForward = value.translation.width <= -80 || value.translation.height <= -80
-                guard isForward else { return }
-                if pendingManualGestureAnchor?.fromIndex != activeIndex {
-                    pendingManualGestureAnchor = PrayerAutoAdvanceManualGestureAnchor(
-                        date: value.time,
-                        fromIndex: activeIndex
-                    )
-                }
-            }
-            .onEnded { value in
-                let isForward = value.translation.width <= -80 || value.translation.height <= -80
-                if isForward {
-                    if pendingManualGestureAnchor?.fromIndex != activeIndex {
-                        pendingManualGestureAnchor = PrayerAutoAdvanceManualGestureAnchor(
-                            date: value.time,
-                            fromIndex: activeIndex
-                        )
-                    }
-                } else {
-                    pendingManualGestureAnchor = nil
                 }
             }
     }
@@ -168,6 +115,7 @@ extension View {
         languageCode: String?,
         automaticTargetIndex: Int,
         lastDisplayIndex: Int,
+        controller: PrayerAutoAdvanceCoreMLRuntime,
         moveToIndex: @escaping (Int) -> Void
     ) -> some View {
         modifier(
@@ -179,7 +127,8 @@ extension View {
                 languageCode: languageCode,
                 automaticTargetIndex: automaticTargetIndex,
                 lastDisplayIndex: lastDisplayIndex,
-                moveToIndex: moveToIndex
+                moveToIndex: moveToIndex,
+                controller: controller
             )
         )
         .prayerAutoAdvanceTrainingHUD()
