@@ -136,9 +136,16 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         )
 
         state.lastTrainingEvent = "Domykanie okna ręcznego przejścia…"
+        state.registerScheduledTrainingCapture()
 
         Task { @MainActor [weak self] in
             guard let self else { return }
+            var submittedForMaterialization = false
+            defer {
+                if !submittedForMaterialization {
+                    self.state.cancelScheduledTrainingCapture()
+                }
+            }
             // The page transition uses a 250 ms animation. Keep feature
             // materialization and Core ML training outside that animation.
             try? await Task.sleep(for: Self.postTransitionProcessingDelay)
@@ -176,6 +183,8 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
                 }
             }
 
+            self.state.submitScheduledTrainingCapture()
+            submittedForMaterialization = true
             if self.state.isTrainingPipelineBusy || self.state.hasQueuedTrainingWork {
                 self.state.enqueueTrainingPage(page)
                 self.state.lastTrainingEvent = "Strona dodana do kolejki treningowej."
