@@ -15,13 +15,12 @@ struct PrayerAutoAdvancePendingTrainingSnapshot: Sendable {
     var pageIDs: Set<UUID> { Set(pages.map(\.id)) }
 }
 
-/// Durable, schema-local storage for materialized training pages. Each page is a
-/// separate binary property list, so adding one page never rewrites the previous
-/// V12 feature vectors. Files are removed only after the personalized model has
-/// been written successfully.
+/// Durable, schema-local storage for materialized training pages. Fresh pages and
+/// replay pages live in separate directories so replay data never contributes to
+/// the threshold for the next grouped update.
 enum PrayerAutoAdvancePendingTrainingStore {
-    /// Temporary test value. Change this single constant to 100 for production.
-    static let minimumPageCountForUpdate = 20
+    static let minimumPageCountForUpdate = 100
+    static let maximumReplayPageCount = 50
 
     private static let fileExtension = "trainingpage"
 
@@ -43,13 +42,7 @@ enum PrayerAutoAdvancePendingTrainingStore {
             createdAt: createdAt,
             samples: batch.samples
         )
-        let encoder = PropertyListEncoder()
-        encoder.outputFormat = .binary
-        let data = try encoder.encode(page)
-        let url = directory
-            .appendingPathComponent(page.id.uuidString)
-            .appendingPathExtension(fileExtension)
-        try data.write(to: url, options: .atomic)
+        try write(page, to: directory, fileManager: fileManager)
     }
 
     static func loadSnapshot(
@@ -68,6 +61,20 @@ enum PrayerAutoAdvancePendingTrainingStore {
         )
     }
 
+    static func replaceAll(
+        with pages: [PrayerAutoAdvancePendingTrainingPage],
+        in directory: URL,
+        fileManager: FileManager = .default
+    ) throws {
+        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+        for url in pageURLs(in: directory, fileManager: fileManager) {
+            try fileManager.removeItem(at: url)
+        }
+        for page in pages {
+            try write(page, to: directory, fileManager: fileManager)
+        }
+    }
+
     static func remove(
         pageIDs: Set<UUID>,
         from directory: URL,
@@ -82,6 +89,21 @@ enum PrayerAutoAdvancePendingTrainingStore {
                 try fileManager.removeItem(at: url)
             }
         }
+    }
+
+    private static func write(
+        _ page: PrayerAutoAdvancePendingTrainingPage,
+        to directory: URL,
+        fileManager: FileManager
+    ) throws {
+        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+        let encoder = PropertyListEncoder()
+        encoder.outputFormat = .binary
+        let data = try encoder.encode(page)
+        let url = directory
+            .appendingPathComponent(page.id.uuidString)
+            .appendingPathExtension(fileExtension)
+        try data.write(to: url, options: .atomic)
     }
 
     private static func pageURLs(
