@@ -8,6 +8,7 @@ final class PrayerAutoAdvanceCoreMLModel: @unchecked Sendable {
     static let currentModelVersion = 12
     static let currentFeatureSchemaVersion = 9
     static let trainingEpochCount = 3
+    static let trainingLearningRate = 0.000002
 
     let compiledURL: URL
     private(set) var model: MLModel
@@ -76,7 +77,11 @@ final class PrayerAutoAdvanceCoreMLModel: @unchecked Sendable {
         let retention = UpdateRetention(providers: providers)
         let configuration = MLModelConfiguration()
         configuration.computeUnits = .cpuAndGPU
-        configuration.parameters = [MLParameterKey.epochs: NSNumber(value: trainingEpochCount)]
+        configuration.parameters = [
+            MLParameterKey.epochs: NSNumber(value: trainingEpochCount),
+            MLParameterKey.learningRate: NSNumber(value: trainingLearningRate),
+            MLParameterKey.shuffle: NSNumber(value: true),
+        ]
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             do {
