@@ -75,6 +75,7 @@ final class PrayerAutoAdvanceCoreMLModel: @unchecked Sendable {
         let retention = UpdateRetention(providers: providers)
         let configuration = MLModelConfiguration()
         configuration.computeUnits = .cpuAndGPU
+        configuration.parameters = [MLParameterKey.epochs: 1]
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             do {
