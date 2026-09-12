@@ -81,9 +81,9 @@ struct PrayerAutoAdvancePendingTrainingStoreTests {
         #expect(PrayerAutoAdvancePendingTrainingStore.pageCount(in: replayDirectory) == 1)
     }
 
-    @Test func productionGroupedTrainingThresholdIsOneHundredPages() {
+    @Test func productionGroupedTrainingThresholdAndReplayCapacity() {
         #expect(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate == 100)
-        #expect(PrayerAutoAdvancePendingTrainingStore.maximumReplayPageCount == 50)
+        #expect(PrayerAutoAdvancePendingTrainingStore.maximumReplayPageCount == 200)
     }
 
     private func batch(marker: Float) -> PrayerAutoAdvanceLabeledBatch {
