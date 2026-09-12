@@ -36,7 +36,7 @@ struct PrayerAutoAdvanceTimingHistory: Codable, Sendable {
     }
 }
 
-struct PrayerAutoAdvanceLabeledSample: Sendable {
+struct PrayerAutoAdvanceLabeledSample: Codable, Sendable {
     let features: [Float]
     let longAudioFeatures: [Float]
     let label: Int64
