@@ -40,12 +40,13 @@ extension PrayerAutoAdvanceCoreMLState {
             diagnostics.pipelineState = stage
             lastTrainingEvent = "Sprawdzanie modelu przed treningiem…"
             recordTrainingTrace("evaluation-before: start")
-            guard let before = await Task.detached(priority: .utility) {
+            let beforeEvaluation = await Task.detached(priority: .utility) {
                 PrayerAutoAdvanceBackgroundEvaluation.evaluate(
                     model: current,
                     samples: batch.samples
                 )
-            }.value else {
+            }.value
+            guard let before = beforeEvaluation else {
                 throw PrayerAutoAdvanceTrainingVerificationError.evaluationBeforeFailed
             }
             recordTrainingTrace(
