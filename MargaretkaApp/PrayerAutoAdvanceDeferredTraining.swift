@@ -13,6 +13,30 @@ struct PrayerAutoAdvanceDeferredTrainingPage: Sendable {
 }
 
 extension PrayerAutoAdvanceCoreMLState {
+    func registerScheduledTrainingCapture() {
+        scheduledTrainingCaptureCount += 1
+        refreshTrainingQueueMetrics()
+    }
+
+    func submitScheduledTrainingCapture() {
+        scheduledTrainingCaptureCount = max(0, scheduledTrainingCaptureCount - 1)
+        refreshTrainingQueueMetrics()
+    }
+
+    func cancelScheduledTrainingCapture() {
+        scheduledTrainingCaptureCount = max(0, scheduledTrainingCaptureCount - 1)
+        refreshTrainingQueueMetrics()
+        startGroupedTrainingAtPrayerEndIfReady()
+    }
+
+    func requestGroupedTrainingAtPrayerEnd() {
+        trainingAtPrayerEndRequested = true
+        PrayerAutoAdvanceTrainingDiagnostics.shared.event(
+            "prayer end: waiting for page materialization before grouped training"
+        )
+        startGroupedTrainingAtPrayerEndIfReady()
+    }
+
     func processTrainingPageImmediately(_ page: PrayerAutoAdvanceDeferredTrainingPage) async {
         guard !isTrainingPipelineBusy, pendingTrainingPages.isEmpty else {
             enqueueTrainingPage(page)
@@ -28,6 +52,7 @@ extension PrayerAutoAdvanceCoreMLState {
             isTrainingPipelineBusy = false
             refreshTrainingQueueMetrics(activePage: false)
             startTrainingQueueIfNeeded()
+            startGroupedTrainingAtPrayerEndIfReady()
         }
         await processTrainingPage(page)
     }
@@ -46,6 +71,7 @@ extension PrayerAutoAdvanceCoreMLState {
         pendingTrainingPages.removeAll(keepingCapacity: false)
         trainingWorkEnqueued = 0
         trainingWorkCompleted = 0
+        scheduledTrainingCaptureCount = 0
         isTrainingPipelineBusy = false
         refreshTrainingQueueMetrics()
     }
@@ -65,6 +91,7 @@ extension PrayerAutoAdvanceCoreMLState {
                 if !self.pendingTrainingPages.isEmpty {
                     self.startTrainingQueueIfNeeded()
                 }
+                self.startGroupedTrainingAtPrayerEndIfReady()
             }
 
             while !Task.isCancelled, !self.pendingTrainingPages.isEmpty {
@@ -122,14 +149,47 @@ extension PrayerAutoAdvanceCoreMLState {
             return
         }
 
-        await train(batch)
+        do {
+            let directory = pendingTrainingDirectory
+            try await Task.detached(priority: .utility) {
+                try PrayerAutoAdvancePendingTrainingStore.append(
+                    pageID: page.pageID,
+                    batch: batch,
+                    createdAt: page.manualAdvanceAt,
+                    to: directory
+                )
+            }.value
+            storedTrainingPageCount = PrayerAutoAdvancePendingTrainingStore.pageCount(
+                in: directory,
+                fileManager: fileManager
+            )
+            diagnostics.pipelineState = "stored"
+            diagnostics.event(
+                "training page stored \(storedTrainingPageCount)/\(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate)"
+            )
+            lastTrainingEvent = "Zapisano stronę do następnego treningu zbiorczego."
+            lastError = nil
+        } catch {
+            diagnostics.pipelineState = "error"
+            diagnostics.error("training page save: \(error.localizedDescription)")
+            lastError = error.localizedDescription
+            lastTrainingEvent = "Błąd zapisu danych treningowych: \(error.localizedDescription)"
+        }
     }
 
     private func refreshTrainingQueueMetrics(activePage: Bool? = nil) {
-        let active = activePage ?? isTrainingPipelineBusy
-        queuedTrainingPageCount = pendingTrainingPages.count + (active ? 1 : 0)
-        trainingQueueProgressTotal = max(trainingWorkEnqueued, 0)
-        trainingQueueProgressCompleted = min(trainingWorkCompleted, trainingWorkEnqueued)
+        let active = activePage ?? (isTrainingPipelineBusy && groupedTrainingPageCount == 0)
+        queuedTrainingPageCount = scheduledTrainingCaptureCount
+            + pendingTrainingPages.count
+            + (active ? 1 : 0)
+            + groupedTrainingPageCount
+        if groupedTrainingPageCount > 0 {
+            trainingQueueProgressTotal = groupedTrainingPageCount
+            trainingQueueProgressCompleted = 0
+        } else {
+            trainingQueueProgressTotal = max(trainingWorkEnqueued, 0)
+            trainingQueueProgressCompleted = min(trainingWorkCompleted, trainingWorkEnqueued)
+        }
     }
 
     private func resetTrainingProgressIfIdle() {
@@ -139,6 +199,112 @@ extension PrayerAutoAdvanceCoreMLState {
               trainingWorkCompleted == trainingWorkEnqueued else { return }
         trainingWorkEnqueued = 0
         trainingWorkCompleted = 0
+    }
+
+    private func startGroupedTrainingAtPrayerEndIfReady() {
+        guard trainingAtPrayerEndRequested,
+              scheduledTrainingCaptureCount == 0,
+              !isTrainingPipelineBusy,
+              trainingQueueTask == nil,
+              pendingTrainingPages.isEmpty,
+              groupedTrainingTask == nil else { return }
+
+        let directory = pendingTrainingDirectory
+        storedTrainingPageCount = PrayerAutoAdvancePendingTrainingStore.pageCount(
+            in: directory,
+            fileManager: fileManager
+        )
+        guard storedTrainingPageCount >= PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate else {
+            trainingAtPrayerEndRequested = false
+            PrayerAutoAdvanceTrainingDiagnostics.shared.pipelineState = "waiting-batch"
+            lastTrainingEvent = "Dane czekają na kolejną modlitwę: \(storedTrainingPageCount)/\(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate) stron."
+            refreshTrainingQueueMetrics()
+            return
+        }
+
+        trainingAtPrayerEndRequested = false
+        groupedTrainingPageCount = storedTrainingPageCount
+        isTrainingPipelineBusy = true
+        refreshTrainingQueueMetrics()
+
+        groupedTrainingTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer {
+                self.groupedTrainingPageCount = 0
+                self.isTrainingPipelineBusy = false
+                self.groupedTrainingTask = nil
+                self.refreshTrainingQueueMetrics()
+                self.startTrainingQueueIfNeeded()
+            }
+
+            let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
+            diagnostics.pipelineState = "loading-batch"
+            self.lastTrainingEvent = "Wczytywanie zapisanych stron treningowych…"
+
+            if self.model == nil {
+                guard await self.ensureModelAvailable() else {
+                    diagnostics.pipelineState = "no-model"
+                    diagnostics.error(self.lastError ?? "missing local model")
+                    return
+                }
+            }
+
+            let snapshot: PrayerAutoAdvancePendingTrainingSnapshot
+            do {
+                snapshot = try await Task.detached(priority: .utility) {
+                    try PrayerAutoAdvancePendingTrainingStore.loadSnapshot(from: directory)
+                }.value
+            } catch {
+                self.lastError = error.localizedDescription
+                self.lastTrainingEvent = "Błąd odczytu danych treningowych: \(error.localizedDescription)"
+                diagnostics.pipelineState = "error"
+                diagnostics.error("training batch load: \(error.localizedDescription)")
+                return
+            }
+
+            guard snapshot.pageCount >= PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate else {
+                self.storedTrainingPageCount = snapshot.pageCount
+                diagnostics.pipelineState = "waiting-batch"
+                return
+            }
+
+            self.groupedTrainingPageCount = snapshot.pageCount
+            self.refreshTrainingQueueMetrics()
+            let samples = snapshot.samples
+            diagnostics.event(
+                "grouped MLUpdateTask pages=\(snapshot.pageCount) samples=\(samples.count) epochs=1"
+            )
+            let batch = PrayerAutoAdvanceLabeledBatch(
+                samples: samples,
+                observedDelay: nil
+            )
+            let trained = await self.train(batch, trainedPageCount: snapshot.pageCount)
+            guard trained else { return }
+
+            do {
+                let pageIDs = snapshot.pageIDs
+                try await Task.detached(priority: .utility) {
+                    try PrayerAutoAdvancePendingTrainingStore.remove(
+                        pageIDs: pageIDs,
+                        from: directory
+                    )
+                }.value
+                self.storedTrainingPageCount = PrayerAutoAdvancePendingTrainingStore.pageCount(
+                    in: directory,
+                    fileManager: self.fileManager
+                )
+                diagnostics.event(
+                    "grouped training committed pages=\(snapshot.pageCount) remaining=\(self.storedTrainingPageCount)"
+                )
+            } catch {
+                // The model is already committed. Keep the files so the failure is
+                // visible and recoverable instead of silently losing training data.
+                self.lastError = error.localizedDescription
+                self.lastTrainingEvent = "Model zapisany, ale nie udało się usunąć wykorzystanych danych."
+                diagnostics.pipelineState = "cleanup-error"
+                diagnostics.error("training data cleanup: \(error.localizedDescription)")
+            }
+        }
     }
 }
 
