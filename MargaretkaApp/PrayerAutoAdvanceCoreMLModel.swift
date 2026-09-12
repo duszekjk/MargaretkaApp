@@ -7,6 +7,7 @@ final class PrayerAutoAdvanceCoreMLModel: @unchecked Sendable {
     static let combinedInputSize = inputSize + longAudioInputSize
     static let currentModelVersion = 12
     static let currentFeatureSchemaVersion = 9
+    static let trainingEpochCount = 3
 
     let compiledURL: URL
     private(set) var model: MLModel
@@ -75,7 +76,7 @@ final class PrayerAutoAdvanceCoreMLModel: @unchecked Sendable {
         let retention = UpdateRetention(providers: providers)
         let configuration = MLModelConfiguration()
         configuration.computeUnits = .cpuAndGPU
-        configuration.parameters = [MLParameterKey.epochs: 1]
+        configuration.parameters = [MLParameterKey.epochs: NSNumber(value: trainingEpochCount)]
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             do {
