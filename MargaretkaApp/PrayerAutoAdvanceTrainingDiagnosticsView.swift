@@ -10,6 +10,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
     @ObservedObject private var state = PrayerAutoAdvanceCoreMLState.shared
+    @ObservedObject private var quality = PrayerAutoAdvanceTrainingQualityDiagnostics.shared
     @State private var didCopyDiagnostics = false
 
     var body: some View {
@@ -18,6 +19,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
                 LazyVStack(alignment: .leading, spacing: 24) {
                     summary
                     groupedTrainingPipeline
+                    qualityNavigation
                     PrayerAutoAdvanceTrainingInputSamplesView()
                     currentEpochLossChart
                     currentEpochValidationLossChart
@@ -60,9 +62,12 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
             metricRow("Pipeline", diagnostics.pipelineState)
             metricRow("Core ML train()", state.isTraining ? "AKTYWNY" : "nieaktywny")
             metricRow("Pipeline zajęty", state.isTrainingPipelineBusy ? "tak" : "nie")
-            metricRow("Epoka", "\(diagnostics.currentEpochNumber), strony \(diagnostics.currentEpochSampleCount)/\(PrayerAutoAdvanceTrainingDiagnostics.epochSize)")
+            metricRow("Learning rate", String(format: "%.8f", PrayerAutoAdvanceCoreMLModel.trainingLearningRate))
+            metricRow("Epoki Core ML", "\(PrayerAutoAdvanceCoreMLModel.trainingEpochCount), shuffle między epokami")
+            metricRow("Epoka diagnostyczna", "\(diagnostics.currentEpochNumber), nowe strony \(diagnostics.currentEpochSampleCount)/\(PrayerAutoAdvanceTrainingDiagnostics.epochSize)")
             metricRow("Zbiorcze aktualizacje", "\(diagnostics.updateHistory.count) zapisanych")
-            metricRow("Strony oczekujące", "\(state.storedTrainingPageCount)/\(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate)")
+            metricRow("Nowe strony", "\(state.storedTrainingPageCount)/\(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate)")
+            metricRow("Replay", "\(state.replayTrainingPageCount)/\(PrayerAutoAdvancePendingTrainingStore.maximumReplayPageCount)")
             metricRow("Loss (cel → 0)", formatted(diagnostics.logLoss, digits: 8))
             metricRow("Δloss (dobrze > 0)", signed(diagnostics.lastTrainingLossChange, digits: 8))
             metricRow("Mean |Δpred|", formatted(diagnostics.lastMeanPredictionDelta, digits: 8))
@@ -77,15 +82,16 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     private var groupedTrainingPipeline: some View {
         diagnosticsCard("Pipeline treningu zbiorczego") {
             Text(
-                "Sam komunikat o rozpoczęciu treningu nie oznacza jeszcze, że nowy model został zapisany. "
-                    + "Poprawny przebieg to: ocena modelu → MLUpdateTask → weryfikacja zmiany predykcji → podmiana modelu → zapis metadanych → usunięcie wykorzystanych stron."
+                "Trening uruchamia się po 100 nowych stronach. Do batcha dochodzi do 50 losowych stron replay. "
+                    + "Poprawny przebieg to: ocena modelu → 3 epoki MLUpdateTask z shuffle → weryfikacja zmiany predykcji → podmiana modelu → pomiar jakości → odświeżenie replay → usunięcie wykorzystanych nowych stron."
             )
             .font(.caption)
             .foregroundStyle(.secondary)
 
             metricRow("Etap", diagnostics.pipelineState)
             metricRow("Grouped pages", "\(state.groupedTrainingPageCount)")
-            metricRow("Stored pages", "\(state.storedTrainingPageCount)")
+            metricRow("Fresh stored", "\(state.storedTrainingPageCount)")
+            metricRow("Replay stored", "\(state.replayTrainingPageCount)")
             metricRow("Queued pages", "\(state.queuedTrainingPageCount)")
             metricRow("Scheduled captures", "\(state.scheduledTrainingCaptureCount)")
             metricRow("Pending in memory", "\(state.pendingTrainingPages.count)")
@@ -107,10 +113,46 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
         }
     }
 
+    private var qualityNavigation: some View {
+        NavigationLink {
+            PrayerAutoAdvanceTrainingQualityView()
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Jakość treningu").font(.headline)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                }
+                if let latest = quality.latest {
+                    Text(
+                        String(
+                            format: "Accuracy %.1f%% • F1 %.1f%% • timing MAE %@ • świeże/replay %d/%d",
+                            latest.accuracy * 100,
+                            latest.f1 * 100,
+                            latest.timingMAE.map { String(format: "%.3f s", $0) } ?? "—",
+                            latest.freshPageCount,
+                            latest.replayPageCount
+                        )
+                    )
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                } else {
+                    Text("Po następnym udanym treningu pojawią się dodatkowe metryki i wykresy.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding()
+            .background(.thinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
     private var currentEpochLossChart: some View {
         chartCard(
             "Loss — bieżąca epoka",
-            subtitle: "Cross-entropy przed i po każdej zbiorczej aktualizacji. Oś X pokazuje łączną liczbę stron w epoce diagnostycznej. Poprawnie: punkt „po” jest zwykle niżej niż „przed”."
+            subtitle: "Cross-entropy przed i po każdej zbiorczej aktualizacji. Oś X pokazuje łączną liczbę nowych stron w epoce diagnostycznej. Replay nie nabija licznika epoki."
         ) {
             Chart(diagnostics.currentEpochUpdates) { point in
                 LineMark(
@@ -138,7 +180,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     private var currentEpochValidationLossChart: some View {
         chartCard(
             "Validation loss — bieżąca epoka",
-            subtitle: "Loss na lokalnym holdoucie po każdej aktualizacji; nie jest używany do backpropagation. Poprawnie: maleje lub pozostaje nisko i stabilnie. Cel to możliwie niski loss, ale nie kosztem rosnącego validation loss — taki rozjazd oznacza overfitting."
+            subtitle: "Loss na lokalnym holdoucie po każdej aktualizacji; nie jest używany do backpropagation. Poprawnie: maleje lub pozostaje nisko i stabilnie."
         ) {
             Chart(diagnostics.currentEpochUpdates) { point in
                 if let loss = point.validationLoss {
@@ -153,7 +195,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     private var epochLossChart: some View {
         chartCard(
             "Loss — epoka do epoki",
-            subtitle: "Średni training loss ważony liczbą stron i validation loss po około 100 stronach. Zbiorczy update jest niepodzielny, więc epoka może zakończyć się powyżej 100."
+            subtitle: "Średni training loss i validation loss po około 1000 nowych stronach. Replay zwiększa różnorodność batcha, ale nie przesuwa licznika epoki."
         ) {
             Chart(diagnostics.completedEpochs) { epoch in
                 if let loss = epoch.trainingLoss {
@@ -184,7 +226,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     private var lossDeltaChart: some View {
         chartCard(
             "Δloss po aktualizacji",
-            subtitle: "Δloss = loss przed − loss po. Poprawnie: wartości są głównie dodatnie. Na początku mogą być większe, a przy konwergencji zbliżają się do 0. Seria wartości ujemnych oznacza, że update pogarsza batch."
+            subtitle: "Δloss = loss przed − loss po. Poprawnie: wartości są głównie dodatnie; przy konwergencji zbliżają się do 0."
         ) {
             Chart {
                 ForEach(diagnostics.updateHistory.suffix(300)) { point in
@@ -201,7 +243,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     private var predictionMovementChart: some View {
         chartCard(
             "Ruch predykcji po backprop",
-            subtitle: "Średnia i maksymalna |ΔP(advance)| na tym samym batchu przed/po update. Poprawnie: na początku wyraźnie > 0, potem stopniowo maleje przy konwergencji. Stałe ≈0 od początku oznacza brak efektywnego uczenia; duże trwałe skoki mogą oznaczać niestabilność."
+            subtitle: "Średnia i maksymalna |ΔP(advance)| na tym samym batchu przed/po update. Stałe ≈0 od początku oznacza brak efektywnego uczenia."
         ) {
             Chart(diagnostics.updateHistory.suffix(300)) { point in
                 LineMark(
@@ -233,12 +275,12 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
 
     private var latestBackpropUpdates: some View {
         diagnosticsCard("Ostatnie kroki backprop") {
-            Text("Dokładne wartości przed i po update — niezależne od skali wykresu.")
+            Text("Dokładne wartości przed i po update — licznik stron oznacza nowe strony; replay jest raportowany osobno w jakości treningu.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             ForEach(Array(diagnostics.updateHistory.suffix(8).reversed())) { point in
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("#\(point.id)  strony \(point.trainedPageCount ?? 1)  loss \(formatted(point.lossBefore, digits: 8)) → \(formatted(point.lossAfter, digits: 8))")
+                    Text("#\(point.id)  nowe strony \(point.trainedPageCount ?? 1)  loss \(formatted(point.lossBefore, digits: 8)) → \(formatted(point.lossAfter, digits: 8))")
                     Text("Δloss \(signed(point.lossDelta, digits: 8))   mean |ΔP| \(formatted(point.meanPredictionDelta, digits: 8))   max \(formatted(point.maxPredictionDelta, digits: 8))")
                         .foregroundStyle(.secondary)
                 }
@@ -250,7 +292,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     private var currentEpochMarginChart: some View {
         chartCard(
             "Margin — bieżąca epoka",
-            subtitle: "Margin = średnie P(advance) positive − negative. Poprawnie: jest dodatni i rośnie; im bliżej 1, tym silniejsza separacja. Validation margin powinien podążać za train margin, a nie pozostawać blisko 0 lub spadać."
+            subtitle: "Margin = średnie P(advance) positive − negative. Poprawnie: jest dodatni i rośnie."
         ) {
             Chart(diagnostics.currentEpochUpdates) { point in
                 if let margin = point.trainingMargin {
@@ -277,7 +319,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     private var epochMarginChart: some View {
         chartCard(
             "Margin — epoka do epoki",
-            subtitle: "Poprawnie: train i validation margin są > 0 i rosną w podobnym kierunku. Docelowo silna separacja z małą luką między seriami. Train rosnący przy validation spadającym to klasyczny sygnał overfittingu."
+            subtitle: "Train i validation margin powinny rosnąć w podobnym kierunku. Rozjazd jest sygnałem overfittingu."
         ) {
             Chart(diagnostics.completedEpochs) { epoch in
                 LineMark(
@@ -306,7 +348,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     private var classProbabilityChart: some View {
         chartCard(
             "Separacja klas",
-            subtitle: "Średnie P(advance) dla pozytywnych i negatywnych próbek. Idealny kierunek: positive → 1, negative → 0. Linie powinny się rozsuwać; zbieganie obu do ~0.5 oznacza collapse klasyfikatora."
+            subtitle: "Średnie P(advance) dla pozytywnych i negatywnych próbek. Idealny kierunek: positive → 1, negative → 0."
         ) {
             Chart(diagnostics.updateHistory.suffix(300)) { point in
                 if let value = point.positiveAverage {
@@ -334,7 +376,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     private var batchCompositionChart: some View {
         chartCard(
             "Skład batcha",
-            subtitle: "Pozytywne próbki nad osią, negatywne pod osią. Każda zbiorcza aktualizacja powinna pozostać zbalansowana 1:1; pojedyncza strona wnosi maksymalnie 12 + 12 próbek."
+            subtitle: "Pozytywne próbki nad osią, negatywne pod osią. Batch powinien pozostać zbalansowany 1:1."
         ) {
             Chart(diagnostics.updateHistory.suffix(200)) { point in
                 BarMark(x: .value("Aktualizacja", point.id), y: .value("Próbki", point.positiveCount))
@@ -347,7 +389,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     }
 
     private var timingSummary: some View {
-        diagnosticsCard("Timing") {
+        diagnosticsCard("Timing runtime") {
             metricRow("MAE", diagnostics.timingMAE.map { String(format: "%.3f s", $0) } ?? "—")
             metricRow("Bias", diagnostics.timingBias.map { String(format: "%+.3f s", $0) } ?? "—")
             metricRow("Hit ±0.5 s", percent(diagnostics.timingHitHalfSecond))
@@ -449,13 +491,18 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
             lines.append("metadata: unavailable")
         }
         lines.append("modelLoaded: \(state.model != nil)")
+        lines.append("trainingEpochs: \(PrayerAutoAdvanceCoreMLModel.trainingEpochCount)")
+        lines.append("trainingLearningRate: \(PrayerAutoAdvanceCoreMLModel.trainingLearningRate)")
+        lines.append("shuffleBetweenEpochs: true")
         lines.append("")
         lines.append("[PIPELINE]")
         lines.append("pipelineState: \(diagnostics.pipelineState)")
         lines.append("isTraining: \(state.isTraining)")
         lines.append("isTrainingPipelineBusy: \(state.isTrainingPipelineBusy)")
-        lines.append("storedTrainingPageCount: \(state.storedTrainingPageCount)")
-        lines.append("minimumPageCountForUpdate: \(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate)")
+        lines.append("freshTrainingPageCount: \(state.storedTrainingPageCount)")
+        lines.append("minimumFreshPageCountForUpdate: \(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate)")
+        lines.append("replayTrainingPageCount: \(state.replayTrainingPageCount)")
+        lines.append("maximumReplayPageCount: \(PrayerAutoAdvancePendingTrainingStore.maximumReplayPageCount)")
         lines.append("groupedTrainingPageCount: \(state.groupedTrainingPageCount)")
         lines.append("queuedTrainingPageCount: \(state.queuedTrainingPageCount)")
         lines.append("scheduledTrainingCaptureCount: \(state.scheduledTrainingCaptureCount)")
@@ -473,7 +520,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
         lines.append("manualSwipeCount: \(diagnostics.manualSwipeCount)")
         lines.append("snapshotCount: \(diagnostics.snapshotCount)")
         lines.append("currentEpoch: \(diagnostics.currentEpochNumber)")
-        lines.append("currentEpochPages: \(diagnostics.currentEpochSampleCount)")
+        lines.append("currentEpochFreshPages: \(diagnostics.currentEpochSampleCount)/\(PrayerAutoAdvanceTrainingDiagnostics.epochSize)")
         lines.append("updateHistoryCount: \(diagnostics.updateHistory.count)")
         lines.append("backpropStatus: \(diagnostics.backpropStatus)")
         lines.append("loss: \(formatted(diagnostics.logLoss, digits: 10))")
@@ -485,6 +532,28 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
         lines.append("validationMargin: \(signed(diagnostics.currentValidationMargin, digits: 10))")
         lines.append("validationRecords: \(state.validationStore.records.count)")
         lines.append("validationSamples: \(state.validationStore.sampleCount)")
+        if let metric = quality.latest {
+            lines.append("")
+            lines.append("[QUALITY — LAST GROUPED UPDATE]")
+            lines.append("freshPages: \(metric.freshPageCount)")
+            lines.append("replayPages: \(metric.replayPageCount)")
+            lines.append("samples: \(metric.sampleCount)")
+            lines.append(String(format: "accuracy: %.8f", metric.accuracy))
+            lines.append(String(format: "balancedAccuracy: %.8f", metric.balancedAccuracy))
+            lines.append(String(format: "precision: %.8f", metric.precision))
+            lines.append(String(format: "recall: %.8f", metric.recall))
+            lines.append(String(format: "specificity: %.8f", metric.specificity))
+            lines.append(String(format: "f1: %.8f", metric.f1))
+            lines.append(String(format: "brierScore: %.8f", metric.brierScore))
+            lines.append(String(format: "qualityLogLoss: %.8f", metric.logLoss))
+            lines.append("timingPages: \(metric.timingPageCount)")
+            lines.append("timingMAE: \(metric.timingMAE.map { String(format: "%.6f", $0) } ?? "—")")
+            lines.append("timingMedianAE: \(metric.timingMedianAbsoluteError.map { String(format: "%.6f", $0) } ?? "—")")
+            lines.append("timingBias: \(metric.timingBias.map { String(format: "%+.6f", $0) } ?? "—")")
+            lines.append("timingHit025: \(metric.timingHitQuarterSecond.map { String(format: "%.6f", $0) } ?? "—")")
+            lines.append("timingHit05: \(metric.timingHitHalfSecond.map { String(format: "%.6f", $0) } ?? "—")")
+            lines.append("timingHit10: \(metric.timingHitOneSecond.map { String(format: "%.6f", $0) } ?? "—")")
+        }
         lines.append("")
         lines.append("[LAST UPDATES]")
         if diagnostics.updateHistory.isEmpty {
@@ -492,7 +561,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
         } else {
             for point in diagnostics.updateHistory.suffix(30) {
                 lines.append(
-                    "#\(point.id) epoch=\(point.epoch) pages=\(point.trainedPageCount ?? 1) samples=\(point.sampleCount) P/N=\(point.positiveCount)/\(point.negativeCount) "
+                    "#\(point.id) epoch=\(point.epoch) freshPages=\(point.trainedPageCount ?? 1) samples=\(point.sampleCount) P/N=\(point.positiveCount)/\(point.negativeCount) "
                         + String(format: "loss=%.10f->%.10f dLoss=%+.10f meanDP=%.10f maxDP=%.10f", point.lossBefore, point.lossAfter, point.lossDelta, point.meanPredictionDelta, point.maxPredictionDelta)
                 )
             }
