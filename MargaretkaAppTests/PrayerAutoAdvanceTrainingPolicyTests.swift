@@ -24,6 +24,22 @@ struct PrayerAutoAdvanceTrainingPolicyTests {
         #expect(Set(selected.map(\.audioEndSampleIndex)) == Set([0, 8_000]))
     }
 
+    @Test func pcmSelectedNegativesAreNotFilteredAgainByWallClock() throws {
+        let futureDate = Date(timeIntervalSince1970: 1_900_000_000)
+        let negative = snapshot(date: futureDate, marker: 0)
+        let positive = snapshot(date: futureDate, marker: 1)
+
+        let batch = try #require(
+            PrayerAutoAdvanceTrainingPolicy.makeBatchFromSelectedNegatives(
+                [negative],
+                positiveSnapshots: [positive]
+            )
+        )
+
+        #expect(batch.samples.filter { $0.label == 0 }.count == 1)
+        #expect(batch.samples.filter { $0.label == 1 }.count == 1)
+    }
+
     @Test func timingOutliersStayDisabledDuringCalibration() {
         var history = PrayerAutoAdvanceTimingHistory()
         for _ in 0..<(PrayerAutoAdvanceTimingHistory.minimumCountForOutliers - 1) {
