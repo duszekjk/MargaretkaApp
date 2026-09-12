@@ -77,6 +77,7 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     @Published var lastTrainingLossChange: Double?
     @Published var lastMeanPredictionDelta: Double?
     @Published var lastMaxPredictionDelta: Double?
+    @Published private(set) var ineffectiveUpdateStreak = 0
 
     @Published private(set) var completedEpochs: [PrayerAutoAdvanceEpochMetric] = []
     @Published private(set) var updateHistory: [PrayerAutoAdvanceTrainingUpdateMetric] = []
@@ -112,6 +113,14 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         updateHistory.filter { $0.epoch == currentEpochNumber }
     }
 
+    var backpropStatus: String {
+        guard !updateHistory.isEmpty else { return "brak wykonanych aktualizacji" }
+        if ineffectiveUpdateStreak >= 2 {
+            return "brak mierzalnej zmiany (\(ineffectiveUpdateStreak) z rzędu)"
+        }
+        return "aktywna zmiana wag"
+    }
+
     func prediction(_ value: Float, snapshotCount: Int, features: [Float]) {
         self.snapshotCount = snapshotCount
         predictionHistory.append(value)
@@ -143,13 +152,25 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         negativePredictionAverage = after.negativeAverage.map(Float.init)
         predictionMargin = after.margin.map(Float.init)
         logLoss = after.loss
-        lastTrainingLossChange = before.loss - after.loss
+        let lossDelta = before.loss - after.loss
+        lastTrainingLossChange = lossDelta
 
         let deltas = zip(before.predictions, after.predictions).map { abs($1 - $0) }
         let meanDelta = deltas.isEmpty ? 0 : deltas.reduce(0, +) / Double(deltas.count)
         let maxDelta = deltas.max() ?? 0
         lastMeanPredictionDelta = meanDelta
         lastMaxPredictionDelta = maxDelta
+        let measurableFloor = 1e-8
+        if meanDelta <= measurableFloor,
+           maxDelta <= measurableFloor,
+           abs(lossDelta) <= measurableFloor {
+            ineffectiveUpdateStreak += 1
+            if ineffectiveUpdateStreak == 2 {
+                event("UWAGA: dwa kolejne MLUpdateTask bez mierzalnej zmiany loss ani predykcji")
+            }
+        } else {
+            ineffectiveUpdateStreak = 0
+        }
         currentValidationMargin = validation.margin
         currentValidationLoss = validation.loss
 
@@ -163,7 +184,7 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
             negativeCount: after.negativeCount,
             lossBefore: before.loss,
             lossAfter: after.loss,
-            lossDelta: before.loss - after.loss,
+            lossDelta: lossDelta,
             trainingMargin: after.margin,
             validationMargin: validation.margin,
             validationLoss: validation.loss,
@@ -217,6 +238,7 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         lastTrainingLossChange = nil
         lastMeanPredictionDelta = nil
         lastMaxPredictionDelta = nil
+        ineffectiveUpdateStreak = 0
         resetCurrentEpochAccumulators()
         UserDefaults.standard.removeObject(forKey: Self.epochStorageKey)
         UserDefaults.standard.removeObject(forKey: Self.legacyEpochStorageKey)
