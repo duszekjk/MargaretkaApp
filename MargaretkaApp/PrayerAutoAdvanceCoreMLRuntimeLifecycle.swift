@@ -11,26 +11,11 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         lastInferenceAt = Date.distantPast
         lastDiagnosticsPublishAt = Date.distantPast
         trainingCandidateSeenCount = 0
+        capturedManualAdvancePageID = nil
         consecutiveAdvancePredictions = 0
         lastPrediction = 0
         lastSpectralSampleIndex = 0
         spectralCache.reset()
-
-        // A page-start snapshot is always a valid "stay" example. Keeping it in
-        // the reservoir guarantees that normal pages can form a balanced batch
-        // even if the 2 Hz sampling task is delayed by UI or thermal pressure.
-        if let newContext, isTrainingEnabled {
-            trainingCandidates.append(
-                PrayerAutoAdvanceTrainingCandidate(
-                    pageID: newContext.pageID,
-                    date: contextStartedAt,
-                    transcript: "",
-                    lastSegmentEndTime: nil,
-                    audioEndSampleIndex: 0
-                )
-            )
-            PrayerAutoAdvanceTrainingDiagnostics.shared.snapshotCount = trainingCandidates.count
-        }
 
         if newContext == nil || !isFeatureEnabled {
             stopListening()
