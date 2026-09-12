@@ -11,6 +11,7 @@ extension PrayerAutoAdvanceCoreMLState {
             diagnostics.error("training invariant violated: overlapping MLUpdateTask")
             lastError = "Wykryto nakładające się kroki treningowe."
             lastTrainingEvent = lastError
+            recordTrainingTrace("FAIL preflight: overlapping MLUpdateTask")
             return false
         }
         guard let current = model else {
@@ -18,86 +19,149 @@ extension PrayerAutoAdvanceCoreMLState {
             diagnostics.error("training invariant violated: missing model")
             lastError = "Brak lokalnego modelu podczas rozpoczynania treningu."
             lastTrainingEvent = lastError
+            recordTrainingTrace("FAIL preflight: missing local model")
             return false
         }
+
         isTraining = true
-        diagnostics.pipelineState = "training"
-
-        let before = await Task.detached(priority: .utility) {
-            PrayerAutoAdvanceBackgroundEvaluation.evaluate(
-                model: current,
-                samples: batch.samples
-            )
-        }.value
-
-        let delayText = batch.observedDelay.map { String(format: "%.2fs", $0) } ?? "n/a"
-        diagnostics.event("MLUpdateTask start samples=\(batch.samples.count) delay=\(delayText)")
-        lastTrainingEvent = "Aktualizowanie modelu lokalnego…"
         defer { isTraining = false }
+
+        var stage = "preflight"
+        let delayText = batch.observedDelay.map { String(format: "%.2fs", $0) } ?? "n/a"
+        recordTrainingTrace(
+            "START pages=\(trainedPageCount) samples=\(batch.samples.count) delay=\(delayText) model=\(current.compiledURL.lastPathComponent)"
+        )
 
         let updatedURL = directory.appendingPathComponent("Updated.mlmodelc", isDirectory: true)
         let destinationModelURL = modelURL
+
         do {
+            stage = "evaluation-before"
+            diagnostics.pipelineState = stage
+            lastTrainingEvent = "Sprawdzanie modelu przed treningiem…"
+            recordTrainingTrace("evaluation-before: start")
+            guard let before = await Task.detached(priority: .utility) {
+                PrayerAutoAdvanceBackgroundEvaluation.evaluate(
+                    model: current,
+                    samples: batch.samples
+                )
+            }.value else {
+                throw PrayerAutoAdvanceTrainingVerificationError.evaluationBeforeFailed
+            }
+            recordTrainingTrace(
+                String(
+                    format: "evaluation-before: loss=%.8f P/N=%d/%d",
+                    before.loss,
+                    before.positiveCount,
+                    before.negativeCount
+                )
+            )
+
+            stage = "coreml-update"
+            diagnostics.pipelineState = stage
+            diagnostics.event("MLUpdateTask start samples=\(batch.samples.count) delay=\(delayText)")
+            lastTrainingEvent = "Core ML aktualizuje wagi modelu…"
+            recordTrainingTrace("coreml-update: MLUpdateTask resume")
             try await PrayerAutoAdvanceCoreMLModel.update(
                 modelAt: current.compiledURL,
                 samples: batch.samples,
                 savingTo: updatedURL
             )
+            recordTrainingTrace("coreml-update: completion handler returned model")
 
-            let updatedModel = try await Task.detached(priority: .utility) {
+            stage = "verification-after"
+            diagnostics.pipelineState = stage
+            lastTrainingEvent = "Weryfikowanie wyniku treningu przed zapisaniem…"
+            recordTrainingTrace("verification-after: loading Updated.mlmodelc")
+            let candidateModel = try await Task.detached(priority: .utility) {
+                try PrayerAutoAdvanceCoreMLModel(compiledURL: updatedURL)
+            }.value
+
+            let validationSnapshot = validationStore
+            let evaluations = await Task.detached(priority: .utility) {
+                let after = PrayerAutoAdvanceBackgroundEvaluation.evaluate(
+                    model: candidateModel,
+                    samples: batch.samples
+                )
+                let validation = PrayerAutoAdvanceBackgroundEvaluation.validationMetrics(
+                    store: validationSnapshot,
+                    model: candidateModel
+                )
+                return (after, validation)
+            }.value
+
+            guard let after = evaluations.0 else {
+                throw PrayerAutoAdvanceTrainingVerificationError.evaluationAfterFailed
+            }
+            guard before.predictions.count == after.predictions.count,
+                  before.positiveCount == after.positiveCount,
+                  before.negativeCount == after.negativeCount else {
+                throw PrayerAutoAdvanceTrainingVerificationError.incompleteEvaluation(
+                    before: before.predictions.count,
+                    after: after.predictions.count,
+                    expected: batch.samples.count
+                )
+            }
+
+            let predictionDeltas = zip(before.predictions, after.predictions).map { abs($1 - $0) }
+            let meanDelta = predictionDeltas.isEmpty
+                ? 0
+                : predictionDeltas.reduce(0, +) / Double(predictionDeltas.count)
+            let maxDelta = predictionDeltas.max() ?? 0
+            let lossDelta = before.loss - after.loss
+            recordTrainingTrace(
+                String(
+                    format: "verification-after: loss %.8f→%.8f Δ=%+.8f predΔ mean=%.8f max=%.8f",
+                    before.loss,
+                    after.loss,
+                    lossDelta,
+                    meanDelta,
+                    maxDelta
+                )
+            )
+
+            guard maxDelta > 0 || lossDelta != 0 else {
+                throw PrayerAutoAdvanceTrainingVerificationError.noMeasurableModelChange
+            }
+
+            stage = "committing-model"
+            diagnostics.pipelineState = stage
+            lastTrainingEvent = "Trening potwierdzony. Zapisywanie nowego modelu…"
+            recordTrainingTrace("committing-model: replacing Personalized.mlmodelc")
+            let committedModel = try await Task.detached(priority: .utility) {
                 let fileManager = FileManager.default
                 _ = try fileManager.replaceItemAt(destinationModelURL, withItemAt: updatedURL)
                 return try PrayerAutoAdvanceCoreMLModel(compiledURL: destinationModelURL)
             }.value
-            model = updatedModel
+            model = committedModel
+            recordTrainingTrace("committing-model: replacement and reload OK")
 
-            if let before {
-                let validationSnapshot = validationStore
-                let evaluations = await Task.detached(priority: .utility) {
-                    let after = PrayerAutoAdvanceBackgroundEvaluation.evaluate(
-                        model: updatedModel,
-                        samples: batch.samples
+            let validation = evaluations.1
+            diagnostics.recordTrainingUpdate(
+                before: before,
+                after: after,
+                validation: validation,
+                trainedPageCount: trainedPageCount
+            )
+            diagnostics.event(
+                String(
+                    format: "heartbeat loss %.8f→%.8f Δ=%+.8f predΔ mean=%.8f max=%.8f",
+                    before.loss,
+                    after.loss,
+                    lossDelta,
+                    meanDelta,
+                    maxDelta
+                )
+            )
+            if let validationLoss = validation.loss {
+                diagnostics.event(
+                    String(
+                        format: "validation loss=%.8f margin=%+.5f samples=%d",
+                        validationLoss,
+                        validation.margin ?? 0,
+                        validation.sampleCount
                     )
-                    let validation = PrayerAutoAdvanceBackgroundEvaluation.validationMetrics(
-                        store: validationSnapshot,
-                        model: updatedModel
-                    )
-                    return (after, validation)
-                }.value
-
-                if let after = evaluations.0 {
-                    let validation = evaluations.1
-                    diagnostics.recordTrainingUpdate(
-                        before: before,
-                        after: after,
-                        validation: validation,
-                        trainedPageCount: trainedPageCount
-                    )
-                    diagnostics.event(
-                        String(
-                            format: "heartbeat loss %.8f→%.8f Δ=%+.8f predΔ mean=%.8f max=%.8f",
-                            before.loss,
-                            after.loss,
-                            before.loss - after.loss,
-                            diagnostics.lastMeanPredictionDelta ?? 0,
-                            diagnostics.lastMaxPredictionDelta ?? 0
-                        )
-                    )
-                    if let validationLoss = validation.loss {
-                        diagnostics.event(
-                            String(
-                                format: "validation loss=%.8f margin=%+.5f samples=%d",
-                                validationLoss,
-                                validation.margin ?? 0,
-                                validation.sampleCount
-                            )
-                        )
-                    }
-                } else {
-                    diagnostics.event("heartbeat unavailable: batch evaluation failed")
-                }
-            } else {
-                diagnostics.event("heartbeat unavailable: batch evaluation failed")
+                )
             }
 
             if let observedDelay = batch.observedDelay {
@@ -110,8 +174,10 @@ extension PrayerAutoAdvanceCoreMLState {
                 metadata = value
             }
 
-            // Validation JSON contains full V12 multimodal feature vectors. Encode
-            // and atomically write it on a utility worker, never on MainActor.
+            stage = "persisting-state"
+            diagnostics.pipelineState = stage
+            lastTrainingEvent = "Model zapisany. Zapisywanie metadanych treningu…"
+            recordTrainingTrace("persisting-state: metadata/validation JSON")
             try await PrayerAutoAdvanceCoreMLDiskState.saveInBackground(self)
 
             lastError = nil
@@ -119,17 +185,40 @@ extension PrayerAutoAdvanceCoreMLState {
             diagnostics.acceptedTrainingCount += 1
             diagnostics.pipelineState = "trained"
             diagnostics.event("MLUpdateTask complete pages=\(trainedPageCount) epochs=1")
+            recordTrainingTrace("SUCCESS pages=\(trainedPageCount) samples=\(batch.samples.count)")
             return true
         } catch {
             let staleURL = updatedURL
             Task.detached(priority: .utility) {
                 try? FileManager.default.removeItem(at: staleURL)
             }
-            lastError = error.localizedDescription
-            lastTrainingEvent = "Błąd aktualizacji modelu: \(error.localizedDescription)"
-            diagnostics.pipelineState = "error"
-            diagnostics.error(error.localizedDescription)
+            let message = "\(stage): \(error.localizedDescription)"
+            lastError = message
+            lastTrainingEvent = "Błąd treningu [\(stage)]: \(error.localizedDescription)"
+            diagnostics.pipelineState = "error-\(stage)"
+            diagnostics.error(message)
+            recordTrainingTrace("FAIL \(message)")
             return false
+        }
+    }
+}
+
+private enum PrayerAutoAdvanceTrainingVerificationError: LocalizedError {
+    case evaluationBeforeFailed
+    case evaluationAfterFailed
+    case incompleteEvaluation(before: Int, after: Int, expected: Int)
+    case noMeasurableModelChange
+
+    var errorDescription: String? {
+        switch self {
+        case .evaluationBeforeFailed:
+            "Nie udało się ocenić modelu na batchu przed MLUpdateTask. Trening nie został uruchomiony."
+        case .evaluationAfterFailed:
+            "MLUpdateTask zwrócił model, ale nie udało się ocenić jego predykcji przed zapisem."
+        case let .incompleteEvaluation(before, after, expected):
+            "Ewaluacja batcha jest niepełna (przed: \(before), po: \(after), oczekiwano: \(expected))."
+        case .noMeasurableModelChange:
+            "MLUpdateTask zakończył się bez żadnej zmiany loss ani predykcji. Nowy model nie został zapisany."
         }
     }
 }
@@ -148,7 +237,9 @@ private enum PrayerAutoAdvanceBackgroundEvaluation {
             guard let raw = try? model.prediction(
                 for: sample.features,
                 longAudioFeatures: sample.longAudioFeatures
-            ) else { continue }
+            ) else {
+                return nil
+            }
             let p = min(max(Double(raw), 1e-6), 1 - 1e-6)
             predictions.append(p)
             if sample.label == 1 {
@@ -160,7 +251,7 @@ private enum PrayerAutoAdvanceBackgroundEvaluation {
             }
         }
 
-        guard !losses.isEmpty else { return nil }
+        guard losses.count == samples.count, !losses.isEmpty else { return nil }
         let pos = average(positive)
         let neg = average(negative)
         let margin = pos.flatMap { p in neg.map { p - $0 } }
