@@ -99,10 +99,14 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
 #if os(iOS)
         // This is an O(1) copy-on-write hand-off of the page PCM buffer. It keeps
-        // the old page stable without running spectral extraction on the UI path.
+        // the old page stable and starts a 200 ms post-boundary PCM capture without
+        // running spectral extraction on the UI path.
         let pageAudioDetachedAt = Date()
         let swipeSpeech = capture.speechSnapshot()
-        let frozenPageAudio = capture.freezePageAudio()
+        let pageAudioTransition = capture.freezePageAudio(
+            postBoundaryDuration: PrayerAutoAdvanceTrainingPolicy.positiveWindow
+        )
+        let frozenPageAudio = pageAudioTransition.frozenPageAudio
 #else
         let pageAudioDetachedAt = Date()
         let swipeSpeech = PrayerAutoAdvanceSpeechSnapshot(transcript: "", lastSegmentEndTime: nil)
@@ -127,7 +131,9 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
             try? await Task.sleep(for: Self.postTransitionProcessingDelay)
 
 #if os(iOS)
-            let postSwipeAudio = await self.capture.audioWindowOffMain()
+            // Resolve the bridge by transition ID. A later, rapid swipe cannot
+            // replace this page's post-boundary PCM with audio from another page.
+            let postSwipeAudio = self.capture.finishPageAudioTransition(pageAudioTransition)
 #else
             let postSwipeAudio = PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: frozenPageAudio.sampleRate)
 #endif
