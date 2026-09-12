@@ -115,7 +115,8 @@ extension PrayerAutoAdvanceCoreMLState {
 
         guard let batch = PrayerAutoAdvanceTrainingPolicy.makeBatchFromSelectedNegatives(
             materialized.negatives,
-            positiveSnapshots: materialized.positives
+            positiveSnapshots: materialized.positives,
+            manualAdvanceAt: page.manualAdvanceAt
         ) else {
             diagnostics.skippedTrainingCount += 1
             diagnostics.pipelineState = "skipped"
@@ -209,21 +210,29 @@ extension PrayerAutoAdvanceCoreMLState {
               pendingTrainingPages.isEmpty,
               groupedTrainingTask == nil else { return }
 
-        let directory = pendingTrainingDirectory
+        let freshDirectory = pendingTrainingDirectory
+        let replayDirectory = replayTrainingDirectory
         storedTrainingPageCount = PrayerAutoAdvancePendingTrainingStore.pageCount(
-            in: directory,
+            in: freshDirectory,
+            fileManager: fileManager
+        )
+        replayTrainingPageCount = PrayerAutoAdvancePendingTrainingStore.pageCount(
+            in: replayDirectory,
             fileManager: fileManager
         )
         guard storedTrainingPageCount >= PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate else {
             trainingAtPrayerEndRequested = false
             PrayerAutoAdvanceTrainingDiagnostics.shared.pipelineState = "waiting-batch"
-            lastTrainingEvent = "Dane czekają na kolejną modlitwę: \(storedTrainingPageCount)/\(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate) stron."
+            lastTrainingEvent = "Dane czekają na kolejną modlitwę: \(storedTrainingPageCount)/\(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate) nowych stron; replay \(replayTrainingPageCount)."
             refreshTrainingQueueMetrics()
             return
         }
 
         trainingAtPrayerEndRequested = false
-        groupedTrainingPageCount = storedTrainingPageCount
+        groupedTrainingPageCount = storedTrainingPageCount + min(
+            replayTrainingPageCount,
+            PrayerAutoAdvancePendingTrainingStore.maximumReplayPageCount
+        )
         isTrainingPipelineBusy = true
         refreshTrainingQueueMetrics()
 
@@ -239,7 +248,7 @@ extension PrayerAutoAdvanceCoreMLState {
 
             let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
             diagnostics.pipelineState = "loading-batch"
-            self.lastTrainingEvent = "Wczytywanie zapisanych stron treningowych…"
+            self.lastTrainingEvent = "Wczytywanie nowych i historycznych stron treningowych…"
 
             if self.model == nil {
                 guard await self.ensureModelAvailable() else {
@@ -249,10 +258,14 @@ extension PrayerAutoAdvanceCoreMLState {
                 }
             }
 
-            let snapshot: PrayerAutoAdvancePendingTrainingSnapshot
+            let freshSnapshot: PrayerAutoAdvancePendingTrainingSnapshot
+            let replaySnapshot: PrayerAutoAdvancePendingTrainingSnapshot
             do {
-                snapshot = try await Task.detached(priority: .utility) {
-                    try PrayerAutoAdvancePendingTrainingStore.loadSnapshot(from: directory)
+                freshSnapshot = try await Task.detached(priority: .utility) {
+                    try PrayerAutoAdvancePendingTrainingStore.loadSnapshot(from: freshDirectory)
+                }.value
+                replaySnapshot = try await Task.detached(priority: .utility) {
+                    try PrayerAutoAdvancePendingTrainingStore.loadSnapshot(from: replayDirectory)
                 }.value
             } catch {
                 self.lastError = error.localizedDescription
@@ -262,47 +275,71 @@ extension PrayerAutoAdvanceCoreMLState {
                 return
             }
 
-            guard snapshot.pageCount >= PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate else {
-                self.storedTrainingPageCount = snapshot.pageCount
+            guard freshSnapshot.pageCount >= PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate else {
+                self.storedTrainingPageCount = freshSnapshot.pageCount
                 diagnostics.pipelineState = "waiting-batch"
                 return
             }
 
-            self.groupedTrainingPageCount = snapshot.pageCount
+            let replayPages = Array(
+                replaySnapshot.pages
+                    .shuffled()
+                    .prefix(PrayerAutoAdvancePendingTrainingStore.maximumReplayPageCount)
+            )
+            let trainingPages = freshSnapshot.pages + replayPages
+            let samples = trainingPages.flatMap(\.samples)
+            self.groupedTrainingPageCount = trainingPages.count
             self.refreshTrainingQueueMetrics()
-            let samples = snapshot.samples
             diagnostics.event(
-                "grouped MLUpdateTask pages=\(snapshot.pageCount) samples=\(samples.count) epochs=\(PrayerAutoAdvanceCoreMLModel.trainingEpochCount)"
+                "grouped MLUpdateTask fresh=\(freshSnapshot.pageCount) replay=\(replayPages.count) total=\(trainingPages.count) samples=\(samples.count) epochs=\(PrayerAutoAdvanceCoreMLModel.trainingEpochCount) lr=\(PrayerAutoAdvanceCoreMLModel.trainingLearningRate) shuffle=true"
             )
             let batch = PrayerAutoAdvanceLabeledBatch(
                 samples: samples,
                 observedDelay: nil
             )
-            let trained = await self.train(batch, trainedPageCount: snapshot.pageCount)
-            guard trained else { return }
+            let trained = await self.train(batch, trainedPageCount: freshSnapshot.pageCount)
+            guard trained, let trainedModel = self.model else { return }
+
+            await PrayerAutoAdvanceTrainingQualityDiagnostics.shared.record(
+                pages: trainingPages,
+                model: trainedModel,
+                freshPageCount: freshSnapshot.pageCount,
+                replayPageCount: replayPages.count
+            )
 
             do {
-                let pageIDs = snapshot.pageIDs
+                let replayPool = Array(
+                    trainingPages
+                        .shuffled()
+                        .prefix(PrayerAutoAdvancePendingTrainingStore.maximumReplayPageCount)
+                )
+                let freshPageIDs = freshSnapshot.pageIDs
                 try await Task.detached(priority: .utility) {
+                    try PrayerAutoAdvancePendingTrainingStore.replaceAll(
+                        with: replayPool,
+                        in: replayDirectory
+                    )
                     try PrayerAutoAdvancePendingTrainingStore.remove(
-                        pageIDs: pageIDs,
-                        from: directory
+                        pageIDs: freshPageIDs,
+                        from: freshDirectory
                     )
                 }.value
                 self.storedTrainingPageCount = PrayerAutoAdvancePendingTrainingStore.pageCount(
-                    in: directory,
+                    in: freshDirectory,
+                    fileManager: self.fileManager
+                )
+                self.replayTrainingPageCount = PrayerAutoAdvancePendingTrainingStore.pageCount(
+                    in: replayDirectory,
                     fileManager: self.fileManager
                 )
                 diagnostics.event(
-                    "grouped training committed pages=\(snapshot.pageCount) remaining=\(self.storedTrainingPageCount)"
+                    "grouped training committed fresh=\(freshSnapshot.pageCount) replayUsed=\(replayPages.count) replayRetained=\(self.replayTrainingPageCount) remainingFresh=\(self.storedTrainingPageCount)"
                 )
             } catch {
-                // The model is already committed. Keep the files so the failure is
-                // visible and recoverable instead of silently losing training data.
                 self.lastError = error.localizedDescription
-                self.lastTrainingEvent = "Model zapisany, ale nie udało się usunąć wykorzystanych danych."
+                self.lastTrainingEvent = "Model zapisany, ale nie udało się zaktualizować puli replay lub usunąć wykorzystanych nowych danych."
                 diagnostics.pipelineState = "cleanup-error"
-                diagnostics.error("training data cleanup: \(error.localizedDescription)")
+                diagnostics.error("training data cleanup/replay: \(error.localizedDescription)")
             }
         }
     }
