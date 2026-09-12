@@ -3,6 +3,27 @@ import Testing
 @testable import MargaretkaApp
 
 struct PrayerAutoAdvanceTrainingPolicyTests {
+    @Test func negativeSelectionUsesPCMIndicesInsteadOfWallClockDates() {
+        let deliberatelyWrongWallClock = Date(timeIntervalSince1970: 1_900_000_000)
+        let candidates = [0, 8_000, 10_000].map { sampleIndex in
+            PrayerAutoAdvanceTrainingCandidate(
+                pageID: "test",
+                date: deliberatelyWrongWallClock,
+                transcript: "",
+                lastSegmentEndTime: nil,
+                audioEndSampleIndex: sampleIndex
+            )
+        }
+
+        let selected = PrayerAutoAdvanceTrainingPolicy.selectNegativeCandidates(
+            candidates,
+            swipeSampleIndex: 16_000,
+            sampleRate: 16_000
+        )
+
+        #expect(Set(selected.map(\.audioEndSampleIndex)) == Set([0, 8_000]))
+    }
+
     @Test func timingOutliersStayDisabledDuringCalibration() {
         var history = PrayerAutoAdvanceTimingHistory()
         for _ in 0..<(PrayerAutoAdvanceTimingHistory.minimumCountForOutliers - 1) {
