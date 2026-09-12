@@ -2,8 +2,21 @@ import Foundation
 
 extension PrayerAutoAdvanceCoreMLState {
     func train(_ batch: PrayerAutoAdvanceLabeledBatch) async {
-        guard !isTraining, let current = model else { return }
         let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
+        guard !isTraining else {
+            diagnostics.pipelineState = "pipeline-overlap"
+            diagnostics.error("training invariant violated: overlapping MLUpdateTask")
+            lastError = "Wykryto nakładające się kroki treningowe."
+            lastTrainingEvent = lastError
+            return
+        }
+        guard let current = model else {
+            diagnostics.pipelineState = "no-model"
+            diagnostics.error("training invariant violated: missing model")
+            lastError = "Brak lokalnego modelu podczas rozpoczynania treningu."
+            lastTrainingEvent = lastError
+            return
+        }
         isTraining = true
         diagnostics.pipelineState = "training"
 
@@ -93,7 +106,7 @@ extension PrayerAutoAdvanceCoreMLState {
                 metadata = value
             }
 
-            // Validation JSON can be large with v10's 7,267-value samples. Encode
+            // Validation JSON contains full V12 multimodal feature vectors. Encode
             // and atomically write it on a utility worker, never on MainActor.
             try await PrayerAutoAdvanceCoreMLDiskState.saveInBackground(self)
 

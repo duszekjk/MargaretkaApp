@@ -12,6 +12,11 @@ struct PrayerAutoAdvanceAudioSlice: Sendable {
     let endSampleIndex: Int
 }
 
+struct PrayerAutoAdvancePageAudioTransition: Sendable {
+    let frozenPageAudio: PrayerAutoAdvanceAudioWindow
+    fileprivate let postBoundaryCaptureID: UInt64
+}
+
 #if os(iOS)
 @MainActor
 final class PrayerAutoAdvanceCoreMLSpeechCapture {
@@ -26,10 +31,6 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
 
     nonisolated private let requestBox = PrayerAutoAdvanceSpeechRequestBox()
     nonisolated private let transcriptBox = PrayerAutoAdvanceTranscriptBox()
-    nonisolated private let audioRing = PrayerAutoAdvanceAudioRingBuffer(
-        duration: PrayerAutoAdvanceLongAudioFeatureExtractor.duration + 0.5,
-        targetSampleRate: 16_000
-    )
     // Raw PCM remains RAM-only and page-scoped. V12 analyzes this stream once on
     // the fixed spectral grid instead of materializing overlapping 10/60 s windows.
     nonisolated private let pageAudio = PrayerAutoAdvancePageAudioBuffer(targetSampleRate: 16_000)
@@ -75,17 +76,14 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
 
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
-        audioRing.configure(sourceSampleRate: format.sampleRate)
         pageAudio.configure(sourceSampleRate: format.sampleRate)
 
         let requestBox = self.requestBox
-        let audioRing = self.audioRing
         let pageAudio = self.pageAudio
         input.installTap(onBus: 0, bufferSize: 2048, format: format) { buffer, _ in
             requestBox.append(buffer)
             guard let channel = buffer.floatChannelData?[0] else { return }
             let count = Int(buffer.frameLength)
-            audioRing.append(channel, count: count)
             pageAudio.append(channel, count: count)
         }
         hasInputTap = true
@@ -114,7 +112,6 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         request = speechRequest
         requestBox.set(speechRequest)
         transcriptBox.reset(generation: generation)
-        audioRing.reset()
         pageAudio.reset()
 
         let transcriptBox = self.transcriptBox
@@ -165,20 +162,22 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         pageAudio.slice(from: sampleIndex)
     }
 
-    nonisolated func freezePageAudio() -> PrayerAutoAdvanceAudioWindow { pageAudio.freeze() }
+    nonisolated func freezePageAudio(
+        postBoundaryDuration: TimeInterval
+    ) -> PrayerAutoAdvancePageAudioTransition {
+        pageAudio.freeze(postBoundaryDuration: postBoundaryDuration)
+    }
 
-    func audioWindow() -> PrayerAutoAdvanceAudioWindow { audioRing.snapshot() }
-
-    nonisolated func audioWindowOffMain() async -> PrayerAutoAdvanceAudioWindow {
-        let ring = audioRing
-        return await Task.detached(priority: .background) { ring.snapshot() }.value
+    nonisolated func finishPageAudioTransition(
+        _ transition: PrayerAutoAdvancePageAudioTransition
+    ) -> PrayerAutoAdvanceAudioWindow {
+        pageAudio.finishPostBoundaryCapture(id: transition.postBoundaryCaptureID)
     }
 
     func stop() {
         stopRecognition()
         stopAudioOnly(deactivateSession: true)
-        audioRing.reset()
-        pageAudio.reset()
+        pageAudio.reset(clearPendingPostBoundaryCaptures: true)
         recognizer = nil
         currentLanguage = nil
     }
@@ -283,70 +282,20 @@ private final class PrayerAutoAdvanceTranscriptBox: @unchecked Sendable {
     }
 }
 
-private final class PrayerAutoAdvanceAudioRingBuffer: @unchecked Sendable {
-    private let lock = NSLock()
-    private let targetSampleRate: Double
-    private let capacity: Int
-    private var sourceSampleRate: Double = 48_000
-    private var storage: [Float]
-    private var writeIndex = 0
-    private var storedCount = 0
-    private var sourcePhase: Double = 0
-
-    init(duration: TimeInterval, targetSampleRate: Double) {
-        self.targetSampleRate = targetSampleRate
-        self.capacity = max(1, Int((duration * targetSampleRate).rounded()))
-        self.storage = Array(repeating: 0, count: capacity)
-    }
-
-    func configure(sourceSampleRate: Double) {
-        lock.lock(); self.sourceSampleRate = max(sourceSampleRate, 1); sourcePhase = 0; lock.unlock()
-    }
-
-    func append(_ pointer: UnsafePointer<Float>, count: Int) {
-        guard count > 0 else { return }
-        lock.lock()
-        let step = sourceSampleRate / targetSampleRate
-        var position = sourcePhase
-        while position < Double(count) {
-            let index = min(max(Int(position.rounded(.down)), 0), count - 1)
-            storage[writeIndex] = pointer[index]
-            writeIndex += 1
-            if writeIndex == capacity { writeIndex = 0 }
-            if storedCount < capacity { storedCount += 1 }
-            position += step
-        }
-        sourcePhase = position - Double(count)
-        lock.unlock()
-    }
-
-    func snapshot() -> PrayerAutoAdvanceAudioWindow {
-        lock.lock()
-        let count = storedCount
-        let start = count == capacity ? writeIndex : 0
-        var samples: [Float] = []
-        samples.reserveCapacity(count)
-        if count == capacity {
-            if start < capacity { samples.append(contentsOf: storage[start..<capacity]) }
-            if start > 0 { samples.append(contentsOf: storage[0..<start]) }
-        } else if count > 0 {
-            samples.append(contentsOf: storage[0..<count])
-        }
-        lock.unlock()
-        return PrayerAutoAdvanceAudioWindow(samples: samples, sampleRate: targetSampleRate)
-    }
-
-    func reset() {
-        lock.lock(); writeIndex = 0; storedCount = 0; sourcePhase = 0; lock.unlock()
-    }
-}
-
 private final class PrayerAutoAdvancePageAudioBuffer: @unchecked Sendable {
+    private struct PendingPostBoundaryCapture {
+        let id: UInt64
+        let sampleLimit: Int
+        var samples: [Float]
+    }
+
     private let lock = NSLock()
     private let targetSampleRate: Double
     private var sourceSampleRate: Double = 48_000
     private var sourcePhase: Double = 0
     private var storage: [Float] = []
+    private var nextPostBoundaryCaptureID: UInt64 = 0
+    private var pendingPostBoundaryCaptures: [PendingPostBoundaryCapture] = []
 
     init(targetSampleRate: Double) {
         self.targetSampleRate = targetSampleRate
@@ -364,7 +313,14 @@ private final class PrayerAutoAdvancePageAudioBuffer: @unchecked Sendable {
         var position = sourcePhase
         while position < Double(count) {
             let index = min(max(Int(position.rounded(.down)), 0), count - 1)
-            storage.append(pointer[index])
+            let sample = pointer[index]
+            storage.append(sample)
+            for pendingIndex in pendingPostBoundaryCaptures.indices {
+                if pendingPostBoundaryCaptures[pendingIndex].samples.count
+                    < pendingPostBoundaryCaptures[pendingIndex].sampleLimit {
+                    pendingPostBoundaryCaptures[pendingIndex].samples.append(sample)
+                }
+            }
             position += step
         }
         sourcePhase = position - Double(count)
@@ -388,17 +344,49 @@ private final class PrayerAutoAdvancePageAudioBuffer: @unchecked Sendable {
         )
     }
 
-    func freeze() -> PrayerAutoAdvanceAudioWindow {
+    func freeze(postBoundaryDuration: TimeInterval) -> PrayerAutoAdvancePageAudioTransition {
         lock.lock()
         let frozen = storage
         storage = []
         sourcePhase = 0
+        nextPostBoundaryCaptureID &+= 1
+        let captureID = nextPostBoundaryCaptureID
+        let sampleLimit = max(0, Int((postBoundaryDuration * targetSampleRate).rounded()))
+        var postBoundarySamples: [Float] = []
+        postBoundarySamples.reserveCapacity(sampleLimit)
+        pendingPostBoundaryCaptures.append(
+            PendingPostBoundaryCapture(
+                id: captureID,
+                sampleLimit: sampleLimit,
+                samples: postBoundarySamples
+            )
+        )
         lock.unlock()
-        return PrayerAutoAdvanceAudioWindow(samples: frozen, sampleRate: targetSampleRate)
+        return PrayerAutoAdvancePageAudioTransition(
+            frozenPageAudio: PrayerAutoAdvanceAudioWindow(
+                samples: frozen,
+                sampleRate: targetSampleRate
+            ),
+            postBoundaryCaptureID: captureID
+        )
     }
 
-    func reset() {
-        lock.lock(); storage = []; sourcePhase = 0; lock.unlock()
+    func finishPostBoundaryCapture(id: UInt64) -> PrayerAutoAdvanceAudioWindow {
+        lock.lock()
+        let captureIndex = pendingPostBoundaryCaptures.firstIndex { $0.id == id }
+        let samples = captureIndex.map { pendingPostBoundaryCaptures.remove(at: $0).samples } ?? []
+        lock.unlock()
+        return PrayerAutoAdvanceAudioWindow(samples: samples, sampleRate: targetSampleRate)
+    }
+
+    func reset(clearPendingPostBoundaryCaptures: Bool = false) {
+        lock.lock()
+        storage = []
+        sourcePhase = 0
+        if clearPendingPostBoundaryCaptures {
+            pendingPostBoundaryCaptures.removeAll(keepingCapacity: false)
+        }
+        lock.unlock()
     }
 }
 #endif

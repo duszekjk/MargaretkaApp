@@ -29,6 +29,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
     static let trainingCandidateInterval: TimeInterval = 0.5
     static let automaticInferenceInterval: TimeInterval = 0.5
     static let diagnosticsPublishInterval: TimeInterval = 2.0
+    static let postTransitionProcessingDelay: Duration = .milliseconds(350)
 
     init() {}
 
@@ -97,18 +98,24 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
         let candidates = trainingCandidates.filter { $0.pageID == pageID }
 
 #if os(iOS)
-        let freezeCapturedAt = Date()
+        // This is an O(1) copy-on-write hand-off of the page PCM buffer. It keeps
+        // the old page stable and starts a 200 ms post-boundary PCM capture without
+        // running spectral extraction on the UI path.
+        let pageAudioDetachedAt = Date()
         let swipeSpeech = capture.speechSnapshot()
-        let frozenPageAudio = capture.freezePageAudio()
+        let pageAudioTransition = capture.freezePageAudio(
+            postBoundaryDuration: PrayerAutoAdvanceTrainingPolicy.positiveWindow
+        )
+        let frozenPageAudio = pageAudioTransition.frozenPageAudio
 #else
-        let freezeCapturedAt = Date()
+        let pageAudioDetachedAt = Date()
         let swipeSpeech = PrayerAutoAdvanceSpeechSnapshot(transcript: "", lastSegmentEndTime: nil)
         let frozenPageAudio = PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: 16_000)
 #endif
         let sampleRate = frozenPageAudio.sampleRate > 0
             ? frozenPageAudio.sampleRate
             : PrayerAutoAdvanceSpectralFrontEnd.sampleRate
-        let freezeDelay = max(0, freezeCapturedAt.timeIntervalSince(date))
+        let freezeDelay = max(0, pageAudioDetachedAt.timeIntervalSince(date))
         let samplesAfterGesture = Int((freezeDelay * sampleRate).rounded())
         let swipeSampleIndex = min(
             max(frozenPageAudio.samples.count - samplesAfterGesture, 0),
@@ -119,10 +126,14 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
         Task { @MainActor [weak self] in
             guard let self else { return }
-            try? await Task.sleep(for: .milliseconds(200))
+            // The page transition uses a 250 ms animation. Keep feature
+            // materialization and Core ML training outside that animation.
+            try? await Task.sleep(for: Self.postTransitionProcessingDelay)
 
 #if os(iOS)
-            let postSwipeAudio = await self.capture.audioWindowOffMain()
+            // Resolve the bridge by transition ID. A later, rapid swipe cannot
+            // replace this page's post-boundary PCM with audio from another page.
+            let postSwipeAudio = self.capture.finishPageAudioTransition(pageAudioTransition)
 #else
             let postSwipeAudio = PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: frozenPageAudio.sampleRate)
 #endif
