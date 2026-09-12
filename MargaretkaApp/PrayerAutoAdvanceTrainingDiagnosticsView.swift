@@ -1,16 +1,23 @@
 import Charts
 import SwiftUI
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
     @ObservedObject private var state = PrayerAutoAdvanceCoreMLState.shared
+    @State private var didCopyDiagnostics = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 24) {
                     summary
+                    groupedTrainingPipeline
                     PrayerAutoAdvanceTrainingInputSamplesView()
                     currentEpochLossChart
                     currentEpochValidationLossChart
@@ -24,11 +31,22 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
                     batchCompositionChart
                     timingSummary
                     recentEvents
+                    trainingTrace
                 }
                 .padding()
             }
             .navigationTitle("Diagnostyka treningu")
             .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        copyDiagnosticsReport()
+                    } label: {
+                        Label(
+                            didCopyDiagnostics ? "Skopiowano" : "Kopiuj diagnostykę",
+                            systemImage: didCopyDiagnostics ? "checkmark" : "doc.on.doc"
+                        )
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Gotowe") { dismiss() }
                 }
@@ -39,6 +57,9 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     private var summary: some View {
         diagnosticsCard("Stan") {
             metricRow("Model", state.metadata.map { "v\($0.baseModelVersion) / schema v\($0.featureSchemaVersion)" } ?? "—")
+            metricRow("Pipeline", diagnostics.pipelineState)
+            metricRow("Core ML train()", state.isTraining ? "AKTYWNY" : "nieaktywny")
+            metricRow("Pipeline zajęty", state.isTrainingPipelineBusy ? "tak" : "nie")
             metricRow("Epoka", "\(diagnostics.currentEpochNumber), strony \(diagnostics.currentEpochSampleCount)/\(PrayerAutoAdvanceTrainingDiagnostics.epochSize)")
             metricRow("Zbiorcze aktualizacje", "\(diagnostics.updateHistory.count) zapisanych")
             metricRow("Strony oczekujące", "\(state.storedTrainingPageCount)/\(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate)")
@@ -50,6 +71,39 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
             metricRow("Train margin (cel > 0)", diagnostics.predictionMargin.map { String(format: "%+.6f", $0) } ?? "—")
             metricRow("Validation loss (cel ↓)", formatted(diagnostics.currentValidationLoss, digits: 8))
             metricRow("Validation margin (cel > 0)", signed(diagnostics.currentValidationMargin, digits: 6))
+        }
+    }
+
+    private var groupedTrainingPipeline: some View {
+        diagnosticsCard("Pipeline treningu zbiorczego") {
+            Text(
+                "Sam komunikat o rozpoczęciu treningu nie oznacza jeszcze, że nowy model został zapisany. "
+                    + "Poprawny przebieg to: ocena modelu → MLUpdateTask → weryfikacja zmiany predykcji → podmiana modelu → zapis metadanych → usunięcie wykorzystanych stron."
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+            metricRow("Etap", diagnostics.pipelineState)
+            metricRow("Grouped pages", "\(state.groupedTrainingPageCount)")
+            metricRow("Stored pages", "\(state.storedTrainingPageCount)")
+            metricRow("Queued pages", "\(state.queuedTrainingPageCount)")
+            metricRow("Scheduled captures", "\(state.scheduledTrainingCaptureCount)")
+            metricRow("Pending in memory", "\(state.pendingTrainingPages.count)")
+            metricRow("Koniec modlitwy czeka", state.trainingAtPrayerEndRequested ? "tak" : "nie")
+            metricRow("Grouped task", state.groupedTrainingTask == nil ? "brak" : "aktywne")
+            metricRow("Queue task", state.trainingQueueTask == nil ? "brak" : "aktywne")
+
+            if let event = state.lastTrainingEvent {
+                Text("Ostatni komunikat: \(event)")
+                    .font(.caption)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            if let error = state.lastError {
+                Text("BŁĄD: \(error)")
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         }
     }
 
@@ -313,6 +367,26 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
         }
     }
 
+    private var trainingTrace: some View {
+        diagnosticsCard("Trace treningu") {
+            Text("Ślad etapów ostatnich prób treningu. Przy błędzie ostatnia linia wskazuje etap, na którym pipeline się zatrzymał.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if state.trainingTrace.isEmpty {
+                Text("Brak wpisów.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(Array(state.trainingTrace.suffix(30).reversed().enumerated()), id: \.offset) { _, message in
+                    Text(message)
+                        .font(.caption.monospaced())
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+    }
+
     @ViewBuilder
     private func chartCard<Content: View>(_ title: String, subtitle: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -343,6 +417,93 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
             Text(value).monospacedDigit().foregroundStyle(.secondary)
         }
         .font(.subheadline)
+    }
+
+    private func copyDiagnosticsReport() {
+        let report = diagnosticsReport()
+#if os(iOS)
+        UIPasteboard.general.string = report
+#elseif os(macOS)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(report, forType: .string)
+#endif
+        didCopyDiagnostics = true
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            didCopyDiagnostics = false
+        }
+    }
+
+    private func diagnosticsReport() -> String {
+        var lines: [String] = []
+        lines.append("Margaretka — Prayer Auto Advance diagnostics")
+        lines.append("timestamp: \(ISO8601DateFormatter().string(from: Date()))")
+        lines.append("")
+        lines.append("[MODEL]")
+        if let metadata = state.metadata {
+            lines.append("baseModelVersion: \(metadata.baseModelVersion)")
+            lines.append("featureSchemaVersion: \(metadata.featureSchemaVersion)")
+            lines.append("trainingSessions: \(metadata.trainingSessions)")
+            lines.append("trainedTransitions: \(metadata.trainedTransitions)")
+        } else {
+            lines.append("metadata: unavailable")
+        }
+        lines.append("modelLoaded: \(state.model != nil)")
+        lines.append("")
+        lines.append("[PIPELINE]")
+        lines.append("pipelineState: \(diagnostics.pipelineState)")
+        lines.append("isTraining: \(state.isTraining)")
+        lines.append("isTrainingPipelineBusy: \(state.isTrainingPipelineBusy)")
+        lines.append("storedTrainingPageCount: \(state.storedTrainingPageCount)")
+        lines.append("minimumPageCountForUpdate: \(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate)")
+        lines.append("groupedTrainingPageCount: \(state.groupedTrainingPageCount)")
+        lines.append("queuedTrainingPageCount: \(state.queuedTrainingPageCount)")
+        lines.append("scheduledTrainingCaptureCount: \(state.scheduledTrainingCaptureCount)")
+        lines.append("pendingTrainingPages: \(state.pendingTrainingPages.count)")
+        lines.append("trainingAtPrayerEndRequested: \(state.trainingAtPrayerEndRequested)")
+        lines.append("trainingQueueTaskActive: \(state.trainingQueueTask != nil)")
+        lines.append("groupedTrainingTaskActive: \(state.groupedTrainingTask != nil)")
+        lines.append("queueProgress: \(state.trainingQueueProgressCompleted)/\(state.trainingQueueProgressTotal)")
+        lines.append("lastTrainingEvent: \(state.lastTrainingEvent ?? "—")")
+        lines.append("lastError: \(state.lastError ?? "—")")
+        lines.append("")
+        lines.append("[TRAINING METRICS]")
+        lines.append("acceptedTrainingCount: \(diagnostics.acceptedTrainingCount)")
+        lines.append("skippedTrainingCount: \(diagnostics.skippedTrainingCount)")
+        lines.append("manualSwipeCount: \(diagnostics.manualSwipeCount)")
+        lines.append("snapshotCount: \(diagnostics.snapshotCount)")
+        lines.append("currentEpoch: \(diagnostics.currentEpochNumber)")
+        lines.append("currentEpochPages: \(diagnostics.currentEpochSampleCount)")
+        lines.append("updateHistoryCount: \(diagnostics.updateHistory.count)")
+        lines.append("backpropStatus: \(diagnostics.backpropStatus)")
+        lines.append("loss: \(formatted(diagnostics.logLoss, digits: 10))")
+        lines.append("deltaLoss: \(signed(diagnostics.lastTrainingLossChange, digits: 10))")
+        lines.append("meanDeltaPrediction: \(formatted(diagnostics.lastMeanPredictionDelta, digits: 10))")
+        lines.append("maxDeltaPrediction: \(formatted(diagnostics.lastMaxPredictionDelta, digits: 10))")
+        lines.append("trainMargin: \(diagnostics.predictionMargin.map { String(format: "%+.10f", $0) } ?? "—")")
+        lines.append("validationLoss: \(formatted(diagnostics.currentValidationLoss, digits: 10))")
+        lines.append("validationMargin: \(signed(diagnostics.currentValidationMargin, digits: 10))")
+        lines.append("validationRecords: \(state.validationStore.records.count)")
+        lines.append("validationSamples: \(state.validationStore.sampleCount)")
+        lines.append("")
+        lines.append("[LAST UPDATES]")
+        if diagnostics.updateHistory.isEmpty {
+            lines.append("none")
+        } else {
+            for point in diagnostics.updateHistory.suffix(30) {
+                lines.append(
+                    "#\(point.id) epoch=\(point.epoch) pages=\(point.trainedPageCount ?? 1) samples=\(point.sampleCount) P/N=\(point.positiveCount)/\(point.negativeCount) "
+                        + String(format: "loss=%.10f->%.10f dLoss=%+.10f meanDP=%.10f maxDP=%.10f", point.lossBefore, point.lossAfter, point.lossDelta, point.meanPredictionDelta, point.maxPredictionDelta)
+                )
+            }
+        }
+        lines.append("")
+        lines.append("[TRAINING TRACE]")
+        lines.append(contentsOf: state.trainingTrace.isEmpty ? ["none"] : state.trainingTrace)
+        lines.append("")
+        lines.append("[RECENT EVENTS]")
+        lines.append(contentsOf: diagnostics.recentMessages.isEmpty ? ["none"] : diagnostics.recentMessages)
+        return lines.joined(separator: "\n")
     }
 
     private func formatted(_ value: Double?, digits: Int) -> String {
