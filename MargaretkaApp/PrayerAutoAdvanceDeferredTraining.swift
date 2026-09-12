@@ -158,9 +158,7 @@ private enum PrayerAutoAdvanceDeferredTrainingMaterializer {
             PrayerAutoAdvanceTrainingPolicy.maximumSamplesPerClass,
             selectedCandidates.count
         )
-        guard sampleCount > 0 else {
-            return ([], [])
-        }
+        guard sampleCount > 0 else { return ([], []) }
 
         let bridgeCount = min(
             page.postSwipeAudio.samples.count,
