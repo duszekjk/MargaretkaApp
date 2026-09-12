@@ -34,6 +34,7 @@ MODEL_VERSION = 12
 SCHEMA_VERSION = 9
 PARAMETER_LAYERS = ["hidden1", "hidden2", "hidden3", "hidden4", "hidden5", "logits"]
 UPDATABLE_LAYERS = PARAMETER_LAYERS.copy()
+ADAM_LEARNING_RATE = 0.000002
 
 
 def seeded(shape, scale, seed):
@@ -106,7 +107,7 @@ def build_model(model_version: int):
 
     builder.make_updatable(UPDATABLE_LAYERS)
     builder.set_categorical_cross_entropy_loss(name="classification_loss", input="probabilities")
-    builder.set_adam_optimizer(AdamParams(lr=0.00001, batch=1))
+    builder.set_adam_optimizer(AdamParams(lr=ADAM_LEARNING_RATE, batch=1))
     builder.set_epochs(3)
 
     spec = builder.spec
@@ -128,7 +129,7 @@ def build_model(model_version: int):
     model.user_defined_metadata["audioFrontEnd"] = "fixed-grid-16khz-40ms-window-20ms-hop-vdsp"
     model.user_defined_metadata["updatableLayers"] = ",".join(UPDATABLE_LAYERS)
     model.user_defined_metadata["allParameterizedLayersUpdatable"] = "true"
-    model.user_defined_metadata["adamLearningRate"] = "0.00001"
+    model.user_defined_metadata["adamLearningRate"] = str(ADAM_LEARNING_RATE)
     return model
 
 
@@ -163,7 +164,7 @@ def self_test(output: Path, model_version: int):
         raise RuntimeError(f"Unexpected audio front end metadata: {metadata.get('audioFrontEnd')!r}")
     if metadata.get("allParameterizedLayersUpdatable") != "true":
         raise RuntimeError("Model metadata does not declare full parameter training")
-    if metadata.get("adamLearningRate") != "0.00001":
+    if metadata.get("adamLearningRate") != str(ADAM_LEARNING_RATE):
         raise RuntimeError(f"Unexpected Adam learning rate metadata: {metadata.get('adamLearningRate')!r}")
     if inputs != [("features", [INPUT_SIZE])]:
         raise RuntimeError(f"Unexpected inputs: {inputs}")
@@ -200,7 +201,7 @@ def self_test(output: Path, model_version: int):
     print(f"parameterized layers: {', '.join(parameter_layers)}")
     print(f"updatable layers: {', '.join(updatable)}")
     print("audio front end: fixed-grid 16 kHz / 40 ms window / 20 ms hop / vDSP")
-    print("adam learning rate: 0.00001")
+    print(f"adam learning rate: {ADAM_LEARNING_RATE}")
     print("SELF-TEST: OK")
 
 
