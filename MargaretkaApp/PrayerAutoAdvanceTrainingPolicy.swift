@@ -54,12 +54,23 @@ enum PrayerAutoAdvanceTrainingPolicy {
 
     static func selectNegativeCandidates(
         _ candidates: [PrayerAutoAdvanceTrainingCandidate],
-        manualAdvanceAt: Date
+        swipeSampleIndex: Int,
+        sampleRate: Double
     ) -> [PrayerAutoAdvanceTrainingCandidate] {
-        let negativeCutoff = manualAdvanceAt.addingTimeInterval(-(positiveWindow + deadZone))
-        let eligible = candidates.filter { $0.date <= negativeCutoff }
+        let protectedSampleCount = Int(((positiveWindow + deadZone) * sampleRate).rounded())
+        let negativeCutoffSampleIndex = max(0, swipeSampleIndex - protectedSampleCount)
+        let eligible = candidates.filter {
+            $0.audioEndSampleIndex <= negativeCutoffSampleIndex
+        }
         guard !eligible.isEmpty else { return [] }
         return Array(eligible.shuffled().prefix(maximumSamplesPerClass))
+    }
+
+    static func makeBatchFromSelectedNegatives(
+        _ negativeSnapshots: [PrayerAutoAdvanceTrainingSnapshot],
+        positiveSnapshots: [PrayerAutoAdvanceTrainingSnapshot]
+    ) -> PrayerAutoAdvanceLabeledBatch? {
+        balancedBatch(negatives: negativeSnapshots, positives: positiveSnapshots)
     }
 
     static func makeBatch(
@@ -71,6 +82,13 @@ enum PrayerAutoAdvanceTrainingPolicy {
         let negativeCutoff = manualAdvanceAt.addingTimeInterval(-(positiveWindow + deadZone))
         let negativeCandidates = snapshots.filter { $0.date <= negativeCutoff }
 
+        return balancedBatch(negatives: negativeCandidates, positives: positiveSnapshots)
+    }
+
+    private static func balancedBatch(
+        negatives negativeCandidates: [PrayerAutoAdvanceTrainingSnapshot],
+        positives positiveSnapshots: [PrayerAutoAdvanceTrainingSnapshot]
+    ) -> PrayerAutoAdvanceLabeledBatch? {
         guard !negativeCandidates.isEmpty, !positiveSnapshots.isEmpty else { return nil }
 
         let count = min(

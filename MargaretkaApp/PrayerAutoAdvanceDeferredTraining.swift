@@ -86,11 +86,9 @@ extension PrayerAutoAdvanceCoreMLState {
             PrayerAutoAdvanceDeferredTrainingMaterializer.materialize(page)
         }.value
 
-        guard let batch = PrayerAutoAdvanceTrainingPolicy.makeBatch(
-            snapshots: materialized.negatives,
-            positiveSnapshots: materialized.positives,
-            manualAdvanceAt: page.manualAdvanceAt,
-            history: timingHistory
+        guard let batch = PrayerAutoAdvanceTrainingPolicy.makeBatchFromSelectedNegatives(
+            materialized.negatives,
+            positiveSnapshots: materialized.positives
         ) else {
             diagnostics.skippedTrainingCount += 1
             diagnostics.pipelineState = "skipped"
@@ -148,9 +146,13 @@ private enum PrayerAutoAdvanceDeferredTrainingMaterializer {
     static func materialize(
         _ page: PrayerAutoAdvanceDeferredTrainingPage
     ) -> (negatives: [PrayerAutoAdvanceTrainingSnapshot], positives: [PrayerAutoAdvanceTrainingSnapshot]) {
+        let sampleRate = page.frozenPageAudio.sampleRate > 0
+            ? page.frozenPageAudio.sampleRate
+            : PrayerAutoAdvanceSpectralFrontEnd.sampleRate
         let selectedCandidates = PrayerAutoAdvanceTrainingPolicy.selectNegativeCandidates(
             page.candidates,
-            manualAdvanceAt: page.manualAdvanceAt
+            swipeSampleIndex: page.swipeSampleIndex,
+            sampleRate: sampleRate
         )
         let sampleCount = min(
             PrayerAutoAdvanceTrainingPolicy.maximumSamplesPerClass,
@@ -158,9 +160,6 @@ private enum PrayerAutoAdvanceDeferredTrainingMaterializer {
         )
         guard sampleCount > 0 else { return ([], []) }
 
-        let sampleRate = page.frozenPageAudio.sampleRate > 0
-            ? page.frozenPageAudio.sampleRate
-            : PrayerAutoAdvanceSpectralFrontEnd.sampleRate
         let bridgeCount = min(
             page.postSwipeAudio.samples.count,
             max(0, Int((PrayerAutoAdvanceTrainingPolicy.positiveWindow * sampleRate).rounded()))
