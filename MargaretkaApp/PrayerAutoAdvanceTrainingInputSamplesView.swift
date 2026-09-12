@@ -1,17 +1,103 @@
 import SwiftUI
 
 struct PrayerAutoAdvanceTrainingInputSamplesView: View {
+    @ObservedObject private var state = PrayerAutoAdvanceCoreMLState.shared
     @ObservedObject private var inputDiagnostics = PrayerAutoAdvanceInputDiagnostics.shared
     @StateObject private var audioPlayer = PrayerAutoAdvanceDiagnosticAudioPlayer()
     @State private var playbackError: String?
+    @State private var storedFreshPages: [PrayerAutoAdvancePendingTrainingPage] = []
+    @State private var storedReplayPages: [PrayerAutoAdvancePendingTrainingPage] = []
+    @State private var storedDataError: String?
+    @State private var isLoadingStoredData = false
+    @State private var visibleStoredPageCount = 6
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            persistedTrainingDataSection
+            Divider()
+            liveRAMSamplesSection
+        }
+        .padding()
+        .background(.thinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .task(id: "\(state.storedTrainingPageCount)-\(state.replayTrainingPageCount)") {
+            await loadStoredTrainingData()
+        }
+    }
+
+    private var persistedTrainingDataSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Zapisane dane treningowe")
+                        .font(.headline)
+                    Text(
+                        "Trwałe strony używane przez grouped training. Fresh czekają na następny update, replay pozostaje historyczną pulą stabilizującą kolejne treningi."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("Odśwież") {
+                    Task { await loadStoredTrainingData() }
+                }
+                .font(.caption)
+            }
+
+            HStack(spacing: 12) {
+                Text("fresh \(storedFreshPages.count)/\(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate)")
+                Text("replay \(storedReplayPages.count)/\(PrayerAutoAdvancePendingTrainingStore.maximumReplayPageCount)")
+                Text("razem \(storedPageEntries.count)")
+            }
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.secondary)
+
+            Text("Te rekordy są odczytywane z dysku i pozostają dostępne po restarcie. Zawierają dokładne cechy wejściowe, etykietę i czas względem ręcznego przewinięcia. PCM i pełny tekst diagnostyczny nie są utrwalane.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if isLoadingStoredData {
+                ProgressView("Wczytywanie zapisanych stron…")
+                    .font(.caption)
+            } else if let storedDataError {
+                Text("Błąd odczytu: \(storedDataError)")
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.red)
+            } else if storedPageEntries.isEmpty {
+                Text("Brak zapisanych stron fresh/replay.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(Array(storedPageEntries.prefix(visibleStoredPageCount))) { entry in
+                    storedPageCard(entry)
+                }
+
+                if visibleStoredPageCount < storedPageEntries.count {
+                    Button("Pokaż więcej (+10)") {
+                        visibleStoredPageCount = min(
+                            visibleStoredPageCount + 10,
+                            storedPageEntries.count
+                        )
+                    }
+                    .buttonStyle(.bordered)
+                }
+                if visibleStoredPageCount > 6 {
+                    Button("Pokaż mniej") {
+                        visibleStoredPageCount = 6
+                    }
+                    .font(.caption)
+                }
+            }
+        }
+    }
+
+    private var liveRAMSamplesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Próbki danych modelu")
+                    Text("Bieżące próbki RAM — audio i tekst")
                         .font(.headline)
-                    Text("Ostatnie rzeczywiste wejścia. Audio i tekst diagnostyczny istnieją tylko w RAM i znikają po restarcie aplikacji.")
+                    Text("Ostatnie rzeczywiste wejścia z PCM i tekstem diagnostycznym. Ta część istnieje tylko w RAM i znika po restarcie aplikacji.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -30,7 +116,7 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
             }
 
             if inputDiagnostics.samples.isEmpty {
-                Text("Brak próbek. Zostaną dodane podczas działania treningu, maksymalnie jedna co 5 sekund.")
+                Text("Brak bieżących próbek RAM. Zapisane dane fresh/replay powyżej są niezależne od tego podglądu.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             } else {
@@ -39,9 +125,109 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
                 }
             }
         }
-        .padding()
-        .background(.thinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private var storedPageEntries: [StoredPageEntry] {
+        let fresh = storedFreshPages.reversed().map {
+            StoredPageEntry(source: "fresh", page: $0)
+        }
+        let replay = storedReplayPages.shuffled().map {
+            StoredPageEntry(source: "replay", page: $0)
+        }
+        return Array(fresh) + replay
+    }
+
+    private func storedPageCard(_ entry: StoredPageEntry) -> some View {
+        let positives = entry.page.samples.filter { $0.label == 1 }.count
+        let negatives = entry.page.samples.count - positives
+        return DisclosureGroup {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Przykładowe próbki z tej strony (maks. 8)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                ForEach(Array(entry.page.samples.prefix(8).enumerated()), id: \.offset) { index, sample in
+                    storedSampleRow(index: index, sample: sample)
+                }
+
+                if entry.page.samples.count > 8 {
+                    Text("… oraz \(entry.page.samples.count - 8) dalszych próbek w pliku treningowym")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.top, 8)
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(entry.source.uppercased())
+                        .font(.caption.bold())
+                    Spacer()
+                    Text(entry.page.createdAt.formatted(date: .numeric, time: .standard))
+                        .font(.caption.monospacedDigit())
+                }
+                Text(entry.page.pageID)
+                    .font(.caption.monospaced())
+                    .lineLimit(1)
+                Text("próbki \(entry.page.samples.count) · P/N \(positives)/\(negatives)")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(10)
+        .background(.background.opacity(0.45))
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    private func storedSampleRow(index: Int, sample: PrayerAutoAdvanceLabeledSample) -> some View {
+        let scalars = Array(sample.features.prefix(PrayerAutoAdvanceFeatureExtractor.progressFeatureCount))
+        let relativeTime = sample.relativeTimeToAdvance.map { String(format: "%+.3f s", $0) } ?? "—"
+        let shortStart = PrayerAutoAdvanceFeatureExtractor.progressFeatureCount
+            + 2 * PrayerAutoAdvanceFeatureExtractor.textEmbeddingSize
+        let shortEnd = min(
+            shortStart + PrayerAutoAdvanceAudioFeatureExtractor.featureCount,
+            sample.features.count
+        )
+        let shortAudio = shortStart < shortEnd ? Array(sample.features[shortStart..<shortEnd]) : []
+
+        return VStack(alignment: .leading, spacing: 3) {
+            HStack {
+                Text("#\(index)  label=\(sample.label == 1 ? "advance" : "stay")")
+                Spacer()
+                Text("t=\(relativeTime)")
+            }
+            .font(.caption.monospaced())
+
+            Text(
+                "scalars=" + scalars.map { String(format: "%.4f", $0) }.joined(separator: ", ")
+                    + String(format: " · audio10 rms=%.5f · audio60 rms=%.5f", rms(shortAudio), rms(sample.longAudioFeatures))
+            )
+            .font(.caption2.monospaced())
+            .foregroundStyle(.secondary)
+            .textSelection(.enabled)
+        }
+        .padding(.vertical, 3)
+    }
+
+    private func loadStoredTrainingData() async {
+        isLoadingStoredData = true
+        storedDataError = nil
+        let freshDirectory = state.pendingTrainingDirectory
+        let replayDirectory = state.replayTrainingDirectory
+
+        do {
+            let result = try await Task.detached(priority: .utility) {
+                let fresh = try PrayerAutoAdvancePendingTrainingStore.loadSnapshot(from: freshDirectory)
+                let replay = try PrayerAutoAdvancePendingTrainingStore.loadSnapshot(from: replayDirectory)
+                return (fresh.pages, replay.pages)
+            }.value
+            storedFreshPages = result.0
+            storedReplayPages = result.1
+            visibleStoredPageCount = min(max(visibleStoredPageCount, 6), max(6, storedPageEntries.count))
+        } catch {
+            storedDataError = error.localizedDescription
+        }
+        isLoadingStoredData = false
     }
 
     private func sampleCard(_ sample: PrayerAutoAdvanceDiagnosticInputSample) -> some View {
@@ -214,6 +400,18 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
         } catch {
             playbackError = error.localizedDescription
         }
+    }
+
+    private func rms(_ values: [Float]) -> Float {
+        guard !values.isEmpty else { return 0 }
+        return sqrt(values.reduce(Float.zero) { $0 + $1 * $1 } / Float(values.count))
+    }
+
+    private struct StoredPageEntry: Identifiable {
+        let source: String
+        let page: PrayerAutoAdvancePendingTrainingPage
+
+        var id: String { "\(source)-\(page.id.uuidString)" }
     }
 }
 
