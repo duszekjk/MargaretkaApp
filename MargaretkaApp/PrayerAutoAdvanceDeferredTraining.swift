@@ -109,11 +109,11 @@ extension PrayerAutoAdvanceCoreMLState {
         diagnostics.pipelineState = "materializing"
         lastTrainingEvent = "Przetwarzanie danych strony w tle…"
 
-        let materializationStartedAt = ContinuousClock.now
+        let materializationStartedAt = Date()
         let materialized = await Task.detached(priority: .background) {
             PrayerAutoAdvanceDeferredTrainingMaterializer.materialize(page)
         }.value
-        let materializationDuration = materializationStartedAt.duration(to: .now)
+        let materializationDuration = Date().timeIntervalSince(materializationStartedAt)
 
         guard let batch = PrayerAutoAdvanceTrainingPolicy.makeBatchFromSelectedNegatives(
             materialized.negatives,
@@ -133,7 +133,11 @@ extension PrayerAutoAdvanceCoreMLState {
         let negatives = batch.samples.count - positives
         diagnostics.event("balanced training batch P/N \(positives)/\(negatives)")
         recordTrainingTrace(
-            "page background materialization page=\(page.pageID) duration=\(materializationDuration)"
+            String(
+                format: "page background materialization page=%@ duration=%.3fs",
+                page.pageID,
+                materializationDuration
+            )
         )
 
         if validationStore.shouldHoldOut(pageID: page.pageID) {
@@ -157,26 +161,31 @@ extension PrayerAutoAdvanceCoreMLState {
 
         do {
             let directory = pendingTrainingDirectory
-            let persistenceStartedAt = ContinuousClock.now
-            try await Task.detached(priority: .background) {
+            let persistenceStartedAt = Date()
+            let newStoredPageCount = try await Task.detached(priority: .background) {
                 try PrayerAutoAdvancePendingTrainingStore.append(
                     pageID: page.pageID,
                     batch: batch,
                     createdAt: page.manualAdvanceAt,
                     to: directory
                 )
+                return PrayerAutoAdvancePendingTrainingStore.pageCount(
+                    in: directory,
+                    fileManager: .default
+                )
             }.value
-            let persistenceDuration = persistenceStartedAt.duration(to: .now)
-            storedTrainingPageCount = PrayerAutoAdvancePendingTrainingStore.pageCount(
-                in: directory,
-                fileManager: fileManager
-            )
+            let persistenceDuration = Date().timeIntervalSince(persistenceStartedAt)
+            storedTrainingPageCount = newStoredPageCount
             diagnostics.pipelineState = "stored"
             diagnostics.event(
                 "training page stored \(storedTrainingPageCount)/\(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate)"
             )
             recordTrainingTrace(
-                "page background persist page=\(page.pageID) duration=\(persistenceDuration)"
+                String(
+                    format: "page background persist page=%@ duration=%.3fs",
+                    page.pageID,
+                    persistenceDuration
+                )
             )
             lastTrainingEvent = "Zapisano stronę do następnego treningu zbiorczego."
             lastError = nil
