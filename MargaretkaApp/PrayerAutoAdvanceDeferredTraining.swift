@@ -107,11 +107,13 @@ extension PrayerAutoAdvanceCoreMLState {
     private func processTrainingPage(_ page: PrayerAutoAdvanceDeferredTrainingPage) async {
         let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
         diagnostics.pipelineState = "materializing"
-        lastTrainingEvent = "Przetwarzanie danych strony…"
+        lastTrainingEvent = "Przetwarzanie danych strony w tle…"
 
-        let materialized = await Task.detached(priority: .utility) {
+        let materializationStartedAt = ContinuousClock.now
+        let materialized = await Task.detached(priority: .background) {
             PrayerAutoAdvanceDeferredTrainingMaterializer.materialize(page)
         }.value
+        let materializationDuration = materializationStartedAt.duration(to: .now)
 
         guard let batch = PrayerAutoAdvanceTrainingPolicy.makeBatchFromSelectedNegatives(
             materialized.negatives,
@@ -130,6 +132,9 @@ extension PrayerAutoAdvanceCoreMLState {
         let positives = batch.samples.filter { $0.label == 1 }.count
         let negatives = batch.samples.count - positives
         diagnostics.event("balanced training batch P/N \(positives)/\(negatives)")
+        recordTrainingTrace(
+            "page background materialization page=\(page.pageID) duration=\(materializationDuration)"
+        )
 
         if validationStore.shouldHoldOut(pageID: page.pageID) {
             validationStore.append(pageID: page.pageID, batch: batch, at: page.manualAdvanceAt)
@@ -152,7 +157,8 @@ extension PrayerAutoAdvanceCoreMLState {
 
         do {
             let directory = pendingTrainingDirectory
-            try await Task.detached(priority: .utility) {
+            let persistenceStartedAt = ContinuousClock.now
+            try await Task.detached(priority: .background) {
                 try PrayerAutoAdvancePendingTrainingStore.append(
                     pageID: page.pageID,
                     batch: batch,
@@ -160,6 +166,7 @@ extension PrayerAutoAdvanceCoreMLState {
                     to: directory
                 )
             }.value
+            let persistenceDuration = persistenceStartedAt.duration(to: .now)
             storedTrainingPageCount = PrayerAutoAdvancePendingTrainingStore.pageCount(
                 in: directory,
                 fileManager: fileManager
@@ -167,6 +174,9 @@ extension PrayerAutoAdvanceCoreMLState {
             diagnostics.pipelineState = "stored"
             diagnostics.event(
                 "training page stored \(storedTrainingPageCount)/\(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate)"
+            )
+            recordTrainingTrace(
+                "page background persist page=\(page.pageID) duration=\(persistenceDuration)"
             )
             lastTrainingEvent = "Zapisano stronę do następnego treningu zbiorczego."
             lastError = nil
@@ -261,10 +271,10 @@ extension PrayerAutoAdvanceCoreMLState {
             let freshSnapshot: PrayerAutoAdvancePendingTrainingSnapshot
             let replaySnapshot: PrayerAutoAdvancePendingTrainingSnapshot
             do {
-                freshSnapshot = try await Task.detached(priority: .utility) {
+                freshSnapshot = try await Task.detached(priority: .background) {
                     try PrayerAutoAdvancePendingTrainingStore.loadSnapshot(from: freshDirectory)
                 }.value
-                replaySnapshot = try await Task.detached(priority: .utility) {
+                replaySnapshot = try await Task.detached(priority: .background) {
                     try PrayerAutoAdvancePendingTrainingStore.loadSnapshot(from: replayDirectory)
                 }.value
             } catch {
@@ -314,7 +324,7 @@ extension PrayerAutoAdvanceCoreMLState {
                         .prefix(PrayerAutoAdvancePendingTrainingStore.maximumReplayPageCount)
                 )
                 let freshPageIDs = freshSnapshot.pageIDs
-                try await Task.detached(priority: .utility) {
+                try await Task.detached(priority: .background) {
                     try PrayerAutoAdvancePendingTrainingStore.replaceAll(
                         with: replayPool,
                         in: replayDirectory
