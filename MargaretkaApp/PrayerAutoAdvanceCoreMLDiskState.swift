@@ -59,11 +59,11 @@ enum PrayerAutoAdvanceCoreMLDiskState {
 
     /// Hot-path persistence for training/validation. JSON encoding and atomic file
     /// writes can be expensive once the validation store contains full V12 feature
-    /// vectors, so never execute them on MainActor.
+    /// vectors, so never execute them on MainActor or at an interactive QoS.
     @MainActor
     static func saveInBackground(_ state: PrayerAutoAdvanceCoreMLState) async throws {
         let value = snapshot(state)
-        try await Task.detached(priority: .utility) {
+        try await Task.detached(priority: .background) {
             try write(value)
         }.value
     }
