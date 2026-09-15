@@ -20,7 +20,7 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
             .onDisappear {
                 controller.stop()
 #if os(iOS)
-                PrayerExternalDisplayManager.shared.clear()
+                PrayerExternalDisplayStore.shared.clear()
 #endif
             }
             .onChange(of: activeIndex) { oldValue, newValue in
@@ -75,8 +75,7 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
 
     private func synchronizeContext() {
 #if os(iOS)
-        PrayerExternalDisplayManager.shared.start()
-        PrayerExternalDisplayManager.shared.update(
+        PrayerExternalDisplayStore.shared.update(
             displayIndex: activeIndex,
             steps: steps,
             prayersByID: prayersByID
