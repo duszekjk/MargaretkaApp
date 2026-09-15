@@ -32,18 +32,15 @@ final class LocalDatabase {
     }
     func load<T: Decodable>(from filename: String) -> [T] {
         let start = CFAbsoluteTimeGetCurrent()
-        print("loading from LocalDatabase \(filename)")
         let url = path(for: filename)
 
         guard fileManager.fileExists(atPath: url.path) else {
-            print("key \(filename) doesn't exist yet")
             return []
         }
 
         do {
             let storedData = try Data(contentsOf: url)
             let data = try Self.unpackedPayload(from: storedData)
-            print("loaded local \(filename)")
             let decoded = try JSONDecoder().decode([T].self, from: data)
 
             if !Self.isCompressedPayload(storedData),
@@ -52,9 +49,6 @@ final class LocalDatabase {
                 try? compacted.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
             }
 
-            let duration = CFAbsoluteTimeGetCurrent() - start
-            print("loaded LocalDatabase \(filename) in \(String(format: "%.3f", duration))s")
-
             if T.self is any Schedulable.Type {
                 repairNotificationsAsync(for: decoded, filename: filename)
             }
@@ -62,8 +56,7 @@ final class LocalDatabase {
             return decoded
         } catch {
             let duration = CFAbsoluteTimeGetCurrent() - start
-            print("LocalDatabase \(filename) failed in \(String(format: "%.3f", duration))s")
-            print("❌ Failed to load \(filename): \(error)")
+            print("❌ LocalDatabase load failed: \(filename) after \(String(format: "%.3f", duration))s — \(error)")
             return []
         }
     }
@@ -83,11 +76,8 @@ final class LocalDatabase {
             }
 
             let center = UNUserNotificationCenter.current()
-            let pendingStart = CFAbsoluteTimeGetCurrent()
             center.getPendingNotificationRequests { requests in
-                let pendingDuration = CFAbsoluteTimeGetCurrent() - pendingStart
                 let pendingIDs = Set(requests.map { $0.identifier })
-                let repairStart = CFAbsoluteTimeGetCurrent()
                 var repairedCount = 0
 
                 for item in decoded {
@@ -99,9 +89,9 @@ final class LocalDatabase {
                         repairedCount += 1
                     }
                 }
-                let repairDuration = CFAbsoluteTimeGetCurrent() - repairStart
-                let totalDuration = CFAbsoluteTimeGetCurrent() - pendingStart
-                print("Repaired notifications for \(filename): pending \(String(format: "%.3f", pendingDuration))s, work \(String(format: "%.3f", repairDuration))s, total \(String(format: "%.3f", totalDuration))s, repaired \(repairedCount)")
+                if repairedCount > 0 {
+                    print("[Notifications] repaired \(repairedCount) item(s) for \(filename)")
+                }
                 LocalDatabase.finishRepair(for: filename)
             }
         }
@@ -110,7 +100,6 @@ final class LocalDatabase {
 
 
     func save<T: Encodable>(_ items: [T], as filename: String) {
-        print("savinng \(filename)")
         let url = path(for: filename)
 
         do {
@@ -118,7 +107,7 @@ final class LocalDatabase {
             let payload = try Self.storedPayload(from: data)
             try payload.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         } catch {
-            print("❌ Failed to save \(filename): \(error)")
+            print("❌ LocalDatabase save failed: \(filename) — \(error)")
         }
     }
 
