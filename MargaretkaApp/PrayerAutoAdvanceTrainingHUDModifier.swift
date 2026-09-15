@@ -1,3 +1,4 @@
+import Charts
 import SwiftUI
 internal import Combine
 
@@ -43,6 +44,7 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
     @AppStorage(PrayerAutoAdvancePreferences.trainingEnabledKey) private var trainingEnabled = false
     @ObservedObject private var diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
     @ObservedObject private var state = PrayerAutoAdvanceCoreMLState.shared
+    @ObservedObject private var liveProgress = PrayerAutoAdvanceLiveTrainingProgress.shared
     @ObservedObject private var control = PrayerAutoAdvanceTrainingHUDControl.shared
 
     /// The toolbar indicator reflects the live capture state, not whether training
@@ -77,6 +79,15 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
                     control.collapseHUD()
                 }
             }
+            .onChange(of: state.isTraining) { _, training in
+                if training {
+                    liveProgress.prepare()
+                } else if state.lastError != nil {
+                    liveProgress.fail()
+                } else {
+                    liveProgress.finish()
+                }
+            }
     }
 
 #if os(iOS)
@@ -98,7 +109,13 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
 #endif
 
     private var hud: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 4) {
+            if state.isTraining || liveProgress.isActive {
+                liveTrainingSection
+                Divider()
+                    .overlay(.white.opacity(0.25))
+            }
+
             HStack(spacing: 7) {
                 Text("TRAIN")
                 Text("E\(diagnostics.currentEpochNumber) \(diagnostics.currentEpochSampleCount)/\(PrayerAutoAdvanceTrainingDiagnostics.epochSize)p")
@@ -150,12 +167,70 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
         }
         .font(.system(size: 8, design: .monospaced))
         .foregroundStyle(.white)
-        .padding(6)
+        .padding(7)
+        .frame(maxWidth: 330, alignment: .leading)
         .background(.black.opacity(0.76))
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         .gesture(hudGesture)
         .accessibilityLabel("Diagnostyka treningu. Stuknij, aby zwinąć; stuknij dwa razy, aby otworzyć szczegóły.")
+    }
+
+    private var liveTrainingSection: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text(liveProgress.stage)
+                    .fontWeight(.semibold)
+                Spacer()
+                Text(String(format: "%.0f%%", liveProgress.progress * 100))
+                    .monospacedDigit()
+            }
+
+            ProgressView(value: liveProgress.progress, total: 1)
+                .tint(.white)
+
+            HStack(spacing: 8) {
+                if liveProgress.epochCount > 0 {
+                    Text("epoka \(liveProgress.currentEpoch)/\(liveProgress.epochCount)")
+                }
+                if liveProgress.totalSteps > 0 {
+                    Text("krok \(liveProgress.completedSteps)/\(liveProgress.totalSteps)")
+                }
+                if let loss = liveProgress.currentLoss {
+                    Text(String(format: "loss %.6f", loss))
+                }
+            }
+
+            HStack(spacing: 8) {
+                Text("czas \(durationText(liveProgress.elapsed))")
+                if let remaining = liveProgress.estimatedRemaining {
+                    Text("ETA ~\(durationText(remaining))")
+                } else {
+                    Text("ETA —")
+                }
+            }
+
+            if liveProgress.lossHistory.count >= 2 {
+                Chart(liveProgress.lossHistory.suffix(80)) { point in
+                    LineMark(
+                        x: .value("Krok", point.step),
+                        y: .value("Loss", point.loss)
+                    )
+                }
+                .chartXAxis(.hidden)
+                .chartYAxis(.hidden)
+                .frame(height: 54)
+                .accessibilityLabel("Wykres loss na żywo podczas treningu")
+            }
+        }
+    }
+
+    private func durationText(_ interval: TimeInterval) -> String {
+        guard interval.isFinite, interval >= 0 else { return "—" }
+        let seconds = Int(interval.rounded())
+        let minutes = seconds / 60
+        let remainder = seconds % 60
+        return String(format: "%d:%02d", minutes, remainder)
     }
 
     private var hudGesture: some Gesture {
