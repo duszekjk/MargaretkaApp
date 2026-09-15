@@ -30,6 +30,11 @@ struct MargaretkaAppApp: App {
 
     init() {
         MargaretkaAppShortcuts.updateAppShortcutParameters()
+#if os(iOS)
+        Task { @MainActor in
+            PrayerExternalDisplayController.shared.start()
+        }
+#endif
     }
 
     var body: some Scene {
@@ -212,7 +217,6 @@ struct MargaretkaAppApp: App {
         didScheduleNotificationRefresh = true
 
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 5.0) {
-            print("📅 ScheduleData notification refresh dispatched")
             scheduleData.rescheduleAll()
         }
     }
