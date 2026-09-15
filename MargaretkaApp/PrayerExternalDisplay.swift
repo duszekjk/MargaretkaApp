@@ -545,7 +545,8 @@ struct PrayerExternalDisplayRootView: View {
             BreviaryPrayerCardText(
                 card: card,
                 maxHeight: geometry.size.height,
-                constrainHeight: false
+                constrainHeight: false,
+                choirIndent: 84
             )
                 .font(.system(size: fontSize, weight: .semibold))
                 .foregroundStyle(.white)
