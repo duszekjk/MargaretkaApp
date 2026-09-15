@@ -42,7 +42,8 @@ extension PrayerAutoAdvanceCoreMLState {
             createdAt: now,
             lastUpdatedAt: now,
             trainingSessions: 0,
-            trainedTransitions: 0
+            trainedTransitions: 0,
+            serverPublishedAt: nil
         )
         timingHistory = PrayerAutoAdvanceTimingHistory()
         validationStore = PrayerAutoAdvanceValidationStore()
