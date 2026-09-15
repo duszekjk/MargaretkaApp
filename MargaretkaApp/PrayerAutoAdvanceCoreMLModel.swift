@@ -83,36 +83,83 @@ final class PrayerAutoAdvanceCoreMLModel: @unchecked Sendable {
             MLParameterKey.shuffle: NSNumber(value: true),
         ]
 
+        await PrayerAutoAdvanceLiveTrainingProgress.shared.beginCoreML(
+            sampleCount: providers.count,
+            epochs: trainingEpochCount
+        )
+
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             do {
+                let progressHandlers = MLUpdateProgressHandlers(
+                    forEvents: [.trainingBegin, .miniBatchEnd, .epochEnd],
+                    progressHandler: { context in
+                        guard context.event == .miniBatchEnd || context.event == .epochEnd else {
+                            return
+                        }
+
+                        let epochIndex = (context.metrics[.epochIndex] as? NSNumber)?.intValue ?? 0
+                        let miniBatchIndex = (context.metrics[.miniBatchIndex] as? NSNumber)?.intValue ?? 0
+                        let loss = (context.metrics[.lossValue] as? NSNumber)?.doubleValue
+                        let globalStep = max(0, epochIndex) * max(providers.count, 1)
+                            + max(0, miniBatchIndex) + 1
+                        let shouldPublish = context.event == .epochEnd
+                            || globalStep.isMultiple(of: PrayerAutoAdvanceLiveTrainingProgress.progressUpdateStride)
+                            || globalStep >= providers.count * trainingEpochCount
+
+                        guard shouldPublish else { return }
+                        Task { @MainActor in
+                            PrayerAutoAdvanceLiveTrainingProgress.shared.receive(
+                                epochIndex: epochIndex,
+                                miniBatchIndex: miniBatchIndex,
+                                loss: loss
+                            )
+                        }
+                    },
+                    completionHandler: { context in
+                        if context.task.state == .failed {
+                            let error = context.task.error ?? ModelError.updateFailedWithoutError
+                            retention.task = nil
+                            Task { @MainActor in
+                                PrayerAutoAdvanceLiveTrainingProgress.shared.fail()
+                            }
+                            continuation.resume(throwing: error)
+                            return
+                        }
+
+                        Task { @MainActor in
+                            PrayerAutoAdvanceLiveTrainingProgress.shared.beginFinalization()
+                        }
+
+                        let writeJob = ModelWriteJob(
+                            model: context.model,
+                            destinationURL: destinationURL
+                        )
+                        Task.detached(priority: .background) {
+                            do {
+                                try writeJob.write()
+                                retention.task = nil
+                                continuation.resume()
+                            } catch {
+                                retention.task = nil
+                                await PrayerAutoAdvanceLiveTrainingProgress.shared.fail()
+                                continuation.resume(throwing: error)
+                            }
+                        }
+                    }
+                )
+
                 retention.task = try MLUpdateTask(
                     forModelAt: compiledURL,
                     trainingData: retention.batch,
-                    configuration: configuration
-                ) { context in
-                    if context.task.state == .failed {
-                        let error = context.task.error ?? ModelError.updateFailedWithoutError
-                        retention.task = nil
-                        continuation.resume(throwing: error)
-                        return
-                    }
-
-                    do {
-                        let fileManager = FileManager.default
-                        if fileManager.fileExists(atPath: destinationURL.path) {
-                            try fileManager.removeItem(at: destinationURL)
-                        }
-                        try context.model.write(to: destinationURL)
-                        retention.task = nil
-                        continuation.resume()
-                    } catch {
-                        retention.task = nil
-                        continuation.resume(throwing: error)
-                    }
-                }
+                    configuration: configuration,
+                    progressHandlers: progressHandlers
+                )
                 retention.task?.resume()
             } catch {
                 retention.task = nil
+                Task { @MainActor in
+                    PrayerAutoAdvanceLiveTrainingProgress.shared.fail()
+                }
                 continuation.resume(throwing: error)
             }
         }
@@ -143,7 +190,7 @@ final class PrayerAutoAdvanceCoreMLModel: @unchecked Sendable {
         return array
     }
 
-    private final class UpdateRetention {
+    private final class UpdateRetention: @unchecked Sendable {
         let providers: [MLFeatureProvider]
         let batch: MLArrayBatchProvider
         var task: MLUpdateTask?
@@ -151,6 +198,24 @@ final class PrayerAutoAdvanceCoreMLModel: @unchecked Sendable {
         init(providers: [MLFeatureProvider]) {
             self.providers = providers
             self.batch = MLArrayBatchProvider(array: providers)
+        }
+    }
+
+    private final class ModelWriteJob: @unchecked Sendable {
+        let model: MLModel
+        let destinationURL: URL
+
+        init(model: MLModel, destinationURL: URL) {
+            self.model = model
+            self.destinationURL = destinationURL
+        }
+
+        func write() throws {
+            let fileManager = FileManager.default
+            if fileManager.fileExists(atPath: destinationURL.path) {
+                try fileManager.removeItem(at: destinationURL)
+            }
+            try model.write(to: destinationURL)
         }
     }
 
