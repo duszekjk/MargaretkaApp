@@ -1,11 +1,13 @@
 #if os(iOS)
+import AVFoundation
+import CoreGraphics
+import CoreVideo
 import SwiftUI
 import UIKit
 
 @MainActor
 final class PrayerExternalDisplayStore {
     static let shared = PrayerExternalDisplayStore()
-
     static let pageDidChange = Notification.Name("margaretka.externalDisplay.pageDidChange")
 
     private(set) var currentPage: PrayerExternalDisplayPage?
@@ -46,27 +48,51 @@ enum PrayerExternalDisplayPage {
 final class PrayerExternalDisplayController {
     static let shared = PrayerExternalDisplayController()
 
+    let player = AVQueuePlayer()
+
+    private var looper: AVPlayerLooper?
+    private var pageObserver: NSObjectProtocol?
     private var connectObserver: NSObjectProtocol?
     private var disconnectObserver: NSObjectProtocol?
+    private var externalPlaybackObservation: NSKeyValueObservation?
+    private var currentVideoURL: URL?
+    private var generationSerial = 0
     private var isStarted = false
 
-    private init() {}
+    private init() {
+        player.isMuted = true
+        player.allowsExternalPlayback = true
+        player.usesExternalPlaybackWhileExternalScreenIsActive = true
+        player.externalPlaybackVideoGravity = .resizeAspect
+        player.preventsDisplaySleepDuringVideoPlayback = false
+    }
 
     func start() {
         guard !isStarted else { return }
         isStarted = true
 
+        pageObserver = NotificationCenter.default.addObserver(
+            forName: PrayerExternalDisplayStore.pageDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.refreshPresentation(reason: "page changed")
+            }
+        }
+
         connectObserver = NotificationCenter.default.addObserver(
             forName: UIScreen.didConnectNotification,
             object: nil,
             queue: .main
-        ) { notification in
+        ) { [weak self] notification in
             guard let screen = notification.object as? UIScreen else { return }
             Task { @MainActor in
                 print(
                     "[ExternalDisplay] screen connected bounds=\(screen.bounds) " +
                     "mirrored=\(screen.mirrored != nil) totalScreens=\(UIScreen.screens.count)"
                 )
+                self?.refreshPresentation(reason: "screen connected")
             }
         }
 
@@ -74,17 +100,125 @@ final class PrayerExternalDisplayController {
             forName: UIScreen.didDisconnectNotification,
             object: nil,
             queue: .main
-        ) { notification in
+        ) { [weak self] notification in
             guard let screen = notification.object as? UIScreen else { return }
             Task { @MainActor in
                 print(
                     "[ExternalDisplay] screen disconnected bounds=\(screen.bounds) " +
                     "totalScreens=\(UIScreen.screens.count)"
                 )
+                if self?.activeExternalScreen() == nil {
+                    self?.player.pause()
+                } else {
+                    self?.refreshPresentation(reason: "remaining screen selected")
+                }
             }
         }
 
+        externalPlaybackObservation = player.observe(
+            \.isExternalPlaybackActive,
+            options: [.initial, .new]
+        ) { _, change in
+            let active = change.newValue ?? false
+            print("[ExternalDisplay] AVPlayer externalPlaybackActive=\(active)")
+        }
+
         logEnvironment()
+        refreshPresentation(reason: "startup")
+    }
+
+    private func refreshPresentation(reason: String) {
+        guard let screen = activeExternalScreen() else { return }
+
+        let canvasSize = videoCanvasSize(for: screen.bounds.size)
+        let page = PrayerExternalDisplayStore.shared.currentPage
+        generationSerial += 1
+        let serial = generationSerial
+
+        guard let image = renderSlide(page: page, size: canvasSize) else {
+            print("[ExternalDisplay] failed to render SwiftUI slide")
+            return
+        }
+
+        print(
+            "[ExternalDisplay] rendering video reason=\(reason) " +
+            "canvas=\(Int(canvasSize.width))x\(Int(canvasSize.height))"
+        )
+
+        Task.detached(priority: .utility) {
+            do {
+                let url = try await PrayerExternalVideoEncoder.makeStaticClip(
+                    image: image,
+                    size: canvasSize,
+                    durationSeconds: 10
+                )
+
+                await MainActor.run {
+                    guard serial == self.generationSerial else {
+                        try? FileManager.default.removeItem(at: url)
+                        return
+                    }
+                    self.installVideo(url)
+                }
+            } catch {
+                await MainActor.run {
+                    print("[ExternalDisplay] video generation failed: \(error)")
+                }
+            }
+        }
+    }
+
+    private func installVideo(_ url: URL) {
+        let previousURL = currentVideoURL
+        currentVideoURL = url
+
+        player.pause()
+        looper = nil
+        player.removeAllItems()
+
+        let item = AVPlayerItem(url: url)
+        looper = AVPlayerLooper(player: player, templateItem: item)
+        player.play()
+
+        print(
+            "[ExternalDisplay] AVPlayer started " +
+            "allowsExternalPlayback=\(player.allowsExternalPlayback) " +
+            "usesExternalPlaybackWhileExternalScreenIsActive=\(player.usesExternalPlaybackWhileExternalScreenIsActive)"
+        )
+
+        if let previousURL {
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 2) {
+                try? FileManager.default.removeItem(at: previousURL)
+            }
+        }
+    }
+
+    private func renderSlide(page: PrayerExternalDisplayPage?, size: CGSize) -> CGImage? {
+        let rootView = PrayerExternalDisplayRootView(page: page)
+            .frame(width: size.width, height: size.height)
+
+        let renderer = ImageRenderer(content: rootView)
+        renderer.proposedSize = ProposedViewSize(width: size.width, height: size.height)
+        renderer.scale = 1
+        renderer.isOpaque = true
+        return renderer.cgImage
+    }
+
+    private func activeExternalScreen() -> UIScreen? {
+        UIScreen.screens.first(where: { $0 !== UIScreen.main })
+    }
+
+    private func videoCanvasSize(for screenSize: CGSize) -> CGSize {
+        guard screenSize.width > 0, screenSize.height > 0 else {
+            return CGSize(width: 1920, height: 1080)
+        }
+
+        let maximumLongEdge: CGFloat = 2560
+        let longEdge = max(screenSize.width, screenSize.height)
+        let scale = min(1, maximumLongEdge / longEdge)
+        let width = max(2, floor(screenSize.width * scale / 2) * 2)
+        let height = max(2, floor(screenSize.height * scale / 2) * 2)
+        return CGSize(width: width, height: height)
     }
 
     private func logEnvironment() {
@@ -95,6 +229,177 @@ final class PrayerExternalDisplayController {
             "[ExternalDisplay] startup supportsMultipleScenes=\(UIApplication.shared.supportsMultipleScenes) " +
             "screens=\(UIScreen.screens.count) [\(screens)]"
         )
+    }
+}
+
+struct PrayerExternalPlaybackHostView: UIViewRepresentable {
+    func makeUIView(context: Context) -> PrayerExternalPlaybackCarrierView {
+        let view = PrayerExternalPlaybackCarrierView()
+        view.backgroundColor = .clear
+        view.playerLayer.player = PrayerExternalDisplayController.shared.player
+        view.playerLayer.videoGravity = .resizeAspect
+        return view
+    }
+
+    func updateUIView(_ uiView: PrayerExternalPlaybackCarrierView, context: Context) {
+        uiView.playerLayer.player = PrayerExternalDisplayController.shared.player
+    }
+}
+
+final class PrayerExternalPlaybackCarrierView: UIView {
+    override class var layerClass: AnyClass { AVPlayerLayer.self }
+
+    var playerLayer: AVPlayerLayer {
+        layer as! AVPlayerLayer
+    }
+}
+
+private enum PrayerExternalVideoEncoder {
+    enum EncodingError: Error {
+        case cannotAddInput
+        case cannotStartWriter(Error?)
+        case missingPixelBufferPool
+        case cannotCreatePixelBuffer
+        case cannotCreateContext
+        case appendFailed(Error?)
+        case writerFailed(Error?)
+    }
+
+    static func makeStaticClip(
+        image: CGImage,
+        size: CGSize,
+        durationSeconds: Int
+    ) async throws -> URL {
+        let width = Int(size.width)
+        let height = Int(size.height)
+        let outputURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("external-slide-\(UUID().uuidString)")
+            .appendingPathExtension("mp4")
+
+        let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
+        let bitrate = max(600_000, min(4_000_000, width * height / 2))
+        let settings: [String: Any] = [
+            AVVideoCodecKey: AVVideoCodecType.h264,
+            AVVideoWidthKey: width,
+            AVVideoHeightKey: height,
+            AVVideoCompressionPropertiesKey: [
+                AVVideoAverageBitRateKey: bitrate,
+                AVVideoExpectedSourceFrameRateKey: 1,
+                AVVideoMaxKeyFrameIntervalKey: 1,
+                AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel
+            ]
+        ]
+
+        let input = AVAssetWriterInput(mediaType: .video, outputSettings: settings)
+        input.expectsMediaDataInRealTime = false
+
+        guard writer.canAdd(input) else {
+            throw EncodingError.cannotAddInput
+        }
+        writer.add(input)
+
+        let attributes: [String: Any] = [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+            kCVPixelBufferWidthKey as String: width,
+            kCVPixelBufferHeightKey as String: height,
+            kCVPixelBufferCGImageCompatibilityKey as String: true,
+            kCVPixelBufferCGBitmapContextCompatibilityKey as String: true,
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:]
+        ]
+        let adaptor = AVAssetWriterInputPixelBufferAdaptor(
+            assetWriterInput: input,
+            sourcePixelBufferAttributes: attributes
+        )
+
+        guard writer.startWriting() else {
+            throw EncodingError.cannotStartWriter(writer.error)
+        }
+        writer.startSession(atSourceTime: .zero)
+
+        guard let pool = adaptor.pixelBufferPool else {
+            writer.cancelWriting()
+            throw EncodingError.missingPixelBufferPool
+        }
+
+        var pixelBuffer: CVPixelBuffer?
+        guard CVPixelBufferPoolCreatePixelBuffer(nil, pool, &pixelBuffer) == kCVReturnSuccess,
+              let pixelBuffer else {
+            writer.cancelWriting()
+            throw EncodingError.cannotCreatePixelBuffer
+        }
+
+        try draw(image: image, into: pixelBuffer, width: width, height: height)
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let queue = DispatchQueue(label: "margaretka.external-video-writer")
+            var frameIndex = 0
+            var finishing = false
+
+            input.requestMediaDataWhenReady(on: queue) {
+                guard !finishing else { return }
+
+                while input.isReadyForMoreMediaData && frameIndex < durationSeconds {
+                    let time = CMTime(value: CMTimeValue(frameIndex), timescale: 1)
+                    guard adaptor.append(pixelBuffer, withPresentationTime: time) else {
+                        finishing = true
+                        input.markAsFinished()
+                        writer.cancelWriting()
+                        continuation.resume(throwing: EncodingError.appendFailed(writer.error))
+                        return
+                    }
+                    frameIndex += 1
+                }
+
+                guard frameIndex >= durationSeconds else { return }
+                finishing = true
+                input.markAsFinished()
+                writer.endSession(atSourceTime: CMTime(value: CMTimeValue(durationSeconds), timescale: 1))
+                writer.finishWriting {
+                    if writer.status == .completed {
+                        continuation.resume(returning: outputURL)
+                    } else {
+                        continuation.resume(throwing: EncodingError.writerFailed(writer.error))
+                    }
+                }
+            }
+        }
+    }
+
+    private static func draw(
+        image: CGImage,
+        into pixelBuffer: CVPixelBuffer,
+        width: Int,
+        height: Int
+    ) throws {
+        CVPixelBufferLockBaseAddress(pixelBuffer, [])
+        defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, []) }
+
+        guard let baseAddress = CVPixelBufferGetBaseAddress(pixelBuffer) else {
+            throw EncodingError.cannotCreateContext
+        }
+
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo.byteOrder32Little.rawValue |
+            CGImageAlphaInfo.premultipliedFirst.rawValue
+
+        guard let context = CGContext(
+            data: baseAddress,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: CVPixelBufferGetBytesPerRow(pixelBuffer),
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else {
+            throw EncodingError.cannotCreateContext
+        }
+
+        context.setFillColor(UIColor.black.cgColor)
+        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        context.translateBy(x: 0, y: CGFloat(height))
+        context.scaleBy(x: 1, y: -1)
+        context.interpolationQuality = .high
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
     }
 }
 
