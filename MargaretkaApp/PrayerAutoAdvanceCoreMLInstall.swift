@@ -6,22 +6,10 @@ enum PrayerAutoAdvanceCoreMLInstall {
         _ downloaded: PrayerAutoAdvanceDownloadedBase,
         state: PrayerAutoAdvanceCoreMLState
     ) throws {
-        if state.fileManager.fileExists(atPath: state.modelURL.path) {
-            do {
-                state.model = try PrayerAutoAdvanceCoreMLModel(compiledURL: state.modelURL)
-                return
-            } catch {
-                try state.fileManager.removeItem(at: state.modelURL)
-            }
-        }
-
         try state.fileManager.createDirectory(at: state.directory, withIntermediateDirectories: true)
         let archive = state.fileManager.temporaryDirectory
             .appendingPathComponent(UUID().uuidString).appendingPathExtension("aar")
-        let staging = state.directory.appendingPathComponent("Incoming.mlmodelc", isDirectory: true)
-        if state.fileManager.fileExists(atPath: staging.path) {
-            try state.fileManager.removeItem(at: staging)
-        }
+        let staging = state.directory.appendingPathComponent("Incoming-\(UUID().uuidString).mlmodelc", isDirectory: true)
         defer {
             try? state.fileManager.removeItem(at: archive)
             try? state.fileManager.removeItem(at: staging)
@@ -34,7 +22,12 @@ enum PrayerAutoAdvanceCoreMLInstall {
               stagedModel.declaredFeatureSchemaVersion == downloaded.manifest.featureSchemaVersion else {
             throw InstallError.manifestMetadataMismatch
         }
-        try state.fileManager.moveItem(at: staging, to: state.modelURL)
+
+        if state.fileManager.fileExists(atPath: state.modelURL.path) {
+            _ = try state.fileManager.replaceItemAt(state.modelURL, withItemAt: staging)
+        } else {
+            try state.fileManager.moveItem(at: staging, to: state.modelURL)
+        }
         state.model = try PrayerAutoAdvanceCoreMLModel(compiledURL: state.modelURL)
 
         let now = Date()
@@ -44,7 +37,8 @@ enum PrayerAutoAdvanceCoreMLInstall {
             createdAt: now,
             lastUpdatedAt: now,
             trainingSessions: 0,
-            trainedTransitions: 0
+            trainedTransitions: 0,
+            serverPublishedAt: downloaded.manifest.publishedAt
         )
     }
 
