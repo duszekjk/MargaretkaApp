@@ -542,7 +542,11 @@ struct PrayerExternalDisplayRootView: View {
     ) -> some View {
         switch page {
         case .breviary(let card):
-            BreviaryPrayerCardText(card: card, maxHeight: geometry.size.height)
+            BreviaryPrayerCardText(
+                card: card,
+                maxHeight: geometry.size.height,
+                constrainHeight: false
+            )
                 .font(.system(size: fontSize, weight: .semibold))
                 .foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
