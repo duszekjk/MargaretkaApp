@@ -321,7 +321,7 @@ private enum PrayerExternalVideoEncoder {
         writer.add(input)
 
         let attributes: [String: Any] = [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelBufferPixelFormatType_32BGRA,
             kCVPixelBufferWidthKey as String: width,
             kCVPixelBufferHeightKey as String: height,
             kCVPixelBufferCGImageCompatibilityKey as String: true,
@@ -542,6 +542,11 @@ struct PrayerExternalDisplayRootView: View {
     ) -> some View {
         switch page {
         case .breviary(let card):
+            let contentWidth = breviaryContentWidth(
+                card: card,
+                fontSize: fontSize,
+                availableWidth: geometry.size.width
+            )
             BreviaryPrayerCardText(
                 card: card,
                 maxHeight: geometry.size.height,
@@ -551,7 +556,7 @@ struct PrayerExternalDisplayRootView: View {
                 .font(.system(size: fontSize, weight: .semibold))
                 .foregroundStyle(.white)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: geometry.size.width, alignment: .center)
+                .frame(width: contentWidth, alignment: .center)
 
         case .prayer(_, let text):
             Text(text)
@@ -562,6 +567,48 @@ struct PrayerExternalDisplayRootView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: geometry.size.width, alignment: .center)
         }
+    }
+
+    private func breviaryContentWidth(
+        card: OfflineBreviaryCard,
+        fontSize: CGFloat,
+        availableWidth: CGFloat
+    ) -> CGFloat {
+        let hasChoirSplit = card.lines.contains {
+            $0.role == .choirLeft || $0.role == .choirRight
+        }
+        guard hasChoirSplit else { return availableWidth }
+
+        let choirIndent: CGFloat = 84
+        let choirChrome: CGFloat = choirIndent + 4 + 8 + 20
+        let sideBreathingRoom = max(36, fontSize * 0.6)
+
+        let widestLine = card.lines.reduce(CGFloat.zero) { currentMax, line in
+            var font = UIFont.systemFont(
+                ofSize: fontSize,
+                weight: line.emphasized ? .bold : .semibold
+            )
+            if line.italic,
+               let descriptor = font.fontDescriptor.withSymbolicTraits(.traitItalic) {
+                font = UIFont(descriptor: descriptor, size: fontSize)
+            }
+
+            let textWidth = ceil(
+                (line.text as NSString).size(withAttributes: [.font: font]).width
+            )
+            let lineChrome = (line.role == .choirLeft || line.role == .choirRight)
+                ? choirChrome
+                : 0
+            return max(currentMax, textWidth + lineChrome)
+        }
+
+        let desiredWidth = widestLine + sideBreathingRoom * 2
+        let almostFullWidth = availableWidth * 0.92
+        if desiredWidth >= almostFullWidth {
+            return availableWidth
+        }
+
+        return min(availableWidth, max(availableWidth * 0.28, desiredWidth))
     }
 }
 #endif
