@@ -186,10 +186,15 @@ extension PrayerAutoAdvanceCoreMLState {
             stage = "uploading-model"
             diagnostics.pipelineState = stage
             do {
-                try await PrayerAutoAdvanceCoreMLUploader.upload(
+                let serverPublishedAt = try await PrayerAutoAdvanceCoreMLUploader.upload(
                     modelAt: destinationModelURL,
                     trainingLoss: after.loss
                 )
+                if let serverPublishedAt, var value = metadata {
+                    value.serverPublishedAt = serverPublishedAt
+                    metadata = value
+                    try await PrayerAutoAdvanceCoreMLDiskState.saveInBackground(self)
+                }
                 diagnostics.event(String(format: "model upload complete trainingLoss=%.8f", after.loss))
                 recordTrainingTrace(String(format: "uploading-model: SUCCESS loss=%.8f", after.loss))
             } catch {
