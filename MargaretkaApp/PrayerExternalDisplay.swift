@@ -125,6 +125,18 @@ struct PrayerExternalDisplayRootView: View {
                     }
                     .padding(.horizontal, max(36, geometry.size.width * 0.055))
                     .padding(.vertical, max(28, geometry.size.height * 0.05))
+                } else {
+                    VStack(spacing: 18) {
+                        Text("Margaretka")
+                            .font(.system(size: min(72, max(42, geometry.size.width * 0.055)), weight: .semibold))
+                            .foregroundStyle(.white)
+
+                        Text("Modlitwa na zewnętrznym ekranie")
+                            .font(.system(size: min(28, max(18, geometry.size.width * 0.022)), weight: .regular))
+                            .foregroundStyle(.white.opacity(0.65))
+                    }
+                    .multilineTextAlignment(.center)
+                    .padding(40)
                 }
             }
         }
