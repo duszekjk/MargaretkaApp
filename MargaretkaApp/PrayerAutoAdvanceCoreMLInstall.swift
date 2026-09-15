@@ -38,7 +38,8 @@ enum PrayerAutoAdvanceCoreMLInstall {
             lastUpdatedAt: now,
             trainingSessions: 0,
             trainedTransitions: 0,
-            serverPublishedAt: downloaded.manifest.publishedAt
+            serverPublishedAt: downloaded.manifest.publishedAt,
+            serverSHA256: downloaded.manifest.sha256.lowercased()
         )
     }
 
