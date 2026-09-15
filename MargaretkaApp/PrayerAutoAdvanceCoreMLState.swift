@@ -20,6 +20,8 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
     @Published var storedTrainingPageCount = 0
     @Published var replayTrainingPageCount = 0
     @Published var groupedTrainingPageCount = 0
+    @Published private(set) var microphoneActivityLevel: Double = 0
+    @Published private(set) var microphoneSignalActive = false
     @Published private(set) var trainingTrace: [String] = []
 
     var pendingTrainingPages: [PrayerAutoAdvanceDeferredTrainingPage] = []
@@ -29,6 +31,9 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
     var scheduledTrainingCaptureCount = 0
     var trainingAtPrayerEndRequested = false
     var groupedTrainingTask: Task<Void, Never>?
+
+    private var lastMicrophoneTranscript = ""
+    private var microphoneActiveUntil = Date.distantPast
 
     let fileManager = FileManager.default
 
@@ -69,6 +74,41 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
             in: replayTrainingDirectory,
             fileManager: fileManager
         )
+    }
+
+    func updateMicrophoneActivity(
+        transcript: String,
+        rms: Double,
+        variation: Double,
+        at date: Date
+    ) {
+        let transcriptChanged = !transcript.isEmpty && transcript != lastMicrophoneTranscript
+        lastMicrophoneTranscript = transcript
+
+        // Raw PCM is normalized to roughly -1...1. Requiring both level and
+        // short-term variation avoids lighting the indicator for a steady hum.
+        let audioLooksLikeSpeech = rms >= 0.006 && variation >= 0.0015
+        if transcriptChanged || audioLooksLikeSpeech {
+            microphoneActiveUntil = date.addingTimeInterval(transcriptChanged ? 1.1 : 0.8)
+        }
+
+        let normalizedLevel = min(max((rms - 0.003) / 0.035, 0), 1)
+        if normalizedLevel >= microphoneActivityLevel {
+            // Fast attack.
+            microphoneActivityLevel = microphoneActivityLevel * 0.2 + normalizedLevel * 0.8
+        } else {
+            // Slower release so the icon does not visibly chatter between syllables.
+            microphoneActivityLevel = microphoneActivityLevel * 0.78 + normalizedLevel * 0.22
+        }
+        if microphoneActivityLevel < 0.01 { microphoneActivityLevel = 0 }
+        microphoneSignalActive = date <= microphoneActiveUntil
+    }
+
+    func resetMicrophoneActivity() {
+        microphoneActivityLevel = 0
+        microphoneSignalActive = false
+        microphoneActiveUntil = .distantPast
+        lastMicrophoneTranscript = ""
     }
 
     func recordTrainingTrace(_ message: String) {
