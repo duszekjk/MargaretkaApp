@@ -75,6 +75,7 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
 
     private func synchronizeContext() {
 #if os(iOS)
+        PrayerExternalDisplayManager.shared.start()
         PrayerExternalDisplayManager.shared.update(
             displayIndex: activeIndex,
             steps: steps,
