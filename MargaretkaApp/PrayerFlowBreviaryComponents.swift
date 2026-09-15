@@ -72,17 +72,30 @@ struct BreviaryPrayerCardText: View {
     let lines: [OfflineBreviaryLine]
     var maxHeight: Double
     var constrainHeight: Bool
+    var choirIndent: CGFloat
 
-    init(card: OfflineBreviaryCard, maxHeight: Double, constrainHeight: Bool = true) {
+    init(
+        card: OfflineBreviaryCard,
+        maxHeight: Double,
+        constrainHeight: Bool = true,
+        choirIndent: CGFloat = 14
+    ) {
         lines = card.lines
         self.maxHeight = maxHeight
         self.constrainHeight = constrainHeight
+        self.choirIndent = choirIndent
     }
 
-    init(cards: [OfflineBreviaryCard], maxHeight: Double, constrainHeight: Bool = true) {
+    init(
+        cards: [OfflineBreviaryCard],
+        maxHeight: Double,
+        constrainHeight: Bool = true,
+        choirIndent: CGFloat = 14
+    ) {
         lines = cards.flatMap(\.lines)
         self.maxHeight = maxHeight
         self.constrainHeight = constrainHeight
+        self.choirIndent = choirIndent
     }
 
     var body: some View {
@@ -116,8 +129,8 @@ struct BreviaryPrayerCardText: View {
     private func choirLine(_ line: OfflineBreviaryLine) -> some View {
         HStack(alignment: .top, spacing: 8) {
             if line.role == .choirRight {
-                Spacer(minLength: 14)
-                    .frame(width: 14)
+                Spacer(minLength: choirIndent)
+                    .frame(width: choirIndent)
             }
 
             RoundedRectangle(cornerRadius: 2)
@@ -134,8 +147,8 @@ struct BreviaryPrayerCardText: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             if line.role == .choirLeft {
-                Spacer(minLength: 14)
-                    .frame(width: 14)
+                Spacer(minLength: choirIndent)
+                    .frame(width: choirIndent)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
