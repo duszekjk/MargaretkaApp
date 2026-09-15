@@ -3,43 +3,14 @@ import SwiftUI
 import UIKit
 
 @MainActor
-final class PrayerExternalDisplayManager {
-    static let shared = PrayerExternalDisplayManager()
+final class PrayerExternalDisplayStore {
+    static let shared = PrayerExternalDisplayStore()
 
-    private var externalWindow: UIWindow?
-    private var currentPage: PrayerExternalDisplayPage?
-    private var isStarted = false
+    static let pageDidChange = Notification.Name("margaretka.externalDisplay.pageDidChange")
+
+    private(set) var currentPage: PrayerExternalDisplayPage?
 
     private init() {}
-
-    func start() {
-        guard !isStarted else { return }
-        isStarted = true
-
-        NotificationCenter.default.addObserver(
-            forName: UIScreen.didConnectNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            guard let screen = notification.object as? UIScreen else { return }
-            Task { @MainActor in
-                self?.connect(screen: screen)
-            }
-        }
-
-        NotificationCenter.default.addObserver(
-            forName: UIScreen.didDisconnectNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            guard let screen = notification.object as? UIScreen else { return }
-            Task { @MainActor in
-                self?.disconnect(screen: screen)
-            }
-        }
-
-        connectToExistingExternalScreenIfNeeded()
-    }
 
     func update(displayIndex: Int, steps: [PrayerFlowStep], prayersByID: [UUID: Prayer]) {
         let stepIndex = displayIndex - 1
@@ -57,56 +28,12 @@ final class PrayerExternalDisplayManager {
             currentPage = nil
         }
 
-        refreshWindowContent()
+        NotificationCenter.default.post(name: Self.pageDidChange, object: nil)
     }
 
     func clear() {
         currentPage = nil
-        refreshWindowContent()
-    }
-
-    private func connectToExistingExternalScreenIfNeeded() {
-        guard externalWindow == nil else { return }
-        guard let screen = UIScreen.screens.dropFirst().first else { return }
-        connect(screen: screen)
-    }
-
-    private func connect(screen: UIScreen) {
-        guard screen != UIScreen.main else { return }
-
-        if let existing = externalWindow, existing.screen == screen {
-            refreshWindowContent()
-            return
-        }
-
-        externalWindow?.isHidden = true
-
-        let window = UIWindow(frame: screen.bounds)
-        window.screen = screen
-        window.backgroundColor = .black
-        window.rootViewController = UIHostingController(
-            rootView: PrayerExternalDisplayRootView(page: currentPage)
-        )
-        window.isHidden = false
-        externalWindow = window
-    }
-
-    private func disconnect(screen: UIScreen) {
-        guard let window = externalWindow, window.screen == screen else { return }
-        window.isHidden = true
-        externalWindow = nil
-        connectToExistingExternalScreenIfNeeded()
-    }
-
-    private func refreshWindowContent() {
-        guard let window = externalWindow else {
-            connectToExistingExternalScreenIfNeeded()
-            return
-        }
-
-        window.rootViewController = UIHostingController(
-            rootView: PrayerExternalDisplayRootView(page: currentPage)
-        )
+        NotificationCenter.default.post(name: Self.pageDidChange, object: nil)
     }
 }
 
@@ -115,7 +42,81 @@ enum PrayerExternalDisplayPage {
     case prayer(name: String, text: String)
 }
 
-private struct PrayerExternalDisplayRootView: View {
+extension AppDelegate {
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        guard connectingSceneSession.role == .windowExternalDisplayNonInteractive else {
+            return connectingSceneSession.configuration
+        }
+
+        let configuration = UISceneConfiguration(
+            name: "Prayer External Display",
+            sessionRole: connectingSceneSession.role
+        )
+        configuration.delegateClass = PrayerExternalDisplaySceneDelegate.self
+        return configuration
+    }
+}
+
+@MainActor
+final class PrayerExternalDisplaySceneDelegate: NSObject, UIWindowSceneDelegate {
+    var window: UIWindow?
+    private var hostingController: UIHostingController<PrayerExternalDisplayRootView>?
+    private var pageObserver: NSObjectProtocol?
+
+    func scene(
+        _ scene: UIScene,
+        willConnectTo session: UISceneSession,
+        options connectionOptions: UIScene.ConnectionOptions
+    ) {
+        guard session.role == .windowExternalDisplayNonInteractive,
+              let windowScene = scene as? UIWindowScene else { return }
+
+        let hostingController = UIHostingController(
+            rootView: PrayerExternalDisplayRootView(
+                page: PrayerExternalDisplayStore.shared.currentPage
+            )
+        )
+        hostingController.view.backgroundColor = .black
+
+        let window = UIWindow(windowScene: windowScene)
+        window.backgroundColor = .black
+        window.rootViewController = hostingController
+        self.window = window
+        self.hostingController = hostingController
+        window.makeKeyAndVisible()
+
+        pageObserver = NotificationCenter.default.addObserver(
+            forName: PrayerExternalDisplayStore.pageDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.refreshPage()
+            }
+        }
+    }
+
+    func sceneDidDisconnect(_ scene: UIScene) {
+        if let pageObserver {
+            NotificationCenter.default.removeObserver(pageObserver)
+        }
+        pageObserver = nil
+        hostingController = nil
+        window = nil
+    }
+
+    private func refreshPage() {
+        hostingController?.rootView = PrayerExternalDisplayRootView(
+            page: PrayerExternalDisplayStore.shared.currentPage
+        )
+    }
+}
+
+struct PrayerExternalDisplayRootView: View {
     let page: PrayerExternalDisplayPage?
 
     var body: some View {
