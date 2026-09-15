@@ -509,6 +509,8 @@ struct PrayerExternalDisplayRootView: View {
 
                 if let page {
                     ViewThatFits(in: .vertical) {
+                        pageView(page, fontSize: 80, geometry: geometry)
+                        pageView(page, fontSize: 72, geometry: geometry)
                         pageView(page, fontSize: 64, geometry: geometry)
                         pageView(page, fontSize: 56, geometry: geometry)
                         pageView(page, fontSize: 48, geometry: geometry)
@@ -518,14 +520,11 @@ struct PrayerExternalDisplayRootView: View {
                         pageView(page, fontSize: 26, geometry: geometry)
                         pageView(page, fontSize: 22, geometry: geometry)
                     }
-                    .padding(.horizontal, max(36, geometry.size.width * 0.055))
-                    .padding(.vertical, max(28, geometry.size.height * 0.05))
                 } else {
                     Text(appDisplayName)
-                        .font(.system(size: min(76, max(42, geometry.size.width * 0.06)), weight: .semibold))
+                        .font(.system(size: min(96, max(48, geometry.size.width * 0.07)), weight: .semibold))
                         .foregroundStyle(.white)
                         .multilineTextAlignment(.center)
-                        .padding(40)
                 }
             }
         }
@@ -540,7 +539,7 @@ struct PrayerExternalDisplayRootView: View {
     ) -> some View {
         switch page {
         case .breviary(let card):
-            BreviaryPrayerCardText(card: card, maxHeight: geometry.size.height * 0.9)
+            BreviaryPrayerCardText(card: card, maxHeight: geometry.size.height)
                 .font(.system(size: fontSize, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
