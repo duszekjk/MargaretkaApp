@@ -12,6 +12,11 @@ struct PrayerAutoAdvanceAudioSlice: Sendable {
     let endSampleIndex: Int
 }
 
+struct PrayerAutoAdvanceMicrophoneProbe: Sendable {
+    let first: Float
+    let last: Float
+}
+
 struct PrayerAutoAdvancePageAudioTransition: Sendable {
     let frozenPageAudio: PrayerAutoAdvanceAudioWindow
     fileprivate let postBoundaryCaptureID: UInt64
@@ -160,6 +165,10 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
 
     nonisolated func pageAudioSlice(from sampleIndex: Int) -> PrayerAutoAdvanceAudioSlice {
         pageAudio.slice(from: sampleIndex)
+    }
+
+    nonisolated func microphoneActivityProbe(sampleSpan: Int) -> PrayerAutoAdvanceMicrophoneProbe {
+        pageAudio.activityProbe(sampleSpan: sampleSpan)
     }
 
     nonisolated func freezePageAudio(
@@ -341,6 +350,20 @@ private final class PrayerAutoAdvancePageAudioBuffer: @unchecked Sendable {
             startSampleIndex: start,
             samples: samples,
             endSampleIndex: end
+        )
+    }
+
+    func activityProbe(sampleSpan: Int) -> PrayerAutoAdvanceMicrophoneProbe {
+        lock.lock()
+        defer { lock.unlock() }
+        guard !storage.isEmpty else {
+            return PrayerAutoAdvanceMicrophoneProbe(first: 0, last: 0)
+        }
+        let span = max(sampleSpan, 1)
+        let firstIndex = max(0, storage.count - span)
+        return PrayerAutoAdvanceMicrophoneProbe(
+            first: storage[firstIndex],
+            last: storage[storage.count - 1]
         )
     }
 
