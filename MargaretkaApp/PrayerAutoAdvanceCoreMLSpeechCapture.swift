@@ -207,7 +207,11 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
             DispatchQueue.global(qos: .utility).async {
                 do {
                     let session = AVAudioSession.sharedInstance()
-                    try session.setCategory(.record, mode: .measurement, options: [.duckOthers])
+                    try session.setCategory(
+                        .playAndRecord,
+                        mode: .measurement,
+                        options: [.duckOthers, .allowAirPlay]
+                    )
                     try session.setAllowHapticsAndSystemSoundsDuringRecording(true)
                     try session.setActive(true)
                     continuation.resume()
