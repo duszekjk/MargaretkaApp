@@ -63,25 +63,23 @@ enum PrayerAutoAdvanceCoreMLInstall {
                 serverPublishedAt: downloaded.manifest.publishedAt
             )
 
-            // Persist metadata before discarding the backup. A thrown persistence error
-            // rolls both the model and its metadata back to the previous working pair.
+            // Do not discard the previous working model until the new model and
+            // its metadata are both persisted successfully.
             try PrayerAutoAdvanceCoreMLDiskState.save(state)
         } catch {
             state.model = previousModel
             state.metadata = previousMetadata
 
-            if activatedCandidate {
+            if hadExistingModel, state.fileManager.fileExists(atPath: backup.path) {
                 try? state.fileManager.removeItem(at: state.modelURL)
-                if hadExistingModel, state.fileManager.fileExists(atPath: backup.path) {
-                    do {
-                        try state.fileManager.moveItem(at: backup, to: state.modelURL)
-                        state.model = (try? PrayerAutoAdvanceCoreMLModel(compiledURL: state.modelURL)) ?? previousModel
-                    } catch {
-                        // Keep the already loaded previous in-memory model if filesystem
-                        // rollback itself fails; report the original install failure below.
-                        state.model = previousModel
-                    }
+                do {
+                    try state.fileManager.moveItem(at: backup, to: state.modelURL)
+                    state.model = (try? PrayerAutoAdvanceCoreMLModel(compiledURL: state.modelURL)) ?? previousModel
+                } catch {
+                    state.model = previousModel
                 }
+            } else if activatedCandidate && !hadExistingModel {
+                try? state.fileManager.removeItem(at: state.modelURL)
             }
 
             if let previousMetadataData {
