@@ -8,6 +8,7 @@ struct PrayerAutoAdvanceLocalMetadata: Codable, Sendable {
     var trainingSessions: Int
     var trainedTransitions: Int
     var serverPublishedAt: Date?
+    var serverSHA256: String?
 }
 
 struct PrayerAutoAdvanceManifest: Codable, Sendable {
