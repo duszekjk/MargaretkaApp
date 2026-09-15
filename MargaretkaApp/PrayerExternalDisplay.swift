@@ -56,6 +56,7 @@ final class PrayerExternalDisplayController {
     private var disconnectObserver: NSObjectProtocol?
     private var externalPlaybackObservation: NSKeyValueObservation?
     private var currentVideoURL: URL?
+    private var carrierView: PrayerExternalPlaybackCarrierView?
     private var generationSerial = 0
     private var isStarted = false
 
@@ -92,6 +93,7 @@ final class PrayerExternalDisplayController {
                     "[ExternalDisplay] screen connected bounds=\(screen.bounds) " +
                     "mirrored=\(screen.mirrored != nil) totalScreens=\(UIScreen.screens.count)"
                 )
+                self?.attachPlayerLayerWhenPossible()
                 self?.refreshPresentation(reason: "screen connected")
             }
         }
@@ -123,6 +125,7 @@ final class PrayerExternalDisplayController {
             print("[ExternalDisplay] AVPlayer externalPlaybackActive=\(active)")
         }
 
+        attachPlayerLayerWhenPossible()
         logEnvironment()
         refreshPresentation(reason: "startup")
     }
@@ -172,6 +175,7 @@ final class PrayerExternalDisplayController {
         let previousURL = currentVideoURL
         currentVideoURL = url
 
+        attachPlayerLayerWhenPossible()
         player.pause()
         looper = nil
         player.removeAllItems()
@@ -191,6 +195,38 @@ final class PrayerExternalDisplayController {
                 try? FileManager.default.removeItem(at: previousURL)
             }
         }
+    }
+
+    private func attachPlayerLayerWhenPossible(attempt: Int = 0) {
+        guard carrierView == nil else { return }
+
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+        guard let window = windows.first(where: \.isKeyWindow) ?? windows.first else {
+            guard attempt < 10 else {
+                print("[ExternalDisplay] could not attach AVPlayerLayer to app window")
+                return
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+                self?.attachPlayerLayerWhenPossible(attempt: attempt + 1)
+            }
+            return
+        }
+
+        let carrier = PrayerExternalPlaybackCarrierView(
+            frame: CGRect(x: 0, y: 0, width: 1, height: 1)
+        )
+        carrier.backgroundColor = .clear
+        carrier.isUserInteractionEnabled = false
+        carrier.accessibilityElementsHidden = true
+        carrier.alpha = 0.01
+        carrier.playerLayer.player = player
+        carrier.playerLayer.videoGravity = .resizeAspect
+        window.addSubview(carrier)
+        carrierView = carrier
+
+        print("[ExternalDisplay] AVPlayerLayer attached to main window")
     }
 
     private func renderSlide(page: PrayerExternalDisplayPage?, size: CGSize) -> CGImage? {
@@ -229,20 +265,6 @@ final class PrayerExternalDisplayController {
             "[ExternalDisplay] startup supportsMultipleScenes=\(UIApplication.shared.supportsMultipleScenes) " +
             "screens=\(UIScreen.screens.count) [\(screens)]"
         )
-    }
-}
-
-struct PrayerExternalPlaybackHostView: UIViewRepresentable {
-    func makeUIView(context: Context) -> PrayerExternalPlaybackCarrierView {
-        let view = PrayerExternalPlaybackCarrierView()
-        view.backgroundColor = .clear
-        view.playerLayer.player = PrayerExternalDisplayController.shared.player
-        view.playerLayer.videoGravity = .resizeAspect
-        return view
-    }
-
-    func updateUIView(_ uiView: PrayerExternalPlaybackCarrierView, context: Context) {
-        uiView.playerLayer.player = PrayerExternalDisplayController.shared.player
     }
 }
 
