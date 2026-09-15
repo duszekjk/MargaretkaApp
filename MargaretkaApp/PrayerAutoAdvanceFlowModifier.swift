@@ -17,7 +17,12 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onAppear { synchronizeContext() }
-            .onDisappear { controller.stop() }
+            .onDisappear {
+                controller.stop()
+#if os(iOS)
+                PrayerExternalDisplayManager.shared.clear()
+#endif
+            }
             .onChange(of: activeIndex) { oldValue, newValue in
                 if newValue > oldValue, oldValue > 0 {
                     if suppressNextTrainingTransition {
@@ -69,6 +74,14 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
     }
 
     private func synchronizeContext() {
+#if os(iOS)
+        PrayerExternalDisplayManager.shared.update(
+            displayIndex: activeIndex,
+            steps: steps,
+            prayersByID: prayersByID
+        )
+#endif
+
         guard scenePhase == .active else {
             controller.stop()
             return
