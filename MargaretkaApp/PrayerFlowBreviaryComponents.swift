@@ -71,18 +71,30 @@ struct AnimatedPrayerFont: AnimatableModifier {
 struct BreviaryPrayerCardText: View {
     let lines: [OfflineBreviaryLine]
     var maxHeight: Double
+    var constrainHeight: Bool
 
-    init(card: OfflineBreviaryCard, maxHeight: Double) {
+    init(card: OfflineBreviaryCard, maxHeight: Double, constrainHeight: Bool = true) {
         lines = card.lines
-        self.maxHeight  = maxHeight
+        self.maxHeight = maxHeight
+        self.constrainHeight = constrainHeight
     }
 
-    init(cards: [OfflineBreviaryCard], maxHeight: Double) {
+    init(cards: [OfflineBreviaryCard], maxHeight: Double, constrainHeight: Bool = true) {
         lines = cards.flatMap(\.lines)
-        self.maxHeight  = maxHeight
+        self.maxHeight = maxHeight
+        self.constrainHeight = constrainHeight
     }
 
     var body: some View {
+        content
+            .frame(
+                maxWidth: .infinity,
+                maxHeight: constrainHeight ? maxHeight : nil,
+                alignment: .center
+            )
+    }
+
+    private var content: some View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(lines) { line in
                 if line.role == .choirLeft || line.role == .choirRight {
@@ -92,12 +104,13 @@ struct BreviaryPrayerCardText: View {
                         .bold(line.emphasized)
                         .italic(line.italic)
                         .multilineTextAlignment(.leading)
+                        .lineLimit(nil)
                         .minimumScaleFactor(0.6)
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: maxHeight, alignment: .center)
     }
 
     private func choirLine(_ line: OfflineBreviaryLine) -> some View {
@@ -116,6 +129,7 @@ struct BreviaryPrayerCardText: View {
                 .bold(line.emphasized)
                 .italic(line.italic)
                 .multilineTextAlignment(.leading)
+                .lineLimit(nil)
                 .minimumScaleFactor(0.6)
                 .fixedSize(horizontal: false, vertical: true)
 
