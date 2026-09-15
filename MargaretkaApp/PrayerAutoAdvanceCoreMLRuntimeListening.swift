@@ -52,17 +52,14 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         let speech = capture.speechSnapshot()
         let currentSampleIndex = capture.pageAudioSampleIndex()
 
-        // The toolbar only needs a cheap "is there a live microphone signal?" probe.
-        // Sample a handful of PCM values once per evaluation tick (~0.5 s). Copying
-        // 12 Float values and doing a few scalar operations is cheaper than launching
-        // a background task or analyzing an audio window.
-        let probeStartIndex = max(0, currentSampleIndex - 12)
-        let probe = capture.pageAudioSlice(from: probeStartIndex).samples
-        let activity = microphoneActivityProbe(probe)
+        // The toolbar only needs a near-zero-cost proof that the microphone is
+        // delivering a changing signal. Read two scalar PCM values without copying
+        // an audio window; the state compares these probes across several 0.5 s ticks.
+        let microphoneProbe = capture.microphoneActivityProbe(sampleSpan: 12)
         state.updateMicrophoneActivity(
             transcript: speech.transcript,
-            rms: activity.level,
-            variation: activity.variation,
+            firstSample: microphoneProbe.first,
+            lastSample: microphoneProbe.last,
             at: plan.date
         )
 
@@ -95,23 +92,4 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         )
 #endif
     }
-}
-
-private func microphoneActivityProbe(_ samples: [Float]) -> (level: Double, variation: Double) {
-    guard let first = samples.first else { return (0, 0) }
-
-    var peak = abs(Double(first))
-    var minimum = Double(first)
-    var maximum = Double(first)
-    for sample in samples.dropFirst() {
-        let value = Double(sample)
-        peak = max(peak, abs(value))
-        minimum = min(minimum, value)
-        maximum = max(maximum, value)
-    }
-
-    return (
-        level: peak,
-        variation: maximum - minimum
-    )
 }
