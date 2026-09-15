@@ -58,6 +58,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         evaluationTask = nil
         lastSpectralSampleIndex = 0
         spectralCache.reset()
+        state.resetMicrophoneActivity()
 #if os(iOS)
         capture.stop()
 #endif
