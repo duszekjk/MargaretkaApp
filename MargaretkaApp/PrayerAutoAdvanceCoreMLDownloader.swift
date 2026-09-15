@@ -15,7 +15,7 @@ enum PrayerAutoAdvanceCoreMLDownloader {
     static let baseURL = URL(string: "https://heptadaisy.duszekjk.com/api/models/prayer-auto-advance/")!
 
     static func manifestURL(for slot: Slot) -> URL {
-        baseURL.appendingPathComponent(slot.rawValue).appendingPathComponent("")
+        baseURL.appendingPathComponent(slot.rawValue, isDirectory: true)
     }
 
     static func fetchManifest(slot: Slot) async throws -> PrayerAutoAdvanceManifest {
