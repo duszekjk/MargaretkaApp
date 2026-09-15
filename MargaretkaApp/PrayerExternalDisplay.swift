@@ -48,6 +48,25 @@ enum PrayerExternalDisplayPage {
     }
 }
 
+extension View {
+    @ViewBuilder
+    func prayerExternalDisplayAccessory() -> some View {
+#if os(iOS)
+        if #available(iOS 27.0, *) {
+            self.sceneAccessory {
+                ExternalNonInteractiveAccessory {
+                    PrayerExternalDisplayView()
+                }
+            }
+        } else {
+            self
+        }
+#else
+        self
+#endif
+    }
+}
+
 #if os(iOS)
 import UIKit
 
@@ -97,7 +116,7 @@ final class PrayerExternalDisplaySceneDelegate: UIResponder, UIWindowSceneDelega
     }
 }
 
-private struct PrayerExternalDisplayView: View {
+struct PrayerExternalDisplayView: View {
     @ObservedObject private var store = PrayerExternalDisplayStore.shared
 
     var body: some View {
