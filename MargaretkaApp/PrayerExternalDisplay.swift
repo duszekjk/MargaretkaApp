@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 @MainActor
@@ -45,25 +46,6 @@ enum PrayerExternalDisplayPage {
         case .breviary(let id, _), .prayer(let id, _, _):
             return id
         }
-    }
-}
-
-extension View {
-    @ViewBuilder
-    func prayerExternalDisplayAccessory() -> some View {
-#if os(iOS)
-        if #available(iOS 27.0, *) {
-            self.sceneAccessory {
-                ExternalNonInteractiveAccessory {
-                    PrayerExternalDisplayView()
-                }
-            }
-        } else {
-            self
-        }
-#else
-        self
-#endif
     }
 }
 
