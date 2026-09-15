@@ -30,7 +30,12 @@ enum PrayerAutoAdvanceCoreMLDownloader {
     }
 
     static func fetch(slot: Slot, manifest suppliedManifest: PrayerAutoAdvanceManifest? = nil) async throws -> PrayerAutoAdvanceDownloadedBase {
-        let manifest = try await suppliedManifest ?? fetchManifest(slot: slot)
+        let manifest: PrayerAutoAdvanceManifest
+        if let suppliedManifest {
+            manifest = suppliedManifest
+        } else {
+            manifest = try await fetchManifest(slot: slot)
+        }
         let manifestURL = manifestURL(for: slot)
         try validateManifest(manifest, manifestURL: manifestURL)
 
