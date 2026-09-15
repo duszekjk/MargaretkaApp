@@ -64,6 +64,15 @@ struct MargaretkaAppApp: App {
             .environmentObject(priestStore)
             .environmentObject(offlineBreviaryStore)
             .environmentObject(syncService)
+#if os(iOS)
+            .background(alignment: .topLeading) {
+                PrayerExternalPlayerViewControllerHost()
+                    .frame(width: 1, height: 1)
+                    .opacity(0.01)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+#endif
             .overlay {
                 if showUiTestGate {
                     UiTestGateView(isPresented: $showUiTestGate)
