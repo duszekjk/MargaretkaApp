@@ -7,6 +7,7 @@ struct PrayerAutoAdvanceLocalMetadata: Codable, Sendable {
     var lastUpdatedAt: Date
     var trainingSessions: Int
     var trainedTransitions: Int
+    var serverPublishedAt: Date?
 }
 
 struct PrayerAutoAdvanceManifest: Codable, Sendable {
@@ -16,4 +17,5 @@ struct PrayerAutoAdvanceManifest: Codable, Sendable {
     let sha256: String
     let size: Int?
     let publishedAt: Date?
+    let trainingLoss: Double?
 }
