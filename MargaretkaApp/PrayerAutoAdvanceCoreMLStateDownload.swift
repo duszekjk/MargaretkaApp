@@ -39,6 +39,15 @@ extension PrayerAutoAdvanceCoreMLState {
 #if DEBUG
     @discardableResult
     func refreshLatestModelFromServerIfNeeded() async -> Bool {
+        if model == nil {
+            do {
+                try installBundledDeveloperSeed()
+                lastError = nil
+            } catch {
+                lastError = error.localizedDescription
+            }
+        }
+
         if isDownloading {
             while isDownloading, !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(100))
