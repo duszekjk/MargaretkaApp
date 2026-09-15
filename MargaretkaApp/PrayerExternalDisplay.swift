@@ -51,13 +51,19 @@ enum PrayerExternalDisplayPage {
 #if os(iOS)
 import UIKit
 
+private extension UISceneSession.Role {
+    var isPrayerExternalDisplay: Bool {
+        self == .windowExternalDisplay || self == .windowExternalDisplayNonInteractive
+    }
+}
+
 extension AppDelegate {
     func application(
         _ application: UIApplication,
         configurationForConnecting connectingSceneSession: UISceneSession,
         options: UIScene.ConnectionOptions
     ) -> UISceneConfiguration {
-        guard connectingSceneSession.role == .windowExternalDisplay else {
+        guard connectingSceneSession.role.isPrayerExternalDisplay else {
             return connectingSceneSession.configuration
         }
 
@@ -79,7 +85,7 @@ final class PrayerExternalDisplaySceneDelegate: UIResponder, UIWindowSceneDelega
         willConnectTo session: UISceneSession,
         options connectionOptions: UIScene.ConnectionOptions
     ) {
-        guard session.role == .windowExternalDisplay,
+        guard session.role.isPrayerExternalDisplay,
               let windowScene = scene as? UIWindowScene else { return }
 
         let window = UIWindow(windowScene: windowScene)
