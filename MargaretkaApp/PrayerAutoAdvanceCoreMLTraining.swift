@@ -181,7 +181,25 @@ extension PrayerAutoAdvanceCoreMLState {
             recordTrainingTrace("persisting-state: metadata/validation JSON")
             try await PrayerAutoAdvanceCoreMLDiskState.saveInBackground(self)
 
-            lastError = nil
+            var nonFatalUploadError: String?
+#if DEBUG
+            stage = "uploading-model"
+            diagnostics.pipelineState = stage
+            do {
+                try await PrayerAutoAdvanceCoreMLUploader.upload(
+                    modelAt: destinationModelURL,
+                    trainingLoss: after.loss
+                )
+                diagnostics.event(String(format: "model upload complete trainingLoss=%.8f", after.loss))
+                recordTrainingTrace(String(format: "uploading-model: SUCCESS loss=%.8f", after.loss))
+            } catch {
+                nonFatalUploadError = error.localizedDescription
+                diagnostics.error("model upload failed: \(error.localizedDescription)")
+                recordTrainingTrace("uploading-model: FAIL \(error.localizedDescription)")
+            }
+#endif
+
+            lastError = nonFatalUploadError
             lastTrainingEvent = "Model zaktualizowany zbiorczo na podstawie \(trainedPageCount) stron i \(batch.samples.count) próbek."
             diagnostics.acceptedTrainingCount += 1
             diagnostics.pipelineState = "trained"
