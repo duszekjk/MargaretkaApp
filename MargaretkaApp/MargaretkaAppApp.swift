@@ -30,6 +30,11 @@ struct MargaretkaAppApp: App {
 
     init() {
         MargaretkaAppShortcuts.updateAppShortcutParameters()
+#if DEBUG
+        Task { @MainActor in
+            _ = await PrayerAutoAdvanceCoreMLState.shared.refreshLatestModelFromServerIfNeeded()
+        }
+#endif
 #if os(iOS)
         Task { @MainActor in
             PrayerExternalDisplayController.shared.start()
