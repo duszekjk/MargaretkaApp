@@ -1,5 +1,6 @@
 #if os(iOS)
 import SwiftUI
+import UIKit
 
 @MainActor
 final class PrayerExternalDisplayStore {
@@ -39,6 +40,83 @@ final class PrayerExternalDisplayStore {
 enum PrayerExternalDisplayPage {
     case breviary(OfflineBreviaryCard)
     case prayer(name: String, text: String)
+}
+
+extension AppDelegate {
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        let configuration = UISceneConfiguration(
+            name: nil,
+            sessionRole: connectingSceneSession.role
+        )
+
+        if connectingSceneSession.role == .windowExternalDisplayNonInteractive {
+            configuration.delegateClass = PrayerExternalDisplaySceneDelegate.self
+        }
+
+        return configuration
+    }
+}
+
+@MainActor
+final class PrayerExternalDisplaySceneDelegate: NSObject, UIWindowSceneDelegate {
+    var window: UIWindow?
+
+    private var hostingController: UIHostingController<PrayerExternalDisplayRootView>?
+    private var pageObserver: NSObjectProtocol?
+
+    func scene(
+        _ scene: UIScene,
+        willConnectTo session: UISceneSession,
+        options connectionOptions: UIScene.ConnectionOptions
+    ) {
+        guard session.role == .windowExternalDisplayNonInteractive,
+              let windowScene = scene as? UIWindowScene else { return }
+
+        let hostingController = UIHostingController(
+            rootView: PrayerExternalDisplayRootView(
+                page: PrayerExternalDisplayStore.shared.currentPage
+            )
+        )
+        hostingController.view.backgroundColor = .black
+
+        let window = UIWindow(windowScene: windowScene)
+        window.backgroundColor = .black
+        window.rootViewController = hostingController
+
+        self.hostingController = hostingController
+        self.window = window
+
+        pageObserver = NotificationCenter.default.addObserver(
+            forName: PrayerExternalDisplayStore.pageDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.refreshPage()
+            }
+        }
+
+        window.makeKeyAndVisible()
+    }
+
+    func sceneDidDisconnect(_ scene: UIScene) {
+        if let pageObserver {
+            NotificationCenter.default.removeObserver(pageObserver)
+        }
+        pageObserver = nil
+        hostingController = nil
+        window = nil
+    }
+
+    private func refreshPage() {
+        hostingController?.rootView = PrayerExternalDisplayRootView(
+            page: PrayerExternalDisplayStore.shared.currentPage
+        )
+    }
 }
 
 struct PrayerExternalDisplayRootView: View {
