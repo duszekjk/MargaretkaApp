@@ -7,25 +7,37 @@ struct PrayerAutoAdvanceDownloadedBase {
 }
 
 enum PrayerAutoAdvanceCoreMLDownloader {
-    static let manifestURL = URL(string: "https://heptadaisy.duszekjk.com/api/models/prayer-auto-advance/latest/")!
+    enum Slot: String, Sendable {
+        case latest
+        case best
+    }
 
-    static func fetch() async throws -> PrayerAutoAdvanceDownloadedBase {
+    static let baseURL = URL(string: "https://heptadaisy.duszekjk.com/api/models/prayer-auto-advance/")!
+
+    static func manifestURL(for slot: Slot) -> URL {
+        baseURL.appendingPathComponent(slot.rawValue, isDirectory: true)
+    }
+
+    static func fetchManifest(slot: Slot) async throws -> PrayerAutoAdvanceManifest {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-
-        let (manifestData, manifestResponse) = try await URLSession.shared.data(from: manifestURL)
+        let url = manifestURL(for: slot)
+        let (manifestData, manifestResponse) = try await URLSession.shared.data(from: url)
         try validate(manifestResponse)
         let manifest = try decoder.decode(PrayerAutoAdvanceManifest.self, from: manifestData)
-        guard manifest.modelVersion == PrayerAutoAdvanceCoreMLModel.currentModelVersion else {
-            throw DownloadError.incompatibleModelVersion
+        try validateManifest(manifest, manifestURL: url)
+        return manifest
+    }
+
+    static func fetch(slot: Slot, manifest suppliedManifest: PrayerAutoAdvanceManifest? = nil) async throws -> PrayerAutoAdvanceDownloadedBase {
+        let manifest: PrayerAutoAdvanceManifest
+        if let suppliedManifest {
+            manifest = suppliedManifest
+        } else {
+            manifest = try await fetchManifest(slot: slot)
         }
-        guard manifest.featureSchemaVersion == PrayerAutoAdvanceCoreMLModel.currentFeatureSchemaVersion else {
-            throw DownloadError.incompatibleFeatureSchema
-        }
-        guard manifest.modelURL.scheme?.lowercased() == "https",
-              manifest.modelURL.host?.lowercased() == manifestURL.host?.lowercased() else {
-            throw DownloadError.invalidModelURL
-        }
+        let manifestURL = manifestURL(for: slot)
+        try validateManifest(manifest, manifestURL: manifestURL)
 
         let (archiveData, archiveResponse) = try await URLSession.shared.data(from: manifest.modelURL)
         try validate(archiveResponse)
@@ -37,6 +49,19 @@ enum PrayerAutoAdvanceCoreMLDownloader {
             throw DownloadError.checksumMismatch
         }
         return PrayerAutoAdvanceDownloadedBase(manifest: manifest, archiveData: archiveData)
+    }
+
+    private static func validateManifest(_ manifest: PrayerAutoAdvanceManifest, manifestURL: URL) throws {
+        guard manifest.modelVersion == PrayerAutoAdvanceCoreMLModel.currentModelVersion else {
+            throw DownloadError.incompatibleModelVersion
+        }
+        guard manifest.featureSchemaVersion == PrayerAutoAdvanceCoreMLModel.currentFeatureSchemaVersion else {
+            throw DownloadError.incompatibleFeatureSchema
+        }
+        guard manifest.modelURL.scheme?.lowercased() == "https",
+              manifest.modelURL.host?.lowercased() == manifestURL.host?.lowercased() else {
+            throw DownloadError.invalidModelURL
+        }
     }
 
     private static func validate(_ response: URLResponse) throws {
