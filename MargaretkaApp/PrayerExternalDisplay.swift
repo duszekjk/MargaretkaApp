@@ -42,25 +42,7 @@ enum PrayerExternalDisplayPage {
     case prayer(name: String, text: String)
 }
 
-extension AppDelegate {
-    func application(
-        _ application: UIApplication,
-        configurationForConnecting connectingSceneSession: UISceneSession,
-        options: UIScene.ConnectionOptions
-    ) -> UISceneConfiguration {
-        let configuration = UISceneConfiguration(
-            name: nil,
-            sessionRole: connectingSceneSession.role
-        )
-
-        if connectingSceneSession.role == .windowExternalDisplayNonInteractive {
-            configuration.delegateClass = PrayerExternalDisplaySceneDelegate.self
-        }
-
-        return configuration
-    }
-}
-
+@objc(PrayerExternalDisplaySceneDelegate)
 @MainActor
 final class PrayerExternalDisplaySceneDelegate: NSObject, UIWindowSceneDelegate {
     var window: UIWindow?
@@ -75,6 +57,8 @@ final class PrayerExternalDisplaySceneDelegate: NSObject, UIWindowSceneDelegate 
     ) {
         guard session.role == .windowExternalDisplayNonInteractive,
               let windowScene = scene as? UIWindowScene else { return }
+
+        print("[ExternalDisplay] connected role=\(session.role.rawValue) screen=\(windowScene.screen.bounds)")
 
         let hostingController = UIHostingController(
             rootView: PrayerExternalDisplayRootView(
@@ -104,6 +88,7 @@ final class PrayerExternalDisplaySceneDelegate: NSObject, UIWindowSceneDelegate 
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
+        print("[ExternalDisplay] disconnected")
         if let pageObserver {
             NotificationCenter.default.removeObserver(pageObserver)
         }
