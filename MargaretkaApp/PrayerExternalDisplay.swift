@@ -509,6 +509,8 @@ struct PrayerExternalDisplayRootView: View {
 
                 if let page {
                     ViewThatFits(in: .vertical) {
+                        pageView(page, fontSize: 96, geometry: geometry)
+                        pageView(page, fontSize: 88, geometry: geometry)
                         pageView(page, fontSize: 80, geometry: geometry)
                         pageView(page, fontSize: 72, geometry: geometry)
                         pageView(page, fontSize: 64, geometry: geometry)
@@ -544,19 +546,13 @@ struct PrayerExternalDisplayRootView: View {
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 
-        case .prayer(let name, let text):
-            VStack(spacing: max(18, fontSize * 0.5)) {
-                Text(name)
-                    .font(.system(size: fontSize * 0.72, weight: .bold))
-                    .multilineTextAlignment(.center)
-
-                Text(text)
-                    .font(.system(size: fontSize, weight: .semibold))
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        case .prayer(_, let text):
+            Text(text)
+                .font(.system(size: fontSize, weight: .semibold))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
     }
 }
