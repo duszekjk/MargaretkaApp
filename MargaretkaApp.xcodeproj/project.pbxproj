@@ -585,7 +585,8 @@
 				INFOPLIST_FILE = MargaretkaApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Heptadaisy;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Potrzebujemy dostępu do mikrofonu, aby nagrać Twoją modlitwę.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Mikrofon jest używany lokalnie do rozpoznawania odmawianej modlitwy i automatycznego przełączania stron. Nagrania nie są zapisywane ani wysyłane.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Rozpoznawanie mowy jest używane lokalnie do dopasowania wypowiadanej modlitwy do aktualnej strony. Aplikacja wymaga rozpoznawania on-device.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -637,7 +638,8 @@
 				INFOPLIST_FILE = MargaretkaApp/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Heptadaisy;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.lifestyle";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Potrzebujemy dostępu do mikrofonu, aby nagrać Twoją modlitwę.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Mikrofon jest używany lokalnie do rozpoznawania odmawianej modlitwy i automatycznego przełączania stron. Nagrania nie są zapisywane ani wysyłane.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Rozpoznawanie mowy jest używane lokalnie do dopasowania wypowiadanej modlitwy do aktualnej strony. Aplikacja wymaga rozpoznawania on-device.";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;

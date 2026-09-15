@@ -4,8 +4,31 @@
     "" : {
 
     },
+    "… oraz %lld dalszych próbek w pliku treningowym" : {
+
+    },
     "[%lld]" : {
 
+    },
+    "#%lld  label=%@" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "#%1$lld  label=%2$@"
+          }
+        }
+      }
+    },
+    "#%lld  nowe strony %lld  loss %@ → %@" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "#%1$lld  nowe strony %2$lld  loss %3$@ → %4$@"
+          }
+        }
+      }
     },
     "%@" : {
 
@@ -139,6 +162,9 @@
     "Aby otoczyć kapłana wierną, codzienną modlitwą i wsparciem – szczególnie w wierności powołaniu, świętości życia i gorliwości duszpasterskiej." : {
 
     },
+    "Accuracy" : {
+
+    },
     "Active period" : {
 
     },
@@ -198,13 +224,28 @@
     "Average prayer duration" : {
 
     },
+    "Balanced" : {
+
+    },
     "Bezpłatne EPUB Universalis" : {
+
+    },
+    "Bieżące próbki RAM — audio i tekst" : {
 
     },
     "Błąd" : {
 
     },
+    "Błąd odczytu: %@" : {
+
+    },
+    "BŁĄD: %@" : {
+
+    },
     "Brak" : {
+
+    },
+    "Brak bieżących próbek RAM. Zapisane dane fresh/replay powyżej są niezależne od tego podglądu." : {
 
     },
     "Brak brewiarza offline" : {
@@ -213,10 +254,16 @@
     "Brak dodatkowych modlitw w tym okresie." : {
 
     },
-    "Brak próbek. Zostaną dodane podczas działania treningu, maksymalnie jedna co 5 sekund." : {
+    "Brak pomiarów jakości" : {
 
     },
     "Brak tokenów" : {
+
+    },
+    "Brak wpisów." : {
+
+    },
+    "Brak zapisanych stron fresh/replay." : {
 
     },
     "Brewiarz offline" : {
@@ -262,6 +309,9 @@
     "Compact view" : {
 
     },
+    "czas %@" : {
+
+    },
     "Czas: %@" : {
 
     },
@@ -282,6 +332,9 @@
       }
     },
     "Dane osobowe" : {
+
+    },
+    "Dane pozostają na dysku do następnej zakończonej modlitwy." : {
 
     },
     "Dane zmieniły się jednocześnie na tym urządzeniu i w chmurze. Wybierz, które zachować." : {
@@ -369,6 +422,9 @@
     "Dodaj osobę do modlitwy" : {
 
     },
+    "Dokładne wartości przed i po update — licznik stron oznacza nowe strony; replay jest raportowany osobno w jakości treningu." : {
+
+    },
     "Dokument %lld z %lld" : {
       "localizations" : {
         "pl" : {
@@ -385,12 +441,12 @@
     "E-mail" : {
 
     },
-    "E%lld %lld/%lld" : {
+    "E%lld %lld/%lldp" : {
       "localizations" : {
         "pl" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "E%1$lld %2$lld/%3$lld"
+            "value" : "E%1$lld %2$lld/%3$lldp"
           }
         }
       }
@@ -436,7 +492,23 @@
     "Epoka" : {
 
     },
+    "epoka %lld/%lld" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "epoka %1$lld/%2$lld"
+          }
+        }
+      }
+    },
     "ERR: %@" : {
+
+    },
+    "ETA —" : {
+
+    },
+    "ETA ~%@" : {
 
     },
     "every %lld %@" : {
@@ -459,6 +531,9 @@
         }
       }
     },
+    "F1" : {
+
+    },
     "For whom should I check the average prayer duration?" : {
 
     },
@@ -468,10 +543,23 @@
     "frequency_label" : {
 
     },
+    "fresh %lld/%lld" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "fresh %1$lld/%2$lld"
+          }
+        }
+      }
+    },
     "Funkcja działa lokalnie. Dźwięk z mikrofonu nie jest zapisywany ani wysyłany na serwer. Rozpoznawanie mowy jest wymuszane w trybie on-device. Model bazowy jest pobierany dopiero przy pierwszym włączeniu tej funkcji." : {
 
     },
     "Gotowe" : {
+
+    },
+    "Hit" : {
 
     },
     "Ikona" : {
@@ -522,6 +610,9 @@
     "Jak to działa (w skrócie)" : {
 
     },
+    "Jakość treningu" : {
+
+    },
     "Kalibracja czasu" : {
 
     },
@@ -555,8 +646,21 @@
     "Kopiuj" : {
 
     },
+    "Kopiuj diagnostykę" : {
+
+    },
     "Krok" : {
 
+    },
+    "krok %lld/%lld" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "krok %1$lld/%2$lld"
+          }
+        }
+      }
     },
     "Kroki startowe" : {
 
@@ -605,6 +709,9 @@
 
     },
     "mean %@" : {
+
+    },
+    "Metryki pojawią się po następnym udanym zbiorczym treningu." : {
 
     },
     "min %@" : {
@@ -657,9 +764,6 @@
 
     },
     "Najmocniejszy miesiąc: %@" : {
-
-    },
-    "Nasłuch treningowy aktywny. Stuknij, aby rozwinąć diagnostykę." : {
 
     },
     "Nazwa" : {
@@ -737,13 +841,19 @@
     "Osoby" : {
 
     },
+    "Ostatni komunikat: %@" : {
+
+    },
     "Ostatni osiągnięty: %@" : {
+
+    },
+    "Ostatni trening" : {
 
     },
     "Ostatnia synchronizacja" : {
 
     },
-    "Ostatnie rzeczywiste wejścia. Audio i tekst diagnostyczny istnieją tylko w RAM i znikają po restarcie aplikacji." : {
+    "Ostatnie rzeczywiste wejścia z PCM i tekstem diagnostycznym. Ta część istnieje tylko w RAM i znika po restarcie aplikacji." : {
 
     },
     "Otwórz brewiarz w przeglądarce" : {
@@ -768,6 +878,9 @@
         }
       }
     },
+    "page save…" : {
+
+    },
     "Pamięć" : {
 
     },
@@ -781,6 +894,9 @@
 
     },
     "Po co?" : {
+
+    },
+    "Po następnym udanym treningu pojawią się dodatkowe metryki i wykresy." : {
 
     },
     "Pobieram zdjęcia %lld z %lld…" : {
@@ -811,6 +927,12 @@
     "Pokaż" : {
 
     },
+    "Pokaż mniej" : {
+
+    },
+    "Pokaż więcej (+10)" : {
+
+    },
     "Pokazane są dane, którymi zarządza Margaretka. Systemowe podglądy i tymczasowe pliki iOS nie są tu wliczane." : {
 
     },
@@ -830,6 +952,9 @@
 
     },
     "Pozostałe" : {
+
+    },
+    "Pozostałe strony: %lld" : {
 
     },
     "Pozostało około %@" : {
@@ -853,8 +978,15 @@
     "Próbki" : {
 
     },
-    "Próbki danych modelu" : {
-
+    "próbki %lld · P/N %lld/%lld" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "próbki %1$lld · P/N %2$lld/%3$lld"
+          }
+        }
+      }
     },
     "Przeciągnij zdjęcie, żeby zmienić pozycję" : {
 
@@ -880,6 +1012,9 @@
     "Przykładowe komendy" : {
 
     },
+    "Przykładowe próbki z tej strony (maks. 8)" : {
+
+    },
     "Przywróć" : {
 
     },
@@ -901,6 +1036,9 @@
     "Przywrócono ustawienia domyślne" : {
 
     },
+    "razem %lld" : {
+
+    },
     "Rekordy" : {
 
     },
@@ -910,6 +1048,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Usuń ostatnie"
+          }
+        }
+      }
+    },
+    "replay %lld/%lld" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "replay %1$lld/%2$lld"
           }
         }
       }
@@ -962,6 +1110,9 @@
     "Schema cech" : {
 
     },
+    "Sekundy" : {
+
+    },
     "Seria" : {
 
     },
@@ -984,6 +1135,9 @@
 
     },
     "Skrót w skrócie" : {
+
+    },
+    "Ślad etapów ostatnich prób treningu. Przy błędzie ostatnia linia wskazuje etap, na którym pipeline się zatrzymał." : {
 
     },
     "snap %lld" : {
@@ -1011,6 +1165,22 @@
     "Stop" : {
 
     },
+    "stored %lld/%lldp" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "stored %1$lld/%2$lldp"
+          }
+        }
+      }
+    },
+    "Strony" : {
+
+    },
+    "Strony w aktualizacji: %lld" : {
+
+    },
     "Stuknij dwa razy, aby otworzyć pełną diagnostykę." : {
 
     },
@@ -1033,6 +1203,12 @@
 
     },
     "Synchronizuję…" : {
+
+    },
+    "t=%@" : {
+
+    },
+    "Te rekordy są odczytywane z dysku i pozostają dostępne po restarcie. Zawierają dokładne cechy wejściowe, etykietę i czas względem ręcznego przewinięcia. PCM i pełny tekst diagnostyczny nie są utrwalane." : {
 
     },
     "Tekst EPUB jest upraszczany, zapisywany bez ozdobników i kompresowany. Plik EPUB nie pozostaje w aplikacji po imporcie." : {
@@ -1505,6 +1681,15 @@
     "TRAIN" : {
 
     },
+    "Trwa przygotowywanie i zapisywanie stron." : {
+
+    },
+    "Trwa zbiorczy trening modelu." : {
+
+    },
+    "Trwałe strony używane przez grouped training. Fresh czekają na następny update, replay pozostaje historyczną pulą stabilizującą kolejne treningi." : {
+
+    },
     "Tryb" : {
 
     },
@@ -1538,6 +1723,9 @@
           }
         }
       }
+    },
+    "Update" : {
+
     },
     "Ustalcie formę modlitwy (minimum poniżej)." : {
 
@@ -1602,7 +1790,7 @@
     "Usunięte zostaną pobrane oficja oraz obrazy należące tylko do tych dni." : {
 
     },
-    "Usuwa lokalny spersonalizowany model, metadane, historię kalibracji czasu, historię epok i zbiór walidacyjny. Po ponownym włączeniu funkcji zostanie pobrany aktualny model bazowy z serwera." : {
+    "Usuwa lokalny spersonalizowany model, oczekujące strony treningowe, metadane, historię kalibracji czasu, historię epok i zbiór walidacyjny. Po ponownym włączeniu funkcji zostanie pobrany aktualny model bazowy z serwera." : {
 
     },
     "Usuwanie zakresu" : {
@@ -1646,6 +1834,12 @@
         }
       }
     },
+    "voice no" : {
+
+    },
+    "voice yes" : {
+
+    },
     "W e-mailu użyj przycisku pobrania przy załączniku EPUB i zapisz plik w Plikach — nie otwieraj go w czytniku. Takie wiadomości nie przychodzą automatycznie: dla każdego miesiąca ponownie wybierz Create and send. Następnie zaimportuj zapisany EPUB w aplikacji." : {
 
     },
@@ -1662,6 +1856,9 @@
 
     },
     "Warianty oficjum" : {
+
+    },
+    "Wczytywanie zapisanych stron…" : {
 
     },
     "weekly" : {
@@ -1731,6 +1928,9 @@
     "Wygeneruj obraz" : {
 
     },
+    "Wykres loss na żywo podczas treningu" : {
+
+    },
     "Wyloguj" : {
 
     },
@@ -1766,6 +1966,19 @@
     },
     "Zamknij" : {
 
+    },
+    "Zapisane dane treningowe" : {
+
+    },
+    "Zapisane strony treningowe: %lld/%lld" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Zapisane strony treningowe: %1$lld/%2$lld"
+          }
+        }
+      }
     },
     "Zapisano jako: %@" : {
 
@@ -1820,6 +2033,16 @@
     },
     "Δloss" : {
 
+    },
+    "Δloss %@   mean |ΔP| %@   max %@" : {
+      "localizations" : {
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Δloss %1$@   mean |ΔP| %2$@   max %3$@"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
