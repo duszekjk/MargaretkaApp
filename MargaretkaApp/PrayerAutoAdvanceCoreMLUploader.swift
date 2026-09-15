@@ -6,7 +6,7 @@ import Security
 enum PrayerAutoAdvanceCoreMLUploader {
     static let uploadURL = URL(string: "https://heptadaisy.duszekjk.com/api/models/prayer-auto-advance/upload/")!
 
-    static func upload(modelAt modelURL: URL, trainingLoss: Double) async throws {
+    static func upload(modelAt modelURL: URL, trainingLoss: Double) async throws -> Date? {
         guard trainingLoss.isFinite, trainingLoss >= 0 else {
             throw UploadError.invalidTrainingLoss
         }
@@ -41,6 +41,10 @@ enum PrayerAutoAdvanceCoreMLUploader {
             let detail = (try? JSONDecoder().decode(ServerError.self, from: responseData).detail)
             throw UploadError.server(status: http.statusCode, detail: detail)
         }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(UploadResponse.self, from: responseData).latest.publishedAt
     }
 
     private static func accessToken() -> String? {
@@ -55,6 +59,14 @@ enum PrayerAutoAdvanceCoreMLUploader {
         guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
               let data = result as? Data else { return nil }
         return String(data: data, encoding: .utf8)
+    }
+
+    private struct UploadResponse: Decodable {
+        let latest: Latest
+
+        struct Latest: Decodable {
+            let publishedAt: Date?
+        }
     }
 
     private struct ServerError: Decodable {
