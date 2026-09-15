@@ -202,10 +202,10 @@ final class PrayerAutoAdvanceCoreMLModel: @unchecked Sendable {
     }
 
     private final class ModelWriteJob: @unchecked Sendable {
-        let model: MLModel
+        let model: any MLWritable
         let destinationURL: URL
 
-        init(model: MLModel, destinationURL: URL) {
+        init(model: any MLWritable, destinationURL: URL) {
             self.model = model
             self.destinationURL = destinationURL
         }
