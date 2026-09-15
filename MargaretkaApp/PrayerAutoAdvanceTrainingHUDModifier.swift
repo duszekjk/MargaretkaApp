@@ -47,10 +47,21 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
     @ObservedObject private var liveProgress = PrayerAutoAdvanceLiveTrainingProgress.shared
     @ObservedObject private var control = PrayerAutoAdvanceTrainingHUDControl.shared
 
-    /// The toolbar indicator reflects the live capture state, not whether training
-    /// merely happens to be enabled in preferences.
-    private var isCaptureActive: Bool {
+    private var isListening: Bool {
         trainingEnabled && diagnostics.speechState == "listening"
+    }
+
+    private var isMicrophoneActive: Bool {
+        isListening && state.microphoneSignalActive
+    }
+
+    private var isProcessingPageData: Bool {
+        diagnostics.pipelineState == "materializing"
+    }
+
+    private var microphoneScale: CGFloat {
+        guard isListening else { return 1 }
+        return 1 + CGFloat(min(max(state.microphoneActivityLevel, 0), 1)) * 0.11
     }
 
     func body(content: Content) -> some View {
@@ -76,6 +87,7 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
             }
             .onChange(of: trainingEnabled) { _, enabled in
                 if !enabled {
+                    state.resetMicrophoneActivity()
                     control.collapseHUD()
                 }
             }
@@ -95,16 +107,39 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
         Button {
             control.registerToolbarTap()
         } label: {
-            Image(systemName: isCaptureActive ? "waveform.badge.mic" : "waveform")
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(isCaptureActive ? Color.orange : Color.primary)
+            ZStack(alignment: .bottomTrailing) {
+                Image(systemName: isListening ? "waveform.badge.mic" : "waveform")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(isMicrophoneActive ? Color.orange : Color.primary)
+                    .scaleEffect(microphoneScale)
+                    .animation(.easeOut(duration: 0.16), value: isMicrophoneActive)
+                    .animation(.spring(response: 0.28, dampingFraction: 0.72), value: microphoneScale)
+
+                if isProcessingPageData {
+                    ProgressView()
+                        .controlSize(.mini)
+                        .scaleEffect(0.62)
+                        .offset(x: 5, y: 5)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.18), value: isProcessingPageData)
         }
-        .accessibilityLabel(
-            isCaptureActive
-                ? "Nasłuch treningowy aktywny. Stuknij, aby rozwinąć diagnostykę."
-                : "Diagnostyka treningu. Stuknij, aby rozwinąć."
-        )
+        .accessibilityLabel(toolbarAccessibilityLabel)
         .accessibilityHint("Stuknij dwa razy, aby otworzyć pełną diagnostykę.")
+    }
+
+    private var toolbarAccessibilityLabel: String {
+        if isProcessingPageData {
+            return "Przetwarzanie i zapisywanie danych strony. Stuknij, aby rozwinąć diagnostykę."
+        }
+        if isMicrophoneActive {
+            return "Mikrofon odbiera mowę. Stuknij, aby rozwinąć diagnostykę."
+        }
+        if isListening {
+            return "Mikrofon nasłuchuje, ale nie wykrywa teraz mowy. Stuknij, aby rozwinąć diagnostykę."
+        }
+        return "Diagnostyka treningu. Stuknij, aby rozwinąć."
     }
 #endif
 
@@ -126,6 +161,13 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
                 Text("pipe \(diagnostics.pipelineState)")
                 Text("snap \(diagnostics.snapshotCount)")
                 Text("swipe \(diagnostics.manualSwipeCount)")
+            }
+            HStack(spacing: 7) {
+                Text(String(format: "mic %.2f", state.microphoneActivityLevel))
+                Text(state.microphoneSignalActive ? "voice yes" : "voice no")
+                if isProcessingPageData {
+                    Text("page save…")
+                }
             }
             HStack(spacing: 7) {
                 if let loss = diagnostics.logLoss {
