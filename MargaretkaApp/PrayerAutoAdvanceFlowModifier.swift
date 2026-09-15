@@ -16,7 +16,6 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .prayerExternalDisplayAccessory()
             .onAppear { synchronizeContext() }
             .onDisappear {
                 controller.stop()
