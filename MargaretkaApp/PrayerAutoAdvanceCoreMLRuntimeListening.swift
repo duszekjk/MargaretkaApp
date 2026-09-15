@@ -36,6 +36,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
             diagnostics.event("on-device speech active")
             statusMessage = nil
         } catch {
+            state.resetMicrophoneActivity()
             diagnostics.speechState = "error"
             diagnostics.error(error.localizedDescription)
             statusMessage = error.localizedDescription
@@ -50,6 +51,21 @@ extension PrayerAutoAdvanceCoreMLRuntime {
 
         let speech = capture.speechSnapshot()
         let currentSampleIndex = capture.pageAudioSampleIndex()
+
+        // A tiny recent PCM window is enough for the toolbar activity indicator.
+        // Its RMS/variation calculation stays off MainActor and does not touch the
+        // page-wide spectral/materialization path.
+        let activityStartIndex = max(0, currentSampleIndex - 4_096)
+        let activitySlice = capture.pageAudioSlice(from: activityStartIndex)
+        let activity = await Task.detached(priority: .background) {
+            microphoneActivityMetrics(activitySlice.samples)
+        }.value
+        state.updateMicrophoneActivity(
+            transcript: speech.transcript,
+            rms: activity.rms,
+            variation: activity.variation,
+            at: plan.date
+        )
 
         if let slot = plan.reservoirSlot, let context {
             let candidate = PrayerAutoAdvanceTrainingCandidate(
@@ -80,4 +96,24 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         )
 #endif
     }
+}
+
+private func microphoneActivityMetrics(_ samples: [Float]) -> (rms: Double, variation: Double) {
+    guard !samples.isEmpty else { return (0, 0) }
+
+    var squaredSum = 0.0
+    var variationSum = 0.0
+    var previous = Double(samples[0])
+    for sample in samples {
+        let value = Double(sample)
+        squaredSum += value * value
+        variationSum += abs(value - previous)
+        previous = value
+    }
+
+    let count = Double(samples.count)
+    return (
+        rms: sqrt(squaredSum / count),
+        variation: variationSum / count
+    )
 }
