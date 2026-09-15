@@ -34,6 +34,8 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
 
     private var lastMicrophoneTranscript = ""
     private var microphoneActiveUntil = Date.distantPast
+    private var microphoneProbeHistory: [Double] = []
+    private static let microphoneProbeHistoryLimit = 12
 
     let fileManager = FileManager.default
 
@@ -78,26 +80,37 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
 
     func updateMicrophoneActivity(
         transcript: String,
-        rms: Double,
-        variation: Double,
+        firstSample: Float,
+        lastSample: Float,
         at date: Date
     ) {
         let transcriptChanged = !transcript.isEmpty && transcript != lastMicrophoneTranscript
         lastMicrophoneTranscript = transcript
 
-        // Raw PCM is normalized to roughly -1...1. Requiring both level and
-        // short-term variation avoids lighting the indicator for a steady hum.
-        let audioLooksLikeSpeech = rms >= 0.006 && variation >= 0.0015
-        if transcriptChanged || audioLooksLikeSpeech {
+        microphoneProbeHistory.append(Double(firstSample))
+        microphoneProbeHistory.append(Double(lastSample))
+        if microphoneProbeHistory.count > Self.microphoneProbeHistoryLimit {
+            microphoneProbeHistory.removeFirst(
+                microphoneProbeHistory.count - Self.microphoneProbeHistoryLimit
+            )
+        }
+
+        let peak = microphoneProbeHistory.map(abs).max() ?? 0
+        let minimum = microphoneProbeHistory.min() ?? 0
+        let maximum = microphoneProbeHistory.max() ?? 0
+        let temporalVariation = maximum - minimum
+
+        // The history spans roughly 3 seconds (two scalar samples every 0.5 s).
+        // This is intentionally a coarse liveness check, not audio analysis.
+        let audioLooksLive = peak >= 0.006 && temporalVariation >= 0.0015
+        if transcriptChanged || audioLooksLive {
             microphoneActiveUntil = date.addingTimeInterval(transcriptChanged ? 1.1 : 0.8)
         }
 
-        let normalizedLevel = min(max((rms - 0.003) / 0.035, 0), 1)
+        let normalizedLevel = min(max((peak - 0.003) / 0.035, 0), 1)
         if normalizedLevel >= microphoneActivityLevel {
-            // Fast attack.
             microphoneActivityLevel = microphoneActivityLevel * 0.2 + normalizedLevel * 0.8
         } else {
-            // Slower release so the icon does not visibly chatter between syllables.
             microphoneActivityLevel = microphoneActivityLevel * 0.78 + normalizedLevel * 0.22
         }
         if microphoneActivityLevel < 0.01 { microphoneActivityLevel = 0 }
@@ -108,6 +121,7 @@ final class PrayerAutoAdvanceCoreMLState: ObservableObject {
         microphoneActivityLevel = 0
         microphoneSignalActive = false
         microphoneActiveUntil = .distantPast
+        microphoneProbeHistory.removeAll(keepingCapacity: true)
         lastMicrophoneTranscript = ""
     }
 
