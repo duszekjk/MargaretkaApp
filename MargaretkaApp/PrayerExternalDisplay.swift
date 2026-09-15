@@ -522,6 +522,7 @@ struct PrayerExternalDisplayRootView: View {
                         pageView(page, fontSize: 26, geometry: geometry)
                         pageView(page, fontSize: 22, geometry: geometry)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 } else {
                     Text(appDisplayName)
                         .font(.system(size: min(96, max(48, geometry.size.width * 0.07)), weight: .semibold))
@@ -544,15 +545,17 @@ struct PrayerExternalDisplayRootView: View {
             BreviaryPrayerCardText(card: card, maxHeight: geometry.size.height)
                 .font(.system(size: fontSize, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: geometry.size.width, alignment: .center)
 
         case .prayer(_, let text):
             Text(text)
                 .font(.system(size: fontSize, weight: .semibold))
                 .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
+                .lineLimit(nil)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .frame(maxWidth: geometry.size.width, alignment: .center)
         }
     }
 }
