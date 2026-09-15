@@ -52,17 +52,16 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         let speech = capture.speechSnapshot()
         let currentSampleIndex = capture.pageAudioSampleIndex()
 
-        // A tiny recent PCM window is enough for the toolbar activity indicator.
-        // Its RMS/variation calculation stays off MainActor and does not touch the
-        // page-wide spectral/materialization path.
-        let activityStartIndex = max(0, currentSampleIndex - 4_096)
-        let activitySlice = capture.pageAudioSlice(from: activityStartIndex)
-        let activity = await Task.detached(priority: .background) {
-            microphoneActivityMetrics(activitySlice.samples)
-        }.value
+        // The toolbar only needs a cheap "is there a live microphone signal?" probe.
+        // Sample a handful of PCM values once per evaluation tick (~0.5 s). Copying
+        // 12 Float values and doing a few scalar operations is cheaper than launching
+        // a background task or analyzing an audio window.
+        let probeStartIndex = max(0, currentSampleIndex - 12)
+        let probe = capture.pageAudioSlice(from: probeStartIndex).samples
+        let activity = microphoneActivityProbe(probe)
         state.updateMicrophoneActivity(
             transcript: speech.transcript,
-            rms: activity.rms,
+            rms: activity.level,
             variation: activity.variation,
             at: plan.date
         )
@@ -98,22 +97,21 @@ extension PrayerAutoAdvanceCoreMLRuntime {
     }
 }
 
-private func microphoneActivityMetrics(_ samples: [Float]) -> (rms: Double, variation: Double) {
-    guard !samples.isEmpty else { return (0, 0) }
+private func microphoneActivityProbe(_ samples: [Float]) -> (level: Double, variation: Double) {
+    guard let first = samples.first else { return (0, 0) }
 
-    var squaredSum = 0.0
-    var variationSum = 0.0
-    var previous = Double(samples[0])
-    for sample in samples {
+    var peak = abs(Double(first))
+    var minimum = Double(first)
+    var maximum = Double(first)
+    for sample in samples.dropFirst() {
         let value = Double(sample)
-        squaredSum += value * value
-        variationSum += abs(value - previous)
-        previous = value
+        peak = max(peak, abs(value))
+        minimum = min(minimum, value)
+        maximum = max(maximum, value)
     }
 
-    let count = Double(samples.count)
     return (
-        rms: sqrt(squaredSum / count),
-        variation: variationSum / count
+        level: peak,
+        variation: maximum - minimum
     )
 }
