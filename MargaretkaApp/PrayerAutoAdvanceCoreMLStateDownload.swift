@@ -26,7 +26,6 @@ extension PrayerAutoAdvanceCoreMLState {
         do {
             let downloaded = try await PrayerAutoAdvanceCoreMLDownloader.fetch(slot: .best)
             try PrayerAutoAdvanceCoreMLInstall.run(downloaded, state: self)
-            try PrayerAutoAdvanceCoreMLDiskState.save(self)
             lastError = nil
             return model != nil
         } catch {
@@ -69,7 +68,6 @@ extension PrayerAutoAdvanceCoreMLState {
 
             let downloaded = try await PrayerAutoAdvanceCoreMLDownloader.fetch(slot: .latest, manifest: manifest)
             try PrayerAutoAdvanceCoreMLInstall.run(downloaded, state: self)
-            try PrayerAutoAdvanceCoreMLDiskState.save(self)
             lastError = nil
             return true
         } catch {
