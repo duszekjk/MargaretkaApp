@@ -42,6 +42,141 @@ enum PrayerExternalDisplayPage {
     case prayer(name: String, text: String)
 }
 
+@MainActor
+final class PrayerExternalDisplayController {
+    static let shared = PrayerExternalDisplayController()
+
+    private var legacyWindow: UIWindow?
+    private var pageObserver: NSObjectProtocol?
+    private var connectObserver: NSObjectProtocol?
+    private var disconnectObserver: NSObjectProtocol?
+    private var sceneOwnedScreens = Set<ObjectIdentifier>()
+    private var isStarted = false
+
+    private init() {}
+
+    func start() {
+        guard !isStarted else { return }
+        isStarted = true
+
+        pageObserver = NotificationCenter.default.addObserver(
+            forName: PrayerExternalDisplayStore.pageDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.refreshLegacyWindow()
+            }
+        }
+
+        connectObserver = NotificationCenter.default.addObserver(
+            forName: UIScreen.didConnectNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let screen = notification.object as? UIScreen else { return }
+            Task { @MainActor in
+                self?.logScreenEvent("connected", screen: screen)
+                self?.attachLegacyWindowIfNeeded()
+            }
+        }
+
+        disconnectObserver = NotificationCenter.default.addObserver(
+            forName: UIScreen.didDisconnectNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let screen = notification.object as? UIScreen else { return }
+            Task { @MainActor in
+                self?.logScreenEvent("disconnected", screen: screen)
+                if self?.legacyWindow?.screen === screen {
+                    self?.legacyWindow?.isHidden = true
+                    self?.legacyWindow = nil
+                }
+                self?.attachLegacyWindowIfNeeded()
+            }
+        }
+
+        logEnvironment()
+        attachLegacyWindowIfNeeded()
+    }
+
+    func sceneDidConnect(screen: UIScreen) {
+        sceneOwnedScreens.insert(ObjectIdentifier(screen))
+        if legacyWindow?.screen === screen {
+            legacyWindow?.isHidden = true
+            legacyWindow = nil
+        }
+        print("[ExternalDisplay] scene owns screen bounds=\(screen.bounds)")
+    }
+
+    func sceneDidDisconnect(screen: UIScreen) {
+        sceneOwnedScreens.remove(ObjectIdentifier(screen))
+        attachLegacyWindowIfNeeded()
+    }
+
+    private func attachLegacyWindowIfNeeded() {
+        guard legacyWindow == nil else {
+            refreshLegacyWindow()
+            return
+        }
+
+        guard let externalScreen = UIScreen.screens.first(where: { screen in
+            screen !== UIScreen.main && !sceneOwnedScreens.contains(ObjectIdentifier(screen))
+        }) else {
+            return
+        }
+
+        let hostingController = UIHostingController(
+            rootView: PrayerExternalDisplayRootView(
+                page: PrayerExternalDisplayStore.shared.currentPage
+            )
+        )
+        hostingController.view.backgroundColor = .black
+
+        let window = UIWindow(frame: externalScreen.bounds)
+        window.screen = externalScreen
+        window.backgroundColor = .black
+        window.rootViewController = hostingController
+        window.isHidden = false
+        legacyWindow = window
+
+        print("[ExternalDisplay] legacy window active bounds=\(externalScreen.bounds)")
+    }
+
+    private func refreshLegacyWindow() {
+        guard let window = legacyWindow else {
+            attachLegacyWindowIfNeeded()
+            return
+        }
+
+        let hostingController = UIHostingController(
+            rootView: PrayerExternalDisplayRootView(
+                page: PrayerExternalDisplayStore.shared.currentPage
+            )
+        )
+        hostingController.view.backgroundColor = .black
+        window.rootViewController = hostingController
+    }
+
+    private func logEnvironment() {
+        let screens = UIScreen.screens.enumerated().map { index, screen in
+            "#\(index)=\(screen.bounds)"
+        }.joined(separator: ", ")
+        print(
+            "[ExternalDisplay] startup supportsMultipleScenes=\(UIApplication.shared.supportsMultipleScenes) " +
+            "screens=\(UIScreen.screens.count) [\(screens)]"
+        )
+    }
+
+    private func logScreenEvent(_ event: String, screen: UIScreen) {
+        print(
+            "[ExternalDisplay] screen \(event) bounds=\(screen.bounds) " +
+            "totalScreens=\(UIScreen.screens.count)"
+        )
+    }
+}
+
 @objc(PrayerExternalDisplaySceneDelegate)
 @MainActor
 final class PrayerExternalDisplaySceneDelegate: NSObject, UIWindowSceneDelegate {
@@ -58,6 +193,7 @@ final class PrayerExternalDisplaySceneDelegate: NSObject, UIWindowSceneDelegate 
         guard session.role == .windowExternalDisplayNonInteractive,
               let windowScene = scene as? UIWindowScene else { return }
 
+        PrayerExternalDisplayController.shared.sceneDidConnect(screen: windowScene.screen)
         print("[ExternalDisplay] connected role=\(session.role.rawValue) screen=\(windowScene.screen.bounds)")
 
         let hostingController = UIHostingController(
@@ -89,6 +225,9 @@ final class PrayerExternalDisplaySceneDelegate: NSObject, UIWindowSceneDelegate 
 
     func sceneDidDisconnect(_ scene: UIScene) {
         print("[ExternalDisplay] disconnected")
+        if let windowScene = scene as? UIWindowScene {
+            PrayerExternalDisplayController.shared.sceneDidDisconnect(screen: windowScene.screen)
+        }
         if let pageObserver {
             NotificationCenter.default.removeObserver(pageObserver)
         }
@@ -106,6 +245,18 @@ final class PrayerExternalDisplaySceneDelegate: NSObject, UIWindowSceneDelegate 
 
 struct PrayerExternalDisplayRootView: View {
     let page: PrayerExternalDisplayPage?
+
+    private var appDisplayName: String {
+        if let displayName = Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String,
+           !displayName.isEmpty {
+            return displayName
+        }
+        if let bundleName = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String,
+           !bundleName.isEmpty {
+            return bundleName
+        }
+        return "App"
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -126,17 +277,11 @@ struct PrayerExternalDisplayRootView: View {
                     .padding(.horizontal, max(36, geometry.size.width * 0.055))
                     .padding(.vertical, max(28, geometry.size.height * 0.05))
                 } else {
-                    VStack(spacing: 18) {
-                        Text("Margaretka")
-                            .font(.system(size: min(72, max(42, geometry.size.width * 0.055)), weight: .semibold))
-                            .foregroundStyle(.white)
-
-                        Text("Modlitwa na zewnętrznym ekranie")
-                            .font(.system(size: min(28, max(18, geometry.size.width * 0.022)), weight: .regular))
-                            .foregroundStyle(.white.opacity(0.65))
-                    }
-                    .multilineTextAlignment(.center)
-                    .padding(40)
+                    Text(appDisplayName)
+                        .font(.system(size: min(76, max(42, geometry.size.width * 0.06)), weight: .semibold))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(40)
                 }
             }
         }
