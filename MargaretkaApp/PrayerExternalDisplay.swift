@@ -274,18 +274,19 @@ final class PrayerExternalDisplayController: ObservableObject {
         currentVideoURL = url
 
         attachPlayerLayerWhenPossible()
-        player.pause()
-        looper = nil
-        player.removeAllItems()
 
+        // Keep the same AVQueuePlayer and its active external playback route alive.
+        // Replacing only the current item avoids the previous pause/removeAllItems
+        // sequence, which caused AirPlay to tear down when the prayer page changed.
         let item = AVPlayerItem(url: url)
-        looper = AVPlayerLooper(player: player, templateItem: item)
+        player.replaceCurrentItem(with: item)
         player.play()
 
         print(
-            "[ExternalDisplay] AVPlayer started " +
+            "[ExternalDisplay] AVPlayer updated " +
             "allowsExternalPlayback=\(player.allowsExternalPlayback) " +
-            "usesExternalPlaybackWhileExternalScreenIsActive=\(player.usesExternalPlaybackWhileExternalScreenIsActive)"
+            "usesExternalPlaybackWhileExternalScreenIsActive=\(player.usesExternalPlaybackWhileExternalScreenIsActive) " +
+            "externalPlaybackActive=\(player.isExternalPlaybackActive)"
         )
 
         if let previousURL {
