@@ -77,10 +77,10 @@ final class PrayerExternalDisplayController: ObservableObject {
     @Published private(set) var hasCurrentPageAudio = false
     @Published private(set) var isAudioMuted = true
 
-    private var looper: AVPlayerLooper?
     private var pageObserver: NSObjectProtocol?
     private var connectObserver: NSObjectProtocol?
     private var disconnectObserver: NSObjectProtocol?
+    private var videoItemFinishedObserver: NSObjectProtocol?
     private var externalPlaybackObservation: NSKeyValueObservation?
     private var currentVideoURL: URL?
     private var carrierView: PrayerExternalPlaybackCarrierView?
@@ -141,10 +141,28 @@ final class PrayerExternalDisplayController: ObservableObject {
                     "[ExternalDisplay] screen disconnected bounds=\(screen.bounds) " +
                     "totalScreens=\(UIScreen.screens.count)"
                 )
-                if self?.activeExternalScreen() == nil {
-                    self?.player.pause()
+                guard let self else { return }
+                if self.activeExternalScreen() == nil && !self.player.isExternalPlaybackActive {
+                    self.player.pause()
                 } else {
-                    self?.refreshPresentation(reason: "remaining screen selected")
+                    self.refreshPresentation(reason: "remaining screen selected")
+                }
+            }
+        }
+
+        videoItemFinishedObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor in
+                guard let self,
+                      let finishedItem = notification.object as? AVPlayerItem,
+                      finishedItem !== self.audioPlayer.currentItem,
+                      self.currentVideoURL != nil else { return }
+                self.ensureVideoQueueDepth()
+                if self.player.rate == 0 {
+                    self.player.play()
                 }
             }
         }
@@ -152,15 +170,10 @@ final class PrayerExternalDisplayController: ObservableObject {
         externalPlaybackObservation = player.observe(
             \.isExternalPlaybackActive,
             options: [.initial, .new]
-        ) { [weak self] _, change in
+        ) { _, change in
             let active = change.newValue ?? false
             Task { @MainActor in
                 print("[ExternalDisplay] AVPlayer externalPlaybackActive=\(active)")
-                guard active else { return }
-                self?.refreshPresentation(
-                    reason: "external playback active",
-                    fallbackSize: CGSize(width: 1920, height: 1080)
-                )
             }
         }
 
@@ -180,10 +193,15 @@ final class PrayerExternalDisplayController: ObservableObject {
         }
 
         attachPlayerLayerWhenPossible()
-        refreshPresentation(
-            reason: "AirPlay picker",
-            fallbackSize: CGSize(width: 1920, height: 1080)
-        )
+        if player.currentItem == nil {
+            refreshPresentation(
+                reason: "AirPlay picker",
+                fallbackSize: CGSize(width: 1920, height: 1080)
+            )
+        } else {
+            ensureVideoQueueDepth()
+            player.play()
+        }
     }
 
     func toggleAudioMute() {
@@ -228,6 +246,8 @@ final class PrayerExternalDisplayController: ObservableObject {
             canvasSize = videoCanvasSize(for: screen.bounds.size)
         } else if let fallbackSize {
             canvasSize = videoCanvasSize(for: fallbackSize)
+        } else if player.isExternalPlaybackActive {
+            canvasSize = videoCanvasSize(for: CGSize(width: 1920, height: 1080))
         } else {
             return
         }
@@ -275,24 +295,48 @@ final class PrayerExternalDisplayController: ObservableObject {
 
         attachPlayerLayerWhenPossible()
 
-        // Keep the same AVQueuePlayer and its active external playback route alive.
-        // Replacing only the current item avoids the previous pause/removeAllItems
-        // sequence, which caused AirPlay to tear down when the prayer page changed.
-        let item = AVPlayerItem(url: url)
-        player.replaceCurrentItem(with: item)
+        if let currentItem = player.currentItem {
+            for queuedItem in player.items() where queuedItem !== currentItem {
+                player.remove(queuedItem)
+            }
+            appendVideoItems(for: url, untilCount: 4)
+            player.advanceToNextItem()
+        } else {
+            appendVideoItems(for: url, untilCount: 4)
+        }
+
+        ensureVideoQueueDepth()
         player.play()
 
         print(
-            "[ExternalDisplay] AVPlayer updated " +
+            "[ExternalDisplay] AVQueuePlayer advanced " +
+            "queueDepth=\(player.items().count) " +
             "allowsExternalPlayback=\(player.allowsExternalPlayback) " +
             "usesExternalPlaybackWhileExternalScreenIsActive=\(player.usesExternalPlaybackWhileExternalScreenIsActive) " +
             "externalPlaybackActive=\(player.isExternalPlaybackActive)"
         )
 
-        if let previousURL {
-            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 2) {
+        if let previousURL, previousURL != url {
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 30) {
                 try? FileManager.default.removeItem(at: previousURL)
             }
+        }
+    }
+
+    private func ensureVideoQueueDepth() {
+        guard let currentVideoURL else { return }
+        appendVideoItems(for: currentVideoURL, untilCount: 4)
+    }
+
+    private func appendVideoItems(for url: URL, untilCount targetCount: Int) {
+        while player.items().count < targetCount {
+            let item = AVPlayerItem(url: url)
+            let previous = player.items().last
+            guard player.canInsert(item, after: previous) else {
+                print("[ExternalDisplay] AVQueuePlayer refused queued slide item")
+                break
+            }
+            player.insert(item, after: previous)
         }
     }
 
