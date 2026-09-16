@@ -1,5 +1,6 @@
 #if os(iOS)
 import AVFoundation
+import Combine
 import CoreGraphics
 import CoreVideo
 import SwiftUI
