@@ -329,18 +329,17 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
 
     private func qualifiesForAutomaticMode(_ metric: PrayerAutoAdvanceTrainingQualityMetric) -> Bool {
         guard metric.sampleCount >= 100,
-              metric.accuracy >= 0.99,
-              metric.balancedAccuracy >= 0.99,
-              metric.f1 >= 0.99 else {
+              metric.accuracy >= 0.95,
+              metric.balancedAccuracy >= 0.95,
+              metric.f1 >= 0.95 else {
             return false
         }
 
-        // Timing is part of the real product behavior. Once we have a meaningful
-        // number of page-level timing observations, require the same 99% standard
-        // within ±1 second rather than promoting a classifier that fires too early
-        // or too late.
+        // Timing remains part of the real product behavior, but a 95% threshold
+        // tolerates a few mislabeled/manual transitions while still requiring
+        // consistently good automatic switching once enough timing observations exist.
         if metric.timingPageCount >= 50 {
-            return (metric.timingHitOneSecond ?? 0) >= 0.99
+            return (metric.timingHitOneSecond ?? 0) >= 0.95
         }
         return true
     }
@@ -364,7 +363,7 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
             parts.append(String(format: "timing ±1 s %.1f%%", hit * 100))
         }
         return parts.joined(separator: " • ")
-            + ". Wyniki spełniają próg 99%. Czy wyłączyć dalsze uczenie i przełączyć aplikację na automatyczne przełączanie stron?"
+            + ". Wyniki spełniają próg 95%. Czy wyłączyć dalsze uczenie i przełączyć aplikację na automatyczne przełączanie stron?"
     }
 
     private func activateAutomaticMode() {
