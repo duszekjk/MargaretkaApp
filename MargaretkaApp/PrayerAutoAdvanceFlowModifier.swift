@@ -20,6 +20,7 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
             .onDisappear {
                 controller.stop()
 #if os(iOS)
+                PrayerAudioAutoAdvanceCoordinator.shared.stop()
                 PrayerExternalDisplayStore.shared.clear()
 #endif
             }
@@ -28,16 +29,30 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
                     if suppressNextTrainingTransition {
                         suppressNextTrainingTransition = false
                     } else {
+#if os(iOS)
+                        if !PrayerAudioAutoAdvanceCoordinator.shared.isEnabled {
+                            // Custom swipes are already captured before activeIndex is
+                            // changed. This remains a fallback for buttons and keys.
+                            controller.recordManualAdvance(at: Date())
+                        }
+#else
                         // Custom swipes are already captured before activeIndex is
                         // changed. This remains a fallback for buttons and keys.
                         controller.recordManualAdvance(at: Date())
+#endif
                     }
                 } else {
                     if suppressNextTrainingTransition {
                         suppressNextTrainingTransition = false
                     }
                 }
+#if os(iOS)
+                if newValue >= lastDisplayIndex,
+                   controller.isTrainingEnabled,
+                   !PrayerAudioAutoAdvanceCoordinator.shared.isEnabled {
+#else
                 if newValue >= lastDisplayIndex, controller.isTrainingEnabled {
+#endif
                     // recordManualAdvance above registers the final page before
                     // the end-of-prayer barrier is opened.
                     controller.state.requestGroupedTrainingAtPrayerEnd()
@@ -48,6 +63,9 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
             .onChange(of: flowID) { _, _ in synchronizeContext() }
             .onChange(of: languageCode) { _, _ in synchronizeContext() }
             .onChange(of: controller.advanceRequestSerial) { _, _ in
+#if os(iOS)
+                guard !PrayerAudioAutoAdvanceCoordinator.shared.isEnabled else { return }
+#endif
                 guard scenePhase == .active,
                       activeIndex > 0,
                       activeIndex < lastDisplayIndex else { return }
@@ -56,6 +74,27 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
                 suppressNextTrainingTransition = true
                 moveToIndex(target)
             }
+#if os(iOS)
+            .onReceive(NotificationCenter.default.publisher(for: .prayerAudioAutoAdvanceDidFinish)) { _ in
+                guard scenePhase == .active,
+                      PrayerAudioAutoAdvanceCoordinator.shared.isEnabled else { return }
+
+                guard activeIndex > 0,
+                      activeIndex < lastDisplayIndex else {
+                    PrayerAudioAutoAdvanceCoordinator.shared.stop()
+                    return
+                }
+
+                moveToIndex(activeIndex + 1)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .prayerAudioAutoAdvanceModeChanged)) { _ in
+                if PrayerAudioAutoAdvanceCoordinator.shared.isEnabled {
+                    controller.stop()
+                } else {
+                    synchronizeContext()
+                }
+            }
+#endif
             .onReceive(NotificationCenter.default.publisher(for: .prayerAutoAdvancePreferencesChanged)) { _ in
                 controller.preferencesDidChange()
                 synchronizeContext()
@@ -67,8 +106,14 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
                     controller.preferencesDidChange()
                 case .inactive, .background:
                     controller.stop()
+#if os(iOS)
+                    PrayerAudioAutoAdvanceCoordinator.shared.stop()
+#endif
                 @unknown default:
                     controller.stop()
+#if os(iOS)
+                    PrayerAudioAutoAdvanceCoordinator.shared.stop()
+#endif
                 }
             }
     }
@@ -86,6 +131,12 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
             controller.stop()
             return
         }
+#if os(iOS)
+        if PrayerAudioAutoAdvanceCoordinator.shared.isEnabled {
+            controller.stop()
+            return
+        }
+#endif
         controller.setContext(makeContext(for: activeIndex))
     }
 
