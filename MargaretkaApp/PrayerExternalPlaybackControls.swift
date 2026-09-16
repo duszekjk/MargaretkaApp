@@ -11,6 +11,34 @@ extension Notification.Name {
     static let prayerAudioAutoAdvanceModeChanged = Notification.Name(
         "margaretka.prayerAudioAutoAdvance.modeChanged"
     )
+    static let prayerExternalPlaybackStateChanged = Notification.Name(
+        "margaretka.externalDisplay.playbackStateChanged"
+    )
+}
+
+@MainActor
+final class PrayerExternalPlaybackState: ObservableObject {
+    static let shared = PrayerExternalPlaybackState()
+
+    @Published private(set) var isActive = false
+    private var observation: NSKeyValueObservation?
+
+    private init() {
+        observation = PrayerExternalDisplayController.shared.player.observe(
+            \.isExternalPlaybackActive,
+            options: [.initial, .new]
+        ) { _, change in
+            let active = change.newValue ?? false
+            Task { @MainActor [weak self] in
+                guard let self, self.isActive != active else { return }
+                self.isActive = active
+                NotificationCenter.default.post(
+                    name: .prayerExternalPlaybackStateChanged,
+                    object: nil
+                )
+            }
+        }
+    }
 }
 
 @MainActor
@@ -130,10 +158,46 @@ final class PrayerAirPlayRouteAvailability: ObservableObject {
     }
 }
 
+private enum PrayerAirPlayAIWarning: String, Identifiable {
+    case training
+    case automatic
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .training:
+            "AirPlay wstrzymuje trenowanie AI"
+        case .automatic:
+            "AirPlay wstrzymuje automatyczne przełączanie"
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .training:
+            "Podczas aktywnego AirPlay trenowanie modelu sztucznej inteligencji jest wyłączone. Funkcja zostanie wznowiona po rozłączeniu AirPlay."
+        case .automatic:
+            "Podczas aktywnego AirPlay automatyczne przełączanie modlitw przez sztuczną inteligencję jest wyłączone. Funkcja zostanie wznowiona po rozłączeniu AirPlay."
+        }
+    }
+
+    var suppressionKey: String {
+        switch self {
+        case .training:
+            "prayerAutoAdvance.airPlayTrainingWarningSuppressed"
+        case .automatic:
+            "prayerAutoAdvance.airPlayAutomaticWarningSuppressed"
+        }
+    }
+}
+
 struct PrayerExternalPlaybackControls: View {
     @StateObject private var routes = PrayerAirPlayRouteAvailability.shared
+    @StateObject private var externalPlayback = PrayerExternalPlaybackState.shared
     @ObservedObject private var controller = PrayerExternalDisplayController.shared
     @ObservedObject private var audioAutoAdvance = PrayerAudioAutoAdvanceCoordinator.shared
+    @State private var activeWarning: PrayerAirPlayAIWarning?
 
     var body: some View {
         HStack(spacing: 12) {
@@ -151,11 +215,69 @@ struct PrayerExternalPlaybackControls: View {
                 )
             }
 
-            if routes.hasAlternativeRoute || controller.player.isExternalPlaybackActive {
+            if routes.hasAlternativeRoute || externalPlayback.isActive {
                 PrayerAirPlayRoutePicker()
                     .frame(width: 28, height: 28)
                     .accessibilityLabel("AirPlay")
             }
+        }
+        .onChange(of: externalPlayback.isActive) { _, active in
+            guard active else {
+                activeWarning = nil
+                return
+            }
+            presentFirstWarning()
+        }
+        .alert(item: $activeWarning) { warning in
+            Alert(
+                title: Text(warning.title),
+                message: Text(warning.message),
+                primaryButton: .default(Text("OK")) {
+                    finishWarning(warning, suppress: false)
+                },
+                secondaryButton: .default(Text("Nie pokazuj ponownie")) {
+                    finishWarning(warning, suppress: true)
+                }
+            )
+        }
+    }
+
+    private func presentFirstWarning() {
+        let defaults = UserDefaults.standard
+        if defaults.bool(forKey: PrayerAutoAdvancePreferences.trainingEnabledKey),
+           !defaults.bool(forKey: PrayerAirPlayAIWarning.training.suppressionKey) {
+            activeWarning = .training
+            return
+        }
+        if defaults.bool(forKey: PrayerAutoAdvancePreferences.automaticEnabledKey),
+           !defaults.bool(forKey: PrayerAirPlayAIWarning.automatic.suppressionKey) {
+            activeWarning = .automatic
+        }
+    }
+
+    private func finishWarning(_ warning: PrayerAirPlayAIWarning, suppress: Bool) {
+        if suppress {
+            UserDefaults.standard.set(true, forKey: warning.suppressionKey)
+        }
+
+        let next: PrayerAirPlayAIWarning?
+        switch warning {
+        case .training:
+            let defaults = UserDefaults.standard
+            if defaults.bool(forKey: PrayerAutoAdvancePreferences.automaticEnabledKey),
+               !defaults.bool(forKey: PrayerAirPlayAIWarning.automatic.suppressionKey) {
+                next = .automatic
+            } else {
+                next = nil
+            }
+        case .automatic:
+            next = nil
+        }
+
+        activeWarning = nil
+        guard let next else { return }
+        DispatchQueue.main.async {
+            activeWarning = next
         }
     }
 }
