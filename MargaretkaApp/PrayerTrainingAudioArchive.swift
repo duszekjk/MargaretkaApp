@@ -17,7 +17,7 @@ enum PrayerTrainingAudioArchive {
         guard UserDefaults.standard.bool(forKey: PrayerAutoAdvancePreferences.archiveTrainingAudioKey),
               !audio.samples.isEmpty,
               audio.sampleRate > 0,
-              let location = location(for: pageID) else { return }
+              let location = location(for: pageID, create: true) else { return }
 
         do {
             try FileManager.default.createDirectory(at: location, withIntermediateDirectories: true)
@@ -57,26 +57,16 @@ enum PrayerTrainingAudioArchive {
                 options: [.skipsHiddenFiles]
               ) else { return [] }
 
-        return pageDirectories.flatMap { pageDirectory -> [PrayerTrainingAudioSuggestion] in
-            guard (try? pageDirectory.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true,
-                  let files = try? FileManager.default.contentsOfDirectory(
-                    at: pageDirectory,
-                    includingPropertiesForKeys: [.creationDateKey],
-                    options: [.skipsHiddenFiles]
-                  ) else { return [] }
-            return files.compactMap { url in
-                guard url.pathExtension.lowercased() == "caf" else { return nil }
-                let createdAt = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate)
-                    ?? creationDate(from: url)
-                    ?? .distantPast
-                let duration = (try? AVAudioFile(forReading: url)).map {
-                    guard $0.fileFormat.sampleRate > 0 else { return 0 }
-                    return Double($0.length) / $0.fileFormat.sampleRate
-                } ?? 0
-                return PrayerTrainingAudioSuggestion(url: url, createdAt: createdAt, duration: duration)
-            }
+        return pageDirectories
+            .flatMap(suggestions(in:))
+            .sorted { $0.createdAt > $1.createdAt }
+    }
+
+    static func suggestion(forPageID pageID: String, closestTo date: Date) -> PrayerTrainingAudioSuggestion? {
+        guard let directory = location(for: pageID, create: false) else { return nil }
+        return suggestions(in: directory).min {
+            abs($0.createdAt.timeIntervalSince(date)) < abs($1.createdAt.timeIntervalSince(date))
         }
-        .sorted { $0.createdAt > $1.createdAt }
     }
 
     static func adopt(_ suggestion: PrayerTrainingAudioSuggestion) throws -> String {
@@ -107,15 +97,43 @@ enum PrayerTrainingAudioArchive {
         return result
     }
 
-    private static func location(for pageID: String) -> URL? {
+    private static func suggestions(in directory: URL) -> [PrayerTrainingAudioSuggestion] {
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: [.creationDateKey],
+            options: [.skipsHiddenFiles]
+        ) else { return [] }
+
+        return files.compactMap { url in
+            guard url.pathExtension.lowercased() == "caf" else { return nil }
+            let createdAt = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate)
+                ?? creationDate(from: url)
+                ?? .distantPast
+            let duration = (try? AVAudioFile(forReading: url)).map {
+                guard $0.fileFormat.sampleRate > 0 else { return 0 }
+                return Double($0.length) / $0.fileFormat.sampleRate
+            } ?? 0
+            return PrayerTrainingAudioSuggestion(url: url, createdAt: createdAt, duration: duration)
+        }
+    }
+
+    private static func location(for pageID: String, create: Bool) -> URL? {
         let components = pageID.split(separator: ":", omittingEmptySubsequences: false)
         guard components.count >= 4,
-              let prayerID = UUID(uuidString: String(components[2])) else { return nil }
+              let prayerID = UUID(uuidString: String(components[2])),
+              let root = try? rootDirectory(create: create) else { return nil }
+
         let pageKey = sanitized(String(components[3]))
-        guard let root = try? rootDirectory(create: true) else { return nil }
-        return root
+        let location = root
             .appendingPathComponent(prayerID.uuidString.lowercased(), isDirectory: true)
             .appendingPathComponent(pageKey, isDirectory: true)
+
+        if !create {
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: location.path, isDirectory: &isDirectory),
+                  isDirectory.boolValue else { return nil }
+        }
+        return location
     }
 
     private static func rootDirectory(create: Bool) throws -> URL {
@@ -151,7 +169,7 @@ enum PrayerTrainingAudioArchive {
 
     private static func creationDate(from url: URL) -> Date? {
         let prefix = url.deletingPathExtension().lastPathComponent.split(separator: "-").first
-        guard let prefix, let interval = TimeInterval(prefix) else { return nil }
+        guard let prefix, let interval = TimeInterval(String(prefix)) else { return nil }
         return Date(timeIntervalSince1970: interval)
     }
 }
