@@ -136,31 +136,26 @@ struct PrayerExternalPlaybackControls: View {
     @ObservedObject private var audioAutoAdvance = PrayerAudioAutoAdvanceCoordinator.shared
 
     var body: some View {
-        if controller.hasCurrentPageAudio || routes.hasAlternativeRoute || controller.player.isExternalPlaybackActive {
-            HStack(spacing: 8) {
-                if controller.hasCurrentPageAudio {
-                    Button {
-                        audioAutoAdvance.toggle()
-                    } label: {
-                        Image(systemName: audioAutoAdvance.isEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                            .imageScale(.medium)
-                            .frame(width: 30, height: 30)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(
-                        audioAutoAdvance.isEnabled
-                            ? "Wyłącz automatyczne audio modlitwy"
-                            : "Włącz automatyczne audio modlitwy"
-                    )
+        HStack(spacing: 12) {
+            if controller.hasCurrentPageAudio {
+                Button {
+                    audioAutoAdvance.toggle()
+                } label: {
+                    Image(systemName: audioAutoAdvance.isEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                        .imageScale(.medium)
                 }
-
-                if routes.hasAlternativeRoute || controller.player.isExternalPlaybackActive {
-                    PrayerAirPlayRoutePicker()
-                        .frame(width: 30, height: 30)
-                        .accessibilityLabel("AirPlay")
-                }
+                .accessibilityLabel(
+                    audioAutoAdvance.isEnabled
+                        ? "Wyłącz automatyczne audio modlitwy"
+                        : "Włącz automatyczne audio modlitwy"
+                )
             }
-            .padding(.trailing, 68)
+
+            if routes.hasAlternativeRoute || controller.player.isExternalPlaybackActive {
+                PrayerAirPlayRoutePicker()
+                    .frame(width: 28, height: 28)
+                    .accessibilityLabel("AirPlay")
+            }
         }
     }
 }
