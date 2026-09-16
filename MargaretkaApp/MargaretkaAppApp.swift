@@ -77,6 +77,11 @@ struct MargaretkaAppApp: App {
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
             }
+            .overlay(alignment: .topTrailing) {
+                PrayerExternalPlaybackControls()
+                    .padding(.top, 8)
+                    .padding(.trailing, 12)
+            }
 #endif
             .overlay {
                 if showUiTestGate {
