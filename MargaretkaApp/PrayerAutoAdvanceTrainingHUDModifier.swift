@@ -83,15 +83,17 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
                 if trainingEnabled, control.isExpanded {
                     hud
                         .padding(.leading, 12)
+                        // Keep the panel completely below the top-bar button. The
+                        // safe-area padding alone starts at the same vertical band as
+                        // the toolbar, so the button used to cover the first HUD rows.
                         .safeAreaPadding(.top, 8)
+                        .padding(.top, 44)
                 }
             }
             .fullScreenCover(isPresented: $control.showingDiagnostics) {
                 PrayerAutoAdvanceTrainingDiagnosticsView()
             }
             .onAppear {
-                // If this view is mounted while a grouped update is already running,
-                // make the live progress immediately visible instead of requiring a tap.
                 if state.isTraining {
                     control.showTrainingProgress()
                 }
@@ -104,8 +106,6 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
             }
             .onChange(of: state.isTraining) { _, training in
                 if training {
-                    // Training may take minutes and Core ML progress is otherwise
-                    // invisible unless the user happened to expand the HUD first.
                     control.showTrainingProgress()
                     liveProgress.prepare()
                 } else if state.lastError != nil {
@@ -267,18 +267,64 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
             }
 
             if liveProgress.lossHistory.count >= 2 {
-                Chart(liveProgress.lossHistory.suffix(80)) { point in
-                    LineMark(
-                        x: .value("Krok", point.step),
-                        y: .value("Loss", point.loss)
-                    )
-                }
-                .chartXAxis(.hidden)
-                .chartYAxis(.hidden)
-                .frame(height: 54)
-                .accessibilityLabel("Wykres loss na żywo podczas treningu")
+                trainingLossChart
             }
         }
+    }
+
+    private var trainingLossChart: some View {
+        let points = Array(liveProgress.lossHistory.suffix(80))
+        return Chart(points) { point in
+            LineMark(
+                x: .value("Krok", point.step),
+                y: .value("Loss", point.loss)
+            )
+            .interpolationMethod(.linear)
+
+            if point.id == points.last?.id {
+                PointMark(
+                    x: .value("Krok", point.step),
+                    y: .value("Loss", point.loss)
+                )
+                .symbolSize(22)
+                .annotation(position: .top, spacing: 2) {
+                    Text(String(format: "%.4f", point.loss))
+                        .font(.system(size: 7, design: .monospaced))
+                }
+            }
+        }
+        .chartXAxis {
+            AxisMarks(position: .bottom, values: .automatic(desiredCount: 4)) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.4))
+                    .foregroundStyle(.white.opacity(0.16))
+                AxisTick(stroke: StrokeStyle(lineWidth: 0.5))
+                    .foregroundStyle(.white.opacity(0.5))
+                AxisValueLabel {
+                    if let step = value.as(Int.self) {
+                        Text("\(step)")
+                    }
+                }
+                .font(.system(size: 6, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.8))
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.4))
+                    .foregroundStyle(.white.opacity(0.16))
+                AxisTick(stroke: StrokeStyle(lineWidth: 0.5))
+                    .foregroundStyle(.white.opacity(0.5))
+                AxisValueLabel {
+                    if let loss = value.as(Double.self) {
+                        Text(String(format: "%.3f", loss))
+                    }
+                }
+                .font(.system(size: 6, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.8))
+            }
+        }
+        .frame(height: 108)
+        .accessibilityLabel("Wykres loss na żywo podczas treningu")
     }
 
     private func durationText(_ interval: TimeInterval) -> String {
