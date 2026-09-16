@@ -51,6 +51,11 @@ struct MargaretkaAppApp: App {
                     .background(AppDelegate.MacWindowConfigurator())
 #else
                     .background(Color(.systemGroupedBackground))
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            PrayerExternalPlaybackControls()
+                        }
+                    }
 #endif
                     .onAppear {
                         scheduleNotificationRefresh()
@@ -76,11 +81,6 @@ struct MargaretkaAppApp: App {
                     .opacity(0.01)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
-            }
-            .overlay(alignment: .topTrailing) {
-                PrayerExternalPlaybackControls()
-                    .padding(.top, 8)
-                    .padding(.trailing, 12)
             }
 #endif
             .overlay {
