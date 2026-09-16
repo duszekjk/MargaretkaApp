@@ -3,6 +3,107 @@ import AVFoundation
 import AVKit
 import SwiftUI
 
+extension Notification.Name {
+    static let prayerAudioAutoAdvanceDidFinish = Notification.Name(
+        "margaretka.prayerAudioAutoAdvance.didFinish"
+    )
+    static let prayerAudioAutoAdvanceModeChanged = Notification.Name(
+        "margaretka.prayerAudioAutoAdvance.modeChanged"
+    )
+}
+
+@MainActor
+final class PrayerAudioAutoAdvanceCoordinator: ObservableObject {
+    static let shared = PrayerAudioAutoAdvanceCoordinator()
+
+    @Published private(set) var isEnabled = false
+
+    private var pageObserver: NSObjectProtocol?
+    private var finishObserver: NSObjectProtocol?
+
+    private init() {
+        pageObserver = NotificationCenter.default.addObserver(
+            forName: PrayerExternalDisplayStore.pageDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                await Task.yield()
+                self?.handlePageChange()
+            }
+        }
+
+        finishObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor in
+                guard let self,
+                      self.isEnabled,
+                      let finishedItem = notification.object as? AVPlayerItem,
+                      finishedItem === PrayerExternalDisplayController.shared.audioPlayer.currentItem else {
+                    return
+                }
+
+                NotificationCenter.default.post(
+                    name: .prayerAudioAutoAdvanceDidFinish,
+                    object: nil
+                )
+            }
+        }
+    }
+
+    func toggle() {
+        if isEnabled {
+            stop()
+            return
+        }
+
+        let controller = PrayerExternalDisplayController.shared
+        guard controller.hasCurrentPageAudio else { return }
+
+        isEnabled = true
+        NotificationCenter.default.post(
+            name: .prayerAudioAutoAdvanceModeChanged,
+            object: nil
+        )
+
+        if controller.isAudioMuted {
+            controller.toggleAudioMute()
+        }
+    }
+
+    func stop() {
+        guard isEnabled else { return }
+
+        isEnabled = false
+        let controller = PrayerExternalDisplayController.shared
+        if controller.hasCurrentPageAudio && !controller.isAudioMuted {
+            controller.toggleAudioMute()
+        }
+
+        NotificationCenter.default.post(
+            name: .prayerAudioAutoAdvanceModeChanged,
+            object: nil
+        )
+    }
+
+    private func handlePageChange() {
+        guard isEnabled else { return }
+
+        let controller = PrayerExternalDisplayController.shared
+        guard controller.hasCurrentPageAudio else {
+            stop()
+            return
+        }
+
+        if controller.isAudioMuted {
+            controller.toggleAudioMute()
+        }
+    }
+}
+
 @MainActor
 final class PrayerAirPlayRouteAvailability: ObservableObject {
     static let shared = PrayerAirPlayRouteAvailability()
@@ -31,19 +132,24 @@ final class PrayerAirPlayRouteAvailability: ObservableObject {
 struct PrayerExternalPlaybackControls: View {
     @StateObject private var routes = PrayerAirPlayRouteAvailability.shared
     @ObservedObject private var controller = PrayerExternalDisplayController.shared
+    @ObservedObject private var audioAutoAdvance = PrayerAudioAutoAdvanceCoordinator.shared
 
     var body: some View {
         if controller.hasCurrentPageAudio || routes.hasAlternativeRoute || controller.player.isExternalPlaybackActive {
             HStack(spacing: 8) {
                 if controller.hasCurrentPageAudio {
                     Button {
-                        controller.toggleAudioMute()
+                        audioAutoAdvance.toggle()
                     } label: {
-                        Image(systemName: controller.isAudioMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                        Image(systemName: audioAutoAdvance.isEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
                             .frame(width: 32, height: 32)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(controller.isAudioMuted ? "Włącz audio modlitwy" : "Wycisz audio modlitwy")
+                    .accessibilityLabel(
+                        audioAutoAdvance.isEnabled
+                            ? "Wyłącz automatyczne audio modlitwy"
+                            : "Włącz automatyczne audio modlitwy"
+                    )
                 }
 
                 if routes.hasAlternativeRoute || controller.player.isExternalPlaybackActive {
