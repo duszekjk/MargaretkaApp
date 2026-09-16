@@ -61,6 +61,8 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
 
     private var isProcessingPageData: Bool {
         diagnostics.pipelineState == "materializing"
+            || diagnostics.pipelineState == "stored"
+            || diagnostics.pipelineState == "validation"
     }
 
     private var microphoneScale: CGFloat {
@@ -83,9 +85,6 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
                 if trainingEnabled, control.isExpanded {
                     hud
                         .padding(.leading, 12)
-                        // Keep the panel completely below the top-bar button. The
-                        // safe-area padding alone starts at the same vertical band as
-                        // the toolbar, so the button used to cover the first HUD rows.
                         .safeAreaPadding(.top, 8)
                         .padding(.top, 44)
                 }
@@ -158,68 +157,17 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
 #endif
 
     private var hud: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 5) {
             if state.isTraining || liveProgress.isActive {
                 liveTrainingSection
                 Divider()
                     .overlay(.white.opacity(0.25))
             }
 
-            HStack(spacing: 7) {
-                Text("TRAIN")
-                Text("E\(diagnostics.currentEpochNumber) \(diagnostics.currentEpochSampleCount)/\(PrayerAutoAdvanceTrainingDiagnostics.epochSize)p")
-                Text("ok \(state.metadata?.trainingSessions ?? 0)")
-            }
-            HStack(spacing: 7) {
-                Text("speech \(diagnostics.speechState)")
-                Text("pipe \(diagnostics.pipelineState)")
-                Text("snap \(diagnostics.snapshotCount)")
-                Text("swipe \(diagnostics.manualSwipeCount)")
-            }
-            HStack(spacing: 7) {
-                Text(String(format: "mic %.2f", state.microphoneActivityLevel))
-                Text(state.microphoneSignalActive ? "voice yes" : "voice no")
-                if isProcessingPageData {
-                    Text("page save…")
-                }
-            }
-            HStack(spacing: 7) {
-                if let loss = diagnostics.logLoss {
-                    Text(String(format: "loss %.6f", loss))
-                } else {
-                    Text("loss —")
-                }
-                if let delta = diagnostics.lastTrainingLossChange {
-                    Text(String(format: "Δ %.6f", delta))
-                }
-                if let movement = diagnostics.lastMeanPredictionDelta {
-                    Text(String(format: "|Δp| %.6f", movement))
-                }
-            }
-            HStack(spacing: 7) {
-                if let pos = diagnostics.positivePredictionAverage {
-                    Text(String(format: "pos %.4f", pos))
-                }
-                if let neg = diagnostics.negativePredictionAverage {
-                    Text(String(format: "neg %.4f", neg))
-                }
-                if let margin = diagnostics.predictionMargin {
-                    Text(String(format: "margin %+.4f", margin))
-                }
-                Text("P/N \(diagnostics.positiveSamples)/\(diagnostics.negativeSamples)")
-            }
-            HStack(spacing: 7) {
-                Text("stored \(state.storedTrainingPageCount)/\(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate)p")
-                Text("val \(state.validationStore.records.count)r/\(state.validationStore.sampleCount)s")
-                if let loss = diagnostics.currentValidationLoss {
-                    Text(String(format: "Vloss %.5f", loss))
-                }
-                if let margin = diagnostics.currentValidationMargin {
-                    Text(String(format: "Vmargin %+.4f", margin))
-                }
-            }
+            liveCaptureSection
+
             Text("1× zwiń · 2× pełna diagnostyka")
-                .opacity(0.8)
+                .opacity(0.72)
         }
         .font(.system(size: 8, design: .monospaced))
         .foregroundStyle(.white)
@@ -230,6 +178,32 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
         .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         .gesture(hudGesture)
         .accessibilityLabel("Diagnostyka treningu. Stuknij, aby zwinąć; stuknij dwa razy, aby otworzyć szczegóły.")
+    }
+
+    private var liveCaptureSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 7) {
+                Text("CAPTURE")
+                    .fontWeight(.semibold)
+                Text(isListening ? "mic on" : "mic off")
+                Text(state.microphoneSignalActive ? "signal yes" : "signal no")
+                Text(String(format: "level %.2f", state.microphoneActivityLevel))
+            }
+
+            HStack(spacing: 7) {
+                Text("fresh \(state.storedTrainingPageCount)/\(PrayerAutoAdvancePendingTrainingStore.minimumPageCountForUpdate)")
+                Text("queued \(state.queuedTrainingPageCount)")
+                Text("replay \(state.replayTrainingPageCount)")
+            }
+
+            HStack(spacing: 7) {
+                Text("pipe \(diagnostics.pipelineState)")
+                Text("swipes \(diagnostics.manualSwipeCount)")
+                if isProcessingPageData {
+                    Text("saving…")
+                }
+            }
+        }
     }
 
     private var liveTrainingSection: some View {
@@ -279,7 +253,7 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
                 x: .value("Krok", point.step),
                 y: .value("Loss", point.loss)
             )
-            .interpolationMethod(.linear)
+            .interpolationMethod(.catmullRom)
 
             if point.id == points.last?.id {
                 PointMark(
