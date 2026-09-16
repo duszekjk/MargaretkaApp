@@ -58,7 +58,7 @@ enum PrayerTrainingAudioArchive {
               ) else { return [] }
 
         return pageDirectories
-            .flatMap(suggestions(in:))
+            .flatMap { suggestions(in: $0) }
             .sorted { $0.createdAt > $1.createdAt }
     }
 
