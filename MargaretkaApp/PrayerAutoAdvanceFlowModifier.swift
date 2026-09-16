@@ -1,7 +1,4 @@
 import SwiftUI
-#if os(iOS)
-import AVFoundation
-#endif
 
 struct PrayerAutoAdvanceFlowModifier: ViewModifier {
     @Binding var activeIndex: Int
@@ -16,12 +13,15 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
     @ObservedObject var controller: PrayerAutoAdvanceCoreMLRuntime
     @Environment(\.scenePhase) private var scenePhase
     @State private var suppressNextTrainingTransition = false
+    @State private var didSuspendAIForExternalPlayback = false
 
     func body(content: Content) -> some View {
         content
             .onAppear { synchronizeContext() }
             .onDisappear {
-                controller.stop()
+                if !isExternalPlaybackActive || !didSuspendAIForExternalPlayback {
+                    controller.stop()
+                }
 #if os(iOS)
                 PrayerAudioAutoAdvanceCoordinator.shared.stop()
                 PrayerExternalDisplayStore.shared.clear()
@@ -54,6 +54,7 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
             .onChange(of: languageCode) { _, _ in synchronizeContext() }
             .onChange(of: controller.advanceRequestSerial) { _, _ in
                 guard !isAudioAutoAdvanceEnabled,
+                      !isExternalPlaybackActive,
                       scenePhase == .active,
                       activeIndex > 0,
                       activeIndex < lastDisplayIndex else { return }
@@ -82,23 +83,36 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
                     synchronizeContext()
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: .prayerExternalPlaybackStateChanged)) { _ in
+                synchronizeContext()
+            }
 #endif
             .onReceive(NotificationCenter.default.publisher(for: .prayerAutoAdvancePreferencesChanged)) { _ in
-                controller.preferencesDidChange()
-                synchronizeContext()
+                if isExternalPlaybackActive {
+                    synchronizeContext()
+                } else {
+                    controller.preferencesDidChange()
+                    synchronizeContext()
+                }
             }
             .onChange(of: scenePhase) { _, phase in
                 switch phase {
                 case .active:
                     synchronizeContext()
-                    controller.preferencesDidChange()
+                    if !isExternalPlaybackActive {
+                        controller.preferencesDidChange()
+                    }
                 case .inactive, .background:
-                    controller.stop()
+                    if !isExternalPlaybackActive || !didSuspendAIForExternalPlayback {
+                        controller.stop()
+                    }
 #if os(iOS)
                     PrayerAudioAutoAdvanceCoordinator.shared.stop()
 #endif
                 @unknown default:
-                    controller.stop()
+                    if !isExternalPlaybackActive || !didSuspendAIForExternalPlayback {
+                        controller.stop()
+                    }
 #if os(iOS)
                     PrayerAudioAutoAdvanceCoordinator.shared.stop()
 #endif
@@ -114,6 +128,14 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
 #endif
     }
 
+    private var isExternalPlaybackActive: Bool {
+#if os(iOS)
+        PrayerExternalPlaybackState.shared.isActive
+#else
+        false
+#endif
+    }
+
     private func synchronizeContext() {
 #if os(iOS)
         PrayerExternalDisplayStore.shared.update(
@@ -124,15 +146,21 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
 #endif
 
         guard scenePhase == .active else {
-            controller.stop()
+            if !isExternalPlaybackActive || !didSuspendAIForExternalPlayback {
+                controller.stop()
+            }
             return
         }
-#if os(iOS)
-        guard !PrayerExternalDisplayController.shared.player.isExternalPlaybackActive else {
-            controller.stop()
+
+        if isExternalPlaybackActive {
+            if !didSuspendAIForExternalPlayback {
+                didSuspendAIForExternalPlayback = true
+                controller.stop()
+            }
             return
         }
-#endif
+        didSuspendAIForExternalPlayback = false
+
         guard !isAudioAutoAdvanceEnabled else {
             controller.stop()
             return
