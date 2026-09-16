@@ -4,6 +4,7 @@ struct PrayerAutoAdvanceCoreMLSettingsView: View {
     @StateObject private var state = PrayerAutoAdvanceCoreMLState.shared
     @AppStorage(PrayerAutoAdvancePreferences.trainingEnabledKey) private var trainingEnabled = false
     @AppStorage(PrayerAutoAdvancePreferences.automaticEnabledKey) private var automaticEnabled = false
+    @AppStorage(PrayerAutoAdvancePreferences.archiveTrainingAudioKey) private var archiveTrainingAudio = false
     @State private var exportURL: URL?
     @State private var showingResetConfirmation = false
     @State private var showingValidationResetConfirmation = false
@@ -18,9 +19,19 @@ struct PrayerAutoAdvanceCoreMLSettingsView: View {
                 Toggle("Automatycznie przełączaj", isOn: automaticBinding)
                     .disabled(state.isDownloading || state.isTraining)
 
-                Text("Funkcja działa lokalnie. Dźwięk z mikrofonu nie jest zapisywany ani wysyłany na serwer. Rozpoznawanie mowy jest wymuszane w trybie on-device. Model bazowy jest pobierany dopiero przy pierwszym włączeniu tej funkcji.")
+                Text("Funkcja działa lokalnie. Rozpoznawanie mowy jest wymuszane w trybie on-device. Model bazowy jest pobierany dopiero przy pierwszym włączeniu tej funkcji.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Toggle("Zachowuj nagrania z uczenia", isOn: $archiveTrainingAudio)
+
+                Text("Domyślnie dźwięk z mikrofonu pozostaje tylko w pamięci operacyjnej. Po włączeniu aplikacja zachowuje lokalnie do 20 ostatnich nagrań dla każdej strony modlitwy. Nagrania nie są wysyłane na serwer i mogą później posłużyć jako propozycje audio w ustawieniach modlitwy.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("Nagrania z uczenia")
             }
 
             Section("Model") {
@@ -117,7 +128,7 @@ struct PrayerAutoAdvanceCoreMLSettingsView: View {
                 }
                 .disabled(state.isTrainingPipelineBusy || state.isTraining)
             } footer: {
-                Text("Usuwa lokalny spersonalizowany model, oczekujące strony treningowe, metadane, historię kalibracji czasu, historię epok i zbiór walidacyjny. Po ponownym włączeniu funkcji zostanie pobrany aktualny model bazowy z serwera.")
+                Text("Usuwa lokalny spersonalizowany model, oczekujące strony treningowe, metadane, historię kalibracji czasu, historię epok i zbiór walidacyjny. Zachowane nagrania audio usuwa się osobno w ustawieniach pamięci.")
             }
         }
         .navigationTitle("Automatyczne przełączanie")
