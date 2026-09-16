@@ -85,7 +85,9 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
 
         let requestBox = self.requestBox
         let pageAudio = self.pageAudio
-        input.installTap(onBus: 0, bufferSize: 2048, format: format) { buffer, _ in
+        // Do not pin the tap to a format captured before an AirPlay route change.
+        // With nil, AVAudioEngine uses the input node's current native format.
+        input.installTap(onBus: 0, bufferSize: 2048, format: nil) { buffer, _ in
             requestBox.append(buffer)
             guard let channel = buffer.floatChannelData?[0] else { return }
             let count = Int(buffer.frameLength)
