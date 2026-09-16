@@ -1,7 +1,7 @@
 #if os(iOS)
 import AVFoundation
 import AVKit
-import Combine
+internal import Combine
 import SwiftUI
 
 extension Notification.Name {
