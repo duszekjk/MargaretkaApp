@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(iOS)
+import AVFoundation
+#endif
 
 struct PrayerAutoAdvanceFlowModifier: ViewModifier {
     @Binding var activeIndex: Int
