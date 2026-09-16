@@ -91,12 +91,6 @@ struct PrayerExternalPlayerViewControllerHost: UIViewControllerRepresentable {
             self.timeObserver = nil
             isSeeking = false
         }
-
-        deinit {
-            if let timeObserver {
-                PrayerExternalDisplayController.shared.player.removeTimeObserver(timeObserver)
-            }
-        }
     }
 }
 #endif
