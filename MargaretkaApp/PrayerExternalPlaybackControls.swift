@@ -180,28 +180,7 @@ private struct PrayerAirPlayRoutePicker: UIViewRepresentable {
     final class Coordinator: NSObject, AVRoutePickerViewDelegate {
         func routePickerViewWillBeginPresentingRoutes(_ routePickerView: AVRoutePickerView) {
             Task { @MainActor in
-                // Prime the external video item first, then leave the global audio
-                // session in the exact same configuration used by speech capture.
-                // Entering the first prayer must not switch the session category
-                // from .playback to .playAndRecord while AirPlay is active.
                 PrayerExternalDisplayController.shared.prepareForAirPlay()
-
-                do {
-                    let session = AVAudioSession.sharedInstance()
-                    try session.setCategory(
-                        .playAndRecord,
-                        mode: .measurement,
-                        options: [.duckOthers, .allowAirPlay]
-                    )
-                    try session.setAllowHapticsAndSystemSoundsDuringRecording(true)
-                    try session.setActive(true)
-                    print(
-                        "[ExternalDisplay] AirPlay route picker session stabilized " +
-                        "category=\(session.category.rawValue) mode=\(session.mode.rawValue)"
-                    )
-                } catch {
-                    print("[ExternalDisplay] stable AirPlay audio session setup failed: \(error)")
-                }
             }
         }
     }
