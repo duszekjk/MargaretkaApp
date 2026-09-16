@@ -5,6 +5,7 @@
 //  Created by Jacek Kałużny on 11/07/2025.
 //
 
+import AVFoundation
 import SwiftUI
 internal import UniformTypeIdentifiers
 
@@ -87,6 +88,8 @@ struct PrayerEditorView: View {
     @State private var audioFilename: String = ""
     @State private var showingFileImporter = false
     @State private var content: PrayerContent = .text
+    @State private var trainingSuggestions: [PrayerTrainingAudioSuggestion] = []
+    @State private var trainingPreviewPlayer: AVAudioPlayer?
 
     private var isWebPrayer: Bool {
         if case .brewiarz = content {
@@ -144,11 +147,42 @@ struct PrayerEditorView: View {
                         }
                     }
 
+                    if !trainingSuggestions.isEmpty {
+                        Divider()
+                        Text("Propozycje z nagrań uczenia")
+                            .font(.subheadline.weight(.semibold))
+                        Text("Ostatnie zachowane nagrania tej modlitwy. Możesz je odsłuchać przed wybraniem.")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+
+                        ForEach(Array(trainingSuggestions.prefix(6).enumerated()), id: \.element.id) { index, suggestion in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Nagranie \(index + 1)")
+                                    Text(trainingSuggestionDescription(suggestion))
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Button {
+                                    previewTrainingSuggestion(suggestion)
+                                } label: {
+                                    Image(systemName: "play.circle")
+                                }
+                                .buttonStyle(.borderless)
+                                .accessibilityLabel("Odtwórz propozycję")
+
+                                Button("Użyj") {
+                                    adoptTrainingSuggestion(suggestion)
+                                }
+                                .buttonStyle(.borderless)
+                            }
+                        }
+                    }
+
                     AudioPlayerView(text: $text, audioSource: $audioSource, audioFilename: $audioFilename)
                 }
             }
-
-
 
             Button("Zapisz") {
                 let newPrayer = Prayer(
@@ -174,7 +208,12 @@ struct PrayerEditorView: View {
                 audioFilename = prayer.audioFilename ?? ""
                 audioSource = prayer.audioSource ?? .file
                 content = prayer.content
+                trainingSuggestions = PrayerTrainingAudioArchive.suggestions(for: prayer.id)
             }
+        }
+        .onDisappear {
+            trainingPreviewPlayer?.stop()
+            trainingPreviewPlayer = nil
         }
         .fileImporter(
             isPresented: $showingFileImporter,
@@ -184,7 +223,6 @@ struct PrayerEditorView: View {
             switch result {
             case .success(let urls):
                 if let selectedURL = urls.first {
-                    
                     guard selectedURL.startAccessingSecurityScopedResource() else {
                         print("❌ Nie można uzyskać dostępu do wybranego pliku.")
                         return
@@ -200,7 +238,6 @@ struct PrayerEditorView: View {
                         try fileManager.copyItem(at: selectedURL, to: destinationURL)
 
                         audioFilename = destinationURL.lastPathComponent
-
                     } catch {
                         print("❌ Nie udało się skopiować pliku audio:", error)
                     }
@@ -210,12 +247,40 @@ struct PrayerEditorView: View {
             }
         }
     }
+
+    private func previewTrainingSuggestion(_ suggestion: PrayerTrainingAudioSuggestion) {
+        do {
+            trainingPreviewPlayer?.stop()
+            trainingPreviewPlayer = try AVAudioPlayer(contentsOf: suggestion.url)
+            trainingPreviewPlayer?.play()
+        } catch {
+            print("❌ Błąd podglądu nagrania z uczenia:", error.localizedDescription)
+        }
+    }
+
+    private func adoptTrainingSuggestion(_ suggestion: PrayerTrainingAudioSuggestion) {
+        do {
+            let previousFilename = audioFilename
+            audioFilename = try PrayerTrainingAudioArchive.adopt(suggestion)
+            audioSource = .file
+            if !previousFilename.isEmpty, previousFilename != prayer?.audioFilename {
+                AudioStorage.removeFile(named: previousFilename)
+            }
+        } catch {
+            print("❌ Nie udało się użyć nagrania z uczenia:", error.localizedDescription)
+        }
+    }
+
+    private func trainingSuggestionDescription(_ suggestion: PrayerTrainingAudioSuggestion) -> String {
+        let date = suggestion.createdAt.formatted(date: .abbreviated, time: .shortened)
+        let duration = Duration.seconds(suggestion.duration).formatted(.time(pattern: .minuteSecond))
+        return "\(date) · \(duration)"
+    }
 }
-import SwiftUI
 
 struct TextToSpeechGeneratorView: View {
     @Binding var text: String
-    @Binding var audioFilename: String 
+    @Binding var audioFilename: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -226,8 +291,6 @@ struct TextToSpeechGeneratorView: View {
         }
     }
 }
-import SwiftUI
-import AVFoundation
 
 struct AudioPlayerView: View {
     @Binding var text: String
@@ -246,7 +309,6 @@ struct AudioPlayerView: View {
     private func play() {
         switch audioSource {
         case .file, .recorded:
-
             do {
                 let url = try AudioStorage.applicationSupportDirectory(create: false)
                     .appendingPathComponent(audioFilename)
