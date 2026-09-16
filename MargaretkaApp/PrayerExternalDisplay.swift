@@ -25,7 +25,11 @@ final class PrayerExternalDisplayStore {
         if let card = step.offlineCard {
             currentPage = .breviary(card)
         } else if let prayer = prayersByID[step.prayerID] {
-            currentPage = .prayer(name: prayer.name, text: prayer.text)
+            currentPage = .prayer(
+                name: prayer.name,
+                text: prayer.text,
+                audioURL: audioURL(for: prayer)
+            )
         } else {
             currentPage = nil
         }
@@ -37,18 +41,40 @@ final class PrayerExternalDisplayStore {
         currentPage = nil
         NotificationCenter.default.post(name: Self.pageDidChange, object: nil)
     }
+
+    private func audioURL(for prayer: Prayer) -> URL? {
+        guard let filename = prayer.audioFilename,
+              !filename.isEmpty,
+              filename == URL(fileURLWithPath: filename).lastPathComponent,
+              let directory = try? AudioStorage.applicationSupportDirectory(create: false) else {
+            return nil
+        }
+
+        let url = directory.appendingPathComponent(filename)
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        return url
+    }
 }
 
 enum PrayerExternalDisplayPage {
     case breviary(OfflineBreviaryCard)
-    case prayer(name: String, text: String)
+    case prayer(name: String, text: String, audioURL: URL?)
+
+    var audioURL: URL? {
+        guard case .prayer(_, _, let audioURL) = self else { return nil }
+        return audioURL
+    }
 }
 
 @MainActor
-final class PrayerExternalDisplayController {
+final class PrayerExternalDisplayController: ObservableObject {
     static let shared = PrayerExternalDisplayController()
 
     let player = AVQueuePlayer()
+    let audioPlayer = AVPlayer()
+
+    @Published private(set) var hasCurrentPageAudio = false
+    @Published private(set) var isAudioMuted = true
 
     private var looper: AVPlayerLooper?
     private var pageObserver: NSObjectProtocol?
@@ -66,6 +92,10 @@ final class PrayerExternalDisplayController {
         player.usesExternalPlaybackWhileExternalScreenIsActive = true
         player.externalPlaybackVideoGravity = .resizeAspect
         player.preventsDisplaySleepDuringVideoPlayback = false
+
+        audioPlayer.isMuted = true
+        audioPlayer.allowsExternalPlayback = true
+        audioPlayer.preventsDisplaySleepDuringVideoPlayback = false
     }
 
     func start() {
@@ -78,6 +108,7 @@ final class PrayerExternalDisplayController {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
+                self?.refreshPageAudio()
                 self?.refreshPresentation(reason: "page changed")
             }
         }
@@ -120,20 +151,86 @@ final class PrayerExternalDisplayController {
         externalPlaybackObservation = player.observe(
             \.isExternalPlaybackActive,
             options: [.initial, .new]
-        ) { _, change in
+        ) { [weak self] _, change in
             let active = change.newValue ?? false
-            print("[ExternalDisplay] AVPlayer externalPlaybackActive=\(active)")
+            Task { @MainActor in
+                print("[ExternalDisplay] AVPlayer externalPlaybackActive=\(active)")
+                guard active else { return }
+                self?.refreshPresentation(
+                    reason: "external playback active",
+                    fallbackSize: CGSize(width: 1920, height: 1080)
+                )
+            }
         }
 
         attachPlayerLayerWhenPossible()
+        refreshPageAudio()
         logEnvironment()
         refreshPresentation(reason: "startup")
     }
 
-    private func refreshPresentation(reason: String) {
-        guard let screen = activeExternalScreen() else { return }
+    func prepareForAirPlay() {
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .moviePlayback)
+            try session.setActive(true)
+        } catch {
+            print("[ExternalDisplay] AirPlay audio session setup failed: \(error)")
+        }
 
-        let canvasSize = videoCanvasSize(for: screen.bounds.size)
+        attachPlayerLayerWhenPossible()
+        refreshPresentation(
+            reason: "AirPlay picker",
+            fallbackSize: CGSize(width: 1920, height: 1080)
+        )
+    }
+
+    func toggleAudioMute() {
+        guard hasCurrentPageAudio else { return }
+
+        isAudioMuted.toggle()
+        audioPlayer.isMuted = isAudioMuted
+
+        if isAudioMuted {
+            audioPlayer.pause()
+            audioPlayer.seek(to: .zero)
+        } else {
+            do {
+                let session = AVAudioSession.sharedInstance()
+                try session.setCategory(.playback, mode: .spokenAudio)
+                try session.setActive(true)
+            } catch {
+                print("[ExternalDisplay] prayer audio session setup failed: \(error)")
+            }
+            audioPlayer.seek(to: .zero)
+            audioPlayer.play()
+        }
+    }
+
+    private func refreshPageAudio() {
+        let audioURL = PrayerExternalDisplayStore.shared.currentPage?.audioURL
+        hasCurrentPageAudio = audioURL != nil
+        isAudioMuted = true
+        audioPlayer.pause()
+        audioPlayer.isMuted = true
+
+        if let audioURL {
+            audioPlayer.replaceCurrentItem(with: AVPlayerItem(url: audioURL))
+        } else {
+            audioPlayer.replaceCurrentItem(with: nil)
+        }
+    }
+
+    private func refreshPresentation(reason: String, fallbackSize: CGSize? = nil) {
+        let canvasSize: CGSize
+        if let screen = activeExternalScreen() {
+            canvasSize = videoCanvasSize(for: screen.bounds.size)
+        } else if let fallbackSize {
+            canvasSize = videoCanvasSize(for: fallbackSize)
+        } else {
+            return
+        }
+
         let page = PrayerExternalDisplayStore.shared.currentPage
         generationSerial += 1
         let serial = generationSerial
@@ -558,7 +655,7 @@ struct PrayerExternalDisplayRootView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(width: contentWidth, alignment: .center)
 
-        case .prayer(_, let text):
+        case .prayer(_, let text, _):
             Text(text)
                 .font(.system(size: fontSize, weight: .semibold))
                 .foregroundStyle(.white)
