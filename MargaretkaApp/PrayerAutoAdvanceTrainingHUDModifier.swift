@@ -38,6 +38,10 @@ final class PrayerAutoAdvanceTrainingHUDControl: ObservableObject {
     func showFullDiagnostics() {
         showingDiagnostics = true
     }
+
+    func showTrainingProgress() {
+        isExpanded = true
+    }
 }
 
 struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
@@ -85,6 +89,13 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
             .fullScreenCover(isPresented: $control.showingDiagnostics) {
                 PrayerAutoAdvanceTrainingDiagnosticsView()
             }
+            .onAppear {
+                // If this view is mounted while a grouped update is already running,
+                // make the live progress immediately visible instead of requiring a tap.
+                if state.isTraining {
+                    control.showTrainingProgress()
+                }
+            }
             .onChange(of: trainingEnabled) { _, enabled in
                 if !enabled {
                     state.resetMicrophoneActivity()
@@ -93,6 +104,9 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
             }
             .onChange(of: state.isTraining) { _, training in
                 if training {
+                    // Training may take minutes and Core ML progress is otherwise
+                    // invisible unless the user happened to expand the HUD first.
+                    control.showTrainingProgress()
                     liveProgress.prepare()
                 } else if state.lastError != nil {
                     liveProgress.fail()
