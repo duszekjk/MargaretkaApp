@@ -137,7 +137,7 @@ struct PrayerExternalPlaybackControls: View {
 
     var body: some View {
         if controller.hasCurrentPageAudio || routes.hasAlternativeRoute || controller.player.isExternalPlaybackActive {
-            HStack(spacing: 4) {
+            HStack(spacing: 8) {
                 if controller.hasCurrentPageAudio {
                     Button {
                         audioAutoAdvance.toggle()
@@ -160,10 +160,7 @@ struct PrayerExternalPlaybackControls: View {
                         .accessibilityLabel("AirPlay")
                 }
             }
-            // The app's settings gear occupies the native trailing toolbar slot.
-            // Keep these supplemental controls immediately to its left without
-            // adding a second custom capsule/chrome on top of the navigation bar.
-            .padding(.trailing, 44)
+            .padding(.trailing, 68)
         }
     }
 }
