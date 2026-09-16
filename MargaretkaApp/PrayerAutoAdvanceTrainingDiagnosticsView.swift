@@ -20,7 +20,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
                     summary
                     groupedTrainingPipeline
                     qualityNavigation
-                    PrayerAutoAdvanceTrainingInputSamplesView()
+                    inputSamplesNavigation
                     currentEpochLossChart
                     currentEpochValidationLossChart
                     epochLossChart
@@ -141,6 +141,36 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+            }
+            .padding()
+            .background(.thinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var inputSamplesNavigation: some View {
+        NavigationLink {
+            ScrollView {
+                PrayerAutoAdvanceTrainingInputSamplesView()
+                    .padding()
+            }
+            .navigationTitle("Dane wejściowe")
+            .navigationBarTitleDisplayMode(.inline)
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Dane wejściowe i zapisane próbki")
+                        .font(.headline)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                }
+                Text(
+                    "Otwórz osobno, aby wczytać fresh/replay, PCM i wektory cech. "
+                    + "Ciężki inspector nie jest już częścią głównego scrolla diagnostyki."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
             .padding()
             .background(.thinMaterial)
