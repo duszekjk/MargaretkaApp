@@ -124,6 +124,12 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
             controller.stop()
             return
         }
+#if os(iOS)
+        guard !PrayerExternalDisplayController.shared.player.isExternalPlaybackActive else {
+            controller.stop()
+            return
+        }
+#endif
         guard !isAudioAutoAdvanceEnabled else {
             controller.stop()
             return
