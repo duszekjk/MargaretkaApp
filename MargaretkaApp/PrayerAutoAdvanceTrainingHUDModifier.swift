@@ -46,10 +46,14 @@ final class PrayerAutoAdvanceTrainingHUDControl: ObservableObject {
 
 struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
     @AppStorage(PrayerAutoAdvancePreferences.trainingEnabledKey) private var trainingEnabled = false
+    @AppStorage(PrayerAutoAdvancePreferences.automaticEnabledKey) private var automaticEnabled = false
     @ObservedObject private var diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
     @ObservedObject private var state = PrayerAutoAdvanceCoreMLState.shared
     @ObservedObject private var liveProgress = PrayerAutoAdvanceLiveTrainingProgress.shared
+    @ObservedObject private var quality = PrayerAutoAdvanceTrainingQualityDiagnostics.shared
     @ObservedObject private var control = PrayerAutoAdvanceTrainingHUDControl.shared
+    @State private var pendingAutomaticModeSuggestion: PrayerAutoAdvanceTrainingQualityMetric?
+    @State private var showingAutomaticModeSuggestion = false
 
     private var isListening: Bool {
         trainingEnabled && diagnostics.speechState == "listening"
@@ -92,6 +96,18 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
             .fullScreenCover(isPresented: $control.showingDiagnostics) {
                 PrayerAutoAdvanceTrainingDiagnosticsView()
             }
+            .alert("Model osiągnął wysoką jakość", isPresented: $showingAutomaticModeSuggestion) {
+                Button("Włącz automatyczne przełączanie") {
+                    activateAutomaticMode()
+                }
+                Button("Kontynuuj uczenie", role: .cancel) {
+                    pendingAutomaticModeSuggestion = nil
+                }
+            } message: {
+                if let metric = pendingAutomaticModeSuggestion {
+                    Text(automaticModeSuggestionMessage(metric))
+                }
+            }
             .onAppear {
                 if state.isTraining {
                     control.showTrainingProgress()
@@ -112,6 +128,16 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
                 } else {
                     liveProgress.finish()
                 }
+            }
+            .onChange(of: quality.latest?.id) { _, _ in
+                guard trainingEnabled,
+                      let metric = quality.latest,
+                      qualifiesForAutomaticMode(metric) else { return }
+                pendingAutomaticModeSuggestion = metric
+                presentAutomaticModeSuggestionIfReady()
+            }
+            .onChange(of: state.isTrainingPipelineBusy) { _, _ in
+                presentAutomaticModeSuggestionIfReady()
             }
     }
 
@@ -299,6 +325,53 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
         }
         .frame(height: 108)
         .accessibilityLabel("Wykres loss na żywo podczas treningu")
+    }
+
+    private func qualifiesForAutomaticMode(_ metric: PrayerAutoAdvanceTrainingQualityMetric) -> Bool {
+        guard metric.sampleCount >= 100,
+              metric.accuracy >= 0.99,
+              metric.balancedAccuracy >= 0.99,
+              metric.f1 >= 0.99 else {
+            return false
+        }
+
+        // Timing is part of the real product behavior. Once we have a meaningful
+        // number of page-level timing observations, require the same 99% standard
+        // within ±1 second rather than promoting a classifier that fires too early
+        // or too late.
+        if metric.timingPageCount >= 50 {
+            return (metric.timingHitOneSecond ?? 0) >= 0.99
+        }
+        return true
+    }
+
+    private func presentAutomaticModeSuggestionIfReady() {
+        guard pendingAutomaticModeSuggestion != nil,
+              trainingEnabled,
+              !state.isTraining,
+              !state.isTrainingPipelineBusy,
+              !showingAutomaticModeSuggestion else { return }
+        showingAutomaticModeSuggestion = true
+    }
+
+    private func automaticModeSuggestionMessage(_ metric: PrayerAutoAdvanceTrainingQualityMetric) -> String {
+        var parts = [
+            String(format: "Accuracy %.1f%%", metric.accuracy * 100),
+            String(format: "balanced %.1f%%", metric.balancedAccuracy * 100),
+            String(format: "F1 %.1f%%", metric.f1 * 100),
+        ]
+        if let hit = metric.timingHitOneSecond, metric.timingPageCount > 0 {
+            parts.append(String(format: "timing ±1 s %.1f%%", hit * 100))
+        }
+        return parts.joined(separator: " • ")
+            + ". Wyniki spełniają próg 99%. Czy wyłączyć dalsze uczenie i przełączyć aplikację na automatyczne przełączanie stron?"
+    }
+
+    private func activateAutomaticMode() {
+        trainingEnabled = false
+        automaticEnabled = true
+        pendingAutomaticModeSuggestion = nil
+        NotificationCenter.default.post(name: .prayerAutoAdvancePreferencesChanged, object: nil)
     }
 
     private func durationText(_ interval: TimeInterval) -> String {
