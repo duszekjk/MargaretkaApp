@@ -1,6 +1,7 @@
 #if os(iOS)
 import AVFoundation
 import AVKit
+import Combine
 import SwiftUI
 
 extension Notification.Name {
@@ -173,19 +174,13 @@ private struct PrayerAirPlayRoutePicker: UIViewRepresentable {
     func makeUIView(context: Context) -> AVRoutePickerView {
         let picker = AVRoutePickerView()
         picker.delegate = context.coordinator
-        picker.player = PrayerExternalDisplayController.shared.player
         picker.prioritizesVideoDevices = true
-        picker.isRoutePickerButtonBordered = false
         picker.tintColor = .label
         picker.activeTintColor = .systemBlue
         return picker
     }
 
-    func updateUIView(_ picker: AVRoutePickerView, context: Context) {
-        if picker.player !== PrayerExternalDisplayController.shared.player {
-            picker.player = PrayerExternalDisplayController.shared.player
-        }
-    }
+    func updateUIView(_ picker: AVRoutePickerView, context: Context) {}
 
     final class Coordinator: NSObject, AVRoutePickerViewDelegate {
         func routePickerViewWillBeginPresentingRoutes(_ routePickerView: AVRoutePickerView) {
