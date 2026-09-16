@@ -137,13 +137,14 @@ struct PrayerExternalPlaybackControls: View {
 
     var body: some View {
         if controller.hasCurrentPageAudio || routes.hasAlternativeRoute || controller.player.isExternalPlaybackActive {
-            HStack(spacing: 8) {
+            HStack(spacing: 4) {
                 if controller.hasCurrentPageAudio {
                     Button {
                         audioAutoAdvance.toggle()
                     } label: {
                         Image(systemName: audioAutoAdvance.isEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                            .frame(width: 32, height: 32)
+                            .imageScale(.medium)
+                            .frame(width: 30, height: 30)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(
@@ -155,13 +156,14 @@ struct PrayerExternalPlaybackControls: View {
 
                 if routes.hasAlternativeRoute || controller.player.isExternalPlaybackActive {
                     PrayerAirPlayRoutePicker()
-                        .frame(width: 36, height: 36)
+                        .frame(width: 30, height: 30)
                         .accessibilityLabel("AirPlay")
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(.ultraThinMaterial, in: Capsule())
+            // The app's settings gear occupies the native trailing toolbar slot.
+            // Keep these supplemental controls immediately to its left without
+            // adding a second custom capsule/chrome on top of the navigation bar.
+            .padding(.trailing, 44)
         }
     }
 }
@@ -175,6 +177,7 @@ private struct PrayerAirPlayRoutePicker: UIViewRepresentable {
         let picker = AVRoutePickerView()
         picker.delegate = context.coordinator
         picker.prioritizesVideoDevices = true
+        picker.backgroundColor = .clear
         picker.tintColor = .label
         picker.activeTintColor = .systemBlue
         return picker
