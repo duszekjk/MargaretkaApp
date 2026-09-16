@@ -117,6 +117,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
             postBoundaryDuration: PrayerAutoAdvanceTrainingPolicy.positiveWindow
         )
         let frozenPageAudio = pageAudioTransition.frozenPageAudio
+        PrayerTrainingAudioArchive.store(pageID: pageID, audio: frozenPageAudio)
 #else
         let swipeSpeech = PrayerAutoAdvanceSpeechSnapshot(transcript: "", lastSegmentEndTime: nil)
         let frozenPageAudio = PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: 16_000)
