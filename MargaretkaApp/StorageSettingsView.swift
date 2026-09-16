@@ -4,10 +4,13 @@ internal import UniformTypeIdentifiers
 struct StorageSettingsView: View {
     @ObservedObject var priestStore: PriestStore
     @EnvironmentObject private var offlineStore: OfflineBreviaryStore
+    @EnvironmentObject private var prayerStore: PrayerStore
     @State private var report = AppStorageReport.current()
     @State private var rangeStart = Date.now
     @State private var rangeEnd = Date.now
     @State private var confirmRangeDeletion = false
+    @State private var confirmTrainingAudioDeletion = false
+    @State private var confirmPrayerAudioDeletion = false
 
     var body: some View {
         List {
@@ -56,7 +59,24 @@ struct StorageSettingsView: View {
             }
 
             Section {
-                storageRow("Nagrania audio", report.audio.formattedSize)
+                storageRow("Audio przypisane do modlitw", report.prayerAudio.formattedSize)
+                Button("Usuń audio przypisane do modlitw", role: .destructive) {
+                    confirmPrayerAudioDeletion = true
+                }
+                .disabled(report.prayerAudio == 0)
+
+                storageRow("Nagrania zachowane podczas uczenia", report.trainingAudio.formattedSize)
+                Button("Usuń nagrania z uczenia", role: .destructive) {
+                    confirmTrainingAudioDeletion = true
+                }
+                .disabled(report.trainingAudio == 0)
+            } header: {
+                Text("Nagrania audio")
+            } footer: {
+                Text("Nagrania z uczenia są przechowywane oddzielnie od audio wybranego ręcznie dla modlitw.")
+            }
+
+            Section {
                 storageRow("Cache aplikacji", report.cache.formattedSize)
                 Button("Wyczyść cache internetowy") {
                     AppNetworkCache.clear()
@@ -78,6 +98,42 @@ struct StorageSettingsView: View {
         } message: {
             Text("Usunięte zostaną pobrane oficja oraz obrazy należące tylko do tych dni.")
         }
+        .confirmationDialog(
+            "Usunąć nagrania zachowane podczas uczenia?",
+            isPresented: $confirmTrainingAudioDeletion,
+            titleVisibility: .visible
+        ) {
+            Button("Usuń nagrania z uczenia", role: .destructive) {
+                PrayerTrainingAudioArchive.removeAll()
+                refresh()
+            }
+            Button("Anuluj", role: .cancel) {}
+        } message: {
+            Text("Nie zmieni to modelu automatycznego przełączania ani audio już przypisanego do modlitw.")
+        }
+        .confirmationDialog(
+            "Usunąć audio przypisane do modlitw?",
+            isPresented: $confirmPrayerAudioDeletion,
+            titleVisibility: .visible
+        ) {
+            Button("Usuń audio modlitw", role: .destructive) {
+                removePrayerAudio()
+            }
+            Button("Anuluj", role: .cancel) {}
+        } message: {
+            Text("Pliki audio zostaną usunięte, a przypisania audio w modlitwach wyczyszczone. Nagrania zachowane podczas uczenia pozostaną bez zmian.")
+        }
+    }
+
+    private func removePrayerAudio() {
+        AudioStorage.removeAllStoredAudioFiles()
+        prayerStore.prayers = prayerStore.prayers.map { prayer in
+            var updated = prayer
+            updated.audioFilename = nil
+            updated.audioSource = nil
+            return updated
+        }
+        refresh()
     }
 
     private func refresh() {
@@ -106,7 +162,8 @@ private struct AppStorageReport {
     let pendingOriginals: Int64
     let offlineText: Int64
     let offlineImages: Int64
-    let audio: Int64
+    let prayerAudio: Int64
+    let trainingAudio: Int64
     let cache: Int64
     let other: Int64
 
@@ -119,11 +176,12 @@ private struct AppStorageReport {
         let prayerData = size(of: LocalDatabase.shared.path(for: Priest.storageKey))
         let pendingOriginals = size(of: SyncedPhotoStorage.shared.directory)
         let offlineImages = size(of: OfflineBreviaryStore.imageDirectory)
-        let audio = sizeOfAudioFiles(in: support)
+        let prayerAudio = sizeOfAudioFiles(in: support)
+        let trainingAudio = PrayerTrainingAudioArchive.totalSize()
         let cache = size(of: caches)
         let documentsSize = size(of: documents)
         let supportSize = size(of: support)
-        let known = offlineText + prayerData + pendingOriginals + offlineImages + audio + cache
+        let known = offlineText + prayerData + pendingOriginals + offlineImages + prayerAudio + trainingAudio + cache
         let total = documentsSize + supportSize + cache
         let other = max(0, total - known)
         let entries = [
@@ -131,7 +189,8 @@ private struct AppStorageReport {
             AppStorageEntry(title: "Teksty oficjów", size: offlineText),
             AppStorageEntry(title: "Obrazy oficjów", size: offlineImages),
             AppStorageEntry(title: "Oryginały do synchronizacji", size: pendingOriginals),
-            AppStorageEntry(title: "Nagrania", size: audio),
+            AppStorageEntry(title: "Audio modlitw", size: prayerAudio),
+            AppStorageEntry(title: "Nagrania z uczenia", size: trainingAudio),
             AppStorageEntry(title: "Cache", size: cache),
             AppStorageEntry(title: "Pozostałe dane", size: other)
         ].filter { $0.size > 0 }
@@ -142,7 +201,8 @@ private struct AppStorageReport {
             pendingOriginals: pendingOriginals,
             offlineText: offlineText,
             offlineImages: offlineImages,
-            audio: audio,
+            prayerAudio: prayerAudio,
+            trainingAudio: trainingAudio,
             cache: cache,
             other: other
         )
