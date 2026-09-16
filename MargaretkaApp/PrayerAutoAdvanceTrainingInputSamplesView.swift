@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 
 struct PrayerAutoAdvanceTrainingInputSamplesView: View {
@@ -10,6 +11,9 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
     @State private var storedDataError: String?
     @State private var isLoadingStoredData = false
     @State private var visibleStoredPageCount = 6
+    @State private var archivedAudioPlayer: AVAudioPlayer?
+    @State private var playingArchivedAudioURL: URL?
+    @State private var archivedPlaybackTask: Task<Void, Never>?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -22,6 +26,10 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .task(id: "\(state.storedTrainingPageCount)-\(state.replayTrainingPageCount)") {
             await loadStoredTrainingData()
+        }
+        .onDisappear {
+            stopArchivedAudio()
+            audioPlayer.stop()
         }
     }
 
@@ -52,7 +60,7 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
             .font(.caption.monospacedDigit())
             .foregroundStyle(.secondary)
 
-            Text("Te rekordy są odczytywane z dysku i pozostają dostępne po restarcie. Zawierają dokładne cechy wejściowe, etykietę i czas względem ręcznego przewinięcia. PCM i pełny tekst diagnostyczny nie są utrwalane.")
+            Text("Te rekordy są odczytywane z dysku i pozostają dostępne po restarcie. Zawierają dokładne cechy wejściowe, etykietę i czas względem ręcznego przewinięcia. Jeśli dla strony zachowano nagranie z uczenia, można je odsłuchać bezpośrednio tutaj.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -140,8 +148,36 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
     private func storedPageCard(_ entry: StoredPageEntry) -> some View {
         let positives = entry.page.samples.filter { $0.label == 1 }.count
         let negatives = entry.page.samples.count - positives
+        let archivedAudio = PrayerTrainingAudioArchive.suggestion(
+            forPageID: entry.page.pageID,
+            closestTo: entry.page.createdAt
+        )
+
         return DisclosureGroup {
             VStack(alignment: .leading, spacing: 8) {
+                if let archivedAudio {
+                    HStack(spacing: 10) {
+                        Button {
+                            toggleArchivedAudio(archivedAudio)
+                        } label: {
+                            Label(
+                                playingArchivedAudioURL == archivedAudio.url ? "Stop" : "Play",
+                                systemImage: playingArchivedAudioURL == archivedAudio.url ? "stop.fill" : "play.fill"
+                            )
+                        }
+                        .buttonStyle(.bordered)
+
+                        Text(
+                            String(
+                                format: "zapisane audio · %.1f s",
+                                archivedAudio.duration
+                            )
+                        )
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    }
+                }
+
                 Text("Przykładowe próbki z tej strony (maks. 8)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -162,6 +198,11 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
                 HStack {
                     Text(entry.source.uppercased())
                         .font(.caption.bold())
+                    if archivedAudio != nil {
+                        Image(systemName: "waveform")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     Spacer()
                     Text(entry.page.createdAt.formatted(date: .numeric, time: .standard))
                         .font(.caption.monospacedDigit())
@@ -390,6 +431,7 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
 
     private func play(sample: PrayerAutoAdvanceDiagnosticInputSample, duration: TimeInterval) {
         do {
+            stopArchivedAudio()
             try audioPlayer.play(
                 sampleID: sample.id,
                 duration: duration,
@@ -400,6 +442,43 @@ struct PrayerAutoAdvanceTrainingInputSamplesView: View {
         } catch {
             playbackError = error.localizedDescription
         }
+    }
+
+    private func toggleArchivedAudio(_ suggestion: PrayerTrainingAudioSuggestion) {
+        if playingArchivedAudioURL == suggestion.url {
+            stopArchivedAudio()
+            return
+        }
+
+        do {
+            audioPlayer.stop()
+            stopArchivedAudio()
+            let player = try AVAudioPlayer(contentsOf: suggestion.url)
+            archivedAudioPlayer = player
+            playingArchivedAudioURL = suggestion.url
+            player.play()
+            playbackError = nil
+
+            let url = suggestion.url
+            archivedPlaybackTask = Task { @MainActor in
+                try? await Task.sleep(for: .seconds(max(player.duration, 0)))
+                guard !Task.isCancelled, playingArchivedAudioURL == url else { return }
+                archivedAudioPlayer = nil
+                playingArchivedAudioURL = nil
+                archivedPlaybackTask = nil
+            }
+        } catch {
+            playbackError = error.localizedDescription
+            stopArchivedAudio()
+        }
+    }
+
+    private func stopArchivedAudio() {
+        archivedPlaybackTask?.cancel()
+        archivedPlaybackTask = nil
+        archivedAudioPlayer?.stop()
+        archivedAudioPlayer = nil
+        playingArchivedAudioURL = nil
     }
 
     private func rms(_ values: [Float]) -> Float {
