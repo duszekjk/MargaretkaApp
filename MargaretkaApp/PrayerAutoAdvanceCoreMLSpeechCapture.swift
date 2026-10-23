@@ -31,7 +31,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
     private var hasInputTap = false
-    private var isStarting = false
+    private var startGeneration: UInt64 = 0
     private var recognitionGeneration = 0
 
     nonisolated private let requestBox = PrayerAutoAdvanceSpeechRequestBox()
@@ -41,9 +41,8 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
     nonisolated private let pageAudio = PrayerAutoAdvancePageAudioBuffer(targetSampleRate: 16_000)
 
     func start(language: PrayerLanguage, context: [String]) async throws {
-        guard !isStarting else { return }
-        isStarting = true
-        defer { isStarting = false }
+        startGeneration &+= 1
+        let generation = startGeneration
 
         if engine.isRunning,
            currentLanguage == language,
@@ -56,10 +55,12 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         let speech = await withCheckedContinuation { continuation in
             SFSpeechRecognizer.requestAuthorization { continuation.resume(returning: $0) }
         }
+        guard generation == startGeneration else { return }
         guard speech == .authorized else { throw CaptureError.permission }
         let microphone = await withCheckedContinuation { continuation in
             AVAudioSession.sharedInstance().requestRecordPermission { continuation.resume(returning: $0) }
         }
+        guard generation == startGeneration else { return }
         guard microphone else { throw CaptureError.permission }
 
         let locale = language == .english
@@ -78,6 +79,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         currentLanguage = language
 
         try await Self.configureAudioSessionForCapture()
+        guard generation == startGeneration else { return }
 
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
@@ -186,6 +188,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
     }
 
     func stop() {
+        startGeneration &+= 1
         stopRecognition()
         stopAudioOnly(deactivateSession: true)
         pageAudio.reset(clearPendingPostBoundaryCaptures: true)
