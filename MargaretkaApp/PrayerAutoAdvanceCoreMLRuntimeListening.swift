@@ -3,7 +3,7 @@ import Foundation
 extension PrayerAutoAdvanceCoreMLRuntime {
     func prepareListening() async {
         let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
-        guard let requestedContext = context, isFeatureEnabled else { return }
+        guard let requestedContext = context, isFeatureEnabled, !Task.isCancelled else { return }
 
         if state.model == nil {
             statusMessage = "Przygotowywanie lokalnego modelu…"
@@ -11,12 +11,14 @@ extension PrayerAutoAdvanceCoreMLRuntime {
             diagnostics.event("recovering local model")
 
             guard await state.ensureModelAvailable() else {
+                guard context == requestedContext, !Task.isCancelled else { return }
                 statusMessage = state.lastError
                     ?? "Nie udało się przygotować lokalnego modelu."
                 diagnostics.speechState = "no-model"
                 diagnostics.error(statusMessage ?? "missing local model")
                 return
             }
+            guard context == requestedContext, !Task.isCancelled else { return }
             diagnostics.event("local model ready")
         }
 
@@ -32,10 +34,12 @@ extension PrayerAutoAdvanceCoreMLRuntime {
                 language: activeContext.language,
                 context: [activeContext.currentText, activeContext.nextText].compactMap { $0 }
             )
+            guard context == activeContext, isFeatureEnabled, !Task.isCancelled else { return }
             diagnostics.speechState = "listening"
             diagnostics.event("on-device speech active")
             statusMessage = nil
         } catch {
+            guard context == activeContext, !Task.isCancelled else { return }
             state.resetMicrophoneActivity()
             diagnostics.speechState = "error"
             diagnostics.error(error.localizedDescription)
@@ -54,7 +58,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
 
         // The toolbar only needs a near-zero-cost proof that the microphone is
         // delivering a changing signal. Read two scalar PCM values without copying
-        // an audio window; the state compares these probes across several 0.5 s ticks.
+        // an audio window; the state compares these probes across several evaluation ticks.
         let microphoneProbe = capture.microphoneActivityProbe(sampleSpan: 12)
         state.updateMicrophoneActivity(
             transcript: speech.transcript,
