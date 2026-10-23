@@ -24,6 +24,11 @@ struct PrayerAutoAdvanceModelSchemaTests {
         #expect(PrayerAutoAdvanceCoreMLModel.currentFeatureSchemaVersion == 9)
     }
 
+    @Test func automaticAdvanceUsesFastSinglePredictionPolicy() {
+        #expect(PrayerAutoAdvanceCoreMLRuntime.automaticInferenceInterval == 0.25)
+        #expect(PrayerAutoAdvanceCoreMLRuntime.requiredAdvancePredictions == 1)
+    }
+
     @Test func audioDominatesCombinedInput() {
         let audio = PrayerAutoAdvanceAudioFeatureExtractor.featureCount
             + PrayerAutoAdvanceLongAudioFeatureExtractor.featureCount

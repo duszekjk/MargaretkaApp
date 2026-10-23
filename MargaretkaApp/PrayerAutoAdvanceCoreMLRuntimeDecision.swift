@@ -13,7 +13,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
             ? consecutiveAdvancePredictions + 1
             : 0
 
-        if consecutiveAdvancePredictions >= 3 {
+        if consecutiveAdvancePredictions >= Self.requiredAdvancePredictions {
             consecutiveAdvancePredictions = 0
             cooldownUntil = Date().addingTimeInterval(3)
             advanceRequestSerial &+= 1
