@@ -13,6 +13,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         trainingCandidateSeenCount = 0
         capturedManualAdvancePageID = nil
         consecutiveAdvancePredictions = 0
+        cooldownUntil = Date.distantPast
         lastPrediction = 0
         lastSpectralSampleIndex = 0
         spectralCache.reset()
@@ -22,9 +23,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
             return
         }
         startEvaluationLoop()
-        Task { @MainActor [weak self] in
-            await self?.prepareListening()
-        }
+        schedulePrepareListening()
     }
 
     func preferencesDidChange() {
@@ -33,9 +32,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
             return
         }
         startEvaluationLoop()
-        Task { @MainActor [weak self] in
-            await self?.prepareListening()
-        }
+        schedulePrepareListening()
     }
 
     func stop() {
@@ -48,12 +45,22 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         evaluationTask = Task { @MainActor [weak self] in
             while let self, !Task.isCancelled {
                 await self.evaluateCurrentCapture()
-                try? await Task.sleep(for: .milliseconds(500))
+                try? await Task.sleep(for: .milliseconds(250))
             }
         }
     }
 
+    func schedulePrepareListening() {
+        listeningTask?.cancel()
+        listeningTask = Task { @MainActor [weak self] in
+            guard let self, !Task.isCancelled else { return }
+            await self.prepareListening()
+        }
+    }
+
     func stopListening() {
+        listeningTask?.cancel()
+        listeningTask = nil
         evaluationTask?.cancel()
         evaluationTask = nil
         lastSpectralSampleIndex = 0
