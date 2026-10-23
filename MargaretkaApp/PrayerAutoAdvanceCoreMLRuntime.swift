@@ -17,6 +17,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
     var contextStartedAt = Date()
     var trainingCandidates: [PrayerAutoAdvanceTrainingCandidate] = []
     var evaluationTask: Task<Void, Never>?
+    var listeningTask: Task<Void, Never>?
     var consecutiveAdvancePredictions = 0
     var cooldownUntil = Date.distantPast
     var lastTrainingSnapshotAt = Date.distantPast
@@ -28,7 +29,8 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
     static let trainingReservoirCapacity = 16
     static let trainingCandidateInterval: TimeInterval = 0.5
-    static let automaticInferenceInterval: TimeInterval = 0.5
+    static let automaticInferenceInterval: TimeInterval = 0.25
+    static let requiredAdvancePredictions = 1
     static let diagnosticsPublishInterval: TimeInterval = 2.0
     static let postTransitionProcessingDelay: Duration = .milliseconds(350)
 
@@ -36,6 +38,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
 
     deinit {
         evaluationTask?.cancel()
+        listeningTask?.cancel()
     }
 
     var isTrainingEnabled: Bool {
