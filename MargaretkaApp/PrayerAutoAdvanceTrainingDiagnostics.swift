@@ -152,6 +152,13 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         livePrediction = min(max(value, 0), 1)
     }
 
+    func resetAutomaticAdvanceDiagnostics() {
+        livePrediction = 0
+        automaticAdvanceLatencies = []
+        lastAutomaticPredictionLatency = nil
+        lastAutomaticUISwitchLatency = nil
+    }
+
     func recordAutomaticAdvanceLatency(
         total: TimeInterval,
         prediction: TimeInterval,
