@@ -229,12 +229,25 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
                 Text("n \(diagnostics.automaticAdvanceLatencies.count)")
             }
 
+            ProgressView(value: Double(diagnostics.livePrediction), total: 1)
+                .tint(predictionTint)
+                .frame(width: 150)
+
             HStack(spacing: 7) {
                 Text("min \(latencyText(diagnostics.automaticLatencyMinimum))")
                 Text("avg \(latencyText(diagnostics.automaticLatencyAverage))")
                 Text("max \(latencyText(diagnostics.automaticLatencyMaximum))")
             }
         }
+    }
+
+    private var predictionTint: Color {
+        let value = Double(min(max(diagnostics.livePrediction, 0), 1))
+        return Color(
+            hue: (1 - value) * 0.33,
+            saturation: 0.86,
+            brightness: 0.96
+        )
     }
 
     private func latencyText(_ value: TimeInterval?) -> String {
