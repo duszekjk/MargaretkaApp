@@ -239,6 +239,26 @@ struct PrayerFlowView: View {
         })
     }
 
+    private func moveAutomaticallyToIndex(_ index: Int) {
+        let fromName = currentPrayer?.name
+
+        var toName: String?
+        let prayerIndex = index - 1
+        if prayerIndex >= 0,
+           flattenedPrayerIds.indices.contains(prayerIndex) {
+            let prayerID = flattenedPrayerIds[prayerIndex]
+            toName = allPrayers[prayerID]?.name
+        }
+
+        let delta = index - activeIndex
+        hapticForPrayerSwitch(
+            from: fromName,
+            to: toName,
+            delta: delta
+        )
+        moveToIndex(index, animated: true)
+    }
+
     private func presentVariantPopup(_ popup: PrayerFlowVariantPopupState) {
         isVariantPopupExpanded = false
         isVariantPopupOffsetExpanded = false
@@ -1544,16 +1564,7 @@ struct PrayerFlowView: View {
             lastDisplayIndex: lastDisplayIndex,
             controller: autoAdvanceController,
             moveToIndex: { index in
-                let fromName = currentPrayer?.name
-                let toName = index > 0 && index <= flattenedPrayerIds.count
-                    ? allPrayers[flattenedPrayerIds[index - 1]]?.name
-                    : nil
-                hapticForPrayerSwitch(
-                    from: fromName,
-                    to: toName,
-                    delta: index - activeIndex
-                )
-                moveToIndex(index, animated: true)
+                moveAutomaticallyToIndex(index)
             }
         )
     }
