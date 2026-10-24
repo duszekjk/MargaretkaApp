@@ -259,19 +259,21 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
 
     private var latencySparkline: some View {
         let values = Array(diagnostics.automaticAdvanceLatencies.suffix(24))
-        return Chart(Array(values.enumerated()), id: \.offset) { point in
-            LineMark(
-                x: .value("Sample", point.offset),
-                y: .value("Delay", point.element)
-            )
-            .interpolationMethod(.catmullRom)
-
-            if point.offset == values.count - 1 {
-                PointMark(
-                    x: .value("Sample", point.offset),
-                    y: .value("Delay", point.element)
+        return Chart {
+            ForEach(values.indices, id: \.self) { index in
+                LineMark(
+                    x: .value("Sample", index),
+                    y: .value("Delay", values[index])
                 )
-                .symbolSize(10)
+                .interpolationMethod(.catmullRom)
+
+                if index == values.indices.last {
+                    PointMark(
+                        x: .value("Sample", index),
+                        y: .value("Delay", values[index])
+                    )
+                    .symbolSize(10)
+                }
             }
         }
         .chartXAxis(.hidden)
