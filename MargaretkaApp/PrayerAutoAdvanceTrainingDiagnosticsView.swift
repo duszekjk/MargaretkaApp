@@ -18,6 +18,8 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 24) {
                     summary
+                    automaticRuntimeSummary
+                    automaticLatencyChart
                     groupedTrainingPipeline
                     qualityNavigation
                     inputSamplesNavigation
@@ -37,7 +39,7 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Diagnostyka treningu")
+            .navigationTitle("Diagnostyka auto-przejścia")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -76,6 +78,53 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
             metricRow("Train margin (cel > 0)", diagnostics.predictionMargin.map { String(format: "%+.6f", $0) } ?? "—")
             metricRow("Validation loss (cel ↓)", formatted(diagnostics.currentValidationLoss, digits: 8))
             metricRow("Validation margin (cel > 0)", signed(diagnostics.currentValidationMargin, digits: 6))
+        }
+    }
+
+    private var automaticRuntimeSummary: some View {
+        diagnosticsCard("Automatyczne przełączanie") {
+            metricRow("Aktualna predykcja", String(format: "%.4f", diagnostics.livePrediction))
+            metricRow("Próg przejścia", "0.9600")
+            metricRow("Liczba przejść", "\(diagnostics.automaticAdvanceLatencies.count)")
+            metricRow("Latency min", latencyText(diagnostics.automaticLatencyMinimum))
+            metricRow("Latency avg", latencyText(diagnostics.automaticLatencyAverage))
+            metricRow("Latency max", latencyText(diagnostics.automaticLatencyMaximum))
+            metricRow("Wariancja", varianceText(diagnostics.automaticLatencyVariance))
+            metricRow("Ostatnie speech → prediction", latencyText(diagnostics.lastAutomaticPredictionLatency))
+            metricRow("Ostatnie prediction → UI", latencyText(diagnostics.lastAutomaticUISwitchLatency))
+        }
+    }
+
+    private var automaticLatencyChart: some View {
+        chartCard(
+            "Latency automatycznych przejść",
+            subtitle: "Czas od końca ostatniego rozpoznanego segmentu mowy do faktycznej zmiany aktywnej strony. Pokazuje do 100 ostatnich automatycznych przejść."
+        ) {
+            Chart {
+                ForEach(diagnostics.automaticAdvanceLatencies.indices, id: \.self) { index in
+                    LineMark(
+                        x: .value("Przejście", index + 1),
+                        y: .value("Latency", diagnostics.automaticAdvanceLatencies[index])
+                    )
+                    .interpolationMethod(.catmullRom)
+
+                    PointMark(
+                        x: .value("Przejście", index + 1),
+                        y: .value("Latency", diagnostics.automaticAdvanceLatencies[index])
+                    )
+                    .symbolSize(14)
+                }
+
+                if let average = diagnostics.automaticLatencyAverage {
+                    RuleMark(y: .value("Średnia", average))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
+                        .annotation(position: .top, alignment: .trailing) {
+                            Text(String(format: "avg %.3f s", average))
+                                .font(.caption2.monospacedDigit())
+                        }
+                }
+            }
+            .frame(height: 240)
         }
     }
 
@@ -525,6 +574,17 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
         lines.append("trainingLearningRate: \(PrayerAutoAdvanceCoreMLModel.trainingLearningRate)")
         lines.append("shuffleBetweenEpochs: true")
         lines.append("")
+        lines.append("[AUTOMATIC RUNTIME]")
+        lines.append(String(format: "livePrediction: %.8f", diagnostics.livePrediction))
+        lines.append("threshold: 0.96000000")
+        lines.append("transitionCount: \(diagnostics.automaticAdvanceLatencies.count)")
+        lines.append("latencyMin: \(diagnostics.automaticLatencyMinimum.map { String(format: "%.6f", $0) } ?? "—")")
+        lines.append("latencyAverage: \(diagnostics.automaticLatencyAverage.map { String(format: "%.6f", $0) } ?? "—")")
+        lines.append("latencyMax: \(diagnostics.automaticLatencyMaximum.map { String(format: "%.6f", $0) } ?? "—")")
+        lines.append("latencyVariance: \(diagnostics.automaticLatencyVariance.map { String(format: "%.8f", $0) } ?? "—")")
+        lines.append("lastSpeechToPrediction: \(diagnostics.lastAutomaticPredictionLatency.map { String(format: "%.6f", $0) } ?? "—")")
+        lines.append("lastPredictionToUI: \(diagnostics.lastAutomaticUISwitchLatency.map { String(format: "%.6f", $0) } ?? "—")")
+        lines.append("")
         lines.append("[PIPELINE]")
         lines.append("pipelineState: \(diagnostics.pipelineState)")
         lines.append("isTraining: \(state.isTraining)")
@@ -603,6 +663,16 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
         lines.append("[RECENT EVENTS]")
         lines.append(contentsOf: diagnostics.recentMessages.isEmpty ? ["none"] : diagnostics.recentMessages)
         return lines.joined(separator: "\n")
+    }
+
+    private func latencyText(_ value: TimeInterval?) -> String {
+        guard let value, value.isFinite else { return "—" }
+        return String(format: "%.3f s", value)
+    }
+
+    private func varianceText(_ value: Double?) -> String {
+        guard let value, value.isFinite else { return "—" }
+        return String(format: "%.6f s²", value)
     }
 
     private func formatted(_ value: Double?, digits: Int) -> String {

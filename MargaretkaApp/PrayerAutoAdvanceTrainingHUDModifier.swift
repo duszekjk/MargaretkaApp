@@ -78,7 +78,7 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
         content
             .toolbar {
 #if os(iOS)
-                if trainingEnabled {
+                if trainingEnabled || automaticEnabled {
                     ToolbarItem(placement: .topBarLeading) {
                         trainingToolbarButton
                     }
@@ -86,17 +86,12 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
 #endif
             }
             .overlay(alignment: .topLeading) {
-                VStack(alignment: .leading, spacing: 6) {
-                    if automaticEnabled {
-                        automaticDiagnosticsPanel
-                    }
-                    if trainingEnabled, control.isExpanded {
-                        hud
-                    }
+                if (trainingEnabled || automaticEnabled), control.isExpanded {
+                    hud
+                        .padding(.leading, 12)
+                        .safeAreaPadding(.top, 8)
+                        .padding(.top, 44)
                 }
-                .padding(.leading, 12)
-                .safeAreaPadding(.top, 8)
-                .padding(.top, 44)
             }
             .fullScreenCover(isPresented: $control.showingDiagnostics) {
                 PrayerAutoAdvanceTrainingDiagnosticsView()
@@ -183,133 +178,31 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
         if isListening {
             return "Mikrofon nasłuchuje, ale nie wykrywa teraz mowy. Stuknij, aby rozwinąć diagnostykę."
         }
-        return "Diagnostyka treningu. Stuknij, aby rozwinąć."
+        return automaticEnabled
+            ? "Diagnostyka automatycznego przełączania. Stuknij, aby rozwinąć."
+            : "Diagnostyka treningu. Stuknij, aby rozwinąć."
     }
 #endif
 
 
-    private var automaticDiagnosticsPanel: some View {
-        HStack(alignment: .top, spacing: 7) {
-            VStack(spacing: 1) {
-                predictionGauge
-                Text(String(format: "p %.3f", diagnostics.livePrediction))
-                    .monospacedDigit()
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("AUTO DELAY  n=\(diagnostics.automaticAdvanceLatencies.count)")
-                    .fontWeight(.semibold)
-
-                HStack(spacing: 6) {
-                    Text("min \(latencyText(diagnostics.automaticLatencyMinimum))")
-                    Text("avg \(latencyText(diagnostics.automaticLatencyAverage))")
-                }
-                HStack(spacing: 6) {
-                    Text("max \(latencyText(diagnostics.automaticLatencyMaximum))")
-                    Text("var \(varianceText(diagnostics.automaticLatencyVariance))")
-                }
-
-                if diagnostics.automaticAdvanceLatencies.count >= 2 {
-                    latencySparkline
-                }
-            }
-        }
-        .font(.system(size: 7, design: .monospaced))
-        .foregroundStyle(.white)
-        .padding(5)
-        .background(.black.opacity(0.72))
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(
-            "Predykcja automatycznego przejścia \(String(format: "%.3f", diagnostics.livePrediction)). "
-            + "Średnie opóźnienie \(latencyText(diagnostics.automaticLatencyAverage))."
-        )
-    }
-
-    private var predictionGauge: some View {
-        HStack(alignment: .center, spacing: 2) {
-            VStack {
-                Text("1")
-                Spacer(minLength: 0)
-                Text("0")
-            }
-            .font(.system(size: 5, design: .monospaced))
-            .foregroundStyle(.white.opacity(0.8))
-
-            GeometryReader { proxy in
-                let probability = CGFloat(min(max(diagnostics.livePrediction, 0), 1))
-                ZStack(alignment: .bottom) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .stroke(.white.opacity(0.35), lineWidth: 0.5)
-
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(predictionColor)
-                        .frame(height: max(1, proxy.size.height * probability))
-
-                    Rectangle()
-                        .fill(.white.opacity(0.7))
-                        .frame(height: 0.5)
-                        .offset(y: -proxy.size.height * 0.96)
-                }
-            }
-            .frame(width: 17, height: 48)
-        }
-        .frame(width: 28, height: 48)
-    }
-
-    private var latencySparkline: some View {
-        let values = Array(diagnostics.automaticAdvanceLatencies.suffix(24))
-        return Chart {
-            ForEach(values.indices, id: \.self) { index in
-                LineMark(
-                    x: .value("Sample", index),
-                    y: .value("Delay", values[index])
-                )
-                .interpolationMethod(.catmullRom)
-
-                if index == values.indices.last {
-                    PointMark(
-                        x: .value("Sample", index),
-                        y: .value("Delay", values[index])
-                    )
-                    .symbolSize(10)
-                }
-            }
-        }
-        .chartXAxis(.hidden)
-        .chartYAxis(.hidden)
-        .frame(width: 92, height: 22)
-        .accessibilityLabel("Historia opóźnienia automatycznych przejść")
-    }
-
-    private var predictionColor: Color {
-        let value = Double(min(max(diagnostics.livePrediction, 0), 1))
-        return Color(
-            hue: (1 - value) * 0.33,
-            saturation: 0.86,
-            brightness: 0.96
-        )
-    }
-
-    private func latencyText(_ value: TimeInterval?) -> String {
-        guard let value, value.isFinite else { return "—" }
-        return String(format: "%.3fs", value)
-    }
-
-    private func varianceText(_ value: Double?) -> String {
-        guard let value, value.isFinite else { return "—" }
-        return String(format: "%.4f", value)
-    }
-
     private var hud: some View {
         VStack(alignment: .leading, spacing: 5) {
-            if state.isTraining || liveProgress.isActive {
-                liveTrainingSection
-                Divider()
-                    .overlay(.white.opacity(0.25))
+            if automaticEnabled {
+                automaticHUDSection
+                if trainingEnabled {
+                    Divider()
+                        .overlay(.white.opacity(0.25))
+                }
             }
 
-            liveCaptureSection
+            if trainingEnabled {
+                if state.isTraining || liveProgress.isActive {
+                    liveTrainingSection
+                    Divider()
+                        .overlay(.white.opacity(0.25))
+                }
+                liveCaptureSection
+            }
 
             Text("1× zwiń · 2× pełna diagnostyka")
                 .opacity(0.72)
@@ -322,7 +215,44 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         .gesture(hudGesture)
-        .accessibilityLabel("Diagnostyka treningu. Stuknij, aby zwinąć; stuknij dwa razy, aby otworzyć szczegóły.")
+        .accessibilityLabel("Diagnostyka automatycznego przełączania i treningu. Stuknij, aby zwinąć; stuknij dwa razy, aby otworzyć szczegóły.")
+    }
+
+
+    private var automaticHUDSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 7) {
+                Text("AUTO")
+                    .fontWeight(.semibold)
+                Text(String(format: "p %.3f", diagnostics.livePrediction))
+                    .monospacedDigit()
+                Text("n \(diagnostics.automaticAdvanceLatencies.count)")
+            }
+
+            ProgressView(value: Double(diagnostics.livePrediction), total: 1)
+                .tint(predictionTint)
+                .frame(width: 150)
+
+            HStack(spacing: 7) {
+                Text("min \(latencyText(diagnostics.automaticLatencyMinimum))")
+                Text("avg \(latencyText(diagnostics.automaticLatencyAverage))")
+                Text("max \(latencyText(diagnostics.automaticLatencyMaximum))")
+            }
+        }
+    }
+
+    private var predictionTint: Color {
+        let value = Double(min(max(diagnostics.livePrediction, 0), 1))
+        return Color(
+            hue: (1 - value) * 0.33,
+            saturation: 0.86,
+            brightness: 0.96
+        )
+    }
+
+    private func latencyText(_ value: TimeInterval?) -> String {
+        guard let value, value.isFinite else { return "—" }
+        return String(format: "%.3fs", value)
     }
 
     private var liveCaptureSection: some View {
