@@ -67,6 +67,10 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
     @Published var acceptedTrainingCount = 0
     @Published var skippedTrainingCount = 0
     @Published var predictionHistory: [Float] = []
+    @Published private(set) var livePrediction: Float = 0
+    @Published private(set) var automaticAdvanceLatencies: [TimeInterval] = []
+    @Published private(set) var lastAutomaticPredictionLatency: TimeInterval?
+    @Published private(set) var lastAutomaticUISwitchLatency: TimeInterval?
     @Published var recentMessages: [String] = []
     @Published var lastFeatureSummary = "—"
 
@@ -115,12 +119,54 @@ final class PrayerAutoAdvanceTrainingDiagnostics: ObservableObject {
         updateHistory.filter { $0.epoch == currentEpochNumber }
     }
 
+    var automaticLatencyMinimum: TimeInterval? {
+        automaticAdvanceLatencies.min()
+    }
+
+    var automaticLatencyMaximum: TimeInterval? {
+        automaticAdvanceLatencies.max()
+    }
+
+    var automaticLatencyAverage: TimeInterval? {
+        guard !automaticAdvanceLatencies.isEmpty else { return nil }
+        return automaticAdvanceLatencies.reduce(0, +) / Double(automaticAdvanceLatencies.count)
+    }
+
+    var automaticLatencyVariance: Double? {
+        guard let average = automaticLatencyAverage else { return nil }
+        return automaticAdvanceLatencies.reduce(0) { partial, value in
+            let delta = value - average
+            return partial + delta * delta
+        } / Double(automaticAdvanceLatencies.count)
+    }
+
     var backpropStatus: String {
         guard !updateHistory.isEmpty else { return "brak wykonanych aktualizacji" }
         if ineffectiveUpdateStreak >= 2 {
             return "brak mierzalnej zmiany (\(ineffectiveUpdateStreak) z rzędu)"
         }
         return "aktywna zmiana wag"
+    }
+
+    func publishLivePrediction(_ value: Float) {
+        livePrediction = min(max(value, 0), 1)
+    }
+
+    func recordAutomaticAdvanceLatency(
+        total: TimeInterval,
+        prediction: TimeInterval,
+        uiSwitch: TimeInterval
+    ) {
+        let total = max(0, total)
+        automaticAdvanceLatencies.append(total)
+        if automaticAdvanceLatencies.count > 100 {
+            automaticAdvanceLatencies.removeFirst(automaticAdvanceLatencies.count - 100)
+        }
+        lastAutomaticPredictionLatency = max(0, prediction)
+        lastAutomaticUISwitchLatency = max(0, uiSwitch)
+        Self.logger.info(
+            "automatic latency total=\(total, privacy: .public)s prediction=\(prediction, privacy: .public)s ui=\(uiSwitch, privacy: .public)s"
+        )
     }
 
     func prediction(_ value: Float, snapshotCount: Int, features: [Float]) {
