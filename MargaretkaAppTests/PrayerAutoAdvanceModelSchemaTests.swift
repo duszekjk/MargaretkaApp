@@ -26,6 +26,7 @@ struct PrayerAutoAdvanceModelSchemaTests {
 
     @Test func automaticAdvanceUsesFastSinglePredictionPolicy() {
         #expect(PrayerAutoAdvanceCoreMLRuntime.automaticInferenceInterval == 0.25)
+        #expect(PrayerAutoAdvanceCoreMLRuntime.automaticAdvanceThreshold == 0.5)
         #expect(PrayerAutoAdvanceCoreMLRuntime.requiredAdvancePredictions == 1)
     }
 
