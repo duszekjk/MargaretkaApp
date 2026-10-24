@@ -14,7 +14,7 @@ extension PrayerAutoAdvanceCoreMLRuntime {
             return
         }
 
-        consecutiveAdvancePredictions = prediction >= 0.96
+        consecutiveAdvancePredictions = prediction >= Self.automaticAdvanceThreshold
             ? consecutiveAdvancePredictions + 1
             : 0
 

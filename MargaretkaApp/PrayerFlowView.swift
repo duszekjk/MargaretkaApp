@@ -1544,6 +1544,15 @@ struct PrayerFlowView: View {
             lastDisplayIndex: lastDisplayIndex,
             controller: autoAdvanceController,
             moveToIndex: { index in
+                let fromName = currentPrayer?.name
+                let toName = index > 0 && index <= flattenedPrayerIds.count
+                    ? allPrayers[flattenedPrayerIds[index - 1]]?.name
+                    : nil
+                hapticForPrayerSwitch(
+                    from: fromName,
+                    to: toName,
+                    delta: index - activeIndex
+                )
                 moveToIndex(index, animated: true)
             }
         )
