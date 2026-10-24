@@ -36,7 +36,9 @@ extension PrayerAutoAdvanceCoreMLRuntime {
 
             let features = result.0
             let value = result.1
+            let predictionAt = Date()
             lastPrediction = value
+            PrayerAutoAdvanceTrainingDiagnostics.shared.publishLivePrediction(value)
 
             if plan.date.timeIntervalSince(lastDiagnosticsPublishAt) >= Self.diagnosticsPublishInterval {
                 PrayerAutoAdvanceTrainingDiagnostics.shared.prediction(
@@ -57,7 +59,12 @@ extension PrayerAutoAdvanceCoreMLRuntime {
                 pageText: context.currentText,
                 at: plan.date
             )
-            evaluatePrediction(value, elapsed: elapsed)
+            evaluatePrediction(
+                value,
+                elapsed: elapsed,
+                speechEndAt: speech.lastSegmentEndDate,
+                predictionAt: predictionAt
+            )
         } catch {
             statusMessage = error.localizedDescription
             PrayerAutoAdvanceTrainingDiagnostics.shared.error(error.localizedDescription)
