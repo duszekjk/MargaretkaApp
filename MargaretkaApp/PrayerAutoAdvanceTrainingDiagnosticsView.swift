@@ -84,7 +84,10 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
     private var automaticRuntimeSummary: some View {
         diagnosticsCard("Automatyczne przełączanie") {
             metricRow("Aktualna predykcja", String(format: "%.4f", diagnostics.livePrediction))
-            metricRow("Próg przejścia", "0.9600")
+            metricRow(
+                "Próg przejścia",
+                String(format: "%.4f", PrayerAutoAdvanceCoreMLRuntime.automaticAdvanceThreshold)
+            )
             metricRow("Liczba przejść", "\(diagnostics.automaticAdvanceLatencies.count)")
             metricRow("Latency min", latencyText(diagnostics.automaticLatencyMinimum))
             metricRow("Latency avg", latencyText(diagnostics.automaticLatencyAverage))
@@ -576,7 +579,12 @@ struct PrayerAutoAdvanceTrainingDiagnosticsView: View {
         lines.append("")
         lines.append("[AUTOMATIC RUNTIME]")
         lines.append(String(format: "livePrediction: %.8f", diagnostics.livePrediction))
-        lines.append("threshold: 0.96000000")
+        lines.append(
+            String(
+                format: "threshold: %.8f",
+                PrayerAutoAdvanceCoreMLRuntime.automaticAdvanceThreshold
+            )
+        )
         lines.append("transitionCount: \(diagnostics.automaticAdvanceLatencies.count)")
         lines.append("latencyMin: \(diagnostics.automaticLatencyMinimum.map { String(format: "%.6f", $0) } ?? "—")")
         lines.append("latencyAverage: \(diagnostics.automaticLatencyAverage.map { String(format: "%.6f", $0) } ?? "—")")
