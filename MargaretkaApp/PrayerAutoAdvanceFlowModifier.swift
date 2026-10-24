@@ -30,6 +30,7 @@ struct PrayerAutoAdvanceFlowModifier: ViewModifier {
             .onChange(of: activeIndex) { oldValue, newValue in
                 if newValue > oldValue, oldValue > 0 {
                     if suppressNextTrainingTransition {
+                        controller.recordAutomaticPageTurn(at: Date())
                         suppressNextTrainingTransition = false
                     } else if !isAudioAutoAdvanceEnabled {
                         // Custom swipes are already captured before activeIndex is
