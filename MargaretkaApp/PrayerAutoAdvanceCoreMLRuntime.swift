@@ -26,6 +26,7 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
     var lastInferenceAt = Date.distantPast
     var trainingCandidateSeenCount = 0
     var capturedManualAdvancePageID: String?
+    var pendingAutomaticAdvance: PrayerAutoAdvancePendingTransition?
 
     static let trainingReservoirCapacity = 16
     static let trainingCandidateInterval: TimeInterval = 0.5
@@ -124,7 +125,11 @@ final class PrayerAutoAdvanceCoreMLRuntime: ObservableObject {
             PrayerTrainingAudioArchive.store(pageID: pageID, audio: frozenPageAudio)
         }
 #else
-        let swipeSpeech = PrayerAutoAdvanceSpeechSnapshot(transcript: "", lastSegmentEndTime: nil)
+        let swipeSpeech = PrayerAutoAdvanceSpeechSnapshot(
+            transcript: "",
+            lastSegmentEndTime: nil,
+            lastSegmentEndDate: nil
+        )
         let frozenPageAudio = PrayerAutoAdvanceAudioWindow(samples: [], sampleRate: 16_000)
         let requestedSwipeSampleIndex = frozenPageAudio.samples.count
 #endif
@@ -206,4 +211,11 @@ struct PrayerAutoAdvanceEvaluationPlan: Sendable {
     let date: Date
     let reservoirSlot: Int?
     let shouldPredict: Bool
+}
+
+
+struct PrayerAutoAdvancePendingTransition: Sendable {
+    let pageID: String
+    let speechEndAt: Date?
+    let predictionAt: Date
 }
