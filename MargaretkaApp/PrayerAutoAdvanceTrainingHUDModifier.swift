@@ -227,32 +227,34 @@ struct PrayerAutoAdvanceTrainingHUDModifier: ViewModifier {
     }
 
     private var predictionGauge: some View {
-        Chart {
-            BarMark(
-                x: .value("Prediction", "next"),
-                y: .value("Probability", Double(min(max(diagnostics.livePrediction, 0), 1)))
-            )
-            .foregroundStyle(predictionColor)
-            .cornerRadius(2)
-        }
-        .chartYScale(domain: 0...1)
-        .chartXAxis(.hidden)
-        .chartYAxis {
-            AxisMarks(position: .leading, values: [0.0, 1.0]) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.35))
-                    .foregroundStyle(.white.opacity(0.18))
-                AxisTick(stroke: StrokeStyle(lineWidth: 0.4))
-                    .foregroundStyle(.white.opacity(0.55))
-                AxisValueLabel {
-                    if let number = value.as(Double.self) {
-                        Text(String(format: "%.0f", number))
-                    }
-                }
-                .font(.system(size: 5, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.8))
+        HStack(alignment: .center, spacing: 2) {
+            VStack {
+                Text("1")
+                Spacer(minLength: 0)
+                Text("0")
             }
+            .font(.system(size: 5, design: .monospaced))
+            .foregroundStyle(.white.opacity(0.8))
+
+            GeometryReader { proxy in
+                let probability = CGFloat(min(max(diagnostics.livePrediction, 0), 1))
+                ZStack(alignment: .bottom) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .stroke(.white.opacity(0.35), lineWidth: 0.5)
+
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(predictionColor)
+                        .frame(height: max(1, proxy.size.height * probability))
+
+                    Rectangle()
+                        .fill(.white.opacity(0.7))
+                        .frame(height: 0.5)
+                        .offset(y: -proxy.size.height * 0.96)
+                }
+            }
+            .frame(width: 17, height: 48)
         }
-        .frame(width: 38, height: 48)
+        .frame(width: 28, height: 48)
     }
 
     private var latencySparkline: some View {
