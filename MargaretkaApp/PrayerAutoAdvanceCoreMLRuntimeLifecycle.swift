@@ -12,9 +12,11 @@ extension PrayerAutoAdvanceCoreMLRuntime {
         lastDiagnosticsPublishAt = Date.distantPast
         trainingCandidateSeenCount = 0
         capturedManualAdvancePageID = nil
+        pendingAutomaticAdvance = nil
         consecutiveAdvancePredictions = 0
         cooldownUntil = Date.distantPast
         lastPrediction = 0
+        PrayerAutoAdvanceTrainingDiagnostics.shared.publishLivePrediction(0)
         lastSpectralSampleIndex = 0
         spectralCache.reset()
 

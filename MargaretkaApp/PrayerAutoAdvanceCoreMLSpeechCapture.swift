@@ -4,6 +4,7 @@ import Speech
 struct PrayerAutoAdvanceSpeechSnapshot: Sendable {
     let transcript: String
     let lastSegmentEndTime: TimeInterval?
+    let lastSegmentEndDate: Date?
 }
 
 struct PrayerAutoAdvanceAudioSlice: Sendable {
@@ -123,6 +124,7 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
         transcriptBox.reset(generation: generation)
         pageAudio.reset()
 
+        let recognitionStartedAt = Date()
         let transcriptBox = self.transcriptBox
         task = recognizer.recognitionTask(with: speechRequest) { [weak self] result, error in
             if let result {
@@ -133,6 +135,9 @@ final class PrayerAutoAdvanceCoreMLSpeechCapture {
                 transcriptBox.set(
                     transcription.formattedString,
                     lastSegmentEndTime: lastSegmentEndTime,
+                    lastSegmentEndDate: lastSegmentEndTime.map {
+                        recognitionStartedAt.addingTimeInterval($0)
+                    },
                     generation: generation
                 )
             }
@@ -271,20 +276,28 @@ private final class PrayerAutoAdvanceTranscriptBox: @unchecked Sendable {
     private var generation = 0
     private var text = ""
     private var lastSegmentEndTime: TimeInterval?
+    private var lastSegmentEndDate: Date?
 
     func reset(generation: Int) {
         lock.lock()
         self.generation = generation
         text = ""
         lastSegmentEndTime = nil
+        lastSegmentEndDate = nil
         lock.unlock()
     }
 
-    func set(_ value: String, lastSegmentEndTime: TimeInterval?, generation: Int) {
+    func set(
+        _ value: String,
+        lastSegmentEndTime: TimeInterval?,
+        lastSegmentEndDate: Date?,
+        generation: Int
+    ) {
         lock.lock()
         if self.generation == generation {
             text = value
             self.lastSegmentEndTime = lastSegmentEndTime
+            self.lastSegmentEndDate = lastSegmentEndDate
         }
         lock.unlock()
     }
@@ -293,7 +306,8 @@ private final class PrayerAutoAdvanceTranscriptBox: @unchecked Sendable {
         lock.lock()
         let value = PrayerAutoAdvanceSpeechSnapshot(
             transcript: text,
-            lastSegmentEndTime: lastSegmentEndTime
+            lastSegmentEndTime: lastSegmentEndTime,
+            lastSegmentEndDate: lastSegmentEndDate
         )
         lock.unlock()
         return value

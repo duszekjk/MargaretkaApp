@@ -29,6 +29,22 @@ struct PrayerAutoAdvanceModelSchemaTests {
         #expect(PrayerAutoAdvanceCoreMLRuntime.requiredAdvancePredictions == 1)
     }
 
+    @Test @MainActor func automaticLatencyStatisticsAreComputedCorrectly() {
+        let diagnostics = PrayerAutoAdvanceTrainingDiagnostics.shared
+        diagnostics.resetAutomaticAdvanceDiagnostics()
+
+        diagnostics.recordAutomaticAdvanceLatency(total: 0.2, prediction: 0.15, uiSwitch: 0.05)
+        diagnostics.recordAutomaticAdvanceLatency(total: 0.4, prediction: 0.30, uiSwitch: 0.10)
+        diagnostics.recordAutomaticAdvanceLatency(total: 0.6, prediction: 0.50, uiSwitch: 0.10)
+
+        #expect(abs((diagnostics.automaticLatencyMinimum ?? 0) - 0.2) < 0.000_001)
+        #expect(abs((diagnostics.automaticLatencyAverage ?? 0) - 0.4) < 0.000_001)
+        #expect(abs((diagnostics.automaticLatencyMaximum ?? 0) - 0.6) < 0.000_001)
+        #expect(abs((diagnostics.automaticLatencyVariance ?? 0) - 0.0266666667) < 0.000_001)
+
+        diagnostics.resetAutomaticAdvanceDiagnostics()
+    }
+
     @Test func audioDominatesCombinedInput() {
         let audio = PrayerAutoAdvanceAudioFeatureExtractor.featureCount
             + PrayerAutoAdvanceLongAudioFeatureExtractor.featureCount
